@@ -83,6 +83,7 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
         dimensionedScalar(dimEnergy/dimVolume/dimTime, 0)
     ),
     torchSwitch_(lookupOrDefault("torch", false)),
+    balancer_(createBalancer()), 
     cpuTimes_
     (
         IOobject
@@ -174,6 +175,17 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
             )
         );
     }
+    if(balancer_.log())
+    {
+        cpuSolveFile_ = logFile("cpu_solve.out");
+        cpuSolveFile_() << "                  time" << tab
+                        << "           getProblems" << tab  
+                        << "           updateState" << tab
+                        << "               balance" << tab
+                        << "           solveBuffer" << tab
+                        << "             unbalance" << tab
+                        << "               rank ID" << endl;
+    }
 
     Info<<"--- I am here in Cantera-construct ---"<<endl;
     Info<<"relTol_ === "<<relTol_<<endl;
@@ -206,8 +218,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve
     }
     else
     {
-        //result = canteraSolve(deltaT);
-        result = solve_loadBalance(deltaT);
+        result = canteraSolve(deltaT);
     }
     return result;
 }
@@ -632,8 +643,7 @@ void Foam::dfChemistryModel<ThermoType>::solveSingle
     ChemistryProblem& problem, ChemistrySolution& solution
 )
 {
-    scalar timeLeft = problem.deltaT;
-    scalarList c0 = problem.c;
+    // scalarList c0 = problem.c;
 
     // Timer begins
     clockTime time;
@@ -642,11 +652,10 @@ void Foam::dfChemistryModel<ThermoType>::solveSingle
     Cantera::Reactor react;
     const scalar Ti = problem.Ti;
     const scalar pi = problem.pi;
-    const scalarList Y = problem.Y;
+    const scalar rhoi = problem.rhoi;
+    const scalarList yPre_ = problem.Y;
 
-
-    CanteraGas_->setState_TPY(Ti, pi, Y.begin());
-    CanteraGas_->getConcentrations(c0.begin()); // value --> c0
+    CanteraGas_->setState_TPY(Ti, pi, yPre_.begin());
 
     react.insert(mixture_.CanteraSolution());
     react.setEnergy(0); // keep T const before and after sim.advance. this will give you a little improvement
@@ -657,18 +666,18 @@ void Foam::dfChemistryModel<ThermoType>::solveSingle
     sim.advance(problem.deltaT);
 
     // get new concentrations
-    CanteraGas_->getConcentrations(cTemp_.begin()); // value --> cTemp_
-    problem.c = cTemp_;
+    CanteraGas_->getMassFractions(yTemp_.begin());
+    // problem.c = cTemp_;
 
-
-    solution.c_increment = (problem.c - c0) / problem.deltaT;
-    //solution.deltaTChem = min(problem.deltaTChem, this->deltaTChemMax_);
+    for (size_t i=0; i<CanteraGas_->nSpecies(); i++)
+    {
+        solution.RRi[i] = (yTemp_[i] - yPre_[i]) / problem.deltaT * rhoi;
+    }
 
     // Timer ends
     solution.cpuTime = time.timeIncrement();
 
     solution.cellid = problem.cellid;
-    solution.rhoi = problem.rhoi;
 }
 
 
@@ -686,55 +695,33 @@ Foam::dfChemistryModel<ThermoType>::getProblems
     const scalarField& rho = rho_;
 
 
-    DynamicList<ChemistryProblem> solved_problems;
+    DynamicList<ChemistryProblem> solved_problems(p.size(), ChemistryProblem(mixture_.nSpecies()));
 
-    //solved_problems.resize(p.size(), ChemistryProblem(mixture_.nSpecies()));
-
-    scalarField massFraction(mixture_.nSpecies());
-    //scalarField concentration(mixture_.nSpecies());
-
-    label counter = 0;
     forAll(T, celli)
     {
-
-        //if(T[celli] > this->Treact())
         {
-            //for(label i = 0; i < mixture_.nSpecies(); i++)
-            //{
-                //concentration[i] = rho[celli] * this->Y_[i][celli] / this->specieThermo_[i].W();
-            //    massFraction[i] = this->Y_[i][celli];
-            //}
+            for(label i = 0; i < mixture_.nSpecies(); i++)
+            {
+                yTemp_[i] = Y_[i][celli];
+            }
+
+            CanteraGas_->setState_TPY(T[celli], p[celli], yTemp_.begin());
+            CanteraGas_->getConcentrations(cTemp_.begin());
 
             ChemistryProblem problem;
-            //problem.c = concentration;
-            problem.Y = massFraction;
+            // problem.c = cTemp_;
+            problem.Y = yTemp_;
             problem.Ti = T[celli];
             problem.pi = p[celli];
-            problem.rhoi = rho[celli];
-            //problem.deltaTChem = this->deltaTChem_[celli];
+            problem.rhoi = rho_[celli];
             problem.deltaT = deltaT[celli];
-            //problem.cpuTime = cpuTimes_[celli];
+            problem.cpuTime = cpuTimes_[celli];
             problem.cellid = celli;
 
-
-
-            solved_problems[counter] = problem;
-            counter++;
-
-
+            solved_problems[celli] = problem;
         }
-        //else
-        //{
-            // for(label i = 0; i < this->nSpecie(); i++)
-            // {
-            //     this->RR_[i][celli] = 0;
-            // }
-        //}
-
+        
     }
-
-    //the real size is set here
-    solved_problems.setSize(counter);
 
     return solved_problems;
 }
@@ -791,16 +778,10 @@ Foam::dfChemistryModel<ThermoType>::updateReactionRates
         for(const auto& solution : array)
         {
 
-            // for(label j = 0; j < mixture_.nSpecies(); j++)
-            // {
-            //     this->RR_[j][solution.cellid] =
-            //         solution.c_increment[j] * this->specieThermo_[j].W();
-            // }
-
-            // deltaTMin = min(solution.deltaTChem, deltaTMin);
-
-            // this->deltaTChem_[solution.cellid] =
-            //     min(solution.deltaTChem, this->deltaTChemMax_);
+            for(label j = 0; j < mixture_.nSpecies(); j++)
+            {
+                this->RR_[j][solution.cellid] = solution.RRi[j];
+            }
 
             cpuTimes_[solution.cellid] = solution.cpuTime;
         }
@@ -809,19 +790,6 @@ Foam::dfChemistryModel<ThermoType>::updateReactionRates
     return deltaTMin;
 }
 
-
-template <class ThermoType>
-void Foam::dfChemistryModel<ThermoType>::updateReactionRate
-(
-    const ChemistrySolution& solution, const label& i
-)
-{
-    //for(label j = 0; j < mixture_.nSpecies(); j++)
-    {
-        //this->RR_[j][i] = solution.c_increment[j] * this->specieThermo_[j].W();
-    }
-    //this->deltaTChem_[i] = min(solution.deltaTChem, this->deltaTChemMax_);
-}
 
 
 template <class ThermoType>
@@ -853,6 +821,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_loadBalance
     const DeltaTType& deltaT
 )
 {
+    Info<<"=== begin DLB-solve === "<<endl;
     // CPU time analysis
     clockTime timer;
     scalar t_getProblems(0);
@@ -914,6 +883,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_loadBalance
                         << endl;
     }
 
+    Info<<"=== end DLB-solve === "<<endl;
     return updateReactionRates(incomingSolutions);
 }
 

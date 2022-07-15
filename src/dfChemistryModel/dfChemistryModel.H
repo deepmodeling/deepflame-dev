@@ -204,10 +204,6 @@ public:
         RecvBuffer<ChemistrySolution>
         solveBuffer(RecvBuffer<ChemistryProblem>& problems);
 
-        //- Update the reaction rate of cell i
-        virtual void
-        updateReactionRate(const ChemistrySolution& solution, const label& i);
-
         //- Update the reaction rates from a list of solutions
         scalar updateReactionRates(const RecvBuffer<ChemistrySolution>& solutions);
 
@@ -216,6 +212,13 @@ public:
 
         template<class DeltaTType>
         scalar solve_loadBalance(const DeltaTType& deltaT);
+
+        Foam::autoPtr<Foam::OFstream> logFile(const word& name) const
+        {
+            mkDir(mesh_.time().path() / "loadBal" / this->group());
+            return autoPtr<OFstream>(new OFstream(
+                mesh_.time().path() / "loadBal" / this->group() / name));
+        }
 };
 
 

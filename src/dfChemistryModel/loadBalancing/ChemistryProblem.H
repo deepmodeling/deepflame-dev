@@ -43,16 +43,14 @@ struct ChemistryProblem
 
     ChemistryProblem() = default;
     ChemistryProblem(label nSpecie)
-        : c(nSpecie), Y(nSpecie), Ti(0), pi(0), rhoi(0), deltaTChem(0), deltaT(0), cellid(0)
+        : Y(nSpecie), Ti(0), pi(0), rhoi(0), deltaT(0), cellid(0)
     {
     }
 
-    scalarList c;
     scalarList Y;
     scalar Ti;
     scalar pi;
     scalar rhoi;
-    scalar deltaTChem;
     scalar deltaT;
     scalar cpuTime;
     label cellid;
@@ -73,12 +71,10 @@ struct ChemistryProblem
 static inline Ostream& operator<<(Ostream& os, const ChemistryProblem& p)
 {
 
-    os << p.c;
     os << p.Y;
     os << p.Ti;
     os << p.pi;
     os << p.rhoi;
-    os << p.deltaTChem;
     os << p.deltaT;
     os << p.cpuTime;
     os << p.cellid;
@@ -90,12 +86,10 @@ static inline Ostream& operator<<(Ostream& os, const ChemistryProblem& p)
 static inline Istream& operator>>(Istream& is, ChemistryProblem& p)
 {
 
-    is >> p.c;
     is >> p.Y;
     is >> p.Ti;
     is >> p.pi;
     is >> p.rhoi;
-    is >> p.deltaTChem;
     is >> p.deltaT;
     is >> p.cpuTime;
     is >> p.cellid;

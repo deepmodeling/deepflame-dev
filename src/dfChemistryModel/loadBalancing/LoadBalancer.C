@@ -57,7 +57,7 @@ Foam::LoadBalancer::operationsToInfo(
         }
         info.nProblems = timesToProblemCounts(times, problems);
 
-        label total = std::accumulate(info.nProblems.begin(), info.nProblems.end(), 0);
+        label total = std::accumulate(info.nProblems.begin(), info.nProblems.end(), 0); // counts of problems sent elsewhere
         info.nRemaining = problems.size() - total;
     }
 
