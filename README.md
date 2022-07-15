@@ -5,7 +5,7 @@ DeepFlame is a computational fluid dynamics suite for single or multiphase, lami
 [OpenFOAM-7](https://openfoam.org/version/7), [Cantera C++ lib 2.6.0](https://anaconda.org/conda-forge/libcantera-devel), [Torch C++ lib 1.11.0](https://pytorch.org/)
 
 ## Features
-- Native Cantera reader for chemical mechanisms in `.cti`, `.xml` or `.ymal` formats
+- Native Cantera reader for chemical mechanisms in `.cti`, `.xml` or `.yaml` formats
 - Full compatiblity with Cantera's `UnityLewis`, `Mix` and `Multi` transport models
 - Zero-dimensional constant pressure or constant volume reactor solver `df0DFoam`
 - Pressued-based low-Mach number reacting flow solver `dfLowMachFoam`
