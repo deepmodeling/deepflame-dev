@@ -13,10 +13,10 @@ fi
 
 
 cp bashrc.raw bashrc
-sed -i s#pwd#$PWD#g ./bashrc
-sed -i s#CONDA_PREFIX#$CONDA_PREFIX#g ./bashrc
-TORCH_DIR=$PWD/thirdParty/libtorch
-sed -i s#TORCH_DIR#$TORCH_DIR#g ./bashrc
+sed -i s#pwd#"$PWD"#g ./bashrc
+sed -i s#CONDA_PREFIX#"$CONDA_PREFIX"#g ~/.bashrc
+TORCH_DIR="$PWD"/thirdParty/libtorch
+sed -i s#TORCH_DIR#"$TORCH_DIR"#g ~/.bashrc
 
 
 
@@ -27,14 +27,14 @@ else
     mkdir -p src_orig/thermophysicalModels
     mkdir -p src_orig/lagrangian
     mkdir -p src_orig/regionModels
-    cp -r $FOAM_SRC/TurbulenceModels/compressible src_orig/TurbulenceModels
-    cp -r $FOAM_SRC/thermophysicalModels/basic src_orig/thermophysicalModels
-    cp -r $FOAM_SRC/thermophysicalModels/thermophysicalProperties src_orig/thermophysicalModels
-    cp -r $FOAM_SRC/lagrangian/intermediate src_orig/lagrangian
-    cp -r $FOAM_SRC/lagrangian/turbulence src_orig/lagrangian
-    cp -r $FOAM_SRC/regionModels/surfaceFilmModels src_orig/regionModels
+    cp -r "$FOAM_SRC"/TurbulenceModels/compressible src_orig/TurbulenceModels
+    cp -r "$FOAM_SRC"/thermophysicalModels/basic src_orig/thermophysicalModels
+    cp -r "$FOAM_SRC"/thermophysicalModels/thermophysicalProperties src_orig/thermophysicalModels
+    cp -r "$FOAM_SRC"/lagrangian/intermediate src_orig/lagrangian
+    cp -r "$FOAM_SRC"/lagrangian/turbulence src_orig/lagrangian
+    cp -r "$FOAM_SRC"/regionModels/surfaceFilmModels src_orig/regionModels
 fi
 
 
-source ./bashrc
+source ~/.bashrc
 ./Allwmake -j
