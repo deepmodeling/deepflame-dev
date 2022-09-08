@@ -31,6 +31,8 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh\
 && conda install -c cantera libcantera-devel \
 && rm Miniconda3-latest-Linux-x86_64.sh 
 
+CMD /bin/echo $CONDA_PREFIX
+
 RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcpu.zip\
 && unzip libtorch-cxx11-abi-shared-with-deps-1.11.0+cpu.zip -d thirdParty \
 && rm libtorch-cxx11-abi-shared-with-deps-1.11.0+cpu.zip 
