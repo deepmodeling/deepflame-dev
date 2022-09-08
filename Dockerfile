@@ -23,16 +23,6 @@ sudo apt-get -y install openfoam7 \
 
 
 
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh\
-&& sh Miniconda3-latest-Linux-x86_64.sh -b\
-&& source ~/miniconda3/etc/profile.d/conda.sh \
-&& conda create -n libcantera \
-&& conda activate libcantera \
-&& conda install -c cantera libcantera-devel \
-&& rm Miniconda3-latest-Linux-x86_64.sh 
-
-
-
 RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcpu.zip\
 && unzip libtorch-cxx11-abi-shared-with-deps-1.11.0+cpu.zip -d thirdParty \
 && rm libtorch-cxx11-abi-shared-with-deps-1.11.0+cpu.zip 
@@ -57,8 +47,15 @@ RUN wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-wit
 
 #RUN conda install -c cantera libcantera-devel
 
+RUN git clone --depth 1 https://github.com/JX278/deepflame-dev.git 
 
-RUN git clone --depth 1 https://github.com/Jiayang-X/deepflame-dev.git \ 
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh\
+&& sh Miniconda3-latest-Linux-x86_64.sh -b\
+&& source ~/miniconda3/etc/profile.d/conda.sh \
+&& conda create -n libcantera \
+&& conda activate libcantera \
+&& conda install -c cantera libcantera-devel \
+&& rm Miniconda3-latest-Linux-x86_64.sh \
 && cd deepflame-dev \
 && source ~/miniconda3/etc/profile.d/conda.sh \
 && source /opt/openfoam7/etc/bashrc \
