@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
       
       
-    container: ghcr.io/jx278/deepflame-dev
+    container: ghcr.io/jx278/deepflame-dev:latest
     steps:
      - name: Checkout
        uses: actions/checkout@v3
