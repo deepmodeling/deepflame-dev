@@ -75,8 +75,8 @@ jobs:
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ghcr.io/jx278/deepflame-dev
-          #tags: ${{ steps.meta.outputs.tags }}
+          #tags: ghcr.io/jx278/deepflame-dev
+          tags: ${{ steps.meta.outputs.tags }}
           
           #tags: ghcr.io/jiayang-x/deepflame-dev:gnu
           #labels: ${{ steps.meta.outputs.labels }}
