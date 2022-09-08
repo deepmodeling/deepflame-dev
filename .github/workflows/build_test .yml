@@ -1,0 +1,25 @@
+name: building test for each PR
+on: 
+  workflow_run:
+    workflows: ["Docker"]
+    types:
+      - completed
+jobs:
+  build_test:
+    runs-on: ubuntu-latest
+      
+      
+    container: ghcr.io/jiayang-x/deepflame-dev
+    steps:
+     - name: Checkout
+       uses: actions/checkout@v3
+     - name: Build
+       run: |
+        
+        ./Allwmake
+    
+      
+
+
+
+
