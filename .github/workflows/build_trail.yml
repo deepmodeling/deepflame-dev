@@ -35,6 +35,12 @@ jobs:
         sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -" 
         sudo add-apt-repository http://dl.openfoam.org/ubuntu 
         DEBIAN_FRONTEND=noninteractive 
+       shell: bash
+        
+     - name: install openfoam
+       env: 
+        DEBIAN_FRONTEND: noninteractive
+       run: |
         sudo apt-get update 
         sudo apt-get -y install openfoam7 
         sudo apt-get install --only-upgrade openfoam7 
