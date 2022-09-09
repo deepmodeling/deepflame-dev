@@ -35,7 +35,7 @@ jobs:
         sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -" 
         sudo add-apt-repository http://dl.openfoam.org/ubuntu 
         DEBIAN_FRONTEND=noninteractive 
-        sudo apt-get update
+        sudo apt-get update 
         sudo apt-get -y install openfoam7 
         sudo apt-get install --only-upgrade openfoam7 
        shell: bash
@@ -60,7 +60,8 @@ jobs:
         cd deepflame-dev \
         source ~/miniconda3/etc/profile.d/conda.sh \
         source /opt/openfoam7/etc/bashrc \
-        ./Allwmake 
+        ./Allwmake         
+       shell: bash
        
         
     
