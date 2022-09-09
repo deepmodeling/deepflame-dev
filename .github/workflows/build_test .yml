@@ -62,7 +62,7 @@ jobs:
         conda create -n libcantera 
         conda activate libcantera 
         conda install -c cantera libcantera-devel
-        . /root/OpenFOAM/OpenFOAM-7/etc/bashrc
+        . /root/OpenFOAM/7/etc/bashrc
         sh install.sh        
 
 
