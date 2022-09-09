@@ -27,6 +27,17 @@ jobs:
         apt-get install -y software-properties-common
        shell: bash
        
+     - name: openfoam7
+       env:
+        DEBIAN_FRONTEND: noninteractive
+       run: |
+        sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -" 
+        sudo add-apt-repository http://dl.openfoam.org/ubuntu
+        sudo apt-get update
+        export DEBIAN_FRONTEND=noninteractive 
+        apt-get -y install openfoam7  
+        source /opt/openfoam7/etc/bashrc 
+       
      - name: libtorch
        run: |
         wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcpu.zip
@@ -40,16 +51,7 @@ jobs:
         cd deepflame-dev
        shell: bash
 
-     - name: openfoam7
-       env:
-        DEBIAN_FRONTEND: noninteractive
-       run: |
-        sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -" 
-        sudo add-apt-repository http://dl.openfoam.org/ubuntu
-        sudo apt-get update
-        export DEBIAN_FRONTEND=noninteractive 
-        apt-get -y install openfoam7  
-        . /opt/openfoam7/etc/bashrc 
+     
         
      - name: cantera and build
        run: | 
