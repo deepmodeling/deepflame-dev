@@ -6,9 +6,7 @@ on:
     branches: [ "master" ]
 jobs:
   build_test:
-    runs-on: ubuntu-latest
-      
-      
+    runs-on: ubuntu-latest      
     container: 
       image: ubuntu:20.04
     steps:
@@ -62,12 +60,9 @@ jobs:
         conda create -n libcantera 
         conda activate libcantera 
         conda install -c cantera libcantera-devel
-        cd /github/home
-        ls
-        cd /opt/openfoam7/etc
-        ls
-        cd /root/OpenFOAM/-7
-        ls
+        . /opt/openfoam7/etc/bashrc
+        sh install.sh
+        
 
 
        
