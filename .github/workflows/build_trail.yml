@@ -18,7 +18,6 @@ jobs:
        env:
         DEBIAN_FRONTEND: noninteractive
        run: |
-        DEBIAN_FRONTEND=noninteractive
         apt install -y --no-install-recommends 
         apt-get update 
         apt-get install -y sudo
@@ -33,8 +32,7 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
        run: |
         sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -" 
-        sudo add-apt-repository http://dl.openfoam.org/ubuntu 
-        DEBIAN_FRONTEND=noninteractive 
+        sudo add-apt-repository http://dl.openfoam.org/ubuntu  
        shell: bash
         
      - name: install openfoam
@@ -42,9 +40,7 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
        run: |
         sudo apt-get update 
-        DEBIAN_FRONTEND=noninteractive
         sudo apt-get -y install openfoam7 
-        DEBIAN_FRONTEND=noninteractive
         sudo apt-get install --only-upgrade openfoam7 
        shell: bash
 
