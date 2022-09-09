@@ -23,6 +23,8 @@ jobs:
         apt-get install -y unzip
         apt-get install -y git
         apt-get install -y software-properties-common
+       shell: bash
+       
      - name: openfoam7
        run: 
         sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -" 
