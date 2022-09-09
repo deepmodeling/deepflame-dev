@@ -15,8 +15,7 @@ jobs:
      - name: Checkout
        uses: actions/checkout@v3
      - name: initialize
-       run: 
-        apt update  
+       run:   
         apt install -y --no-install-recommends 
         apt-get update 
         apt-get install -y sudo
