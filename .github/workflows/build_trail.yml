@@ -64,6 +64,7 @@ jobs:
         conda activate libcantera 
         conda install -c cantera libcantera-devel 
         rm Miniconda3-latest-Linux-x86_64.sh 
+       shell : bash
 
      - name: build
        run: |
