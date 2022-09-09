@@ -15,6 +15,8 @@ jobs:
      - name: Checkout
        uses: actions/checkout@v3
      - name: initialize
+       env:
+        DEBIAN_FRONTEND: noninteractive
        run: |
         DEBIAN_FRONTEND=noninteractive
         apt install -y --no-install-recommends 
@@ -27,6 +29,8 @@ jobs:
        shell: bash
        
      - name: openfoam7
+       env:
+        DEBIAN_FRONTEND: noninteractive
        run: |
         sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -" 
         sudo add-apt-repository http://dl.openfoam.org/ubuntu 
