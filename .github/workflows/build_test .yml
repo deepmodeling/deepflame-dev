@@ -58,8 +58,7 @@ jobs:
         conda create -n libcantera 
         conda activate libcantera 
         conda install -c cantera libcantera-devel
-        . install.sh         
-       
+        . install.sh        
 
 
        
