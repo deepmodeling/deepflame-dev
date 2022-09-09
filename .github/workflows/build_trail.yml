@@ -51,9 +51,12 @@ jobs:
         rm libtorch-cxx11-abi-shared-with-deps-1.11.0+cpu.zip 
        shell: bash
 
-     - name: libcantera and build
+     - name: clone
+       run: git clone https://github.com/JX278/deepflame-dev.git
+       shell: bash
+
+     - name: libcantera 
        run: |
-        git clone https://github.com/JX278/deepflame-dev.git
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
         sh Miniconda3-latest-Linux-x86_64.sh -b
         source ~/miniconda3/etc/profile.d/conda.sh 
@@ -61,11 +64,16 @@ jobs:
         conda activate libcantera 
         conda install -c cantera libcantera-devel 
         rm Miniconda3-latest-Linux-x86_64.sh 
+
+     - name: build
+       run: |
         cd deepflame-dev 
         source ~/miniconda3/etc/profile.d/conda.sh 
         source /opt/openfoam7/etc/bashrc 
         ./Allwmake         
        shell: bash
+
+
        
         
     
