@@ -14,7 +14,8 @@ jobs:
      - name: Checkout
        uses: actions/checkout@v3
      - name: Build
-       run: |
-        cd /opt
-        ls
+       run: source /opt/openfoam7/etc/bashrc
+        ./Allwmake
+       shell: bash
+        
     
