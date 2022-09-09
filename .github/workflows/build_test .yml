@@ -49,12 +49,13 @@ jobs:
         sudo apt-get update
         export DEBIAN_FRONTEND=noninteractive 
         apt-get -y install openfoam7  
+        source /opt/openfoam7/etc/bashrc
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
         sh Miniconda3-latest-Linux-x86_64.sh -b
         source ~/miniconda3/etc/profile.d/conda.sh 
         conda create -n libcantera 
         conda activate libcantera 
-        conda install -c cantera libcantera-devel 
+        conda install -c cantera libcantera-devel
         . install.sh         
        shell: bash
 
