@@ -65,8 +65,7 @@ jobs:
         conda create -n libcantera 
         conda activate libcantera 
         conda install -c cantera libcantera-devel 
-        rm Miniconda3-latest-Linux-x86_64.sh
-        echo $CONDA_PREFIX >> $GITHUB_ENV 
+        rm Miniconda3-latest-Linux-x86_64.sh 
         source /opt/openfoam7/etc/bashrc 
         ./Allwmake         
        shell: bash
