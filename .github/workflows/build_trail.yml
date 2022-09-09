@@ -52,7 +52,9 @@ jobs:
        shell: bash
 
      - name: clone
-       run: git clone https://github.com/JX278/deepflame-dev.git
+       run: |
+        git clone https://github.com/JX278/deepflame-dev.git
+        cd deepflame-dev
        shell: bash
 
      - name: libcantera 
@@ -67,8 +69,7 @@ jobs:
        shell : bash
 
      - name: build
-       run: |
-        cd deepflame-dev 
+       run: | 
         source ~/miniconda3/etc/profile.d/conda.sh 
         source /opt/openfoam7/etc/bashrc 
         ./Allwmake         
