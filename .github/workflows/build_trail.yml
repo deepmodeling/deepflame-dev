@@ -14,9 +14,10 @@ jobs:
      - name: Checkout
        uses: actions/checkout@v3
      - name: Build
-       run: . /opt/openfoam7/etc/bashrc
-        . /root/miniconda3/etc/profile.d/conda.sh
+       run: 
+        . /root/miniconda3/etc/profile.d/conda.sh 
         conda activate libcantera
+        . /opt/openfoam7/etc/bashrc
         ./Allwmake
        
         
