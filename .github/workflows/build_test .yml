@@ -49,7 +49,7 @@ jobs:
         sudo apt-get update
         export DEBIAN_FRONTEND=noninteractive 
         apt-get -y install openfoam7  
-        source /opt/openfoam7/etc/bashrc
+        source $HOME/OpenFOAM/OpenFOAM-7/etc/bashrc 
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
         sh Miniconda3-latest-Linux-x86_64.sh -b
         source ~/miniconda3/etc/profile.d/conda.sh 
