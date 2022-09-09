@@ -15,7 +15,7 @@ jobs:
      - name: Checkout
        uses: actions/checkout@v3
      - name: initialize
-       run:   
+       run: |
         apt install -y --no-install-recommends 
         apt-get update 
         apt-get install -y sudo
@@ -26,7 +26,7 @@ jobs:
        shell: bash
        
      - name: openfoam7
-       run: 
+       run: |
         sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -" 
         sudo add-apt-repository http://dl.openfoam.org/ubuntu 
         DEBIAN_FRONTEND=noninteractive 
@@ -36,14 +36,14 @@ jobs:
        shell: bash
 
      - name: libtorch
-       run: 
+       run: |
         wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcpu.zip\
         unzip libtorch-cxx11-abi-shared-with-deps-1.11.0+cpu.zip -d thirdParty \
         rm libtorch-cxx11-abi-shared-with-deps-1.11.0+cpu.zip 
        shell: bash
 
      - name: libcantera and build
-       run:
+       run: |
         git clone https://github.com/JX278/deepflame-dev.git
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh\
         sh Miniconda3-latest-Linux-x86_64.sh -b\
