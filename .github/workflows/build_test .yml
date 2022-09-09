@@ -60,8 +60,7 @@ jobs:
         conda create -n libcantera 
         conda activate libcantera 
         conda install -c cantera libcantera-devel
-        . /opt/openfoam7/etc/bashrc
-        sh install.sh
+        /bin/bash -c "source ~/miniconda3/etc/profile.d/conda.sh && conda activate && source /opt/openfoam7/etc/bashrc && . install.sh "
         
 
 
