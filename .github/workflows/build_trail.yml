@@ -15,4 +15,6 @@ jobs:
        uses: actions/checkout@v3
      - name: Build
        run: |
-        ls
+        conda activate libcantera
+        source /opt/openfoam7/etc/bashrc
+        ./Allwmake
