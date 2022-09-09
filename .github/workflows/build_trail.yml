@@ -40,9 +40,8 @@ jobs:
        env: 
         DEBIAN_FRONTEND: noninteractive
        run: | 
-        export DEBIAN_FRONTEND=noninteractive
-        sudo apt-get -y install openfoam7 
-        sudo apt-get install --only-upgrade openfoam7 
+        export DEBIAN_FRONTEND=noninteractive 
+        apt-get -y install openfoam7  
        shell: bash
 
      - name: libtorch
