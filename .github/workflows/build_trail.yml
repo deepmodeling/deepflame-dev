@@ -41,8 +41,7 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
        run: | 
         export DEBIAN_FRONTEND=noninteractive 
-        apt-get -y install openfoam7
-        source /opt/openfoam7/etc/bashrc  
+        apt-get -y install openfoam7  
        shell: bash
 
      - name: libtorch
@@ -66,7 +65,8 @@ jobs:
         conda create -n libcantera 
         conda activate libcantera 
         conda install -c cantera libcantera-devel 
-        ./Allwmake         
+        cd /opt/openfoam7
+        ls         
        shell: bash
 
 
