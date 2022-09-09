@@ -14,6 +14,16 @@ jobs:
     steps:
      - name: Checkout
        uses: actions/checkout@v3
+     - name: initialize
+       run: 
+        apt update  
+        apt install -y --no-install-recommends 
+        apt-get update 
+        apt-get install -y sudo
+        apt-get install -y wget
+        apt-get install -y unzip
+        apt-get install -y git
+        apt-get install -y software-properties-common
      - name: openfoam7
        run: 
         sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -" 
