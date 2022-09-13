@@ -37,7 +37,7 @@ Script=$0
 make="make"
 
 # Source tutorial run functions
-. $WM_PROJECT_DIR/RunFunctions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
 
 usage() {
     cat<<USAGE
