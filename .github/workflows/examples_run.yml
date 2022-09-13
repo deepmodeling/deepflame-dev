@@ -58,9 +58,9 @@ jobs:
 
      - name: Allrun
        run: |
-       cd examples 
-       ./Allrun
-       ./Allclean
+        cd examples 
+        ./Allrun
+        ./Allclean
 
 
        
