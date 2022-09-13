@@ -1,0 +1,26 @@
+Solvers
+===========
+
+
+
+
+
+df0DFoam
+-----------
+1.	Based on `rhoPIMPLEFoam <https://www.openfoam.com/documentation/guides/latest/api/dir_2025a31a9eeef68e4ac8ec5ebf0b177c.html>`_ solver and simplified specifically for a zero-dimension combustion model, which has no spatial resolution and does not contain any information on the fluid mechanics.
+2.	EEqn: h = u+P/rho, volume is constant. 
+3.	UEqn is removed, no advection.
+4.	Add YEqn: modified from `/combustion/reactingFoam/YEqn.H <https://www.openfoam.com/documentation/guides/latest/api/combustion_2reactingFoam_2YEqn_8H.html>`_.
+
+
+
+
+dfLowMachFoam
+-----------------
+
+dfHighSpeedFoam
+--------------------
+
+
+dfSprayFoam
+--------------
