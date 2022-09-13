@@ -16,11 +16,10 @@ Install `LibCantera <https://anaconda.org/conda-forge/libcantera-devel>`_ via `c
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------
 Use the commands below to install and activate LibCantera.
 
-``conda create -n libcantera``
-
-``conda activate libcantera``
-
-``conda install -c conda-forge boost fmt libcantera-devel``
+.. code-block:: bash
+    conda create -n libcantera
+    conda activate libcantera
+    conda install -c conda-forge boost fmt libcantera-devel
 
 .. Note:: Check your Miniconda3/envs/libcantera directory and make sure the install was successful (lib/ include/ etc. exist).
 
