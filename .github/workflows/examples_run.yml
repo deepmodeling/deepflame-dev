@@ -1,4 +1,4 @@
-name: building test for each PR
+name: Example Allrun
 on: 
   push:
     branches: [ "master" ]
