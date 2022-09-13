@@ -1,3 +1,3 @@
 Credits
 ============
-.. git-shortlog-n::
+.. git-shortlog::
