@@ -1,0 +1,204 @@
+#---------------------------------*- sh -*-------------------------------------
+# =========                 |
+# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \\    /   O peration     | Website:  https://openfoam.org
+#   \\  /    A nd           | Copyright (C) 2011-2022 OpenFOAM Foundation
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM.
+#
+#     OpenFOAM is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#     for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Script
+#     RunFunctions
+#
+# Description
+#     Miscellaneous functions for running tutorial cases
+#------------------------------------------------------------------------------
+
+isTest()
+{
+    for i in "$@"; do
+        if [ "$i" = "-test" ]
+        then
+            return 0
+        fi
+    done
+    return 1
+}
+
+getNumberOfProcessors()
+{
+    foamDictionary -entry numberOfSubdomains -value system/decomposeParDict
+}
+
+getApplication()
+{
+    foamDictionary -entry application -value system/controlDict
+}
+
+getSolver()
+{
+    foamDictionary -entry solver -value system/controlDict
+}
+
+runApplication()
+{
+    APP_RUN=
+    LOG_IGNORE=false
+    LOG_APPEND=false
+    LOG_SUFFIX=
+
+    # Parse options and executable
+    while [ $# -gt 0 ] && [ -z "$APP_RUN" ]; do
+        key="$1"
+        case "$key" in
+            -append|-a)
+                LOG_IGNORE=true
+                LOG_APPEND=true
+                ;;
+            -overwrite|-o)
+                LOG_IGNORE=true
+                ;;
+            -suffix|-s)
+                LOG_SUFFIX=".$2"
+                shift
+                ;;
+            *)
+                APP_RUN="$key"
+                APP_NAME="${key##*/}"
+                LOG_SUFFIX="${APP_NAME}${LOG_SUFFIX}"
+                ;;
+        esac
+
+        shift
+    done
+
+    if [ -f log.$LOG_SUFFIX ] && [ "$LOG_IGNORE" = "false" ]
+    then
+        echo "$APP_NAME already run on $PWD:" \
+             "remove log file 'log.$LOG_SUFFIX' to re-run"
+    else
+        echo "Running $APP_RUN on $PWD"
+        if [ "$LOG_APPEND" = "true" ]; then
+            $APP_RUN "$@" >> log.$LOG_SUFFIX 2>&1
+        else
+            $APP_RUN "$@" > log.$LOG_SUFFIX 2>&1
+        fi
+    fi
+}
+
+runParallel()
+{
+    APP_RUN=
+    LOG_IGNORE=false
+    LOG_APPEND=false
+    LOG_SUFFIX=
+    nProcs=$(getNumberOfProcessors)
+
+    # Parse options and executable
+    while [ $# -gt 0 ] && [ -z "$APP_RUN" ]; do
+        key="$1"
+        case "$key" in
+            -append|-a)
+                LOG_IGNORE=true
+                LOG_APPEND=true
+                ;;
+            -overwrite|-o)
+                LOG_IGNORE=true
+                ;;
+            -suffix|-s)
+                LOG_SUFFIX=".$2"
+                shift
+                ;;
+            -np|-n)
+                nProcs="$2"
+                shift
+                ;;
+            *)
+                APP_RUN="$key"
+                APP_NAME="${key##*/}"
+                LOG_SUFFIX="${APP_NAME}${LOG_SUFFIX}"
+                ;;
+        esac
+
+        shift
+    done
+
+    if [ -f log.$LOG_SUFFIX ] && [ "$LOG_IGNORE" = "false" ]
+    then
+        echo "$APP_NAME already run on $PWD:" \
+             "remove log file 'log.$LOG_SUFFIX' to re-run"
+    else
+        echo "Running $APP_RUN in parallel on $PWD using $nProcs processes"
+        if [ "$LOG_APPEND" = "true" ]; then
+            ( mpirun -np $nProcs $APP_RUN -parallel "$@" < /dev/null >> log.$LOG_SUFFIX 2>&1 )
+        else
+            ( mpirun -np $nProcs $APP_RUN -parallel "$@" < /dev/null > log.$LOG_SUFFIX 2>&1 )
+        fi
+    fi
+}
+
+compileApplication()
+{
+    echo "Compiling $1 application"
+    wmake $1
+}
+
+cloneCase()
+{
+    from=$1
+    to=$2
+
+    if [ ! -d $from ]
+    then
+        echo "Case $from does not exist"
+        return 1
+    elif [ -d $to ]
+    then
+        echo "Case already cloned: remove case directory $to to clone"
+        return 1
+    else
+        echo "Cloning $to case from $from"
+        mkdir -p $to
+        for f in 0 system constant
+        do
+            cp -R $from/$f $to
+        done
+        return 0
+    fi
+}
+
+cloneMesh()
+{
+    from=$1/constant/polyMesh
+    to=$2/constant/polyMesh
+
+    if [ ! -d $from ]
+    then
+        echo "Mesh $from does not exist"
+        return 1
+    elif [ -d $to ]
+    then
+        echo "Mesh already cloned: remove mesh directory $to to clone"
+        return 1
+    else
+        echo "Cloning $to mesh from $from"
+        cp -pr $from $to
+        return 0
+    fi
+}
+
+#------------------------------------------------------------------------------
