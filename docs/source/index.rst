@@ -47,7 +47,7 @@ for machine learning assisted reacting flow simulations. It is also has the scop
    :caption: Project Details
 
    
-   credits
+   contributors
    communication
 
 
