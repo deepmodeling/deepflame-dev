@@ -17,7 +17,7 @@ If `OpenFOAM-7 <https://openfoam.org/version/7/>`_ is not installed yet, please 
 
     source $HOME/OpenFOAM/OpenFOAM-7/etc/bashrc
 
-**Install [LibCantera] (https://anaconda.org/conda-forge/libcantera-devel) via `conda <https://docs.conda.io/en/latest/miniconda.html#linux-installers>`_**
+**Install LibCantera via conda**
 
 First install Miniconda or Anaconda through commands:
 
@@ -50,8 +50,6 @@ Use the commands below to install and activate LibCantera.
 Install DeepFlame
 -----------------------
 **Clone the DeepFlame Repository**
-
-Clone the repository to your own device.
 
 .. code-block:: bash
 
