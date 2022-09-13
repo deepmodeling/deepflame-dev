@@ -6,8 +6,8 @@ Installation
 The installation of DeepFlame is simple and requires `OpenFOAM-7 <https://openfoam.org/version/7/>`_, `LibCantera <https://anaconda.org/conda-forge/libcantera-devel>`_, and `Libtorch <https://pytorch.org/>`_.
 
 
-Install OpenFOAM-7
------------------------
+**Install OpenFOAM-7**
+
 If `OpenFOAM-7 <https://openfoam.org/version/7/>`_ is not installed yet, please follow the instruction given on the official website. After installation, source your OpenFOAM via the default path below (or your own path for OpenFOAM bashrc).
 
 ``source $HOME/OpenFOAM/OpenFOAM-7/etc/bashrc``
