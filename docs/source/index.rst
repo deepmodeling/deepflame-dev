@@ -24,7 +24,6 @@ for machine learning assisted reacting flow simulations. It is also has the scop
    :caption: User Guide
    :glob:
 
-   get_started/index
    installation/index
    quickstart/index
    solvers/index
