@@ -1,2 +1,3 @@
 Credits
 ============
+.. git-shortlog-authors::
