@@ -17,9 +17,10 @@ If `OpenFOAM-7 <https://openfoam.org/version/7/>`_ is not installed yet, please 
 
     source $HOME/OpenFOAM/OpenFOAM-7/etc/bashrc
 
-**Install `LibCantera <https://anaconda.org/conda-forge/libcantera-devel>`_ via `conda <https://docs.conda.io/en/latest/miniconda.html#linux-installers>`_**
+**Install [LibCantera] (https://anaconda.org/conda-forge/libcantera-devel) via `conda <https://docs.conda.io/en/latest/miniconda.html#linux-installers>`_**
 
 First install Miniconda or Anaconda through commands:
+
 .. code-block:: bash
 
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
