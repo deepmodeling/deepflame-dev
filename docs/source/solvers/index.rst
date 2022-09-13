@@ -1,16 +1,21 @@
 Solvers
 ===========
 
+df0DFoam
+-----------
 
+.. _My target:
 
-.. toctree::
-   :maxdepth: 3
-   :numbered:
-   :glob:
-    
-    df0DFoam
-    dfLowMachFoam
-    dfHighSpeedFoam
-    dfSprayFoam
+df0DFoam
+~~~~~~~~~~~~~~~~
+
+dfLowMachFoam
+---------------
+
+dfHighSpeedFoam
+--------------------
+
+dfSprayFoam
+---------------
 
 
