@@ -1,8 +1,9 @@
+#!/bin/sh
 #------------------------------------------------------------------------------
 # =========                 |
 # \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
 #  \\    /   O peration     | Website:  https://openfoam.org
-#   \\  /    A nd           | Copyright (C) 2011-2020 OpenFOAM Foundation
+#   \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
 #    \\/     M anipulation  |
 #------------------------------------------------------------------------------
 # License
@@ -79,7 +80,7 @@ logReportDir()
 
     cd $1 || return 1
 
-    logs=`find . -name "log.*" ! -name "log.foamDictionary"`
+    logs=`find . -name "log.*"`
     [ -n "$logs" ] || return 0
 
     retVal=0
@@ -111,5 +112,3 @@ done
 find . -name "log.*" -exec cat {} \; >> logs
 
 exit $retVal
-
-#------------------------------------------------------------------------------
