@@ -17,6 +17,7 @@ Install `LibCantera <https://anaconda.org/conda-forge/libcantera-devel>`_ via `c
 Use the commands below to install and activate LibCantera.
 
 .. code-block:: bash
+    
     conda create -n libcantera
     conda activate libcantera
     conda install -c cantera libcantera-devel
