@@ -60,9 +60,9 @@ int main(int argc, char *argv[])
     #include "createFields.H"
     #include "createRhoUfIfPresent.H"
 
-    double time_monitor_flow;
-    double time_monitor_chem;
-    double time_monitor_Y;
+    double time_monitor_flow=0;
+    double time_monitor_chem=0;
+    double time_monitor_Y=0;
     clock_t start, end;
 
     turbulence->validate();

@@ -57,10 +57,10 @@ int main(int argc, char *argv[])
     #include "createFields.H"
     #include "createTimeControls.H"
 
-    double time_monitor_flow;
-    double time_monitor_chem;
-    double time_monitor_Y;
-    double time_monitor_AMR;
+    double time_monitor_flow=0;
+    double time_monitor_chem=0;
+    double time_monitor_Y=0;
+    double time_monitor_AMR=0;
     clock_t start, end;
 
     turbulence->validate();
