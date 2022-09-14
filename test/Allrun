@@ -1,0 +1,114 @@
+#!/bin/sh
+#------------------------------------------------------------------------------
+# =========                 |
+# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \\    /   O peration     | Website:  https://openfoam.org
+#   \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM.
+#
+#     OpenFOAM is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#     for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Script
+#     Allrun
+#
+# Description
+#
+#------------------------------------------------------------------------------
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Source tutorial run functions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+
+# logReport <logfile>
+# Extracts useful info from log file
+logReport()
+{
+    caseName=`dirname $1 | sed s/"\(.*\)\.\/"/""/g`
+    app=`echo $1 | sed s/"\(.*\)log\."/""/g`
+    appAndCase="Application $app - case $caseName"
+
+    fatalError=`grep "FOAM FATAL" $1`
+    UxSS=`grep -E "Ux[:| ]*solution singularity" $1`
+    UySS=`grep -E "Uy[:| ]*solution singularity" $1`
+    UzSS=`grep -E "Uz[:| ]*solution singularity" $1`
+    completed=`grep -E "^[\t ]*[eE]nd" $1`
+
+    if [ "$fatalError" ]
+    then
+        echo "$appAndCase: ** FOAM FATAL ERROR **"
+        return 1
+    elif [ "$UxSS" -a "$UySS" -a "$UzSS" ]
+    then
+        echo "$appAndCase: ** Solution singularity **"
+        return 1
+    elif [ "$completed" ]
+    then
+        completionTime=`tail -10 $log | grep Execution | cut -d= -f2 | sed 's/^[ \t]*//'`
+        if [ "$completionTime" ]
+        then
+            completionTime="in $completionTime"
+        fi
+        echo "$appAndCase: completed $completionTime"
+        return 0
+    else
+        echo "$appAndCase: unconfirmed completion"
+        return 1
+    fi
+}
+
+
+# logReportDir <directory>
+# Extracts useful info from all log files in a directory
+logReportDir()
+(
+    [ -d $1 ] || return 0
+
+    cd $1 || return 1
+
+    logs=`find . -name "log.*"`
+    [ -n "$logs" ] || return 0
+
+    retVal=0
+
+    for log in `echo $logs | xargs ls -rt`
+    do
+        logReport $log >> ../testLoopReport || retVal=1
+    done
+    echo "" >> ../testLoopReport
+
+    return $retVal
+)
+
+
+# Recursively run all cases
+foamRunTutorials -test -skipFirst
+
+
+# Analyse all log files
+rm -f testLoopReport && touch testLoopReport
+
+retVal=0
+
+for appDir in *
+do
+    logReportDir $appDir || retVal=1
+done
+
+find . -name "log.*" -exec cat {} \; >> logs
+
+exit $retVal
