@@ -1,3 +1,0 @@
-Solver: dfLowMachFoam
-==================
-This section contains features and functions in dfLowMachFoam.

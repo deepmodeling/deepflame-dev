@@ -1,3 +1,0 @@
-Solver: df0DFoam
-==================
-This section contains features and functions in df0DFoam.

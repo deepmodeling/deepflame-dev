@@ -1,5 +1,0 @@
-Credits
-============
-.. git-shortlog-authors::   
-
-.. grab authors from github
