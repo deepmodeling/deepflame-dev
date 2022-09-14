@@ -23,11 +23,7 @@ jobs:
         apt-get install -y unzip
         apt-get install -y git
         apt-get install -y software-properties-common
-        apt-get install -y openmpi-bin 
-        apt-get install -y openmpi-dev 
-        apt-get install -y openmpi-common 
-        apt-get install -y openmpi-doc 
-        apt-get install -y libopenmpi-dev
+        apt-get install -y mpich
  
        
      - name: openfoam7
