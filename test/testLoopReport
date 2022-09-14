@@ -1,20 +1,11 @@
 Application blockMesh - case zeroD_cubicReactor/H2/cvodeSolver: completed 
-Application df0DFoam - case zeroD_cubicReactor/H2/cvodeSolver: completed in 0.29 s  ClockTime 
-
-Application blockMesh - case oneD_detonationH2: completed 
-Application setFields - case oneD_detonationH2: completed 
-Application decomposePar - case oneD_detonationH2: completed 
-Application mpirun - case oneD_detonationH2: completed in 0.06 s  ClockTime 
-Application blockMesh - case oneD_reactiveShockTube: completed 
-Application setFields - case oneD_reactiveShockTube: completed 
-Application decomposePar - case oneD_reactiveShockTube: completed 
-Application mpirun - case oneD_reactiveShockTube: completed in 0.05 s  ClockTime 
+Application df0DFoam - case zeroD_cubicReactor/H2/cvodeSolver: completed in 0.28 s  ClockTime 
 
 Application blockMesh - case oneD_freelyPropagation/H2/cvodeSolver: completed 
 Application decomposePar - case oneD_freelyPropagation/H2/cvodeSolver: completed 
-Application mpirun - case oneD_freelyPropagation/H2/cvodeSolver: completed in 5.7 s  ClockTime 
+Application mpirun - case oneD_freelyPropagation/H2/cvodeSolver: completed in 5.65 s  ClockTime 
 
 Application blockMesh - case aachenBomb: completed 
 Application decomposePar - case aachenBomb: completed 
-Application mpirun - case aachenBomb: completed in 32.95 s  ClockTime 
+Application mpirun - case aachenBomb: completed in 32.24 s  ClockTime 
 
