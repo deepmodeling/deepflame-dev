@@ -2,7 +2,7 @@ Solvers
 ===========
 
 
-`df0DFoam`_
+-[df0DFoam](df0DFoam)
 ~~~~~~~~~~~~~~~~
 
 dfLowMachFoam
