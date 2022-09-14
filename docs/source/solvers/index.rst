@@ -5,3 +5,4 @@ Solvers
    :maxdepth: 1
 
    df0DFoam
+   dfLowMachFoam
