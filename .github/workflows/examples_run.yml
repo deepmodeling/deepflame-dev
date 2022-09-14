@@ -58,7 +58,7 @@ jobs:
 
      - name: Allrun
        run: 
-        /bin/bash -c "cd test && source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc && ./Allrun && ./Allclean "
+        /bin/bash -c "cd test && source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc && source ~/deepflame-dev/bashrc && ./Allrun "
         
 
        
