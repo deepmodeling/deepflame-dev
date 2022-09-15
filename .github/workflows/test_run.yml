@@ -1,9 +1,9 @@
 name: Test Allrun
 on: 
   push:
-    branches: [ "master" ]
+    branches: [ "Test" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "Test" ]
 jobs:
   build_test:
     runs-on: ubuntu-latest      
@@ -18,12 +18,8 @@ jobs:
        run: |
         apt install -y --no-install-recommends 
         apt-get update 
-        apt-get install -y sudo
-        apt-get install -y wget
-        apt-get install -y unzip
-        apt-get install -y git
-        apt-get install -y software-properties-common
-        apt-get install -y mpich
+        apt-get install -y sudo && wget && unzip && git && software-properties-common 
+        apt-get install -y openmpi-bin && mpich && libopenmpi-dev
  
        
      - name: openfoam7
@@ -34,7 +30,7 @@ jobs:
         sudo add-apt-repository http://dl.openfoam.org/ubuntu
         sudo apt-get update
         export DEBIAN_FRONTEND=noninteractive 
-        apt-get -y install openfoam7  
+        apt-get -y install openfoam7 -- no-install-recommends
 
      
        
