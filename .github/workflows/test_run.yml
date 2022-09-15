@@ -55,13 +55,13 @@ jobs:
 
      
         
-     - name: cantera and build
+     - name: cantera
        run:  
-        /bin/bash -c "wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && sh Miniconda3-latest-Linux-x86_64.sh -b && source ~/miniconda3/etc/profile.d/conda.sh && conda create -n libcantera && conda activate libcantera && conda install -c cantera libcantera-devel && source /opt/openfoam7/etc/bashrc &&  . install.sh "
+        /bin/bash -c "wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && sh Miniconda3-latest-Linux-x86_64.sh -b && source ~/miniconda3/etc/profile.d/conda.sh && conda create -n libcantera && conda activate libcantera && conda install -c cantera libcantera-devel"
 
      - name: Allrun
        run: 
-        /bin/bash -c "cd test && source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc && source /__w/deepflame-dev/deepflame-dev/bashrc && ./Allrun"
+        /bin/bash -c "source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc && . install.sh && cd test && source /__w/deepflame-dev/deepflame-dev/bashrc && ./Allrun"
         
 
        
