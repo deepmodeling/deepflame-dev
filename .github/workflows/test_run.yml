@@ -35,9 +35,9 @@ jobs:
         sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -" 
         sudo add-apt-repository http://dl.openfoam.org/ubuntu
         sudo apt-get update
-        export DEBIAN_FRONTEND=noninteractive 
-        apt-get -y install openfoam7 -- no-install-recommends
-
+        export DEBIAN_FRONTEND=noninteractive
+        apt install -y --no-install-recommends  
+        apt-get -y install openfoam7 
      
        
      - name: libtorch
