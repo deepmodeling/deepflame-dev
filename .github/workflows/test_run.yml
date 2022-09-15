@@ -19,7 +19,8 @@ jobs:
         apt install -y --no-install-recommends 
         apt-get update 
         apt-get install -y sudo && wget && unzip && git && software-properties-common
-        apt-get install -y openmpi-bin && libopenmpi-dev
+        apt-get install -y openmpi-bin
+        sudo apt-get install libopenmpi-dev
  
        
      - name: openfoam7
