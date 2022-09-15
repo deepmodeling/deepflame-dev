@@ -18,8 +18,8 @@ jobs:
        run: |
         apt install -y --no-install-recommends 
         apt-get update 
-        apt-get install -y sudo && wget && unzip && git && software-properties-common 
-        apt-get install -y openmpi-bin && mpich && libopenmpi-dev
+        apt-get install -y sudo && wget && unzip && git && software-properties-common && libmpich-dev && mpich
+        apt-get install -y openmpi-bin && libopenmpi-dev
  
        
      - name: openfoam7
