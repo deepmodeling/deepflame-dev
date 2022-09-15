@@ -26,6 +26,7 @@ jobs:
         apt-get install -y mpich
         apt-get install -y openmpi-bin
         sudo apt-get install libopenmpi-dev
+        apt-get install -y libscalapack-mpi-dev
  
        
      - name: openfoam7
