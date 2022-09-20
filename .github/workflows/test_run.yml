@@ -1,9 +1,7 @@
 name: Test Allrun
 on: 
   push:
-    branches: [ "Test" ]
   pull_request:
-    branches: [ "Test" ]
 jobs:
   build_test:
     runs-on: ubuntu-latest      
@@ -66,11 +64,13 @@ jobs:
         OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1 
         OMPI_MCA_btl_vader_single_copy_mechanism: none
        run: 
-        /bin/bash -c "source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc && . install.sh && cd test && source /__w/deepflame-dev/deepflame-dev/bashrc && ./Allrun"
+        /bin/bash -c "source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc && . install.sh && cd test && source /__w/deepflame-dev/deepflame-dev/bashrc && ./Allrun && cmake -B build && cmake --build build && cd build && ctest"
         
 
-       
+
         
+        
+
     
 
 
