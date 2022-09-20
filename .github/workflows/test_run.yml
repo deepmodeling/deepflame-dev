@@ -16,15 +16,7 @@ jobs:
        run: |
         apt install -y --no-install-recommends 
         apt-get update 
-        apt-get install -y sudo 
-        apt-get install -y wget 
-        apt-get install -y unzip  
-        apt-get install -y git  
-        apt-get install -y software-properties-common
-        apt-get install -y mpich
-        apt-get install -y openmpi-bin
-        sudo apt-get install libopenmpi-dev
-        apt-get install -y libscalapack-mpi-dev
+        apt-get install -y sudo wget unzip git software-properties-common make cmake g++ mpich openmpi-bin libopenmpi-dev libscalapack-mpi-dev 
  
        
      - name: openfoam7
