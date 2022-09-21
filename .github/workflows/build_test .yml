@@ -4,7 +4,7 @@ on:
   pull_request:
 jobs:
   build_test:
-    runs-on: ubuntu-latest      
+    runs-on: self-hosted      
     container: 
       image: ubuntu:20.04
     steps:
