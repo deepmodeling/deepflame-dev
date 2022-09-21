@@ -35,12 +35,22 @@ From v0.1.0:
 ## How to install
 The installation of DeepFlame is simple and requires [OpenFOAM-7](https://openfoam.org/version/7), [LibCantera](https://anaconda.org/conda-forge/libcantera-devel) and [LibTorch](https://pytorch.org/) . 
 
-1. Install [OpenFOAM-7](https://openfoam.org/version/7) (if not already installed)
-2. Source your OpenFOAM via the default path below (or your own path for OpenFOAM bashrc)
+### 1. Install [OpenFOAM-7](https://openfoam.org/version/7) (if not already installed)
+  
+  Quick install (for Ubuntu no later than 20.04): 
+```
+sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -"
+sudo add-apt-repository http://dl.openfoam.org/ubuntu
+sudo apt-get update
+sudo apt-get -y install openfoam7
+```
+  OpenFOAM 7 and ParaView 5.6.0 will be installed in the /opt directory.
+
+### 2. Source your OpenFOAM via the default path below (or your own path for OpenFOAM bashrc)
 ```
 source $HOME/OpenFOAM/OpenFOAM-7/etc/bashrc 
 ```
-3. Install [LibCantera](https://anaconda.org/conda-forge/libcantera-devel) via [conda](https://docs.conda.io/en/latest/miniconda.html#linux-installers)
+### 3. Install [LibCantera](https://anaconda.org/conda-forge/libcantera-devel) via [conda](https://docs.conda.io/en/latest/miniconda.html#linux-installers)
 ```
 conda create -n libcantera
 
@@ -50,19 +60,19 @@ conda install -c cantera libcantera-devel
 ```
 Note: Check your Miniconda3/envs/libcantera directory and make sure the install was successful (lib/ include/ etc. exist).
 
-4. Clone the [DeepFlame repository](https://github.com/deepmodeling/deepflame-dev)
+### 4. Clone the [DeepFlame repository](https://github.com/deepmodeling/deepflame-dev)
 ```
 git clone https://github.com/deepmodeling/deepflame-dev.git
 
 cd deepflame-dev
 ```
-5. Install precompiled [LibTorch](https://pytorch.org/) 
+### 5. Install precompiled [LibTorch](https://pytorch.org/) 
 ```
 wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcpu.zip
 
 unzip libtorch-cxx11-abi-shared-with-deps-1.11.0+cpu.zip -d thirdParty
 ```
-6. Install DeepFlame
+### 6. Install DeepFlame
 ```
 . install.sh
 ```

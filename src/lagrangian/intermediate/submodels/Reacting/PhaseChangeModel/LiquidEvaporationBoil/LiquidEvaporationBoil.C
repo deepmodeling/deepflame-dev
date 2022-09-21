@@ -334,6 +334,7 @@ Foam::scalar Foam::LiquidEvaporationBoil<CloudType>::dh
         }
         case (parent::etEnthalpyDifference):
         {
+            this->owner().thermo().carrier().calcH(TDash, p);
             scalar hc = this->owner().composition().carrier().Ha(idc, p, TDash);
             scalar hp = liquids_.properties()[idl].h(p, TDash);
 
