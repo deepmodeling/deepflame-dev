@@ -4,15 +4,18 @@
    \\    /   O peration     | Website:  https://openfoam.org
     \\  /    A nd           | Version:  7
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+Description
+    Writes out values of fields from cells nearest to specified locations.
+
 \*---------------------------------------------------------------------------*/
-FoamFile
-{
-    version     2.0;
-    format      ascii;
-    class       dictionary;
-    location    "constant";
-    object      thermophysicalProperties;
-}
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#includeEtc "caseDicts/postProcessing/probes/probes.cfg"
+
+fields (T);// Writes out T
+probeLocations
+(
+    (0.0025 0.0025 0.0025)
+);
 
 // ************************************************************************* //

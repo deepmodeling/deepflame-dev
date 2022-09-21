@@ -16,7 +16,7 @@ FoamFile
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 chemistry           on;
-CanteraMechanismFile "ES80_H2-7-16.yaml";
+CanteraMechanismFile "drm19.yaml";
 transportModel "UnityLewis";
 odeCoeffs
 {

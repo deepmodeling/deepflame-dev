@@ -11,7 +11,8 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-file(COPY ./df0DFoam/zeroD_cubicReactor/H2/cvodeSolver/postProcessing/probes/0/T DESTINATION .)
+file(COPY ./df0DFoam/zeroD_cubicReactor/H2/cvodeSolver/postProcessing/probes/0/T DESTINATION 0DH2)
+file(COPY ./df0DFoam/zeroD_cubicReactor/CH4/cvodeSolver/postProcessing/probes/0/T DESTINATION 0DCH4)
 enable_testing()
 
 add_executable(

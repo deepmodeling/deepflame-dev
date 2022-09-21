@@ -11,27 +11,11 @@ FoamFile
     format      ascii;
     class       dictionary;
     location    "constant";
-    object      thermophysicalProperties;
+    object      turbulenceProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-chemistry           on;
-CanteraMechanismFile "ES80_H2-7-16.yaml";
-transportModel "UnityLewis";
-odeCoeffs
-{
-    // "relTol"   1e-6;
-    // "absTol"   1e-10;
-}
-inertSpecie        "N2";
-zeroDReactor
-{
-    constantProperty "pressure";
-}
-loadbalancing
-{
-        active  false;
-        //log   true;
-}
+simulationType  laminar;
+
 
 // ************************************************************************* //

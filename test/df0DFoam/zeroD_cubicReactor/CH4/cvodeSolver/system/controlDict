@@ -10,28 +10,48 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    location    "constant";
-    object      thermophysicalProperties;
+    location    "system";
+    object      controlDict;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-chemistry           on;
-CanteraMechanismFile "ES80_H2-7-16.yaml";
-transportModel "UnityLewis";
-odeCoeffs
+application     dfLMFoam;
+
+startFrom       startTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime        0.004;
+
+deltaT          1e-06;
+
+maxDeltaT       1e-03;
+
+adjustTimeStep  off;
+
+writeControl    runTime;
+
+writeInterval   0.01;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+
+// writePrecision    6;
+
+writeCompression on;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable true;
+
+functions
 {
-    // "relTol"   1e-6;
-    // "absTol"   1e-10;
-}
-inertSpecie        "N2";
-zeroDReactor
-{
-    constantProperty "pressure";
-}
-loadbalancing
-{
-        active  false;
-        //log   true;
+  # includeFunc probes
 }
 
 // ************************************************************************* //

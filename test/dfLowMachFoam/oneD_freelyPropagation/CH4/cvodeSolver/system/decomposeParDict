@@ -10,28 +10,36 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    location    "constant";
-    object      thermophysicalProperties;
+    location    "system";
+    object      decomposeParDict;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-chemistry           on;
-CanteraMechanismFile "ES80_H2-7-16.yaml";
-transportModel "UnityLewis";
-odeCoeffs
+numberOfSubdomains 2;
+
+method          scotch;
+
+simpleCoeffs
 {
-    // "relTol"   1e-6;
-    // "absTol"   1e-10;
+    n               (4 1 1);
+    delta           0.001;
 }
-inertSpecie        "N2";
-zeroDReactor
+
+hierarchicalCoeffs
 {
-    constantProperty "pressure";
+    n               (1 1 1);
+    delta           0.001;
+    order           xyz;
 }
-loadbalancing
+
+manualCoeffs
 {
-        active  false;
-        //log   true;
+    dataFile        "";
 }
+
+distributed     no;
+
+roots           ( );
+
 
 // ************************************************************************* //
