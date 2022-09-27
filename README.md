@@ -1,20 +1,24 @@
-# DeepFlame v0.3.0
-DeepFlame is a computational fluid dynamics suite for single or multiphase, laminar or turbulent reacting flows at all speeds with machine learning capabilities. It aims to provide an open-source platform bringing together the individual strengths of [OpenFOAM](https://openfoam.org), [Cantera](https://cantera.org) and [pyTorch](https://pytorch.org/) libraries for machine learning assisted reacting flow simulations. It is also has the scope to incorporate next-generation heterogenous supercomputing and AI acceleration infrustructures such as GPU and FPGAs.  
+# DeepFlame v0.4.0
+DeepFlame is a computational fluid dynamics suite for single or multiphase, laminar or turbulent reacting flows at all speeds with machine learning capabilities. It aims to provide an open-source platform bringing together the individual strengths of [OpenFOAM](https://openfoam.org), [Cantera](https://cantera.org) and [pyTorch](https://pytorch.org/) libraries for machine learning assisted reacting flow simulations. It is also has the scope to incorporate next-generation heterogenous supercomputing and AI acceleration infrustructures such as GPU and FPGAs.
 
 ## Dependencies
 [OpenFOAM-7](https://openfoam.org/version/7), [Cantera C++ lib 2.6.0](https://anaconda.org/conda-forge/libcantera-devel), [Torch C++ lib 1.11.0](https://pytorch.org/)
 
 ## Features
-New in v0.3.0:
+New in v0.4.0 (2022/09/26):
+- Adapt combustion library from OpenFOAM into DeepFlame
+- laminar; EDC; PaSR combustion models
+
+New in v0.3.0 (2022/08/29):
 - 1/2/3D adaptive mesh refinement
 - Add Sigma/dynSmag LES turbulence models
 - Add functionObjects/field library
 - New example reactiveShockTube for dfHighSpeedFoam
 
-New in v0.2.0:
+New in v0.2.0 (2022/07/25):
 - Dynamic load balancing for chemistry solver
 
-From v0.1.0:
+From v0.1.0 (2022/06/15):
 - Native Cantera reader for chemical mechanisms in `.cti`, `.xml` or `.yaml` formats
 - Full compatiblity with Cantera's `UnityLewis`, `Mix` and `Multi` transport models
 - Zero-dimensional constant pressure or constant volume reactor solver `df0DFoam`
@@ -23,7 +27,7 @@ From v0.1.0:
 - Two-phase Lagrangian/Euler spray reacting flow solver `dfSprayFoam`
 - Cantera's native SUNDIALS CVODE solver for chemical reaction rate evaluation
 - Torch's tensor operation functionality for neutral network I/O and calculation
-- Interface for DNN model to obtain chemical reaction rates 
+- Interface for DNN model to obtain chemical reaction rates
 - Multiple example and tutorial cases with `Allrun` and `Allclean` scripts
   - 0D Perfectly Stirred Reactor
   - 1D Freely Propagating Premixed Flame
@@ -33,11 +37,11 @@ From v0.1.0:
   - 3D Aachen Bomb Spray Flame
 
 ## How to install
-The installation of DeepFlame is simple and requires [OpenFOAM-7](https://openfoam.org/version/7), [LibCantera](https://anaconda.org/conda-forge/libcantera-devel) and [LibTorch](https://pytorch.org/) . 
+The installation of DeepFlame is simple and requires [OpenFOAM-7](https://openfoam.org/version/7), [LibCantera](https://anaconda.org/conda-forge/libcantera-devel) and [LibTorch](https://pytorch.org/) .
 
 ### 1. Install [OpenFOAM-7](https://openfoam.org/version/7) (if not already installed)
-  
-  Quick install (for Ubuntu no later than 20.04): 
+
+  Quick install (for Ubuntu no later than 20.04):
 ```
 sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -"
 sudo add-apt-repository http://dl.openfoam.org/ubuntu
@@ -48,7 +52,7 @@ sudo apt-get -y install openfoam7
 
 ### 2. Source your OpenFOAM via the default path below (or your own path for OpenFOAM bashrc)
 ```
-source $HOME/OpenFOAM/OpenFOAM-7/etc/bashrc 
+source $HOME/OpenFOAM/OpenFOAM-7/etc/bashrc
 ```
 ### 3. Install [LibCantera](https://anaconda.org/conda-forge/libcantera-devel) via [conda](https://docs.conda.io/en/latest/miniconda.html#linux-installers)
 ```
@@ -66,7 +70,7 @@ git clone https://github.com/deepmodeling/deepflame-dev.git
 
 cd deepflame-dev
 ```
-### 5. Install precompiled [LibTorch](https://pytorch.org/) 
+### 5. Install precompiled [LibTorch](https://pytorch.org/)
 ```
 wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcpu.zip
 
@@ -81,7 +85,7 @@ Note: Some compiling issues may happen due to system compatability. Instead of u
 ## Running DeepFlame examples
 1. Source your OpenFOAM, for example (depends on your OpenFOAM path):
 ```
-source $HOME/OpenFOAM/OpenFOAM-7/etc/bashrc 
+source $HOME/OpenFOAM/OpenFOAM-7/etc/bashrc
 ```
 2. Source deepflame-dev/bashrc, for example (depends on your DeepFlame path):
 ```
@@ -94,11 +98,11 @@ cd $HOME/deepflame-dev/examples/df0DFoam/zeroD_cubicReactor/H2/cvodeSolver
 ./Allrun
 ```
 
-Note: For the example cases with torchSolver, an additional DNN model file in the `.pt` format is required. Please contact the developers if you would like a test run. 
+Note: For the example cases with torchSolver, an additional DNN model file in the `.pt` format is required. Please contact the developers if you would like a test run.
 
 
 ## Citing DeepFlame
-If you use DeepFlame for a publication, please use the citation: 
+If you use DeepFlame for a publication, please use the citation:
 
 DeepFlame: A computational fluid dynamics suite for multiphase turbulent reacting flows at all speeds with machine learning. URL:https://github.com/deepmodeling/deepflame-dev, 2022.
 

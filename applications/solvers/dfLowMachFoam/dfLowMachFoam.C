@@ -45,6 +45,8 @@ Description
 #include "localEulerDdtScheme.H"
 #include "fvcSmooth.H"
 #include "PstreamGlobals.H"
+#include "basicThermo.H"
+#include "CombustionModel.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -63,6 +65,8 @@ int main(int argc, char *argv[])
     double time_monitor_flow=0;
     double time_monitor_chem=0;
     double time_monitor_Y=0;
+    double time_monitor_E=0;
+    double time_monitor_corrThermo=0;
     clock_t start, end;
 
     turbulence->validate();
@@ -119,8 +123,17 @@ int main(int argc, char *argv[])
             time_monitor_flow += double(end - start) / double(CLOCKS_PER_SEC);
 
             #include "YEqn.H"
+
+            start = std::clock();
             #include "EEqn.H"
-            chemistry.correctThermo();
+            end = std::clock();
+            time_monitor_E += double(end - start) / double(CLOCKS_PER_SEC);
+
+            start = std::clock();
+            chemistry->correctThermo();
+            end = std::clock();
+            time_monitor_corrThermo += double(end - start) / double(CLOCKS_PER_SEC);
+
             Info<< "min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
 
             // --- Pressure corrector loop
@@ -153,6 +166,8 @@ int main(int argc, char *argv[])
         Info<< "MonitorTime_chem = " << time_monitor_chem << " s" << nl << endl;
         Info<< "MonitorTime_Y = " << time_monitor_Y << " s" << nl << endl;
         Info<< "MonitorTime_flow = " << time_monitor_flow << " s" << nl << endl;
+        Info<< "MonitorTime_E = " << time_monitor_E << " s" << nl << endl;
+        Info<< "MonitorTime_corrThermo = " << time_monitor_corrThermo << " s" << nl << endl;
 
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"

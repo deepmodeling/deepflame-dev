@@ -43,6 +43,8 @@ Description
 #include "pimpleControl.H"
 #include "CorrectPhi.H"
 //#include "fvOptions.H"
+#include "basicThermo.H"
+#include "CombustionModel.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -134,7 +136,7 @@ int main(int argc, char *argv[])
             #include "UEqn.H"
             #include "YEqn.H"
             #include "EEqn.H"
-            chemistry.correctThermo();
+            chemistry->correctThermo();
             Info<< "T gas min/max   " << min(T).value() << ", "
                 << max(T).value() << endl;
 

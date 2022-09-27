@@ -47,11 +47,11 @@ SourceFiles
 #include "hashedWordList.H"
 #include "psiThermo.H"
 #include "physicoChemicalConstants.H" // for R
-#include "loadBalancing/ChemistryProblem.H"
-#include "loadBalancing/ChemistrySolution.H"
-#include "loadBalancing/RecvBuffer.H"
-#include "loadBalancing/SendBuffer.H"
-#include "loadBalancing/LoadBalancer.H"
+#include "ChemistryProblem.H"
+#include "ChemistrySolution.H"
+#include "RecvBuffer.H"
+#include "SendBuffer.H"
+#include "LoadBalancer.H"
 #include "OFstream.H"
 #include "IOmanip.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -227,6 +227,7 @@ public:
         // update T, psi, mu, alpha, rhoD, hai (if needed)
         void correctThermo();
 
+        ThermoType& thermo() {return thermo_;}
 };
 
 

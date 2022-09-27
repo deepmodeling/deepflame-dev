@@ -14,6 +14,7 @@ wmake src/TurbulenceModels/compressible
 wmake src/TurbulenceModels/turbulenceModels
 wmake src/regionModels/surfaceFilmModels
 src/lagrangian/Allwmake $targetType $*
+wmake src/dfCombustionModels
 wmake src/dynamicMesh
 wmake src/dynamicFvMesh
 
