@@ -8,9 +8,6 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-     - name: Checkout
-       uses: actions/checkout@v3
-
      - name: Initialize
        env:
         DEBIAN_FRONTEND: noninteractive
@@ -34,17 +31,18 @@ jobs:
         unzip libtorch-cxx11-abi-shared-with-deps-1.11.0+cpu.zip -d thirdParty
         rm libtorch-cxx11-abi-shared-with-deps-1.11.0+cpu.zip
 
-     - name: clone
-       run: |
-        git clone https://github.com/deepmodeling/deepflame-dev.git
-        cd deepflame-dev
-
-     - name: cantera and build
+     - name: Install cantera
        run: |
          wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
          sh Miniconda3-latest-Linux-x86_64.sh -b
          source ~/miniconda3/etc/profile.d/conda.sh
-         conda create -n libcantera && conda activate libcantera
-         conda install -c cantera libcantera-devel
+         conda create -n cantera libcantera-devel -c cantera
+
+     - name: Checkout
+       uses: actions/checkout@v3
+
+     - name: Build
+       run: |
+         conda activate cantera
          source /opt/openfoam7/etc/bashrc
-         . install.sh
+         . deepflame-dev/install.sh
