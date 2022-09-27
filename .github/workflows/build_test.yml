@@ -44,5 +44,5 @@ jobs:
        run: |
          source ~/miniconda3/etc/profile.d/conda.sh
          conda activate cantera
-         source /opt/openfoam7/etc/bashrc
+         . /opt/openfoam7/etc/bashrc
          . deepflame-dev/install.sh
