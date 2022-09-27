@@ -15,19 +15,18 @@ jobs:
        env:
         DEBIAN_FRONTEND: noninteractive
        run: |
-        apt-get update 
-        apt-get install --no-install-recommends -y \
-          sudo wget unzip git software-properties-common
+        sudo apt-get update 
+        sudo apt-get install --no-install-recommends -y \
+          wget unzip git software-properties-common
 
      - name: Install Openfoam7
        env:
         DEBIAN_FRONTEND: noninteractive
        run: |
-        wget -O - https://dl.openfoam.org/gpg.key | apt-key add -
-        add-apt-repository http://dl.openfoam.org/ubuntu
-        apt-get update
-        export DEBIAN_FRONTEND=noninteractive
-        apt-get -y install openfoam7
+        wget -O - https://dl.openfoam.org/gpg.key | sudo apt-key add -
+        sudo add-apt-repository http://dl.openfoam.org/ubuntu
+        sudo apt-get update
+        sudo apt-get -y install openfoam7
    
      - name: Install Libtorch
        run: |
