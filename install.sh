@@ -1,13 +1,16 @@
 #!/bin/sh
-if [ -e libtorch-cxx11-abi-shared-with-deps-1.11.0+cpu.zip ]
-then
-    echo "libtorch.zip exist."
-else
-    wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcpu.zip
-fi
+
 if [ -d "thirdParty/libtorch" ]; then
     echo "libtorch exist."
 else
+
+    if [ -e libtorch-cxx11-abi-shared-with-deps-1.11.0+cpu.zip ]
+    then
+        echo "libtorch.zip exist."
+    else
+        wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcpu.zip
+    fi
+
     unzip libtorch-cxx11-abi-shared-with-deps-1.11.0+cpu.zip -d thirdParty
 fi
 

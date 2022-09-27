@@ -23,7 +23,8 @@ EXE_INC = -std=c++14 \
     -I$(LIB_SRC)/thermophysicalModels/thermophysicalProperties/lnInclude \
     -I$(DF_SRC)/thermophysicalModels/SLGThermo/lnInclude \
     -I$(DF_SRC)/CanteraMixture/lnInclude \
-    -I$(DF_SRC)/dfChemistryModel \
+    -I$(DF_SRC)/dfChemistryModel/lnInclude \
+    -I$(DF_SRC)/dfCombustionModels/lnInclude \
     -I$(CANTERA_ROOT)/include \
     -I$(TORCH_ROOT)/include \
     -I$(TORCH_ROOT)/include/torch/csrc/api/include
@@ -49,6 +50,7 @@ EXE_LIBS = \
     -ldfLagrangianSpray \
     -lCanteraMixture \
     -ldfChemistryModel \
+    -ldfCombustionModels  \
     $(CANTERA_ROOT)/lib/libcantera.so \
     $(TORCH_ROOT)/lib/libtorch.so \
     $(TORCH_ROOT)/lib/libc10.so \

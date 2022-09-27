@@ -26,7 +26,7 @@ License
 #include "dfChemistryModel.H"
 #include "UniformField.H"
 #include "clockTime.H"
-#include "loadBalancing/runtime_assert.H"
+#include "runtime_assert.H"
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
@@ -84,7 +84,7 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
         dimensionedScalar(dimEnergy/dimVolume/dimTime, 0)
     ),
     torchSwitch_(lookupOrDefault("torch", false)),
-    balancer_(createBalancer()), 
+    balancer_(createBalancer()),
     cpuTimes_
     (
         IOobject
@@ -180,7 +180,7 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
     {
         cpuSolveFile_ = logFile("cpu_solve.out");
         cpuSolveFile_() << "                  time" << tab
-                        << "           getProblems" << tab  
+                        << "           getProblems" << tab
                         << "           updateState" << tab
                         << "               balance" << tab
                         << "           solveBuffer" << tab
@@ -441,13 +441,13 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::torchSolve
             Cantera::ReactorNet sim;
             sim.addReactor(react);
             setNumerics(sim);
-            sim.advance(deltaT);
+            sim.advance(deltaT[cellI]);
 
             CanteraGas_->getMassFractions(yTemp_.begin());
 
             for (size_t i=0; i<CanteraGas_->nSpecies(); ++i)
             {
-                RR_[i][cellI] = (yTemp_[i] - yPre_[i])*rhoi/deltaT;
+                RR_[i][cellI] = (yTemp_[i] - yPre_[i])*rhoi/deltaT[cellI];
                 Qdot_[cellI] -= hc_[i]*RR_[i][cellI];
             }
         }
@@ -470,13 +470,13 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::torchSolve
         for (size_t i=0; i<(CanteraGas_->nSpecies()); ++i)//
         {
             u_[i+2] = outputs[cellI][i+2].item().to<double>()*Ystd_[i+2]+Ymu_[i+2];
-            yTemp_[i] = pow((yBCT_[i] + u_[i+2]*deltaT)*lambda+1,1/lambda);
+            yTemp_[i] = pow((yBCT_[i] + u_[i+2]*deltaT[cellI])*lambda+1,1/lambda);
             Yt += yTemp_[i];
         }
         for (size_t i=0; i<CanteraGas_->nSpecies(); ++i)
         {
             yTemp_[i] = yTemp_[i] / Yt;
-            RR_[i][torch_cell[cellI]] = (yTemp_[i] - Y_[i][torch_cell[cellI]])*rho_[torch_cell[cellI]]/deltaT;
+            RR_[i][torch_cell[cellI]] = (yTemp_[i] - Y_[i][torch_cell[cellI]])*rho_[torch_cell[cellI]]/deltaT[cellI];
             Qdot_[torch_cell[cellI]] -= hc_[i]*RR_[i][torch_cell[cellI]];
         }
     }
@@ -722,7 +722,7 @@ Foam::dfChemistryModel<ThermoType>::getProblems
 
             solved_problems[celli] = problem;
         }
-        
+
     }
 
     return solved_problems;
