@@ -8,4 +8,7 @@ application=dfLowMachFoam
 
 runApplication blockMesh
 runApplication decomposePar
-runApplication mpirun -np 16 $application -parallel
+runApplication mpirun -np 8 $application -parallel
+
+runApplication reconstructPar -time 5e-4
+runApplication postProcess -func sample -time 5e-4

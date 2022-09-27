@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.14)
-project(df0DFoam)
+cmake_minimum_required(VERSION 3.18)
+project(Test)
 set(CMAKE_CXX_STANDARD 17)
 
 include(FetchContent)
@@ -11,8 +11,12 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+
 file(COPY ./df0DFoam/zeroD_cubicReactor/H2/cvodeSolver/postProcessing/probes/0/T DESTINATION 0DH2)
 file(COPY ./df0DFoam/zeroD_cubicReactor/CH4/cvodeSolver/postProcessing/probes/0/T DESTINATION 0DCH4)
+file(COPY ./dfLowMachFoam/twoD_reactingTGV/H2/cvodeSolver/postProcessing/sample/0.0005/data_T.xy DESTINATION 2DTGV)
+
+
 enable_testing()
 
 add_executable(

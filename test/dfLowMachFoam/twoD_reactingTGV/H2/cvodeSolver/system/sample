@@ -7,39 +7,32 @@
 \*---------------------------------------------------------------------------*/
 FoamFile
 {
-    version     2.0;
     format      ascii;
     class       dictionary;
     location    "system";
-    object      decomposeParDict;
+    object      sample;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-numberOfSubdomains 16;
+type sets;
+libs            ("libsampling.so");
 
-method          scotch;
+interpolationScheme cellPoint;
 
-simpleCoeffs
-{
-    n               (4 1 1);
-    delta           0.001;
-}
+setFormat       raw;
 
-hierarchicalCoeffs
-{
-    n               (1 1 1);
-    delta           0.001;
-    order           xyz;
-}
+sets
+(
+    data
+    {
+        type    lineUniform;
+        axis    y;
+        start   (0.003 0 0.003);
+        end     (0.003 0.006 0.003);
+        nPoints 1000;
+    }
+);
 
-manualCoeffs
-{
-    dataFile        "";
-}
-
-distributed     no;
-
-roots           ( );
-
+fields          (T);
 
 // ************************************************************************* //

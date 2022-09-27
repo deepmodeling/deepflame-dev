@@ -18,19 +18,20 @@ convertToMeters 0.001;
 
 vertices
 (
-    (0 1 1)
-    (960 1 1)
-    (960 1 0)
-    (0 1 0)
-    (0 0 1)
-    (960 0 1)
-    (960 0 0)
     (0 0 0)
+    (6.283185307179586 0 0)
+    (6.283185307179586 6.283185307179586 0)
+    (0 6.283185307179586 0)
+    (0 0 6.283185307179586)
+    (6.283185307179586 0 6.283185307179586)
+    (6.283185307179586 6.283185307179586 6.283185307179586)
+    (0 6.283185307179586 6.283185307179586)
 );
+
 
 blocks
 (
-    hex (4 5 6 7 0 1 2 3) (57099 1 1) simpleGrading (1 1 1)
+    hex (0 1 2 3 4 5 6 7) (128 128 1) simpleGrading (1 1 1)
 );
 
 edges
@@ -39,31 +40,58 @@ edges
 
 boundary
 (
-    boundary
+    front
     {
         type empty;
+        neighbourPatch back;
+        faces
+        (
+            (4 5 6 7)
+        );
+    }
+    back
+    {
+        type empty;
+        neighbourPatch front;
         faces
         (
             (0 3 2 1)
-            (4 5 6 7)
-            (0 1 5 4)
-            (3 2 6 7)
         );
     }
-    inlet
+    left
     {
-        type patch;
+        type cyclic;
+        neighbourPatch right;
         faces
         (
             (0 4 7 3)
         );
     }
-    outlet
+    right
     {
-        type patch;
+        type cyclic;
+        neighbourPatch left;
         faces
         (
-            (1 2 6 5)
+            (2 6 5 1)
+        );
+    }
+    top
+    {
+        type cyclic;
+        neighbourPatch down;
+        faces
+        (
+            (3 7 6 2)
+        );
+    }
+    down
+    {
+        type cyclic;
+        neighbourPatch top;
+        faces
+        (
+            (1 5 4 0)
         );
     }
 );

@@ -9,29 +9,42 @@ FoamFile
 {
     version     2.0;
     format      ascii;
-    class       dictionary;
-    location    "constant";
-    object      chemistryProperties;
+    class       volScalarField;
+    location    "0";
+    object      p;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+dimensions      [1 -1 -2 0 0 0 0];
 
-chemistry           on;
-CanteraMechanismFile "ES80_H2-7-16.yaml";
-transportModel "Mix";
-odeCoeffs
+internalField   uniform 1.01325e+05;
+
+boundaryField
 {
-    "relTol"   1e-6;
-    "absTol"   1e-10;
+    front
+    {
+        type            empty;
+    }
+    back
+    {
+        type            empty;
+    }
+    left
+    {
+        type            cyclic;
+    }
+    right
+    {
+        type            cyclic;
+    }
+    top
+    {
+        type            cyclic;
+    }
+    down
+    {
+        type            cyclic;
+    }
 }
-inertSpecie        "N2";
-zeroDReactor
-{
-    //cvorcp "UV";
-}
-loadbalancing
-{
-        active  true;
-        //log   true;
-}
+
 // ************************************************************************* //

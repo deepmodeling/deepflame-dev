@@ -41,7 +41,7 @@ jobs:
 
      - name: clone
        run: |
-        git clone https://github.com/JX278/deepflame-dev.git
+        git clone https://github.com/deepmodeling/deepflame-dev.git
         cd deepflame-dev
  
 

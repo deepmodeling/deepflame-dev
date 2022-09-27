@@ -7,3 +7,5 @@ echo "Cleaning processor*"
 rm -r processor*
 echo "Cleaning polyMesh/"
 rm -r constant/polyMesh
+echo "Cleaning postProcessing/"
+rm -r postProcessing

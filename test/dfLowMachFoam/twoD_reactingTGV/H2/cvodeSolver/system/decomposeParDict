@@ -11,49 +11,35 @@ FoamFile
     format      ascii;
     class       dictionary;
     location    "system";
-    object      controlDict;
+    object      decomposeParDict;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     dfLowMachFoam;
+numberOfSubdomains 8;
 
-startFrom       startTime;
+method          scotch;
 
-startTime       0;
+simpleCoeffs
+{
+    n               (4 1 1);
+    delta           0.001;
+}
 
-stopAt          endTime;
+hierarchicalCoeffs
+{
+    n               (1 1 1);
+    delta           0.001;
+    order           xyz;
+}
 
-endTime         1e-5;
+manualCoeffs
+{
+    dataFile        "";
+}
 
-deltaT          1e-6;
+distributed     no;
 
-maxDeltaT       1e-04;
-
-adjustTimeStep  off;
-
-writeControl    adjustableRunTime;
-
-writeInterval   0.001;
-
-purgeWrite      0;
-
-writeFormat     ascii;
-
-// writePrecision    6;
-
-writeCompression on;
-
-timeFormat      general;
-
-timePrecision   6;
-
-runTimeModifiable true;
-
-// adjustTimeStep yes;
-
-// maxCo  0.8;
-
-// maxDeltaT 1e-4;
+roots           ( );
 
 
 // ************************************************************************* //
