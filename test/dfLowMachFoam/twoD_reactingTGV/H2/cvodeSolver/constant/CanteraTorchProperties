@@ -11,13 +11,11 @@ FoamFile
     format      ascii;
     class       dictionary;
     location    "constant";
-    object      combustionProperties;
+    object      chemistryProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-combustionModel  laminar;
 
-<<<<<<< HEAD:test/dfLowMachFoam/twoD_reactingTGV/H2/cvodeSolver/constant/CanteraTorchProperties
 chemistry           on;
 CanteraMechanismFile "ES80_H2-7-16.yaml";
 transportModel "Mix";//"UnityLewis";
@@ -37,6 +35,4 @@ loadbalancing
         active  true;
         //log   true;
 }
-=======
->>>>>>> 6f902f2463b947d8fe97fb14849fbf145ec11f15:examples/dfLowMachFoam/oneD_freelyPropagation/H2/cvodeSolver/constant/combustionProperties
 // ************************************************************************* //

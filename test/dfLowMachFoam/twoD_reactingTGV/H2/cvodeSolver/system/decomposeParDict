@@ -10,12 +10,11 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    location    "constant";
-    object      combustionProperties;
+    location    "system";
+    object      decomposeParDict;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-<<<<<<< HEAD:test/dfLowMachFoam/twoD_reactingTGV/H2/cvodeSolver/system/decomposeParDict
 numberOfSubdomains 8;
 
 method          scotch;
@@ -42,8 +41,5 @@ distributed     no;
 
 roots           ( );
 
-=======
-combustionModel  laminar;
->>>>>>> 6f902f2463b947d8fe97fb14849fbf145ec11f15:examples/dfLowMachFoam/oneD_freelyPropagation/H2/torchSolver/constant/combustionProperties
 
 // ************************************************************************* //
