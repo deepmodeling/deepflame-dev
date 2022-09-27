@@ -35,8 +35,6 @@ jobs:
        run: |
          wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
          sh Miniconda3-latest-Linux-x86_64.sh -b
-         conda init bash
-         source ~/miniconda3/etc/profile.d/conda.sh
          conda create -n cantera libcantera-devel -c cantera
 
      - name: Checkout
@@ -44,6 +42,7 @@ jobs:
 
      - name: Build
        run: |
+         source ~/miniconda3/etc/profile.d/conda.sh
          conda activate cantera
          source /opt/openfoam7/etc/bashrc
          . deepflame-dev/install.sh
