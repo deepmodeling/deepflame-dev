@@ -43,8 +43,7 @@ jobs:
 
      - name: Build
        run: |
-         . ~/miniconda3/etc/profile.d/conda.sh
-         conda activate cantera
-         . /opt/openfoam7/etc/bashrc
-         pwd && ls
+         . ~/miniconda3/etc/profile.d/conda.sh && echo 1
+         conda activate cantera && echo 2
+         . /opt/openfoam7/etc/bashrc && echo 3
          . deepflame-dev/install.sh
