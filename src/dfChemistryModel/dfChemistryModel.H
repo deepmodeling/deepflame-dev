@@ -222,12 +222,14 @@ public:
 
         const volScalarField& rhoD(const label i) const {return rhoD_[i];}
 
-        volScalarField& hai(const label i) {return hai_[i];}
+        const volScalarField& hai(const label i) {return hai_[i];}
 
         // update T, psi, mu, alpha, rhoD, hai (if needed)
         void correctThermo();
 
         ThermoType& thermo() {return thermo_;}
+
+        const CanteraMixture& mixture() {return mixture_;}
 };
 
 

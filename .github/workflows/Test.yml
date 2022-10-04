@@ -1,0 +1,69 @@
+name: Test Allrun
+on: 
+  push:
+  pull_request:
+jobs:
+  validation:
+    runs-on: Ubuntu-latest    
+    container: 
+      image: ubuntu:20.04
+    steps:
+     - name: Checkout
+       uses: actions/checkout@v3
+     - name: initialize
+       env:
+        DEBIAN_FRONTEND: noninteractive
+       run: |
+        apt-get update 
+        apt-get install -y sudo wget unzip git software-properties-common make cmake g++ mpich openmpi-bin libopenmpi-dev libscalapack-mpi-dev 
+ 
+       
+     - name: openfoam7
+       env:
+        DEBIAN_FRONTEND: noninteractive
+       run: |
+        sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -" 
+        sudo add-apt-repository http://dl.openfoam.org/ubuntu
+        sudo apt-get update
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get -y install openfoam7 
+     
+       
+     - name: libtorch
+       run: |
+        wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcpu.zip
+        unzip libtorch-cxx11-abi-shared-with-deps-1.11.0+cpu.zip -d thirdParty 
+        rm libtorch-cxx11-abi-shared-with-deps-1.11.0+cpu.zip 
+     
+
+     - name: clone
+       run: |
+        git clone https://github.com/deepmodeling/deepflame-dev.git
+        cd deepflame-dev
+ 
+
+     
+        
+     - name: cantera
+       run:  
+        /bin/bash -c "wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && sh Miniconda3-latest-Linux-x86_64.sh -b && source ~/miniconda3/etc/profile.d/conda.sh && conda create -n libcantera && conda activate libcantera && conda install -c cantera libcantera-devel"
+
+     - name: Allrun
+       env: 
+        OMPI_ALLOW_RUN_AS_ROOT: 1 
+        OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1 
+        OMPI_MCA_btl_vader_single_copy_mechanism: none
+       run: 
+        /bin/bash -c "source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc && . install.sh && cd test && ./Allrun && cmake -B build && cmake --build build && cd build && ctest"
+        
+
+
+        
+        
+
+    
+
+
+
+
+
