@@ -7,27 +7,37 @@
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
+
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
+
     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
     for more details.
+
     You should have received a copy of the GNU General Public License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
 Application
     rhoPimpleFoam
+
 Description
     Transient solver for turbulent flow of compressible fluids for HVAC and
     similar applications, with optional mesh motion and mesh topology changes.
+
     Uses the flexible PIMPLE (PISO-SIMPLE) solution for time-resolved and
     pseudo-transient simulations.
+
 \*---------------------------------------------------------------------------*/
 #include "dfChemistryModel.H"
 #include "CanteraMixture.H"
 #include "hePsiThermo.H"
+#include <pybind11/embed.h>
+#include <pybind11/numpy.h>
+#include <pybind11/stl.h> //used to convert
 
 #include "fvCFD.H"
 #include "dynamicFvMesh.H"
@@ -44,9 +54,15 @@ Description
 
 int main(int argc, char *argv[])
 {
+    // initialize pybind
+    pybind11::scoped_interpreter guard{}; //start python interpreter
+
     #include "postProcess.H"
 
-    #include "setRootCaseLists.H"
+    // #include "setRootCaseLists.H"
+    #include "listOptions.H"
+    #include "setRootCase2.H"
+    #include "listOutput.H"
     #include "createTime.H"
     #include "createDynamicFvMesh.H"
     #include "createDyMControls.H"

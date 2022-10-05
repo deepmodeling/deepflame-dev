@@ -1,9 +1,7 @@
 export DF_ROOT=pwd
 export DF_SRC=pwd/src
 export SRC_ORIG=pwd/src_orig
-export TORCH_ROOT=TORCH_DIR
 export CANTERA_ROOT=CONDA_PREFIX
-export TORCH_ROOT=TORCH_DIR
 export CANTERA_DATA=$CANTERA_ROOT/share/cantera/data
 export LD_LIBRARY_PATH=$CANTERA_ROOT/lib:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=$TORCH_ROOT/lib:$LD_LIBRARY_PATH

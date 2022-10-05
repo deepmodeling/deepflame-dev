@@ -10,46 +10,36 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    location    "constant";
-    object      thermophysicalProperties;
+    location    "system";
+    object      decomposeParDict;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-chemistry           on;
-CanteraMechanismFile "drm19.yaml";
-transportModel "UnityLewis";
-odeCoeffs
+numberOfSubdomains 8;
+
+method          scotch;
+
+simpleCoeffs
 {
-    // "relTol"   1e-6;
-    // "absTol"   1e-10;
-}
-inertSpecie        "N2";
-zeroDReactor
-{
-    constantProperty "pressure";
+    n               (4 1 1);
+    delta           0.001;
 }
 
-torch on;
-torchModel "new_modle.pt"; 
-torchParameters1  
+hierarchicalCoeffs
 {
-    Tact 0  ;
-    Qdotact  0 ;
+    n               (1 1 1);
+    delta           0.001;
+    order           xyz;
 }
-torchParameters2
+
+manualCoeffs
 {
-    Tact 1700;
-    Qdotact  1e5;
+    dataFile        "";
 }
-torchParameters3
-{
-    Tact 2500;
-    Qdotact  5e5;
-}
-loadbalancing
-{
-        active  false;
-        //log   true;
-}
+
+distributed     no;
+
+roots           ( );
+
 
 // ************************************************************************* //

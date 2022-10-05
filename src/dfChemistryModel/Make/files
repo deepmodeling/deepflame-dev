@@ -8,6 +8,9 @@ loadBalancing/algorithms_DLB.C
 loadBalancing/runtime_assert.C
 loadBalancing/LoadBalancer.C
 
+GpuInference/GpuProblem.C
+GpuInference/GpuSolution.C
+
 makeDfChemistryModels.C
 
 LIB = $(FOAM_USER_LIBBIN)/libdfChemistryModel

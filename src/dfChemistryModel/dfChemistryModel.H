@@ -38,7 +38,10 @@ SourceFiles
 #ifndef dfChemistryModel_H
 #define dfChemistryModel_H
 
-#include <torch/script.h>
+// #include <torch/script.h>
+#include <pybind11/embed.h>
+#include <pybind11/numpy.h>
+#include <pybind11/stl.h> //used to convert
 #include "CanteraMixture.H"
 #include "IOdictionary.H"
 #include "Switch.H"
@@ -52,8 +55,15 @@ SourceFiles
 #include "RecvBuffer.H"
 #include "SendBuffer.H"
 #include "LoadBalancer.H"
+#include "GpuProblem.H"
+#include "GpuSolution.H"
+#include "DynamicBuffer.H"
 #include "OFstream.H"
 #include "IOmanip.H"
+#include "PstreamGlobals.H"
+
+// extern pybind11::module_ call_torch;
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -115,8 +125,35 @@ public IOdictionary
     scalarList Xstd_;
     scalarList Ymu_;
     scalarList Ystd_;
-    scalar Tact_;
+    scalar Tact_low;
+    scalar Tact_high;
     scalar Qdotact_;
+    // GpuInference CUDA_;
+    int coresPerGPU;
+
+    word torchModelName1_;
+    scalarList Xmu1_;  //member function
+    scalarList Xstd1_;
+    scalarList Ymu1_;
+    scalarList Ystd1_;
+    scalar Tact1_;
+    scalar Qdotact1_;
+    
+    word torchModelName2_;
+    scalarList Xmu2_;  //member function
+    scalarList Xstd2_;
+    scalarList Ymu2_;
+    scalarList Ystd2_;
+    scalar Tact2_;
+    scalar Qdotact2_;
+    
+    word torchModelName3_;  
+    scalarList Xmu3_;  //member function
+    scalarList Xstd3_;
+    scalarList Ymu3_;
+    scalarList Ystd3_;
+    scalar Tact3_;
+    scalar Qdotact3_;
 
     // Load balancing object
     LoadBalancer balancer_;
@@ -135,49 +172,42 @@ public IOdictionary
         //- Disallow default bitwise assignment
         void operator=(const dfChemistryModel&);
 
-        //- override for Cantera
+        // override for Cantera
         template<class DeltaTType>
         scalar solve(const DeltaTType& deltaT);
 
         template<class DeltaTType>
         scalar canteraSolve(const DeltaTType& deltaT);
 
-        //- Solve the reaction system with Deep Neural Networks
         template<class DeltaTType>
         scalar torchSolve(const DeltaTType& deltaT);
 
-        //- Solve a single ChemistryProblem and put the solution to ChemistrySolution
-        void solveSingle(ChemistryProblem& problem, ChemistrySolution& solution);
-
-        //- Get the list of problems to be solved
         template<class DeltaTType>
-        DynamicList<ChemistryProblem> getProblems(const DeltaTType& deltaT);
+        scalar torchMultiDNNSolve(const DeltaTType& deltaT);
 
-        //- Solve a list of chemistry problems and return a list of solutions
-        DynamicList<ChemistrySolution>
-        solveList(UList<ChemistryProblem>& problems);
-
-        //- Solve the problem buffer coming from the balancer
-        RecvBuffer<ChemistrySolution>
-        solveBuffer(RecvBuffer<ChemistryProblem>& problems);
-
-        //- Update the reaction rates and heat release rates from a list of solutions
-        scalar updateReactionRates(const RecvBuffer<ChemistrySolution>& solutions);
-
-        //- Create a load balancer object
-        LoadBalancer createBalancer();
-
-        //- Solve the reaction system with DLB algorithm
         template<class DeltaTType>
-        scalar solve_loadBalance(const DeltaTType& deltaT);
+        scalar torchCUDAoneCoreSolve(const DeltaTType& deltaT);
+        
+        template<class DeltaTType>
+        scalar torchDCUSolve(const DeltaTType& deltaT);
 
-        //- Output logFiles
-        Foam::autoPtr<Foam::OFstream> logFile(const word& name) const
-        {
-            mkDir(mesh_.time().path() / "loadBal" / this->group());
-            return autoPtr<OFstream>(new OFstream(
-                mesh_.time().path() / "loadBal" / this->group() / name));
-        }
+        template<class DeltaTType>
+        scalar torchCUDA0DSolve(const DeltaTType& deltaT);
+
+        /*=======================private methods for DCUSolve=======================*/
+        //- get a list of GPU problems to be solved
+        template<class DeltaTType>
+        DynamicList<GpuProblem> getGPUProblems(const DeltaTType& deltaT);
+
+        //- get the input for DNN inference
+        void getDNNinputs(const DynamicBuffer<GpuProblem>& problemBuffer, std::vector<label>& outputlength,
+        std::vector<std::vector<double>>& DNNinputs, std::vector<DynamicBuffer<label>>& cellIDBuffer, 
+        std::vector<std::vector<label>>& problemCounter);
+
+        //- construct the output
+        void updateSolutionBuffer(DynamicBuffer<GpuSolution>& solutionBuffer, const double* star,
+        const std::vector<label>& outputLength, const std::vector<DynamicBuffer<label>>& cellIDBuffer,
+        std::vector<std::vector<label>>& problemCounter);
 
 public:
 
@@ -228,6 +258,37 @@ public:
         void correctThermo();
 
         ThermoType& thermo() {return thermo_;}
+
+        const CanteraMixture& mixture() {return mixture_;}
+
+        void solveSingle(ChemistryProblem& problem, ChemistrySolution& solution);
+
+        template<class DeltaTType>
+        DynamicList<ChemistryProblem> getProblems(const DeltaTType& deltaT);
+
+        //- Solve a list of chemistry problems and return a list of solutions
+        DynamicList<ChemistrySolution>
+        solveList(UList<ChemistryProblem>& problems);
+
+        //- Solve the problem buffer coming from the balancer
+        RecvBuffer<ChemistrySolution>
+        solveBuffer(RecvBuffer<ChemistryProblem>& problems);
+
+        //- Update the reaction rates from a list of solutions
+        scalar updateReactionRates(const RecvBuffer<ChemistrySolution>& solutions);
+
+        //- Create a load balancer object
+        LoadBalancer createBalancer();
+
+        template<class DeltaTType>
+        scalar solve_loadBalance(const DeltaTType& deltaT);
+
+        Foam::autoPtr<Foam::OFstream> logFile(const word& name) const
+        {
+            mkDir(mesh_.time().path() / "loadBal" / this->group());
+            return autoPtr<OFstream>(new OFstream(
+                mesh_.time().path() / "loadBal" / this->group() / name));
+        }
 };
 
 
