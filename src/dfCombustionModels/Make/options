@@ -1,4 +1,12 @@
+-include $(GENERAL_RULES)/mplibType
+PYTHON_INC_DIR := $(shell python3 -m pybind11 --includes)
+PYTHON_LIB_DIR := $(shell python3 -c "from distutils import sysconfig; \
+    import os.path as op; v = sysconfig.get_config_vars(); \
+    fpaths = [op.join(v[pv], v['LDLIBRARY']) for pv in ('LIBDIR', 'LIBPL')]; \
+    print(list(filter(op.exists, fpaths))[0])" | xargs dirname)
+
 EXE_INC = -std=c++14 \
+    $(PFLAGS) $(PINC) \
     -I$(LIB_SRC)/transportModels/compressible/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
     -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude \
@@ -8,8 +16,8 @@ EXE_INC = -std=c++14 \
     -I$(DF_SRC)/CanteraMixture/lnInclude \
     -I$(DF_SRC)/dfChemistryModel/lnInclude \
     -I$(CANTERA_ROOT)/include \
-    -I$(TORCH_ROOT)/include \
-    -I$(TORCH_ROOT)/include/torch/csrc/api/include
+    -I$(LIB_SRC)/Pstream/mpi \
+    $(PYTHON_INC_DIR)
 
 LIB_LIBS = \
     -lcompressibleTransportModels \
@@ -17,12 +25,11 @@ LIB_LIBS = \
     -lfiniteVolume \
     -lmeshTools \
     -L$(FOAM_USER_LIBBIN) \
+    -L$(PYTHON_LIB_DIR) \
     -ldfCompressibleTurbulenceModels \
     -lCanteraMixture \
     -ldfChemistryModel \
     $(CANTERA_ROOT)/lib/libcantera.so \
-    $(TORCH_ROOT)/lib/libtorch.so \
-    $(TORCH_ROOT)/lib/libc10.so \
     -rdynamic \
     -lpthread
 

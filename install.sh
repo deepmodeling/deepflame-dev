@@ -1,25 +1,6 @@
-#!/bin/sh
-
-if [ -d "thirdParty/libtorch" ]; then
-    echo "libtorch exist."
-else
-
-    if [ -e libtorch-cxx11-abi-shared-with-deps-1.11.0+cpu.zip ]
-    then
-        echo "libtorch.zip exist."
-    else
-        wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcpu.zip
-    fi
-
-    unzip libtorch-cxx11-abi-shared-with-deps-1.11.0+cpu.zip -d thirdParty
-fi
-
-
 cp bashrc.raw bashrc
 sed -i s#pwd#$PWD#g ./bashrc
 sed -i s#CONDA_PREFIX#$CONDA_PREFIX#g ./bashrc
-TORCH_DIR=$PWD/thirdParty/libtorch
-sed -i s#TORCH_DIR#$TORCH_DIR#g ./bashrc
 
 
 

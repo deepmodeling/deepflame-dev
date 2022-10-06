@@ -19,8 +19,8 @@ wmake src/dynamicMesh
 wmake src/dynamicFvMesh
 
 wmake applications/solvers/df0DFoam
-wmake applications/solvers/dfLowMachFoam
-wmake applications/solvers/dfHighSpeedFoam
-wmake applications/solvers/dfSprayFoam
+# wmake applications/solvers/dfLowMachFoam
+# wmake applications/solvers/dfHighSpeedFoam
+# wmake applications/solvers/dfSprayFoam
 
 wmake applications/utilities/flameSpeed

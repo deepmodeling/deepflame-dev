@@ -12,7 +12,7 @@ Description
 
 #includeEtc "caseDicts/postProcessing/probes/probes.cfg"
 
-fields (T);// Writes out T
+fields (T Qdot);// Writes out T
 probeLocations
 (
     (0.0025 0.0025 0.0025)
