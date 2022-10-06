@@ -1,7 +1,11 @@
 name: building test for each PR
 on: 
   push:
+    branches:
+     - master
   pull_request:
+    branches:
+     - master
 jobs:
   build_test:
     runs-on: ubuntu-latest 
