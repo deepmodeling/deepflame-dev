@@ -46,9 +46,7 @@ jobs:
         OMPI_MCA_btl_vader_single_copy_mechanism: none
        run: 
         /bin/bash -c "source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc && . install.sh --libtorch_no --libcantera_dir /github/home/miniconda3/envs/libcantera && PYTORCH_INC=`python3 -m pybind11 --includes` && PYTORCH_LIB=`python3 -c "from distutils import sysconfig; \
-        import os.path as op; v = sysconfig.get_config_vars(); \
-        fpaths = [op.join(v[pv], v['LDLIBRARY']) for pv in ('LIBDIR', 'LIBPL')]; \
-        print(list(filter(op.exists, fpaths))[0])" | xargs dirname`" &&         echo PYTORCH_INC=$PYTORCH_INC && 
+        import os.path as op; v = sysconfig.get_config_vars(); fpaths = [op.join(v[pv], v['LDLIBRARY']) for pv in ('LIBDIR', 'LIBPL')]; print(list(filter(op.exists, fpaths))[0])" | xargs dirname` &&  echo PYTORCH_INC=$PYTORCH_INC && 
         echo PYTORCH_LIB=$PYTORCH_LIB"    
         
         
