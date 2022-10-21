@@ -10,7 +10,6 @@ jobs:
   gpu_build:
     runs-on: self-hosted
     if: github.repository_owner == 'deepmodeling'     
-    runs-on: Ubuntu-latest  
     container: 
       image: ubuntu:20.04
     steps:
