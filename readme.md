@@ -72,7 +72,7 @@ conda activate df-torch
 
 conda install -c cantera libcantera-devel
 ```
-Note: Check your Miniconda3/envs/libcantera directory and make sure the install was successful (lib/ include/ etc. exist).
+**Note**: Check your Miniconda3/envs/libcantera directory and make sure the install was successful (lib/ include/ etc. exist).
 
 If the conda environment is activated, install DeepFlame by running: 
 
@@ -84,8 +84,8 @@ If not, specify the path to your libcantera:
 . install.sh --libcantera_dir /your/path/to/libcantera/
 ```
 
-#### 4.2 LibTorch version
-If you choose to use LibTorch, you can either install DeepFlame with autodownloaded Libcantera
+#### 4.2 [LibTorch](https://pytorch.org/) version
+If you choose to use LibTorch, you can either install DeepFlame with autodownloaded LibTorch
 ```
 conda create -n df-libtorch
 
@@ -112,13 +112,13 @@ conda install pytorch torchvision torchaudio cudatoolkit=11.6 -c pytorch -c cond
 conda install pybind11
 . install.sh --use_pytorch
 ```
-Note: You may come accross an error regarding shared library libmkl_rt.so.2 when libcantera is installed through cantera channel. If so, go to your conda environment and check the existance of libmkl_rt.so.2 and libmkl_rt.so.1, and then link libmkl_rt.so.2 to libmkl_rt.so.1.
+**Note**: You may come accross an error regarding shared library libmkl_rt.so.2 when libcantera is installed through cantera channel. If so, go to your conda environment and check the existance of libmkl_rt.so.2 and libmkl_rt.so.1, and then link libmkl_rt.so.2 to libmkl_rt.so.1.
 ```
 cd ~/miniconda3/envs/df-pytorch/lib
 ln -s libmkl_rt.so.1 libmkl_rt.so.2
 ```
 
-Note: Some compiling issues may happen due to system compatability. Instead of using conda installed Cantera C++ lib and the downloaded Torch C++ lib, try to compile your own Cantera and Torch C++ libraries.
+> **Note**: Some compiling issues may happen due to system compatability. Instead of using conda installed Cantera > C++ lib and the downloaded Torch C++ lib, try to compile your own Cantera and Torch C++ libraries.
 
 ## Running DeepFlame examples
 1. Source your OpenFOAM, for example (depends on your OpenFOAM path):
@@ -136,7 +136,7 @@ cd $HOME/deepflame-dev/examples/df0DFoam/zeroD_cubicReactor/H2/cvodeSolver
 ./Allrun
 ```
 
-Note: For the example cases with torchSolver, an additional DNN model file in the `.pt` format is required. Please contact the developers if you would like a test run.
+**Note**: For the example cases with torchSolver, an additional DNN model file in the `.pt` format is required. Please contact the developers if you would like a test run.
 
 
 ## Citing DeepFlame
