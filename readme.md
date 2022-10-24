@@ -69,7 +69,7 @@ If your are using DeepFlame's cvODE solver without DNN model, just install [LibC
 ```
 conda create -n df-notorch
 
-conda activate df-torch
+conda activate df-notorch
 
 conda install -c cantera libcantera-devel
 ```
