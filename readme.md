@@ -63,7 +63,7 @@ cd deepflame-dev
 ```
 ### 4. Install dependencies and DeepFlame based on your need
 DeepFlame supports three compilation choices: no torch, LibTorch, and PyTorch. 
-#### No Torch version 
+#### 4.1 No Torch version 
 If your are using DeepFlame's cvODE solver without DNN model, just install [LibCantera](https://anaconda.org/conda-forge/libcantera-devel) via [conda](https://docs.conda.io/en/latest/miniconda.html#linux-installers).
 ```
 conda create -n df-notorch
@@ -84,8 +84,8 @@ If not, specify the path to your libcantera:
 . install.sh --libcantera_dir /your/path/to/libcantera/
 ```
 
-#### LibTorch version
-If you choose to use LibTorch, after installing LibCantera the same way as the no torch version, you can either install DeepFlame with autodownloaded Libcantera
+#### 4.2 LibTorch version
+If you choose to use LibTorch, you can either install DeepFlame with autodownloaded Libcantera
 ```
 conda create -n df-libtorch
 
@@ -102,19 +102,14 @@ or you cam pass your own libtorch path to DeepFlame.
 . install.sh --libtorch_dir /path/to/libtorch/
 ```
 
-### PyTorch version
+#### 4.3 PyTorch version
 PyTorch version aims to support computation on CUDA. If you have compatible platform, run the following command to install DeepFlame.
 ```
 conda create -n df-pytorch python=3.8
-
 conda activate df-pytorch
-
 conda install -c cantera libcantera-devel
-
 conda install pytorch torchvision torchaudio cudatoolkit=11.6 -c pytorch -c conda-forge 
-
 conda install pybind11
-
 . install.sh --use_pytorch
 ```
 Note: You may come accross an error regarding shared library libmkl_rt.so.2 when libcantera is installed through cantera channel. If so, go to your conda environment and check the existance of libmkl_rt.so.2 and libmkl_rt.so.1, and then link libmkl_rt.so.2 to libmkl_rt.so.1.
