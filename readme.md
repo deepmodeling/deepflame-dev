@@ -97,7 +97,7 @@ conda install -c cantera libcantera-devel
 ```
 . install.sh --libtorch_autodownload
 ```
-or you cam pass your own libtorch path to DeepFlame.
+or you can pass your own libtorch path to DeepFlame.
 
 ```
 . install.sh --libtorch_dir /path/to/libtorch/
