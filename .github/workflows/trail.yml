@@ -39,15 +39,43 @@ jobs:
         cd /github/home/miniconda3/envs/libcantera/lib
         ln -s libmkl_rt.so.1 libmkl_rt.so.2
  
+     - name: build_notorch 
+       env: 
+        OMPI_ALLOW_RUN_AS_ROOT: 1 
+        OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1 
+        OMPI_MCA_btl_vader_single_copy_mechanism: none
+       run: |
+        . ~/miniconda3/etc/profile.d/conda.sh
+        conda activate libcantera
+        . /opt/openfoam7/etc/bashrc
+        . install.sh 
+        cd test
+        ./Allrun
+        cmake -B build
+        cmake --build build
+        cd build && ctest
+
+        
+        
+     - name: build_libtorch
+       env: 
+        OMPI_ALLOW_RUN_AS_ROOT: 1 
+        OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1 
+        OMPI_MCA_btl_vader_single_copy_mechanism: none
+       run: |
+        . ~/miniconda3/etc/profile.d/conda.sh
+        conda activate libcantera
+        . /opt/openfoam7/etc/bashrc
+        . install.sh --libtorch_autodownload
+
      - name: build
        env: 
         OMPI_ALLOW_RUN_AS_ROOT: 1 
         OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1 
         OMPI_MCA_btl_vader_single_copy_mechanism: none
-       run: 
-        /bin/bash -c "source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc && . install.sh --libcantera_dir /github/home/miniconda3/envs/libcantera"    
-        
-        
-
-
+       run: |
+        . ~/miniconda3/etc/profile.d/conda.sh
+        conda activate libcantera
+        . /opt/openfoam7/etc/bashrc
+        . install.sh --use_pytorch       
 
