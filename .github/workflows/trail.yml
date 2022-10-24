@@ -47,6 +47,7 @@ jobs:
        run: |
         . ~/miniconda3/etc/profile.d/conda.sh
         conda activate libcantera
+        sudo apt-get -y install openfoam7
         . /opt/openfoam7/etc/bashrc
         . install.sh 
         cd test
