@@ -63,6 +63,7 @@ cd deepflame-dev
 ```
 ### 4. Install dependencies and DeepFlame based on your need
 DeepFlame supports three compilation choices: no torch, LibTorch, and PyTorch. 
+>**Note**: You are encouaged to try all three options, but remember to install the next version in a new terminal to clean previous environment variables.
 #### 4.1 No Torch version 
 If your are using DeepFlame's cvODE solver without DNN model, just install [LibCantera](https://anaconda.org/conda-forge/libcantera-devel) via [conda](https://docs.conda.io/en/latest/miniconda.html#linux-installers).
 ```
@@ -72,7 +73,7 @@ conda activate df-torch
 
 conda install -c cantera libcantera-devel
 ```
->**Note**: Check your Miniconda3/envs/libcantera directory and make sure the install was successful (lib/ include/ >etc. exist).
+>**Note**: Check your Miniconda3/envs/libcantera directory and make sure the install was successful (lib/ include/ etc. exist).
 
 If the conda environment is activated, install DeepFlame by running: 
 
@@ -112,7 +113,7 @@ conda install pytorch torchvision torchaudio cudatoolkit=11.6 -c pytorch -c cond
 conda install pybind11
 . install.sh --use_pytorch
 ```
->**Note**: You may come accross an error regarding shared library libmkl_rt.so.2 when libcantera is installed through cantera channel. If so, go to your conda environment and check the existance of libmkl_rt.so.2 and slibmkl_rt.so.1, and then link libmkl_rt.so.2 to libmkl_rt.so.1.
+>**Note**: You may come accross an error regarding shared library *libmkl_rt.so.2* when libcantera is installed through cantera channel. If so, go to your conda environment and check the existance of *libmkl_rt.so.2* and *libmkl_rt.so.1*, and then link *libmkl_rt.so.2* to *libmkl_rt.so.1*.
 ```
 cd ~/miniconda3/envs/df-pytorch/lib
 ln -s libmkl_rt.so.1 libmkl_rt.so.2
@@ -136,7 +137,7 @@ cd $HOME/deepflame-dev/examples/df0DFoam/zeroD_cubicReactor/H2/cvodeSolver
 ./Allrun
 ```
 
-**Note**: For the example cases with torchSolver, an additional DNN model file in the `.pt` format is required. Please contact the developers if you would like a test run.
+>**Note**: For the example cases with torchSolver, an additional DNN model file in the `.pt` format is required. Please contact the developers if you would like a test run.
 
 
 ## Citing DeepFlame
