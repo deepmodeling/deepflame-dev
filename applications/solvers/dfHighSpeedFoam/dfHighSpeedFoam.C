@@ -33,9 +33,13 @@ Description
 #include "dfChemistryModel.H"
 #include "CanteraMixture.H"
 #include "hePsiThermo.H"
+
+#ifdef USE_LIBTORCH
 #include <pybind11/embed.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h> //used to convert
+#endif
+
 
 #include "fvCFD.H"
 #include "dynamicFvMesh.H"
@@ -51,7 +55,11 @@ Description
 
 int main(int argc, char *argv[])
 {
+#ifdef USE_LIBTORCH
+    pybind11::scoped_interpreter guard{};//start python interpreter
+#endif
     #define NO_CONTROL
+
     #include "postProcess.H"
 
     // #include "setRootCaseLists.H"

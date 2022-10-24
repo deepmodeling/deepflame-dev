@@ -1,9 +1,4 @@
 -include $(GENERAL_RULES)/mplibType
-PYTHON_INC_DIR := $(shell python3 -m pybind11 --includes)
-PYTHON_LIB_DIR := $(shell python3 -c "from distutils import sysconfig; \
-    import os.path as op; v = sysconfig.get_config_vars(); \
-    fpaths = [op.join(v[pv], v['LDLIBRARY']) for pv in ('LIBDIR', 'LIBPL')]; \
-    print(list(filter(op.exists, fpaths))[0])" | xargs dirname)
 
 EXE_INC = -std=c++14 \
     -I. \
@@ -64,5 +59,5 @@ EXE_LIBS = \
     $(if $(LIBTORCH_ROOT),$(LIBTORCH_ROOT)/lib/libc10.so,) \
     $(if $(LIBTORCH_ROOT),-rdynamic,) \
     $(if $(LIBTORCH_ROOT),-lpthread,) \
-    -L$(PYTHON_LIB_DIR) \
-    -lpython3.8
+    $(if $(PYTHON_LIB_DIR),-L$(PYTHON_LIB_DIR),) \
+    $(if $(PYTHON_LIB_DIR),-lpython3.8,)

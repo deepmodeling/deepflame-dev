@@ -1,8 +1,8 @@
 -include $(GENERAL_RULES)/mplibType
-PYTHON_INC_DIR := $(shell python3 -m pybind11 --includes)
 
 EXE_INC = -std=c++14 \
     $(if $(LIBTORCH_ROOT),-DUSE_LIBTORCH,) \
+    $(if $(PYTHON_INC_DIR),-DUSE_PYTORCH,) \
     -I$(LIB_SRC)/transportModels/compressible/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
     -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude \

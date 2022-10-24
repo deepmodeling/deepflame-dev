@@ -249,15 +249,9 @@ public:
 
     void calcMu(const scalar T, const scalar p)
     {
-        //CanteraGas_->setState_TP(T, p);
+        CanteraGas_->setState_TP(T, p);
 
-        //CanteraTransport_->getSpeciesViscosities(muTemp_.begin());
-        scalar As = 1.67212e-6;
-        scalar Ts = 170.672;
-        forAll(muTemp_, i)
-        {
-        muTemp_[i] = As*::sqrt(T)/(1.0 + Ts/T);//和OF相同
-        }
+        CanteraTransport_->getSpeciesViscosities(muTemp_.begin());
     }
 
     void calcH(const scalar T, const scalar p)

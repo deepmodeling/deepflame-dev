@@ -99,6 +99,7 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
     )
 {
 #ifdef USE_LIBTORCH
+    torchSwitch_ = this->lookupOrDefault("torch", false);
     torchModelName_ = this->lookupOrDefault("torchModel", word(""));
     Xmu_ = scalarList(this->subDict("torchParameters").lookup("Xmu"));
     Xstd_ = scalarList(this->subDict("torchParameters").lookup("Xstd"));
@@ -107,16 +108,9 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
     Tact_ = this->subDict("torchParameters").lookupOrDefault("Tact", 700);
     Qdotact_ = this->subDict("torchParameters").lookupOrDefault("Qdotact", 1e9);
 #endif
-    // time_allsolve_ = 0;
-    // time_submaster_(0),
-    // time_sendProblem_(0),
-    // time_RecvProblem_(0),
-    // time_sendRecvSolution_(0),
-    // time_getDNNinputs_(0),
-    // time_DNNinference_(0),
-    // time_updateSolutionBuffer_(0),
-    // time_vec2ndarray_(0),
-    // time_python_(0),
+
+#ifdef USE_PYTORCH
+    torchSwitch_ = this->lookupOrDefault("torch", false);
 
     Tact1_ = this->subDict("torchParameters1").lookupOrDefault("Tact", 700);
     Qdotact1_ = this->subDict("torchParameters1").lookupOrDefault("Qdotact", 1e9);
@@ -126,8 +120,20 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
 
     Tact3_ = this->subDict("torchParameters3").lookupOrDefault("Tact", 700);
     Qdotact3_ = this->subDict("torchParameters3").lookupOrDefault("Qdotact", 1e9);
-    
+
     coresPerGPU = this->subDict("torchParameters1").lookupOrDefault("coresPerGPU", 8);
+
+    time_allsolve_ = 0;
+    time_submaster_ = 0;
+    time_sendProblem_ = 0;
+    time_RecvProblem_ = 0;
+    time_sendRecvSolution_ = 0;
+    time_getDNNinputs_ = 0;
+    time_DNNinference_ = 0;
+    time_updateSolutionBuffer_ = 0;
+    time_vec2ndarray_ = 0;
+    time_python_ = 0;
+#endif
 
     for(const auto& name : CanteraGas_->speciesNames())
     {
@@ -237,12 +243,28 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve
 )
 {
     scalar result = 0;
-// #ifdef USE_LIBTORCH
-//     result = torchSolve(deltaT);
-// #else
-//     result = solve_loadBalance(deltaT);
-// #endif
-    result = torchDCUSolve(deltaT);
+#ifdef USE_LIBTORCH
+    if(torchSwitch_)
+    {
+        result = torchSolve(deltaT);
+    }
+    else
+    {
+        result = solve_loadBalance(deltaT);
+    }
+#elif USE_PYTORCH
+    if(torchSwitch_)
+    {
+        result = torchDCUSolve(deltaT);
+    }
+    else
+    {
+        result = solve_loadBalance(deltaT);
+    }
+#else
+    result = solve_loadBalance(deltaT);
+#endif
+
     return result;
 }
 
@@ -520,22 +542,14 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
         T_[celli] = CanteraGas_->temperature();
 
         psi_[celli] = CanteraGas_->meanMolecularWeight()/CanteraGas_->RT(); // meanMolecularWeight() kg/kmol    RT() Joules/kmol
-        // mu_[celli] = mixture_.CanteraTransport()->viscosity(); // Pa-s
-        scalar As = 1.67212e-6;
-        scalar Ts = 170.672;
-        mu_[celli] = As*::sqrt(T_[celli])/(1.0 + Ts/T_[celli]);//和OF相同
-        //alpha_[celli] = mixture_.CanteraTransport()->thermalConductivity()/(CanteraGas_->cp_mass()); // kg/(m*s)
+
+        mu_[celli] = mixture_.CanteraTransport()->viscosity(); // Pa-s
+
+        alpha_[celli] = mixture_.CanteraTransport()->thermalConductivity()/(CanteraGas_->cp_mass()); // kg/(m*s)
         // thermalConductivity() W/m/K
         // cp_mass()   J/kg/K
 
-        scalar alpha_tmp = 0;
-        mixture_.calcCp(T_[celli], p_[celli]);
-        forAll(Y_, i)
-        {
-            alpha_tmp += yTemp_[i]*mixture_.kappa(i, p_[celli], T_[celli]);
-        }
-        alpha_[celli] = alpha_tmp/(CanteraGas_->cp_mass());//和OF相同
-        /*if (mixture_.transportModelName() == "UnityLewis")
+        if (mixture_.transportModelName() == "UnityLewis")
         {
             forAll(rhoD_, i)
             {
@@ -556,7 +570,7 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
                 // CanteraGas_->molecularWeight(i)    kg/kmol
                 hai_[i][celli] = hrtTemp_[i]*RT/CanteraGas_->molecularWeight(i);
             }
-        }*/
+        }
     }
 
 
@@ -598,23 +612,11 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
 
                 ppsi[facei] = CanteraGas_->meanMolecularWeight()/CanteraGas_->RT();
 
-                //pmu[facei] = mixture_.CanteraTransport()->viscosity();
-                scalar As = 1.67212e-6;
-                scalar Ts = 170.672;
-                pmu[facei]= As*::sqrt(pT[facei])/(1.0 + Ts/pT[facei]);//和OF相同
+                pmu[facei] = mixture_.CanteraTransport()->viscosity();
 
+                palpha[facei] = mixture_.CanteraTransport()->thermalConductivity()/(CanteraGas_->cp_mass());
 
-                //palpha[facei] = mixture_.CanteraTransport()->thermalConductivity()/(CanteraGas_->cp_mass());
-                scalar alpha_tmp = 0;
-                mixture_.calcCp(pT[facei], pp[facei]);
-                forAll(Y_, i)
-                {
-                    alpha_tmp += yTemp_[i]*mixture_.kappa(i, pp[facei], pT[facei]);
-                }
-                palpha[facei] = alpha_tmp/CanteraGas_->cp_mass();//和OF相同
-
-
-                /*if (mixture_.transportModelName() == "UnityLewis")
+                if (mixture_.transportModelName() == "UnityLewis")
                 {
                     forAll(rhoD_, i)
                     {
@@ -633,7 +635,7 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
 
                         hai_[i].boundaryFieldRef()[patchi][facei] = hrtTemp_[i]*RT/CanteraGas_->molecularWeight(i);
                     }
-                }*/
+                }
             }
         }
         else
@@ -651,21 +653,11 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
 
                 ppsi[facei] = CanteraGas_->meanMolecularWeight()/CanteraGas_->RT();
 
-                // pmu[facei] = mixture_.CanteraTransport()->viscosity();
-                scalar As = 1.67212e-6;
-                scalar Ts = 170.672;
-                pmu[facei]= As*::sqrt(pT[facei])/(1.0 + Ts/pT[facei]);//和OF相同
+                pmu[facei] = mixture_.CanteraTransport()->viscosity();
 
+                palpha[facei] = mixture_.CanteraTransport()->thermalConductivity()/(CanteraGas_->cp_mass());
 
-                // palpha[facei] = mixture_.CanteraTransport()->thermalConductivity()/(CanteraGas_->cp_mass());
-                scalar alpha_tmp = 0;
-                mixture_.calcCp(pT[facei], pp[facei]);
-                forAll(Y_, i)
-                {
-                    alpha_tmp += yTemp_[i]*mixture_.kappa(i, pp[facei], pT[facei]);
-                }
-                palpha[facei] = alpha_tmp/CanteraGas_->cp_mass();//和OF相同
-                /*if (mixture_.transportModelName() == "UnityLewis")
+                if (mixture_.transportModelName() == "UnityLewis")
                 {
                     forAll(rhoD_, i)
                     {
@@ -684,7 +676,7 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
 
                         hai_[i].boundaryFieldRef()[patchi][facei] = hrtTemp_[i]*RT/CanteraGas_->molecularWeight(i);
                     }
-                }*/
+                }
             }
         }
     }
@@ -864,7 +856,6 @@ Foam::dfChemistryModel<ThermoType>::createBalancer()
 }
 
 
-
 template <class ThermoType>
 template <class DeltaTType>
 Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_loadBalance
@@ -938,6 +929,8 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_loadBalance
     return updateReactionRates(incomingSolutions);
 }
 
+
+#ifdef USE_PYTORCH
 template <class ThermoType>
 template <class DeltaTType>
 Foam::scalar Foam::dfChemistryModel<ThermoType>::torchCUDAoneCoreSolve(
@@ -1126,15 +1119,15 @@ Foam::dfChemistryModel<ThermoType>::getGPUProblems
         Qdot_[cellI] = 0.0;
     }
 
-    return problemList; 
+    return problemList;
 }
 
 template <class ThermoType>
 void Foam::dfChemistryModel<ThermoType>::getDNNinputs
 (
-    const Foam::DynamicBuffer<GpuProblem>& problemBuffer, 
+    const Foam::DynamicBuffer<GpuProblem>& problemBuffer,
     std::vector<Foam::label>& outputLength,
-    std::vector<std::vector<double>>& DNNinputs, 
+    std::vector<std::vector<double>>& DNNinputs,
     std::vector<Foam::DynamicBuffer<label>>& cellIDBuffer,
     std::vector<std::vector<label>>& problemCounter
 )
@@ -1197,7 +1190,7 @@ void Foam::dfChemistryModel<ThermoType>::getDNNinputs
                 counter2++;
                 cellIDList2.append(problemBuffer[i][cellI].cellid);
                 break;
-            
+
             default:
                 Info<<"invalid input"<<endl;
                 break;
@@ -1233,7 +1226,7 @@ void Foam::dfChemistryModel<ThermoType>::getDNNinputs
 template <class ThermoType>
 void Foam::dfChemistryModel<ThermoType>::updateSolutionBuffer
 (
-    Foam::DynamicBuffer<Foam::GpuSolution>& solutionBuffer, 
+    Foam::DynamicBuffer<Foam::GpuSolution>& solutionBuffer,
     const double* star,
     const std::vector<Foam::label>& outputLength,
     const std::vector<Foam::DynamicBuffer<Foam::label>>& cellIDBuffer,
@@ -1310,8 +1303,8 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::torchDCUSolve(
     /*==============================send problems==============================*/
     std::chrono::steady_clock::time_point start2 = std::chrono::steady_clock::now();
 
-    PstreamBuffers pBufs(Pstream::commsTypes::nonBlocking); 
-    if (Pstream::myProcNo() % coresPerGPU) //for slave 
+    PstreamBuffers pBufs(Pstream::commsTypes::nonBlocking);
+    if (Pstream::myProcNo() % coresPerGPU) //for slave
     {
         UOPstream send((Pstream::myProcNo()/coresPerGPU)*coresPerGPU, pBufs);// sending problem to master
         send << problemList;
@@ -1404,7 +1397,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::torchDCUSolve(
 
         std::chrono::steady_clock::time_point stop1 = std::chrono::steady_clock::now();
         std::chrono::duration<double> processingTime1 = std::chrono::duration_cast<std::chrono::duration<double>>(stop1 - start1);
-        std::cout << "submasterTime = " << processingTime1.count() << std::endl;  
+        std::cout << "submasterTime = " << processingTime1.count() << std::endl;
         time_submaster_ += processingTime1.count();
     }
 
@@ -1453,5 +1446,6 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::torchDCUSolve(
 
     return deltaTMin;
 }
+#endif
 
 // ************************************************************************* //
