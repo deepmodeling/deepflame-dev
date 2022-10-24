@@ -61,14 +61,14 @@ git clone https://github.com/deepmodeling/deepflame-dev.git
 
 cd deepflame-dev
 ```
-### 4. Install dependencies and install based on your need
+### 4. Install dependencies and DeepFlame based on your need
 DeepFlame supports three compilation choices: no torch, LibTorch, and PyTorch. 
 #### No Torch version 
 If your are using DeepFlame's cvODE solver without DNN model, just install [LibCantera](https://anaconda.org/conda-forge/libcantera-devel) via [conda](https://docs.conda.io/en/latest/miniconda.html#linux-installers).
 ```
-conda create -n libcantera
+conda create -n df-notorch
 
-conda activate libcantera
+conda activate df-torch
 
 conda install -c cantera libcantera-devel
 ```
@@ -86,26 +86,42 @@ If not, specify the path to your libcantera:
 
 #### LibTorch version
 If you choose to use LibTorch, after installing LibCantera the same way as the no torch version, you can either install DeepFlame with autodownloaded Libcantera
+```
+conda create -n df-libtorch
 
+conda activate df-libtorch
+
+conda install -c cantera libcantera-devel
+```
 ```
 . install.sh --libtorch_autodownload
 ```
-or you cam pass your own libtorch path to DeepFlame
+or you cam pass your own libtorch path to DeepFlame.
 
 ```
 . install.sh --libtorch_dir /path/to/libtorch/
 ```
 
 ### PyTorch version
-
+PyTorch version aims to support computation on CUDA. If you have compatible platform, run the following command to install DeepFlame.
 ```
-create -n libcantera python=3.8
-conda activate libcantera
+conda create -n df-pytorch python=3.8
+
+conda activate df-pytorch
+
 conda install -c cantera libcantera-devel
-conda install pytorch 
-conda install pybind11
-```
 
+conda install pytorch torchvision torchaudio cudatoolkit=11.6 -c pytorch -c conda-forge 
+
+conda install pybind11
+
+. install.sh --use_pytorch
+```
+Note: You may come accross an error regarding shared library libmkl_rt.so.2 when libcantera is installed through cantera channel. If so, go to your conda environment and check the existance of libmkl_rt.so.2 and libmkl_rt.so.1, and then link libmkl_rt.so.2 to libmkl_rt.so.1.
+```
+cd ~/miniconda3/envs/df-pytorch/lib
+ln -s libmkl_rt.so.1 libmkl_rt.so.2
+```
 
 Note: Some compiling issues may happen due to system compatability. Instead of using conda installed Cantera C++ lib and the downloaded Torch C++ lib, try to compile your own Cantera and Torch C++ libraries.
 
