@@ -39,44 +39,30 @@ jobs:
         cd /github/home/miniconda3/envs/libcantera/lib
         ln -s libmkl_rt.so.1 libmkl_rt.so.2
  
-     - name: build_notorch 
+     - name: build_notorch
        env: 
         OMPI_ALLOW_RUN_AS_ROOT: 1 
         OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1 
         OMPI_MCA_btl_vader_single_copy_mechanism: none
-       run: |
-        . ~/miniconda3/etc/profile.d/conda.sh
-        conda activate libcantera
-        sudo apt-get -y install openfoam7
-        . /opt/openfoam7/etc/bashrc
-        . install.sh 
-        cd test
-        ./Allrun
-        cmake -B build
-        cmake --build build
-        cd build && ctest
+       run: 
+        /bin/bash -c "source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc && . install.sh && cd test && ./Allrun && cmake -B build && cmake --build build && cd build && ctest"    
+        
+        
 
-        
-        
      - name: build_libtorch
        env: 
         OMPI_ALLOW_RUN_AS_ROOT: 1 
         OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1 
         OMPI_MCA_btl_vader_single_copy_mechanism: none
-       run: |
-        . ~/miniconda3/etc/profile.d/conda.sh
-        conda activate libcantera
-        . /opt/openfoam7/etc/bashrc
-        . install.sh --libtorch_autodownload
+       run: 
+        /bin/bash -c "source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc && . install.sh --libtorch_autodownload"    
+        
 
-     - name: build
+     - name: build_pytorch
        env: 
         OMPI_ALLOW_RUN_AS_ROOT: 1 
         OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1 
         OMPI_MCA_btl_vader_single_copy_mechanism: none
-       run: |
-        . ~/miniconda3/etc/profile.d/conda.sh
-        conda activate libcantera
-        . /opt/openfoam7/etc/bashrc
-        . install.sh --use_pytorch       
-
+       run: 
+        /bin/bash -c "source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc && . install.sh --use_pytorch"    
+        
