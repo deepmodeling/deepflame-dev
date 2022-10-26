@@ -49,6 +49,7 @@ Authors
 
 Description
     multi-criterion refinement as plugin for dynamicRefineFvMesh
+    dynamicRefineFvMesh renamed as dfDynamicRefineFvMesh by DeepFlame
 
     You may refer to this software as :
     //- full bibliographic data to be provided

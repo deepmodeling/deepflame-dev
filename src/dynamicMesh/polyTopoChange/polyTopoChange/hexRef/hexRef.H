@@ -39,6 +39,7 @@ Authors
     Daniel Deising <deising@mma.tu-darmstadt.de>
     Changes: 
         + Corrected adressing of refined internal faces
+        + Change function write to force writing writing refinement history (by DeepFlame,2022)
 
 \*---------------------------------------------------------------------------*/
 

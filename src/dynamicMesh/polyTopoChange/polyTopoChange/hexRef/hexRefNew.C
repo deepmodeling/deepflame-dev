@@ -21,6 +21,12 @@ License
     You should have received a copy of the GNU General Public License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
+note
+    Original code:
+    SOFTX_2018_143, URL:https://github.com/pkuLmq/SOFTX_2018_143, 2018
+    Changes:
+        + Add new hexRef type hexRef2 (by DeepFlame,2022)
+
 \*---------------------------------------------------------------------------*/
 
 #include "hexRef.H"

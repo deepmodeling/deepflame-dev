@@ -77,7 +77,7 @@ Description
 
 
 SourceFiles
-    dynamicRefineFvMesh.C
+    dfDynamicRefineFvMesh.C
 
 Authors:
     File adapted in 2018 by: 
@@ -86,6 +86,8 @@ Authors:
     Changes: 
         + Flux Mapping on refined internal faces
         + Multiple refinement criteria
+        + Change names to match DeepFlame (by DeepFlame,2022)
+        + change function writeObject to achieve auto write (by DeepFlame,2022)
 
 \*---------------------------------------------------------------------------*/
 

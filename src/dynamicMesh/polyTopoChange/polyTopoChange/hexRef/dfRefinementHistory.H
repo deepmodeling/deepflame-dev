@@ -66,6 +66,12 @@ Description
 SourceFiles
     dfRefinementHistory.C
 
+note
+    Original code:
+    SOFTX_2018_143, URL:https://github.com/pkuLmq/SOFTX_2018_143, 2018
+    Changes:
+        + Change names to match DeepFlame (by DeepFlame,2022)
+
 \*---------------------------------------------------------------------------*/
 
 #ifndef dfRefinementHistory_H

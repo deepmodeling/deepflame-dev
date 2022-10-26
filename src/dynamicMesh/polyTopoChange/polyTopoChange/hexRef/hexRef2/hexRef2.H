@@ -32,9 +32,7 @@ SourceFiles
 
 Authors
     Original code:
-    Ahmad Baniabedalruhman 2015
-    Adapted by:
-    Yun Ouedraogo 2017
+    DeepFlame, URL:https://github.com/deepmodeling/deepflame-dev, 2022
 
 \*---------------------------------------------------------------------------*/
 
