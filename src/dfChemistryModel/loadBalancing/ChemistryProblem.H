@@ -1,12 +1,13 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
-  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
-     \\/     M anipulation  |
+  \\      /  F ield         | DLBFoam: Dynamic Load Balancing 
+   \\    /   O peration     | for fast reactive simulations
+    \\  /    A nd           | 
+     \\/     M anipulation  | 2020, Aalto University, Finland
 -------------------------------------------------------------------------------
 License
-    This file is part of OpenFOAM.
+    This file is part of DLBFoam library, derived from OpenFOAM.
+    https://github.com/blttkgl/DLBFoam
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -25,8 +26,11 @@ Class
     Foam::ChemistryProblem
 
 Description
-    A small object containing everything required for solving the reaction rate
-    using the ODE solver. These are passed around in the load balancer.
+    A small object containing everything required for updating the reaction rate
+    and the chemistry time step. These are passed around in the load balancer.
+
+Note
+    2022-Oct: Modified to adapt with the DeepFlame chemistry class.
 
 \*---------------------------------------------------------------------------*/
 
