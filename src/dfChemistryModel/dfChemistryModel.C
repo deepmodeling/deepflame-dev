@@ -99,6 +99,7 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
     )
 {
 #ifdef USE_LIBTORCH
+    torchSwitch_ = this->lookupOrDefault("torch", false);
     torchModelName_ = this->lookupOrDefault("torchModel", word(""));
     Xmu_ = scalarList(this->subDict("torchParameters").lookup("Xmu"));
     Xstd_ = scalarList(this->subDict("torchParameters").lookup("Xstd"));
@@ -109,20 +110,7 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
 #endif
 
 #ifdef USE_PYTORCH
-    coresPerGPU = this->subDict("torchParameters1").lookupOrDefault("coresPerGPU", 8);
-
-
-
-    // time_allsolve_ = 0;
-    // time_submaster_(0),
-    // time_sendProblem_(0),
-    // time_RecvProblem_(0),
-    // time_sendRecvSolution_(0),
-    // time_getDNNinputs_(0),
-    // time_DNNinference_(0),
-    // time_updateSolutionBuffer_(0),
-    // time_vec2ndarray_(0),
-    // time_python_(0),
+    torchSwitch_ = this->lookupOrDefault("torch", false);
 
     Tact1_ = this->subDict("torchParameters1").lookupOrDefault("Tact", 700);
     Qdotact1_ = this->subDict("torchParameters1").lookupOrDefault("Qdotact", 1e9);
@@ -135,6 +123,16 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
 
     coresPerGPU = this->subDict("torchParameters1").lookupOrDefault("coresPerGPU", 8);
 
+    time_allsolve_ = 0;
+    time_submaster_ = 0;
+    time_sendProblem_ = 0;
+    time_RecvProblem_ = 0;
+    time_sendRecvSolution_ = 0;
+    time_getDNNinputs_ = 0;
+    time_DNNinference_ = 0;
+    time_updateSolutionBuffer_ = 0;
+    time_vec2ndarray_ = 0;
+    time_python_ = 0;
 #endif
 
     for(const auto& name : CanteraGas_->speciesNames())
@@ -246,12 +244,27 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve
 {
     scalar result = 0;
 #ifdef USE_LIBTORCH
-    result = torchSolve(deltaT);
+    if(torchSwitch_)
+    {
+        result = torchSolve(deltaT);
+    }
+    else
+    {
+        result = solve_loadBalance(deltaT);
+    }
 #elif USE_PYTORCH
-    result = torchDCUSolve(deltaT);
+    if(torchSwitch_)
+    {
+        result = torchDCUSolve(deltaT);
+    }
+    else
+    {
+        result = solve_loadBalance(deltaT);
+    }
 #else
     result = solve_loadBalance(deltaT);
 #endif
+
     return result;
 }
 

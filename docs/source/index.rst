@@ -10,35 +10,58 @@ Welcome to DeepFlame's Documentation
 .. _Overview:
 
 DeepFlame is a computational fluid dynamics suite for single or multiphase, laminar or turbulent reacting flows at all speeds with machine learning capabilities. It aims to provide an open-source 
-platform bringing together the individual strengths of `OpenFOAM <https://openfoam.org/>`_, `Cantera <https://cantera.org/>`_ and `pyTorch <https://pytorch.org/libraries>`_
-for machine learning assisted reacting flow simulations. It is also has the scope to incorporate next-generation heterogenous supercomputing and AI acceleration infrustructures such as GPU and FPGAs.
+platform bringing together the individual strengths of `OpenFOAM <https://openfoam.org/>`_, `Cantera <https://cantera.org/>`_ and `Torch <https://pytorch.org/libraries>`_ libraries
+for deep learning assisted reacting flow simulations. It is also has the scope to incorporate next-generation heterogenous supercomputing and AI acceleration infrustructures such as GPU and FPGAs.
 
-.. Note:: This project is under active development   
+.. Note:: This project is under active development.  
    
 
-.. _User_Guide:
+.. _Installation:
 
 .. toctree::
    :maxdepth: 3
    :numbered:
-   :caption: User Guide
+   :caption: Installation
    :glob:
 
    installation/index
-   quickstart/index
-   utility
-   solvers/index
 
+.. _quikstart:
 
-.. _reference:
 .. toctree::
-   :maxdepth: 5
-   :caption: Reference
+   :maxdepth: 3
+   :caption: Quick Start
    :glob:
 
+   quickstart/index
+   
 
 
 
+
+.. _solvers:
+
+.. toctree::
+   :maxdepth: 3
+   :numbered:
+   :caption: Solvers
+   :glob:
+
+   solvers/df0DFoam
+   solvers/dfLowMachFoam
+   solvers/dfHighSpeedFoam
+   solvers/dfSprayFoam
+
+
+.. _Utility:
+
+.. toctree::
+   :maxdepth: 3
+   :numbered:
+   :caption: Utility
+   :glob:
+
+   utility
 
 .. _project-details:
 
@@ -49,15 +72,17 @@ for machine learning assisted reacting flow simulations. It is also has the scop
 
    
    contributors
-   communication
+   citation
 
-
-.. _Miscellaneous:
+.. _contributing:
 
 .. toctree::
    :maxdepth: 3
-   :numbered:
-   :caption: Miscellaneous
+   :caption: Contributing to DeepFlame
+
+
+   pr
+
 
 
 

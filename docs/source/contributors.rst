@@ -1,4 +1,9 @@
-Contributors
-============
+Development Team
+=====================
 
-.. git-shortlog-authors::
+The current development team consists the following research groups/affiliations:
+
+*
+*
+*
+*

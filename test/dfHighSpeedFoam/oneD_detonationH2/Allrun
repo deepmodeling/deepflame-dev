@@ -10,4 +10,4 @@ cp -r 0_orig/ 0/
 runApplication blockMesh
 runApplication setFields
 runApplication decomposePar
-runApplication mpirun -np 4 $application -parallel
+runApplication mpirun --oversubscribe -np 8 $application -parallel

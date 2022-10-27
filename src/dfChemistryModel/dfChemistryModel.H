@@ -121,7 +121,9 @@ public IOdictionary
     // heat release rate, [J/m^3/s]
     volScalarField Qdot_;
 
+
 #ifdef USE_LIBTORCH
+    Switch torchSwitch_;
     word torchModelName_;
     scalarList Xmu_;
     scalarList Xstd_;
@@ -132,6 +134,15 @@ public IOdictionary
 #endif
 
 #ifdef USE_PYTORCH
+    Switch torchSwitch_;
+    scalar Tact1_;
+    scalar Qdotact1_;
+    scalar Tact2_;
+    scalar Qdotact2_;
+    scalar Tact3_;
+    scalar Qdotact3_;
+    int coresPerGPU;
+
     // profiling
     double time_allsolve_;
     double time_submaster_;
@@ -143,32 +154,6 @@ public IOdictionary
     double time_updateSolutionBuffer_;
     double time_vec2ndarray_;
     double time_python_;
-
-    word torchModelName1_;
-    scalarList Xmu1_;  //member function
-    scalarList Xstd1_;
-    scalarList Ymu1_;
-    scalarList Ystd1_;
-    scalar Tact1_;
-    scalar Qdotact1_;
-
-    word torchModelName2_;
-    scalarList Xmu2_;  //member function
-    scalarList Xstd2_;
-    scalarList Ymu2_;
-    scalarList Ystd2_;
-    scalar Tact2_;
-    scalar Qdotact2_;
-
-    word torchModelName3_;
-    scalarList Xmu3_;  //member function
-    scalarList Xstd3_;
-    scalarList Ymu3_;
-    scalarList Ystd3_;
-    scalar Tact3_;
-    scalar Qdotact3_;
-
-    int coresPerGPU;
 #endif
 
     // Load balancing object

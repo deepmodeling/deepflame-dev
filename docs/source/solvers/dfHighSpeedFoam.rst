@@ -31,6 +31,8 @@ The case simulates supersonic inlet flow hitting the wall and then reflected to 
 
 
 .. figure:: 1D_reactive_shock_tube.png
+   :width: 500
+   :align: center
 
 
    Result of one-dimensional reactive shock tube
@@ -76,6 +78,8 @@ Detonation propagation contains a complex interaction of the leading shock wave 
 
 
 .. figure:: 1D_air_detonation.png
+   :width: 500
+   :align: center
 
    Result of one-dimensional H2/air detonation
 
@@ -120,13 +124,17 @@ Detonation propagation contains a complex interaction of the leading shock wave 
 Triple points can be seen clearly in the picture below.
 
 .. figure:: 2D_detonation_rho.png
+   :width: 500
+   :align: center
 
    Density field of two-dimensional H2 detonation
 
 In the picture below, during the propagation of detonation wave, we can see that the size of cells gradually became stable.
 
 .. figure:: 2D_detonation_pMax.png
-
+   :width: 500
+   :align: center
+   
    History of maximum pressure during detonation propagation
 
 

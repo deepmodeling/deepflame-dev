@@ -43,3 +43,5 @@ Cantera is used instead of the built-in modules of OpenFOAM to solve the chemica
 
 
 .. figure:: aachenBomb.png
+   :width: 500
+   :align: center

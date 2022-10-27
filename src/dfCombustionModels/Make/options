@@ -1,5 +1,4 @@
 -include $(GENERAL_RULES)/mplibType
-PYTHON_INC_DIR := $(shell python3 -m pybind11 --includes)
 
 EXE_INC = -std=c++14 \
     -I$(LIB_SRC)/transportModels/compressible/lnInclude \

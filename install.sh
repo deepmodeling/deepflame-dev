@@ -69,26 +69,37 @@ done
 
 
 
-
+# if LIBCANTERA_DIR empty and CONDA_PREFIX empty
 if [ -z "$LIBCANTERA_DIR" ] && [ -z "$CONDA_PREFIX" ]; then
     echo "ERROR! either offer libcantera dir or ensure in the conda enviorment including libcantera-devel!"
     return
 fi
 
 
-if [ $LIBCANTERA_DIR != $CONDA_PREFIX ]; then
-    echo "conflict libcantera dir from conda and from given args dir"
-    echo "libcantera dir from conda: " $CONDA_PREFIX
-    echo "libcantera dir from args:  " $LIBCANTERA_DIR
-    return
+# if LIBCANTERA_DIR not empty and CONDA_PREFIX not empty
+# --libcantera_dir _path_to_libcantera has a higher priority than the path from conda enviornment
+if [ ! -z "$LIBCANTERA_DIR" ] && [ ! -z "$CONDA_PREFIX" ]; then
+    echo "duplicate libcantera dir from args and from conda!"
+    echo "from args: "$LIBCANTERA_DIR
+    echo "from args: "$CONDA_PREFIX
+    echo "we are going to use the dir from args: "$LIBCANTERA_DIR
 fi
+
+
+# if LIBCANTERA_DIR empty and CONDA_PREFIX not empty
+if [ -z "$LIBCANTERA_DIR" ] && [ ! -z "$CONDA_PREFIX" ]; then
+    LIBCANTERA_DIR=$CONDA_PREFIX
+fi
+
+
+# if LIBCANTERA_DIR not empty and CONDA_PREFIX empty
+# just use LIBCANTERA_DIR
+
 
 if [ $USE_LIBTORCH = true ] && [ $USE_PYTORCH = true ]; then
     echo "ERROR! either use libtorch or pytorch!"
     return
 fi
-
-
 
 
 if [ $LIBTORCH_AUTO = true ]; then
@@ -105,8 +116,12 @@ if [ $LIBTORCH_AUTO = true ]; then
     fi
 fi
 
+
 if [ $USE_PYTORCH = true ]; then
     PYTORCH_INC=`python3 -m pybind11 --includes`
+    if [ -z "$PYTORCH_INC" ]; then
+        return
+    fi
     PYTORCH_LIB=`python3 -c "from distutils import sysconfig; \
     import os.path as op; v = sysconfig.get_config_vars(); \
     fpaths = [op.join(v[pv], v['LDLIBRARY']) for pv in ('LIBDIR', 'LIBPL')]; \
@@ -114,13 +129,18 @@ if [ $USE_PYTORCH = true ]; then
 fi
 
 
+
+echo "setup for deepflame bashrc:"
 echo LIBCANTERA_DIR=$LIBCANTERA_DIR
 if [ $USE_LIBTORCH = true ]; then
     echo LIBTORCH_DIR=$LIBTORCH_DIR
+    echo PYTORCH_INC=""
+    echo PYTORCH_LIB=""
 fi
 if [ $USE_PYTORCH = true ]; then
     echo PYTORCH_INC=$PYTORCH_INC
     echo PYTORCH_LIB=$PYTORCH_LIB
+    echo LIBTORCH_DIR=""
 fi
 
 cp bashrc.in bashrc
@@ -150,6 +170,18 @@ else
     cp -r $FOAM_SRC/functionObjects/field src_orig/functionObjects
 fi
 
+print_finish() {
+    if [ $USE_LIBTORCH = true ]; then
+        echo "deepflame (linked with libcantera and libtorch) compiled successfully! Enjoy!"
+        return
+    fi
+    if [ $USE_PYTORCH = true ]; then
+        echo "deepflame (linked with libcantera and pytorch) compiled successfully! Enjoy!"
+        return
+    fi
+    echo "deepflame (linked with libcantera) compiled successfully! Enjoy!"
+}
+
 
 source ./bashrc
-./Allwmake -j
+./Allwmake -j && print_finish
