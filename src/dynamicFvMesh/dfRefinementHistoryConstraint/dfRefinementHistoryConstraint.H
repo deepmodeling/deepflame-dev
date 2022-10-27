@@ -37,12 +37,12 @@ Description
 SourceFiles
     dfRefinementHistoryConstraint.C
 
-note
+Note
     original code:
     HenningScheufler, URL:https://github.com/HenningScheufler/multiDimAMR, 2020
     Changes:
-        + Change names to match DeepFlame (by DeepFlame,2022)
-        + Adjust details in functions to make the code available for OpenFOAM v7 (by DeepFlame,2022)
+        + 2022-Oct: Modify names to apply AMR in DeepFlame
+        + 2022-Oct: Adjust details in functions to make the code available for OpenFOAM v7
 
 \*---------------------------------------------------------------------------*/
 
