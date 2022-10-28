@@ -49,7 +49,6 @@ Authors
 
 Description
     multi-criterion refinement as plugin for dynamicRefineFvMesh
-    dynamicRefineFvMesh renamed as dfDynamicRefineFvMesh to apply AMR in DeepFlame
 
     You may refer to this software as :
     //- full bibliographic data to be provided
