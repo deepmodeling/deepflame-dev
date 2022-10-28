@@ -30,7 +30,7 @@ Description
     Determines which cells to refine/unrefine and does all in update().
 
 
-    dynamicRefineFvMeshCoeffs
+    dfDynamicRefineFvMeshCoeffs
     {    
         refineInterval  1;              // How often to refine
 
