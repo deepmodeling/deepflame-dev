@@ -73,6 +73,10 @@ Description
     If you use this software for your scientific work or your publications,
     please don't forget to acknowledge explicitly the use of it.
 
+Note
+    Changes:
+        + 2022-Oct: dynamicRefineFvMesh renamed as dfDynamicRefineFvMesh to apply AMR in DeepFlame
+
 
 \*---------------------------------------------------------------------------*/
 

@@ -30,7 +30,7 @@ Description
     Determines which cells to refine/unrefine and does all in update().
 
 
-    dynamicRefineFvMeshCoeffs
+    dfDynamicRefineFvMeshCoeffs
     {    
         refineInterval  1;              // How often to refine
 
@@ -77,7 +77,7 @@ Description
 
 
 SourceFiles
-    dynamicRefineFvMesh.C
+    dfDynamicRefineFvMesh.C
 
 Authors:
     File adapted in 2018 by: 
@@ -86,6 +86,11 @@ Authors:
     Changes: 
         + Flux Mapping on refined internal faces
         + Multiple refinement criteria
+
+Note
+    Changes:
+        + 2022-Oct: Modify dfDynamicRefineFvMesh to apply AMR in DeepFlame
+        + 2022-Oct: Modify function "writeObject" to achieve auto write
 
 \*---------------------------------------------------------------------------*/
 

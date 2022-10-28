@@ -14,7 +14,7 @@ New in v0.4.0 (2022/09/26):
 - laminar; EDC; PaSR combustion models
 
 New in v0.3.0 (2022/08/29):
-- 1/2/3D adaptive mesh refinement (2/3D adopted from [SOFTX_2018_143](https://github.com/ElsevierSoftwareX/SOFTX_2018_143))
+- 1/2/3D adaptive mesh refinement (2/3D adopted from [SOFTX_2018_143](https://github.com/ElsevierSoftwareX/SOFTX_2018_143) and [multiDimAMR](https://github.com/HenningScheufler/multiDimAMR))
 - Add Sigma/dynSmag LES turbulence models
 - Add functionObjects/field library
 - New example reactiveShockTube for dfHighSpeedFoam
