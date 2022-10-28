@@ -23,7 +23,7 @@ License
 
 Note
     Original code:
-    SOFTX_2018_143, URL:https://github.com/pkuLmq/SOFTX_2018_143, 2018
+    SOFTX_2018_143, URL:https://github.com/ElsevierSoftwareX/SOFTX_2018_143, 2018
     Changes:
         + 2022-Oct: Add new hexRef type hexRef2
 

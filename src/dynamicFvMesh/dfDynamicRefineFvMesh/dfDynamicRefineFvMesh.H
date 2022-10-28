@@ -86,6 +86,9 @@ Authors:
     Changes: 
         + Flux Mapping on refined internal faces
         + Multiple refinement criteria
+
+Note
+    Changes:
         + 2022-Oct: Modify dfDynamicRefineFvMesh to apply AMR in DeepFlame
         + 2022-Oct: function "writeObject" to achieve auto write
 

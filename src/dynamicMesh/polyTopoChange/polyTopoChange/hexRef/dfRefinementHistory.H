@@ -68,7 +68,7 @@ SourceFiles
 
 Note
     Original code:
-    SOFTX_2018_143, URL:https://github.com/pkuLmq/SOFTX_2018_143, 2018
+    SOFTX_2018_143, URL:https://github.com/ElsevierSoftwareX/SOFTX_2018_143, 2018
     Changes:
         + 2022-Oct: Modify names to apply AMR in DeepFlame
 
