@@ -112,5 +112,5 @@ PyTorch version aims to support computation on CUDA. If you have compatible plat
     ln -s libmkl_rt.so.1 libmkl_rt.so.2
 
 
-.. Note::  Some compiling issues may happen due to system compatability. Instead of using conda installed Cantera C++ lib and the downloaded Torch C++ lib, try to compile your own Cantera and Torch C++ libraries.
+
 
