@@ -16,7 +16,7 @@ FoamFile
 
 chemistry       off;
 
-CanteraMechanismFile "grimech30.yaml";
+CanteraMechanismFile "gri30.yaml";
 
 transportModel  "UnityLewis";
 
