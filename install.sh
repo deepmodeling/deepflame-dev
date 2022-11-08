@@ -176,12 +176,17 @@ print_finish() {
         return
     fi
     if [ $USE_PYTORCH = true ]; then
-        echo "deepflame (linked with libcantera and pytorch) compiled successfully! Enjoy!"
-        return
+        echo " = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ="
+        echo "| deepflame (linked with libcantera and pytorch) compiled successfully! Enjoy!! | "
+        echo " = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ="
+	return
     fi
-    echo "deepflame (linked with libcantera) compiled successfully! Enjoy!"
+    echo " = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ="
+    echo "| deepflame (linked with libcantera) compiled successfully! Enjoy!! |"
+    echo " = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ="
 }
 
 
 source ./bashrc
+
 ./Allwmake -j && print_finish
