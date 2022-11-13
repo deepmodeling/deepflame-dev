@@ -1,3 +1,11 @@
+description: |-
+  !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!     
+  !  Reduced version of GRI-MECH 1.2. 19 species ( + N2, AR); 84 reactions. !     
+  !                                 PennState Dec, 1994                     !     
+  !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+  To reference this reduced mechanisms, please use
+  A. Kazakov and M. Frenklach, http://combustion.berkeley.edu/drm/
+
 generator: cti2yaml
 cantera-version: 2.5.1
 date: Thu, 28 Jul 2022 12:32:02 +0800
