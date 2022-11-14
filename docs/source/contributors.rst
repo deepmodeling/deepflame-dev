@@ -4,7 +4,7 @@ Developers Team
 The current DeepFlame developers come from the following research groups/affiliations:
 
 * Peking University (Lead PI: Zhi X. Chen)
-* Beijing AI for Science Institute
+* AI for Science Institute (AISI), Beijing
 
 Collaborators Team
 =====================
