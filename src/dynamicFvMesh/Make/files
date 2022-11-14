@@ -3,4 +3,4 @@ dfDynamicRefineFvMesh/dfDynamicRefineFvMesh.C
 
 dfRefinementHistoryConstraint/dfRefinementHistoryConstraint.C
 
-LIB = $(FOAM_USER_LIBBIN)/libdfDynamicFvMesh
+LIB = $(DF_LIBBIN)/libdfDynamicFvMesh

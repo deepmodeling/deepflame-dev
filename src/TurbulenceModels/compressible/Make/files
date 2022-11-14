@@ -17,4 +17,4 @@ BCs = $(workDir)/turbulentFluidThermoModels/derivedFvPatchFields
 $(workDir)turbulentFluidThermoModels/derivedFvPatchFields/wallFunctions/alphatWallFunctions/alphatWallFunction/alphatWallFunctionFvPatchScalarField.C
 /*turbulentFluidThermoModels/derivedFvPatchFields/wallFunctions/alphatWallFunctions/alphatJayatillekeWallFunction/alphatJayatillekeWallFunctionFvPatchScalarField.C*/
 
-LIB = $(FOAM_USER_LIBBIN)/libdfCompressibleTurbulenceModels
+LIB = $(DF_LIBBIN)/libdfCompressibleTurbulenceModels

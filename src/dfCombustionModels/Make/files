@@ -28,4 +28,4 @@ functionObjects/Qdot/Qdot.C
 radiationModels/absorptionEmissionModels/greyMeanCombustion/greyMeanCombustion.C
 radiationModels/absorptionEmissionModels/wideBandCombustion/wideBandCombustion.C*/
 
-LIB = $(FOAM_USER_LIBBIN)/libdfCombustionModels
+LIB = $(DF_LIBBIN)/libdfCombustionModels

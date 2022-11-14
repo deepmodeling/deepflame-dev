@@ -135,8 +135,8 @@ public IOdictionary
     Switch gpu_;
     Switch gpulog_;
     DNNInferencer DNNInferencer_;
-    int coresPerGPU;
-    int GPUsPerNode;
+    int coresPerGPU_;
+    int GPUsPerNode_;
 
     word torchModelName_;
     scalarList Xmu_;
@@ -181,7 +181,7 @@ public IOdictionary
     scalar Qdotact2_;
     scalar Tact3_;
     scalar Qdotact3_;
-    int coresPerGPU;
+    int coresPerGPU_;
 
     // profiling
     double time_allsolve_;

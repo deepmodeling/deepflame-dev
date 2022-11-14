@@ -46,7 +46,7 @@ Description
 #ifdef USE_LIBTORCH
 #include <torch/script.h>
 #include "DNNInferencer.H"
-#endif 
+#endif
 
 #include "fvCFD.H"
 #include "fluidThermo.H"
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
     while (runTime.run())
     {
         timeIndex ++;
-        
+
         #include "readDyMControls.H"
 
         if (LTS)
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
         // --- Pressure-velocity PIMPLE corrector loop
         while (pimple.loop())
         {
-            if (splitting) 
+            if (splitting)
             {
                 #include "YEqn_RR.H"
             }
@@ -197,9 +197,9 @@ int main(int argc, char *argv[])
         Info<< "============================================"<<nl<< endl;
 
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
-            << "  ClockTime = " << runTime.elapsedClockTime() << " s" << endl
-        #ifdef USE_PYTORCH
-        if (log_)
+            << "  ClockTime = " << runTime.elapsedClockTime() << " s" << endl;
+#ifdef USE_PYTORCH
+        if (log_ && torch_)
         {
             Info<< "    allsolveTime = " << chemistry->time_allsolve() << " s"
             << "    submasterTime = " << chemistry->time_submaster() << " s" << nl
@@ -212,7 +212,19 @@ int main(int argc, char *argv[])
             << "    vec2ndarrayTime = " << chemistry->time_vec2ndarray() << " s"
             << "    pythonTime = " << chemistry->time_python() << " s"<< nl << endl;
         }
-        #endif
+#endif
+#ifdef USE_LIBTORCH
+        if (log_ && torch_)
+        {
+            Info<< "    allsolveTime = " << chemistry->time_allsolve() << " s"
+            << "    submasterTime = " << chemistry->time_submaster() << " s" << nl
+            << "    sendProblemTime = " << chemistry->time_sendProblem() << " s"
+            << "    recvProblemTime = " << chemistry->time_RecvProblem() << " s"
+            << "    sendRecvSolutionTime = " << chemistry->time_sendRecvSolution() << " s" << nl
+            << "    DNNinferenceTime = " << chemistry->time_DNNinference() << " s"
+            << "    updateSolutionBufferTime = " << chemistry->time_updateSolutionBuffer() << " s" << nl;
+        }
+#endif
     }
 
     Info<< "End\n" << endl;

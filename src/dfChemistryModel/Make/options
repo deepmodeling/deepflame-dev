@@ -9,7 +9,7 @@ EXE_INC = -std=c++14 \
     -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude \
     -I$(LIB_SRC)/TurbulenceModels/compressible/lnInclude \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
-    -I$(DF_SRC)/CanteraMixture/lnInclude \
+    -I$(DF_SRC)/dfCanteraMixture/lnInclude \
     -I$(CANTERA_ROOT)/include \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include,) \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include/torch/csrc/api/include,) \
@@ -18,10 +18,10 @@ EXE_INC = -std=c++14 \
 EXE_LIBS = \
     -lcompressibleTransportModels \
     -lturbulenceModels \
-    -L$(FOAM_USER_LIBBIN) \
+    -L$(DF_LIBBIN) \
     -ldfFluidThermophysicalModels \
     -ldfCompressibleTurbulenceModels \
-    -lCanteraMixture \
+    -ldfCanteraMixture \
     $(CANTERA_ROOT)/lib/libcantera.so \
     $(if $(LIBTORCH_ROOT),$(LIBTORCH_ROOT)/lib/libtorch.so,) \
     $(if $(LIBTORCH_ROOT),$(LIBTORCH_ROOT)/lib/libc10.so,) \

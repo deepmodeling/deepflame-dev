@@ -45,7 +45,7 @@ build/
 *.tar
 *.tgz
 *.gtgz
-*.pt
+
 
 cantera_build/
 log.*
@@ -54,7 +54,7 @@ log.*
 dynamicCode/
 postProcessing/
 *.out
-*.json
+
 processor*/
 chemkin/
 *.foam
@@ -67,3 +67,5 @@ thirdParty
 libtorch*.zip*
 .DS_Store
 __pycache__/
+lib/
+bin/

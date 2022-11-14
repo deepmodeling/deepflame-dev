@@ -1,7 +1,0 @@
-CanteraMixture.C
-makeThermos.C
-
-
-
-
-LIB = $(FOAM_USER_LIBBIN)/libCanteraMixture

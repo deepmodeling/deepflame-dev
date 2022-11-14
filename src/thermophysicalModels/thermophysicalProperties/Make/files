@@ -62,4 +62,4 @@ $(workDir)solidProperties/C/C.C
 $(workDir)solidProperties/CaCO3/CaCO3.C
 
 
-LIB = $(FOAM_USER_LIBBIN)/libdfThermophysicalProperties
+LIB = $(DF_LIBBIN)/libdfThermophysicalProperties

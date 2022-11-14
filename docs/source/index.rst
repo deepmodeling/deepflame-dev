@@ -21,23 +21,13 @@ for deep learning assisted reacting flow simulations. It is also has the scope t
 .. toctree::
    :maxdepth: 3
    :numbered:
-   :caption: Installation
-   :glob:
-
-   installation/index
-
-.. _quikstart:
-
-.. toctree::
-   :maxdepth: 3
    :caption: Quick Start
    :glob:
 
-   quickstart/index
+   qs/install
+   qs/examples
+   qs/input
    
-
-
-
 
 .. _solvers:
 

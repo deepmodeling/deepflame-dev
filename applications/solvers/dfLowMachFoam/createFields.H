@@ -145,4 +145,11 @@ IOdictionary CanteraTorchProperties
     )
 );
 const Switch splitting = CanteraTorchProperties.lookupOrDefault("splittingStrategy", false);
-const Switch log_ = CanteraTorchProperties.subDict("TorchSettings").lookupOrDefault("log", false);
+#ifdef USE_PYTORCH
+    const Switch log_ = CanteraTorchProperties.subDict("TorchSettings").lookupOrDefault("log", false);
+    const Switch torch_ = CanteraTorchProperties.subDict("TorchSettings").lookupOrDefault("torch", false);
+#endif
+#ifdef USE_LIBTORCH
+    const Switch log_ = CanteraTorchProperties.subDict("TorchSettings").lookupOrDefault("log", false);
+    const Switch torch_ = CanteraTorchProperties.subDict("TorchSettings").lookupOrDefault("torch", false);
+#endif

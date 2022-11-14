@@ -10,4 +10,4 @@ $(hexRef)/hexRef4/hexRef4.C
 $(hexRef)/hexRef4Axi/hexRef4Axi.C
 $(hexRef)/hexRef2/hexRef2.C
 
-LIB = $(FOAM_USER_LIBBIN)/libnewdynamicMesh
+LIB = $(DF_LIBBIN)/libnewdynamicMesh

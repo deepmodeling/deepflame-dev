@@ -21,18 +21,28 @@ CanteraMechanismFile "ES80_H2-7-16.yaml";
 transportModel "Mix";//"UnityLewis";
 odeCoeffs
 {
-    "relTol"   1e-6;
-    "absTol"   1e-10;
+    //"relTol"   1e-15;
+    //"absTol"   1e-24;
 }
 inertSpecie        "N2";
-
 zeroDReactor
 {
-    //cvorcp "UV";
+    constantProperty "pressure";//cvorcp "UV";
+}
+
+TorchSettings
+{
+    torch off;
+    GPU   off;
+    log  on;
+    torchModel1 "ESH2-sub1.pt"; 
+    torchModel2 "ESH2-sub2.pt"; 
+    torchModel3 "ESH2-sub3.pt"; 
+    coresPerGPU 4;
 }
 loadbalancing
 {
-        active  true;
+        active  false;
         //log   true;
 }
 // ************************************************************************* //

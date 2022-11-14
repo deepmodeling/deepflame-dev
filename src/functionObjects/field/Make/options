@@ -22,5 +22,5 @@ LIB_LIBS = \
     -lfileFormats \
     -lsampling \
     -lsurfMesh \
-    -L$(FOAM_USER_LIBBIN) \
+    -L$(DF_LIBBIN) \
     -ldfFluidThermophysicalModels

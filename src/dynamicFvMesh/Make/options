@@ -15,7 +15,7 @@ LIB_LIBS = \
     -lfiniteVolume \
     -lextrudeModel \
     -ldecompositionMethods \
-    $(FOAM_USER_LIBBIN)/libnewdynamicMesh.so\
+    $(DF_LIBBIN)/libnewdynamicMesh.so\
     -L$(FOAM_LIBBIN)/dummy \
     -lmetisDecomp -lptscotchDecomp -lscotchDecomp
-    
+

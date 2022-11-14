@@ -10,4 +10,4 @@ loadBalancing/LoadBalancer.C
 
 makeDfChemistryModels.C
 
-LIB = $(FOAM_USER_LIBBIN)/libdfChemistryModel
+LIB = $(DF_LIBBIN)/libdfChemistryModel

@@ -4,4 +4,4 @@ SPRAYPARCEL=parcels/derived/basicSprayParcel
 $(SPRAYPARCEL)/defineBasicSprayParcel.C
 $(SPRAYPARCEL)/makeBasicSprayParcelSubmodels.C
 
-LIB = $(FOAM_USER_LIBBIN)/libdfLagrangianSpray
+LIB = $(DF_LIBBIN)/libdfLagrangianSpray

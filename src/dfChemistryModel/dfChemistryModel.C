@@ -128,15 +128,15 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
     torchModelName3_ = this->subDict("TorchSettings").lookupOrDefault("torchModel3", word(""));
 
     // set the number of cores slaved by each GPU card
-    coresPerGPU = this->subDict("TorchSettings").lookupOrDefault("coresPerGPU", 8);
-    GPUsPerNode = this->subDict("TorchSettings").lookupOrDefault("GPUsPerNode", 4);
+    coresPerGPU_ = this->subDict("TorchSettings").lookupOrDefault("coresPerGPU", 8);
+    GPUsPerNode_ = this->subDict("TorchSettings").lookupOrDefault("GPUsPerNode", 4);
 
     // initialization the Inferencer (if use multi GPU)
     if(torchSwitch_)
     {
-        if(!(Pstream::myProcNo() % coresPerGPU)) // Now is a master
+        if(!(Pstream::myProcNo() % coresPerGPU_)) // Now is a master
         {
-            
+
             Info << "location 0" << endl;
             Info << "torchModelName1_ = " << torchModelName1_ << endl;
             torch::jit::script::Module torchModel1_ = torch::jit::load(torchModelName1_);
@@ -146,8 +146,8 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
             std::string device_;
             if (gpu_)
             {
-                int CUDANo = (Pstream::myProcNo() / coresPerGPU) % GPUsPerNode;
-                device_ = "cuda:" + std::to_string(CUDANo); 
+                int CUDANo = (Pstream::myProcNo() / coresPerGPU_) % GPUsPerNode_;
+                device_ = "cuda:" + std::to_string(CUDANo);
             }
             else
             {
@@ -169,7 +169,7 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
     torchSwitch_ = this->subDict("TorchSettings").lookupOrDefault("torch", false);
     gpulog_ = this->subDict("TorchSettings").lookupOrDefault("log", false),
 
-    coresPerGPU = this->subDict("TorchSettings").lookupOrDefault("coresPerGPU", 8);
+    coresPerGPU_ = this->subDict("TorchSettings").lookupOrDefault("coresPerGPU", 8);
 
     time_allsolve_ = 0;
     time_submaster_ = 0;
@@ -387,7 +387,7 @@ Foam::dfChemistryModel<ThermoType>::getGPUProblems
         if (T_[cellI] < 700)
         {
             Qdot_[cellI] = 0;
-            for (size_t i = 0; i < CanteraGas_->nSpecies(); i++)
+            for (int i = 0; i < mixture_.nSpecies(); i++)
             {
                 RR_[i][cellI] = 0.0;
             }
@@ -395,11 +395,11 @@ Foam::dfChemistryModel<ThermoType>::getGPUProblems
         }
 
         // set problems
-        GpuProblem problem(CanteraGas_->nSpecies());
+        GpuProblem problem(mixture_.nSpecies());
         problem.cellid = cellI;
         problem.Ti = Ti;
         problem.pi = pi/101325;
-        for (size_t i = 0; i < CanteraGas_->nSpecies(); i++)
+        for (int i = 0; i < mixture_.nSpecies(); i++)
         {
             problem.Y[i] = Y_[i][cellI];
         }
@@ -408,21 +408,21 @@ Foam::dfChemistryModel<ThermoType>::getGPUProblems
         // choose DNN module
         if ((Qdot_[cellI] < 3e7) && (T_[cellI] < 2000) && ( T_[cellI] >= 700))//choose1
         {
-            problem.DNNid = 0; 
+            problem.DNNid = 0;
             problemList.append(problem);
             selectDNN_[cellI]=0;
             continue;
         }
         if(((Qdot_[cellI] >= 3e7) && (T_[cellI] < 2000)&&(T_[cellI] >= 700))||((Qdot_[cellI] > 7e8) && T_[cellI] > 2000))  //choose2
         {
-            problem.DNNid = 1; 
+            problem.DNNid = 1;
             problemList.append(problem);
             selectDNN_[cellI]=1;
             continue;
         }
         if  ((Qdot_[cellI] < 7e8) && (T_[cellI] >= 2000) && (Qdot_[cellI]!=0)) //choose3
         {
-            problem.DNNid = 2; 
+            problem.DNNid = 2;
             problemList.append(problem);
             selectDNN_[cellI]=2;
             continue;
@@ -430,15 +430,15 @@ Foam::dfChemistryModel<ThermoType>::getGPUProblems
 
     }
 
-    return problemList; 
+    return problemList;
 }
 
 template <class ThermoType>
 void Foam::dfChemistryModel<ThermoType>::getDNNinputs
 (
-    const Foam::DynamicBuffer<GpuProblem>& problemBuffer, 
+    const Foam::DynamicBuffer<GpuProblem>& problemBuffer,
     std::vector<label>& outputLength,
-    std::vector<std::vector<double>>& DNNinputs, 
+    std::vector<std::vector<double>>& DNNinputs,
     std::vector<Foam::DynamicBuffer<label>>& cellIDBuffer,
     std::vector<std::vector<label>>& problemCounter
 )
@@ -456,7 +456,7 @@ void Foam::dfChemistryModel<ThermoType>::getDNNinputs
     DynamicBuffer<label> cellIDList1Buffer; // store the cellIDList1 of each subslave
     DynamicBuffer<label> cellIDList2Buffer; // store the cellIDList2 of each subslave
 
-    for (label i = 0; i < coresPerGPU; i++) // for all local core TODO: i may cause misleading
+    for (label i = 0; i < coresPerGPU_; i++) // for all local core TODO: i may cause misleading
     {
         label counter0 = 0;
         label counter1 = 0;
@@ -469,7 +469,7 @@ void Foam::dfChemistryModel<ThermoType>::getDNNinputs
             case 0:
                 inputsDNN0.push_back(problemBuffer[i][cellI].Ti);
                 inputsDNN0.push_back(problemBuffer[i][cellI].pi);
-                for (size_t speciID = 0; speciID < CanteraGas_->nSpecies(); speciID++)
+                for (int speciID = 0; speciID < mixture_.nSpecies(); speciID++)
                 {
                     inputsDNN0.push_back(problemBuffer[i][cellI].Y[speciID]);
                 }
@@ -481,7 +481,7 @@ void Foam::dfChemistryModel<ThermoType>::getDNNinputs
             case 1:
                 inputsDNN1.push_back(problemBuffer[i][cellI].Ti);
                 inputsDNN1.push_back(problemBuffer[i][cellI].pi);
-                for (size_t speciID = 0; speciID < CanteraGas_->nSpecies(); speciID++)
+                for (int speciID = 0; speciID < mixture_.nSpecies(); speciID++)
                 {
                     inputsDNN1.push_back(problemBuffer[i][cellI].Y[speciID]);
                 }
@@ -493,7 +493,7 @@ void Foam::dfChemistryModel<ThermoType>::getDNNinputs
             case 2:
                 inputsDNN2.push_back(problemBuffer[i][cellI].Ti);
                 inputsDNN2.push_back(problemBuffer[i][cellI].pi);
-                for (size_t speciID = 0; speciID < CanteraGas_->nSpecies(); speciID++)
+                for (int speciID = 0; speciID < mixture_.nSpecies(); speciID++)
                 {
                     inputsDNN2.push_back(problemBuffer[i][cellI].Y[speciID]);
                 }
@@ -501,7 +501,7 @@ void Foam::dfChemistryModel<ThermoType>::getDNNinputs
                 counter2++;
                 cellIDList2.append(problemBuffer[i][cellI].cellid);
                 break;
-            
+
             default:
                 Info<<"invalid input"<<endl;
                 break;
@@ -529,7 +529,7 @@ void Foam::dfChemistryModel<ThermoType>::getDNNinputs
     // auto inputTensor1 = torch::tensor(inputsDNN1);
     // inputTensor1 = inputTensor1.reshape({length1, mixture_.nSpecies() + 3});
     // auto inputTensor2 = torch::tensor(inputsDNN2);
-    // inputTensor2 = inputTensor2.reshape({length2, mixture_.nSpecies() + 3});    
+    // inputTensor2 = inputTensor2.reshape({length2, mixture_.nSpecies() + 3});
 
     // set output
     outputLength = {length0, length1, length2};
@@ -550,25 +550,25 @@ void Foam::dfChemistryModel<ThermoType>::getDNNinputs
 template <class ThermoType>
 void Foam::dfChemistryModel<ThermoType>::updateSolutionBuffer
 (
-    Foam::DynamicBuffer<Foam::GpuSolution>& solutionBuffer, 
+    Foam::DynamicBuffer<Foam::GpuSolution>& solutionBuffer,
     const std::vector<std::vector<double>>& results,
     const std::vector<Foam::label>& outputLength,
     const std::vector<Foam::DynamicBuffer<Foam::label>>& cellIDBuffer,
     std::vector<std::vector<Foam::label>>& problemCounter
 )
 {
-    GpuSolution solution(CanteraGas_->nSpecies());
+    GpuSolution solution(mixture_.nSpecies());
     DynamicList<GpuSolution> solutionList; //TODO: rename
 
     label outputCounter0 = 0;
     label outputCounter1 = 0;
     label outputCounter2 = 0;
 
-    for (label i = 0; i < coresPerGPU; i++) //TODO: i may cause misleading
+    for (label i = 0; i < coresPerGPU_; i++) //TODO: i may cause misleading
     {
-        for (size_t cellI = 0; cellI < problemCounter[0][i]; cellI++)
+        for (int cellI = 0; cellI < problemCounter[0][i]; cellI++)
         {
-            for (size_t speciID = 0; speciID < CanteraGas_->nSpecies(); speciID++)
+            for (int speciID = 0; speciID < mixture_.nSpecies(); speciID++)
             {
                 solution.RRi[speciID] = results[0][outputCounter0 * mixture_.nSpecies() + speciID];
             }
@@ -576,9 +576,9 @@ void Foam::dfChemistryModel<ThermoType>::updateSolutionBuffer
             solutionList.append(solution);
             outputCounter0++;
         }
-        for (size_t cellI = 0; cellI < problemCounter[1][i]; cellI++)
+        for (int cellI = 0; cellI < problemCounter[1][i]; cellI++)
         {
-            for (size_t speciID = 0; speciID < CanteraGas_->nSpecies(); speciID++)
+            for (int speciID = 0; speciID < mixture_.nSpecies(); speciID++)
             {
                 solution.RRi[speciID] = results[1][outputCounter1 * mixture_.nSpecies() + speciID];
             }
@@ -586,9 +586,9 @@ void Foam::dfChemistryModel<ThermoType>::updateSolutionBuffer
             solutionList.append(solution);
             outputCounter1++;
         }
-        for (size_t cellI = 0; cellI < problemCounter[2][i]; cellI++)
+        for (int cellI = 0; cellI < problemCounter[2][i]; cellI++)
         {
-            for (size_t speciID = 0; speciID < CanteraGas_->nSpecies(); speciID++)
+            for (int speciID = 0; speciID < mixture_.nSpecies(); speciID++)
             {
                 solution.RRi[speciID] = results[2][outputCounter2 * mixture_.nSpecies() + speciID];
             }
@@ -631,14 +631,14 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
     /*==============================send problems==============================*/
     std::chrono::steady_clock::time_point start2 = std::chrono::steady_clock::now();
 
-    PstreamBuffers pBufs(Pstream::commsTypes::nonBlocking); 
-    if (Pstream::myProcNo() % coresPerGPU) //for slave 
+    PstreamBuffers pBufs(Pstream::commsTypes::nonBlocking);
+    if (Pstream::myProcNo() % coresPerGPU_) //for slave
     {
-        UOPstream send((Pstream::myProcNo()/coresPerGPU)*coresPerGPU, pBufs);// sending problem to master
+        UOPstream send((Pstream::myProcNo()/coresPerGPU_)*coresPerGPU_, pBufs);// sending problem to master
         send << problemList;
     }
     pBufs.finishedSends();
-    
+
     DynamicBuffer<GpuSolution> solutionBuffer;
 
     std::chrono::steady_clock::time_point stop2 = std::chrono::steady_clock::now();
@@ -647,19 +647,19 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
     time_sendProblem_ += processingTime2.count();
 
     /*=============================submaster work start=============================*/
-    if (!(Pstream::myProcNo() % coresPerGPU))
+    if (!(Pstream::myProcNo() % coresPerGPU_))
     {
         std::chrono::steady_clock::time_point start1 = std::chrono::steady_clock::now();
         std::chrono::steady_clock::time_point start3 = std::chrono::steady_clock::now();
-        
+
         label problemSize = 0; // problemSize is defined to debug
-        DynamicBuffer<GpuProblem> problemBuffer(coresPerGPU);//each submaster init a local problemBuffer TODO:rename it
+        DynamicBuffer<GpuProblem> problemBuffer(coresPerGPU_);//each submaster init a local problemBuffer TODO:rename it
 
         /*==============================gather problems==============================*/
         problemBuffer[0] = problemList; //problemList of submaster get index 0
         problemSize += problemBuffer[0].size();
 
-        for (label i = 1; i < coresPerGPU; i++)
+        for (label i = 1; i < coresPerGPU_; i++)
         {
             UIPstream recv(i + Pstream::myProcNo(), pBufs);
             recv >> problemBuffer[i];  //recv previous send problem and append to problemList
@@ -691,7 +691,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
         /*=============================inference via DNNInferencer=============================*/
         std::chrono::steady_clock::time_point start7 = std::chrono::steady_clock::now();
 
-        auto results = DNNInferencer_.Inference_multiDNNs(DNNinputs, CanteraGas_->nSpecies() + 3);
+        auto results = DNNInferencer_.Inference_multiDNNs(DNNinputs, mixture_.nSpecies() + 3);
 
         std::chrono::steady_clock::time_point stop7 = std::chrono::steady_clock::now();
         std::chrono::duration<double> processingTime7 = std::chrono::duration_cast<std::chrono::duration<double>>(stop7 - start7);
@@ -707,10 +707,10 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
         std::chrono::duration<double> processingTime6 = std::chrono::duration_cast<std::chrono::duration<double>>(stop6 - start6);
         // std::cout << "updateSolutionBufferTime = " << processingTime6.count() << std::endl;
         time_updateSolutionBuffer_ += processingTime6.count();
-        
+
         std::chrono::steady_clock::time_point stop1 = std::chrono::steady_clock::now();
         std::chrono::duration<double> processingTime1 = std::chrono::duration_cast<std::chrono::duration<double>>(stop1 - start1);
-        // std::cout << "submasterTime = " << processingTime1.count() << std::endl;  
+        // std::cout << "submasterTime = " << processingTime1.count() << std::endl;
         time_submaster_ += processingTime1.count();
     }
 
@@ -719,34 +719,34 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
 
     DynamicList<GpuSolution> finalList;
     PstreamBuffers pBufs2(Pstream::commsTypes::nonBlocking);
-    if (!(Pstream::myProcNo() % coresPerGPU))
+    if (!(Pstream::myProcNo() % coresPerGPU_))
     {
         finalList = solutionBuffer[0];
-        for (label i = 1; i < coresPerGPU; i++)
+        for (label i = 1; i < coresPerGPU_; i++)
         {
-            
+
             UOPstream send(i + Pstream::myProcNo(), pBufs2);
             send << solutionBuffer[i];
         }
     }
     pBufs2.finishedSends();
-    
-    if (Pstream::myProcNo() % coresPerGPU)
+
+    if (Pstream::myProcNo() % coresPerGPU_)
     {
-        UIPstream recv((Pstream::myProcNo()/coresPerGPU)*coresPerGPU, pBufs2);
+        UIPstream recv((Pstream::myProcNo()/coresPerGPU_)*coresPerGPU_, pBufs2);
         recv >> finalList;
     }
-   
+
     std::chrono::steady_clock::time_point stop4 = std::chrono::steady_clock::now();
     std::chrono::duration<double> processingTime4 = std::chrono::duration_cast<std::chrono::duration<double>>(stop4 - start4);
     // std::cout << "SendRecvSolutionTime = " << processingTime4.count() << std::endl;
     time_sendRecvSolution_ += processingTime4.count();
 
     /*=============================update RR fields=============================*/
-    for (size_t cellI = 0; cellI < finalList.size(); cellI++)
+    for (int cellI = 0; cellI < finalList.size(); cellI++)
     {
         Qdot_[finalList[cellI].cellid] = 0;
-        for (size_t speciID = 0; speciID < CanteraGas_->nSpecies(); speciID++)
+        for (int speciID = 0; speciID < mixture_.nSpecies(); speciID++)
         {
             RR_[speciID][finalList[cellI].cellid] = finalList[cellI].RRi[speciID];
             Qdot_[finalList[cellI].cellid] -= hc_[speciID] * RR_[speciID][finalList[cellI].cellid];
@@ -950,7 +950,7 @@ void Foam::dfChemistryModel<ThermoType>::solveSingle
 
     CanteraGas_->getMassFractions(yTemp_.begin());
 
-    for (size_t i=0; i<CanteraGas_->nSpecies(); i++)
+    for (int i=0; i<mixture_.nSpecies(); i++)
     {
         solution.RRi[i] = (yTemp_[i] - yPre_[i]) / problem.deltaT * rhoi;
         Qdoti_ -= hc_[i]*solution.RRi[i];
@@ -1192,7 +1192,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN_GPU_oneCore(
     Cantera::Reactor react;
     double lambda = 0.1;
 
-    std::vector<size_t> torch_cell;
+    std::vector<int> torch_cell;
     label torch_cellname = 0;
 
     // obtain the number of DNN cells
@@ -1207,7 +1207,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN_GPU_oneCore(
 
     // generate GPU inputs and solve CVODE cells
     std::vector<double> inputs_;
-    inputs_.reserve(torch_cell.size() * (CanteraGas_->nSpecies() + 3));
+    inputs_.reserve(torch_cell.size() * (mixture_.nSpecies() + 3));
 
     forAll(T_, cellI)
     {
@@ -1223,7 +1223,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN_GPU_oneCore(
             inputs_.push_back(rhoi);
             inputs_.push_back(Ti);
             inputs_.push_back(pi/101325);
-            for (size_t i = 0; i < CanteraGas_->nSpecies(); i++)
+            for (int i = 0; i < mixture_.nSpecies(); i++)
             {
                 inputs_.push_back(Y_[i][cellI]);
             }
@@ -1231,7 +1231,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN_GPU_oneCore(
         else
         {
             Qdot_[cellI] = 0.0;
-            for (size_t i = 0; i < CanteraGas_->nSpecies(); i++)
+            for (int i = 0; i < mixture_.nSpecies(); i++)
             {
                 yPre_[i] = Y_[i][cellI];
             }
@@ -1247,7 +1247,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN_GPU_oneCore(
 
             CanteraGas_->getMassFractions(yTemp_.begin());
 
-            for (size_t i = 0; i < CanteraGas_->nSpecies(); i++)
+            for (int i = 0; i < mixture_.nSpecies(); i++)
             {
                 RR_[i][cellI] = (yTemp_[i] - yPre_[i]) * rhoi / deltaT;
                 Qdot_[cellI] -= hc_[i] * RR_[i][cellI];
@@ -1291,10 +1291,10 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN_GPU_oneCore(
     time_DNNinference_ += processingTime_3.count();
 
     std::chrono::steady_clock::time_point start_2 = std::chrono::steady_clock::now();
-    for (size_t cellI = 0; cellI < torch_cell.size(); cellI++)
+    for (int cellI = 0; cellI < torch_cell.size(); cellI++)
     {
         // update y
-        for (size_t i = 0; i < CanteraGas_->nSpecies(); i++)
+        for (int i = 0; i < mixture_.nSpecies(); i++)
         {
             RR_[i][torch_cell[cellI]] = outputsVec[cellI * 7 + i];
             Qdot_[cellI] -= hc_[i] * RR_[i][cellI];
@@ -1336,7 +1336,7 @@ Foam::dfChemistryModel<ThermoType>::getGPUProblems
         if (T_[cellI] < 700)
         {
             Qdot_[cellI] = 0;
-            for (size_t i = 0; i < CanteraGas_->nSpecies(); i++)
+            for (int i = 0; i < mixture_.nSpecies(); i++)
             {
                 RR_[i][cellI] = 0.0;
             }
@@ -1344,11 +1344,11 @@ Foam::dfChemistryModel<ThermoType>::getGPUProblems
         }
 
         // set problems
-        GpuProblem problem(CanteraGas_->nSpecies());
+        GpuProblem problem(mixture_.nSpecies());
         problem.cellid = cellI;
         problem.Ti = Ti;
         problem.pi = pi/101325;
-        for (size_t i = 0; i < CanteraGas_->nSpecies(); i++)
+        for (int i = 0; i < mixture_.nSpecies(); i++)
         {
             problem.Y[i] = Y_[i][cellI];
         }
@@ -1357,23 +1357,23 @@ Foam::dfChemistryModel<ThermoType>::getGPUProblems
         // choose DNN module
         if ((Qdot_[cellI] < 3e7) && (T_[cellI] < 2000) && ( T_[cellI] >= 700))//choose1
         {
-            problem.DNNid = 0; 
+            problem.DNNid = 0;
             problemList.append(problem);
             continue;
         }
         if(((Qdot_[cellI] >= 3e7) && (T_[cellI] < 2000)&&(T_[cellI] >= 700))||((Qdot_[cellI] > 7e8) && T_[cellI] > 2000))  //choose2
         {
-            problem.DNNid = 1; 
+            problem.DNNid = 1;
             problemList.append(problem);
             continue;
         }
         if  ((Qdot_[cellI] < 7e8) && (T_[cellI] >= 2000) && (Qdot_[cellI]!=0)) //choose3
         {
-            problem.DNNid = 2; 
+            problem.DNNid = 2;
             problemList.append(problem);
             continue;
         }
-    
+
     }
 
     return problemList;
@@ -1402,7 +1402,7 @@ void Foam::dfChemistryModel<ThermoType>::getDNNinputs
     DynamicBuffer<label> cellIDList1Buffer; // store the cellIDList1 of each subslave
     DynamicBuffer<label> cellIDList2Buffer; // store the cellIDList2 of each subslave
 
-    for (label i = 0; i < coresPerGPU; i++) // for all local core TODO: i may cause misleading
+    for (label i = 0; i < coresPerGPU_; i++) // for all local core TODO: i may cause misleading
     {
         label counter0 = 0;
         label counter1 = 0;
@@ -1416,7 +1416,7 @@ void Foam::dfChemistryModel<ThermoType>::getDNNinputs
                 inputsDNN0.push_back(problemBuffer[i][cellI].rhoi);
                 inputsDNN0.push_back(problemBuffer[i][cellI].Ti);
                 inputsDNN0.push_back(problemBuffer[i][cellI].pi);
-                for (size_t speciID = 0; speciID < CanteraGas_->nSpecies(); speciID++)
+                for (int speciID = 0; speciID < mixture_.nSpecies(); speciID++)
                 {
                     inputsDNN0.push_back(problemBuffer[i][cellI].Y[speciID]);
                 }
@@ -1428,7 +1428,7 @@ void Foam::dfChemistryModel<ThermoType>::getDNNinputs
                 inputsDNN1.push_back(problemBuffer[i][cellI].rhoi);
                 inputsDNN1.push_back(problemBuffer[i][cellI].Ti);
                 inputsDNN1.push_back(problemBuffer[i][cellI].pi);
-                for (size_t speciID = 0; speciID < CanteraGas_->nSpecies(); speciID++)
+                for (int speciID = 0; speciID < mixture_.nSpecies(); speciID++)
                 {
                     inputsDNN1.push_back(problemBuffer[i][cellI].Y[speciID]);
                 }
@@ -1440,7 +1440,7 @@ void Foam::dfChemistryModel<ThermoType>::getDNNinputs
                 inputsDNN2.push_back(problemBuffer[i][cellI].rhoi);
                 inputsDNN2.push_back(problemBuffer[i][cellI].Ti);
                 inputsDNN2.push_back(problemBuffer[i][cellI].pi);
-                for (size_t speciID = 0; speciID < CanteraGas_->nSpecies(); speciID++)
+                for (int speciID = 0; speciID < mixture_.nSpecies(); speciID++)
                 {
                     inputsDNN2.push_back(problemBuffer[i][cellI].Y[speciID]);
                 }
@@ -1499,18 +1499,18 @@ void Foam::dfChemistryModel<ThermoType>::updateSolutionBuffer
     std::vector<double> outputsVec1(star+outputLength[0] * 21, star+outputLength[1] * 21);
     std::vector<double> outputsVec2(star+outputLength[1] * 21, star+outputLength[2] * 21);
 
-    GpuSolution solution(CanteraGas_->nSpecies());
+    GpuSolution solution(mixture_.nSpecies());
     DynamicList<GpuSolution> solutionList; //TODO: rename
 
     label outputCounter0 = 0;
     label outputCounter1 = 0;
     label outputCounter2 = 0;
 
-    for (label i = 0; i < coresPerGPU; i++) //TODO: i may cause misleading
+    for (label i = 0; i < coresPerGPU_; i++) //TODO: i may cause misleading
     {
-        for (size_t cellI = 0; cellI < problemCounter[0][i]; cellI++)
+        for (int cellI = 0; cellI < problemCounter[0][i]; cellI++)
         {
-            for (size_t speciID = 0; speciID < CanteraGas_->nSpecies(); speciID++)
+            for (int speciID = 0; speciID < mixture_.nSpecies(); speciID++)
             {
                 solution.RRi[speciID] = outputsVec0[outputCounter0 * mixture_.nSpecies() + speciID];
             }
@@ -1518,9 +1518,9 @@ void Foam::dfChemistryModel<ThermoType>::updateSolutionBuffer
             solutionList.append(solution);
             outputCounter0++;
         }
-        for (size_t cellI = 0; cellI < problemCounter[1][i]; cellI++)
+        for (int cellI = 0; cellI < problemCounter[1][i]; cellI++)
         {
-            for (size_t speciID = 0; speciID < CanteraGas_->nSpecies(); speciID++)
+            for (int speciID = 0; speciID < mixture_.nSpecies(); speciID++)
             {
                 solution.RRi[speciID] = outputsVec1[outputCounter1 * mixture_.nSpecies() + speciID];
             }
@@ -1528,9 +1528,9 @@ void Foam::dfChemistryModel<ThermoType>::updateSolutionBuffer
             solutionList.append(solution);
             outputCounter1++;
         }
-        for (size_t cellI = 0; cellI < problemCounter[2][i]; cellI++)
+        for (int cellI = 0; cellI < problemCounter[2][i]; cellI++)
         {
-            for (size_t speciID = 0; speciID < CanteraGas_->nSpecies(); speciID++)
+            for (int speciID = 0; speciID < mixture_.nSpecies(); speciID++)
             {
                 solution.RRi[speciID] = outputsVec2[outputCounter2 * mixture_.nSpecies() + speciID];
             }
@@ -1566,7 +1566,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
     {
         Info << "now DNN inference is conducted on CPU" << endl;
     }
-    
+
 
     /*=============================gather problems=============================*/
     DynamicList<GpuProblem> problemList = getGPUProblems(deltaT);
@@ -1575,9 +1575,9 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
     std::chrono::steady_clock::time_point start2 = std::chrono::steady_clock::now();
 
     PstreamBuffers pBufs(Pstream::commsTypes::nonBlocking);
-    if (Pstream::myProcNo() % coresPerGPU) //for slave
+    if (Pstream::myProcNo() % coresPerGPU_) //for slave
     {
-        UOPstream send((Pstream::myProcNo()/coresPerGPU)*coresPerGPU, pBufs);// sending problem to master
+        UOPstream send((Pstream::myProcNo()/coresPerGPU_)*coresPerGPU_, pBufs);// sending problem to master
         send << problemList;
     }
     pBufs.finishedSends();
@@ -1590,19 +1590,19 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
     time_sendProblem_ += processingTime2.count();
 
     /*=============================submaster work start=============================*/
-    if (!(Pstream::myProcNo() % coresPerGPU))
+    if (!(Pstream::myProcNo() % coresPerGPU_))
     {
         std::chrono::steady_clock::time_point start1 = std::chrono::steady_clock::now();
         std::chrono::steady_clock::time_point start3 = std::chrono::steady_clock::now();
 
         label problemSize = 0; // problemSize is defined to debug
-        DynamicBuffer<GpuProblem> problemBuffer(coresPerGPU);//each submaster init a local problemBuffer TODO:rename it
+        DynamicBuffer<GpuProblem> problemBuffer(coresPerGPU_);//each submaster init a local problemBuffer TODO:rename it
 
         /*==============================gather problems==============================*/
         problemBuffer[0] = problemList; //problemList of submaster get index 0
         problemSize += problemBuffer[0].size();
 
-        for (label i = 1; i < coresPerGPU; i++)
+        for (label i = 1; i < coresPerGPU_; i++)
         {
             UIPstream recv(i + Pstream::myProcNo(), pBufs);
             recv >> problemBuffer[i];  //recv previous send problem and append to problemList
@@ -1680,19 +1680,19 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
 
     DynamicList<GpuSolution> finalList;
     PstreamBuffers pBufs2(Pstream::commsTypes::nonBlocking);
-    if (!(Pstream::myProcNo() % coresPerGPU))
+    if (!(Pstream::myProcNo() % coresPerGPU_))
     {
         finalList = solutionBuffer[0];
-        for (label i = 1; i < coresPerGPU; i++)
+        for (label i = 1; i < coresPerGPU_; i++)
         {
             UOPstream send(i + Pstream::myProcNo(), pBufs2);
             send << solutionBuffer[i];
         }
     }
     pBufs2.finishedSends();
-    if (Pstream::myProcNo() % coresPerGPU)
+    if (Pstream::myProcNo() % coresPerGPU_)
     {
-        UIPstream recv((Pstream::myProcNo()/coresPerGPU)*coresPerGPU, pBufs2);
+        UIPstream recv((Pstream::myProcNo()/coresPerGPU_)*coresPerGPU_, pBufs2);
         recv >> finalList;
     }
 
@@ -1702,10 +1702,10 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
     time_sendRecvSolution_ += processingTime4.count();
 
     /*=============================update RR fields=============================*/
-    for (size_t cellI = 0; cellI < finalList.size(); cellI++)
+    for (int cellI = 0; cellI < finalList.size(); cellI++)
     {
         Qdot_[finalList[cellI].cellid] = 0;
-        for (size_t speciID = 0; speciID < CanteraGas_->nSpecies(); speciID++)
+        for (int speciID = 0; speciID < mixture_.nSpecies(); speciID++)
         {
             RR_[speciID][finalList[cellI].cellid] = finalList[cellI].RRi[speciID];
             Qdot_[finalList[cellI].cellid] -= hc_[speciID] * RR_[speciID][finalList[cellI].cellid];

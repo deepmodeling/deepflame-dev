@@ -1,6 +1,8 @@
 -include $(GENERAL_RULES)/mplibType
 
 EXE_INC = -std=c++14 \
+    -Wno-unused-variable \
+    -Wno-unused-but-set-variable \
     -Wno-old-style-cast \
     -I. \
     -I$(FOAM_APP)/solvers/lagrangian/reactingParcelFoam \
@@ -25,7 +27,7 @@ EXE_INC = -std=c++14 \
     -I$(DF_SRC)/thermophysicalModels/thermophysicalProperties/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/thermophysicalProperties/lnInclude \
     -I$(DF_SRC)/thermophysicalModels/SLGThermo/lnInclude \
-    -I$(DF_SRC)/CanteraMixture/lnInclude \
+    -I$(DF_SRC)/dfCanteraMixture/lnInclude \
     -I$(DF_SRC)/dfChemistryModel/lnInclude \
     -I$(DF_SRC)/dfCombustionModels/lnInclude \
     -I$(CANTERA_ROOT)/include \
@@ -46,7 +48,7 @@ EXE_LIBS = \
     -ltopoChangerFvMesh \
     -lmeshTools \
     -lsampling \
-    -L$(FOAM_USER_LIBBIN) \
+    -L$(DF_LIBBIN) \
     -ldfCompressibleTurbulenceModels \
     -ldfFluidThermophysicalModels \
     -ldfThermophysicalProperties \
@@ -54,7 +56,7 @@ EXE_LIBS = \
     -ldfLagrangianIntermediate \
     -ldfLagrangianTurbulence \
     -ldfLagrangianSpray \
-    -lCanteraMixture \
+    -ldfCanteraMixture \
     -ldfChemistryModel \
     -ldfCombustionModels  \
     $(CANTERA_ROOT)/lib/libcantera.so \

@@ -8,7 +8,7 @@ EXE_INC = \
 
 LIB_LIBS = \
     -lcompressibleTransportModels \
-    -L$(FOAM_USER_LIBBIN) \
+    -L$(DF_LIBBIN) \
     -ldfFluidThermophysicalModels \
     -lturbulenceModels \
     -lfiniteVolume \

@@ -33,12 +33,12 @@ Description
 #include <pybind11/embed.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h> //used to convert
-#endif 
+#endif
 
 #ifdef USE_LIBTORCH
 #include <torch/script.h>
 #include "DNNInferencer.H"
-#endif 
+#endif
 
 #include "fvCFD.H"
 #include "dynamicFvMesh.H"
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     #include "listOptions.H"
     #include "setRootCase2.H"
     #include "listOutput.H"
-    
+
     #include "createTime.H"
     #include "createDynamicFvMesh.H"
     #include "createDyMControls.H"
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
     #include "createFields.H"
     #include "createFieldRefs.H"
     #include "createRhoUfIfPresent.H"
-    
+
     double time_monitor_chem=0;
     double time_monitor_Y=0;
     double time_monitor_corrThermo=0;
@@ -121,8 +121,8 @@ int main(int argc, char *argv[])
 
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"<<endl;
-        #ifdef USE_PYTORCH
-        if (log_)
+#ifdef USE_PYTORCH
+        if (log_ && torch_)
         {
             Info<< "    allsolveTime = " << chemistry.time_allsolve() << " s"
             << "    submasterTime = " << chemistry.time_submaster() << " s" << nl
@@ -135,7 +135,19 @@ int main(int argc, char *argv[])
             << "    vec2ndarrayTime = " << chemistry.time_vec2ndarray() << " s"
             << "    pythonTime = " << chemistry.time_python() << " s"<< nl << endl;
         }
-        #endif
+#endif
+#ifdef USE_LIBTORCH
+        if (log_ && torch_)
+        {
+            Info<< "    allsolveTime = " << chemistry.time_allsolve() << " s"
+            << "    submasterTime = " << chemistry.time_submaster() << " s" << nl
+            << "    sendProblemTime = " << chemistry.time_sendProblem() << " s"
+            << "    recvProblemTime = " << chemistry.time_RecvProblem() << " s"
+            << "    sendRecvSolutionTime = " << chemistry.time_sendRecvSolution() << " s" << nl
+            << "    DNNinferenceTime = " << chemistry.time_DNNinference() << " s"
+            << "    updateSolutionBufferTime = " << chemistry.time_updateSolutionBuffer() << " s" << nl;
+        }
+#endif
     }
 
     Info<< "End\n" << endl;

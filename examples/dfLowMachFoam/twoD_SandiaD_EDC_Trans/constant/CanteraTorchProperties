@@ -7,36 +7,46 @@
 \*---------------------------------------------------------------------------*/
 FoamFile
 {
-    version         2;
-    format          ascii;
-    class           dictionary;
-    location        "constant";
-    object          CanteraTorchProperties;
+    version          2.0;
+    format           ascii;
+    class            dictionary;
+    location         "constant";
+    object           CanteraTorchProperties;
 }
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 chemistry       off;
 
 CanteraMechanismFile "gri30.yaml";
 
-transportModel  "UnityLewis";
+transportModel       "Mix";
 
 odeCoeffs
 {
-    "relTol"        1e-06;
-    "absTol"        1e-10;
+    "relTol"         1e-6;
+    "absTol"         1e-10;
 }
 
-inertSpecie     "N2";
+inertSpecie          "N2";
 
-zeroDReactor
+splittingStrategy    off;
+
+TorchSettings
 {
+    torch            off;
+    GPU              off;
+    log              off;
+    torchModel1      "ESH2-sub1.pt"; 
+    torchModel2      "ESH2-sub2.pt"; 
+    torchModel3      "ESH2-sub3.pt"; 
+    coresPerGPU      4;
+    GPUsPerNode      4;
 }
-
-splittingStrategy   off;
 
 loadbalancing
 {
-    active          true;
+    active           true;
+    log              false;
 }
 
 

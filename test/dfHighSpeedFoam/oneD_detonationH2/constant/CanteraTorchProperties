@@ -18,18 +18,31 @@ FoamFile
 
 chemistry           on;
 CanteraMechanismFile "H2_Li.xml";
-transportModel "UnityLewis";
-loadbalancing
-{
-        active  true;
-        log   true;
-}
+transportModel "Mix";//"UnityLewis";
 odeCoeffs
-{}
+{
+    //"relTol"   1e-15;
+   //"absTol"   1e-24;
+}
 inertSpecie        "N2";
-
 zeroDReactor
 {
-    //cvorcp "UV";
+    constantProperty "pressure";//cvorcp "UV";
+}
+
+TorchSettings
+{
+    torch off;
+    GPU   off;
+    log  on;
+    torchModel1 "ESH2-sub1.pt"; 
+    torchModel2 "ESH2-sub2.pt"; 
+    torchModel3 "ESH2-sub3.pt"; 
+    coresPerGPU 4;
+}
+loadbalancing
+{
+        active  false;
+        //log   true;
 }
 // ************************************************************************* //

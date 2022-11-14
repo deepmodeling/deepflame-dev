@@ -70,4 +70,4 @@ $(workDir)/interfaceHeight/interfaceHeight.C
 
 $(workDir)/age/age.C
 
-LIB = $(FOAM_USER_LIBBIN)/libdfFieldFunctionObjects
+LIB = $(DF_LIBBIN)/libdfFieldFunctionObjects

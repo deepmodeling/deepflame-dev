@@ -11,6 +11,6 @@ LIB_LIBS = \
     -lturbulenceModels \
     -lfiniteVolume \
     -lmeshTools \
-    -L$(FOAM_USER_LIBBIN) \
+    -L$(DF_LIBBIN) \
     -ldfCompressibleTurbulenceModels \
     -ldfFluidThermophysicalModels

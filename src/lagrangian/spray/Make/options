@@ -14,7 +14,7 @@ EXE_INC = \
     -I$(LIB_SRC)/thermophysicalModels/thermophysicalProperties/lnInclude \
     -I$(DF_SRC)/thermophysicalModels/SLGThermo/lnInclude \
     -I$(CANTERA_ROOT)/include \
-    -I$(DF_SRC)/CanteraMixture/lnInclude \
+    -I$(DF_SRC)/dfCanteraMixture/lnInclude \
     -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude \
     -I$(LIB_SRC)/TurbulenceModels/incompressible/lnInclude \
     -I$(LIB_SRC)/TurbulenceModels/compressible/lnInclude \
@@ -27,8 +27,8 @@ EXE_INC = \
     -I$(LIB_SRC)/meshTools/lnInclude
 
 LIB_LIBS = \
-    -L$(FOAM_USER_LIBBIN) \
-    -lCanteraMixture \
+    -L$(DF_LIBBIN) \
+    -ldfCanteraMixture \
     -llagrangian \
     -ldfLagrangianIntermediate \
     -ldfLagrangianTurbulence \

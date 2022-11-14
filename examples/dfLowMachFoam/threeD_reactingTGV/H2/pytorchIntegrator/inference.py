@@ -10,11 +10,9 @@ from easydict import EasyDict as edict
 import torch.profiler
 import os
 
-torch.set_printoptions(precision=10)
-print('position 0 in inference.py')
-device = torch.device("cuda")
-device_ids = range(torch.cuda.device_count())
 
+
+torch.set_printoptions(precision=10)
 
 
 class MyGELU(torch.nn.Module):
@@ -51,16 +49,56 @@ class Net(torch.nn.Module):
         x = self.fc(x)
         return x
 try:
+    #load variables from constant/CanteraTorchProperties
+    path_r = r"./constant/CanteraTorchProperties"
+    with open(path_r, "r") as f:
+        data = f.read()
+        i = data.index('torchModel1') 
+        a = data.index('"',i) 
+        b = data.index('.',a+1)
+        moduleName1 = data[a+1:b]
+
+        i = data.index('torchModel2') 
+        a = data.index('"',i) 
+        b = data.index('.',a+1)
+        moduleName2 = data[a+1:b]
+
+        i = data.index('torchModel3') 
+        a = data.index('"',i) 
+        b = data.index('.',a+1)
+        moduleName3 = data[a+1:b]
+        
+        i = data.index('GPU')
+        a = data.index(';', i)
+        b = data.rfind(' ',i+1,a)
+        switch_GPU = data[b+1:a]
+
+    #load OpenFOAM switch
+    switch_on = ["true", "True", "on", "yes", "y", "t", "any"]
+    switch_off = ["false", "False", "off", "no", "n", "f", "none"]
+    if switch_GPU in switch_on:
+        device = torch.device("cuda")
+        device_ids = range(torch.cuda.device_count())
+    elif switch_GPU in switch_off:
+        device = torch.device("cpu")
+        device_ids = [0]
+    else:
+        print("invalid setting!")
+        os._exit(0)
+
+
+
     #glbal variable will only init once when called interperter
     #load parameters from json
-    setting0 = json2Parser('pytorchDNN/settings1.json')
-    setting1 = json2Parser('pytorchDNN/settings2.json')
-    setting2 = json2Parser('pytorchDNN/settings3.json')
-    
+    setting0 = json2Parser(str("pytorchDNN/"+moduleName1+".json"))
+    setting1 = json2Parser(str("pytorchDNN/"+moduleName2+".json"))
+    setting2 = json2Parser(str("pytorchDNN/"+moduleName3+".json"))
+    #print(str("pytorchDNN/"+moduleName1+".json"))
     lamda = setting0.power_transform
     delta_t = setting0.delta_t
     dim = setting0.dim
     layers = setting0.layers
+    
 
     Xmu0 = torch.tensor(setting0.Xmu).unsqueeze(0).to(device)
     Xstd0 = torch.tensor(setting0.Xstd).unsqueeze(0).to(device=device)
@@ -76,29 +114,38 @@ try:
     Xstd2 = torch.tensor(setting2.Xstd).unsqueeze(0).to(device=device)
     Ymu2 = torch.tensor(setting2.Ymu).unsqueeze(0).to(device=device)
     Ystd2 = torch.tensor(setting2.Ystd).unsqueeze(0).to(device=device)
-    print('position 1 in inference.py')
 
     #load module  
     model0 = Net()
     model1 = Net()
     model2 = Net()
-    check_point0 = torch.load('pytorchDNN/ESH2-sub1.pt')
-    check_point1 = torch.load('pytorchDNN/ESH2-sub2.pt')
-    check_point2 = torch.load('pytorchDNN/ESH2-sub3.pt')
+    
+    if torch.cuda.is_available()==False:
+        check_point0 = torch.load(str("pytorchDNN/"+moduleName1+".pt"), map_location='cpu')
+        check_point1 = torch.load(str("pytorchDNN/"+moduleName2+".pt"), map_location='cpu')
+        check_point2 = torch.load(str("pytorchDNN/"+moduleName3+".pt"), map_location='cpu')
+    else:
+        check_point0 = torch.load(str("pytorchDNN/"+moduleName1+".pt"))
+        check_point1 = torch.load(str("pytorchDNN/"+moduleName2+".pt"))
+        check_point2 = torch.load(str("pytorchDNN/"+moduleName3+".pt"))
+    
     model0.load_state_dict(check_point0)
     model1.load_state_dict(check_point1)
     model2.load_state_dict(check_point2)
     model0.to(device=device)
     model1.to(device=device)
     model2.to(device=device)
+
     if len(device_ids) > 1:
         model0 = torch.nn.DataParallel(model0, device_ids=device_ids)
         model1 = torch.nn.DataParallel(model1, device_ids=device_ids)
         model2 = torch.nn.DataParallel(model2, device_ids=device_ids)
-    print('call init')
 except Exception as e:
     print(e.args)
-
+# print("check_point0")
+# print(check_point0)
+# print("fc.0.weight")
+# print(model0.state_dict()['fc.0.weight'])
 
 def inference(vec0, vec1, vec2):
     '''
@@ -126,7 +173,8 @@ def inference(vec0, vec1, vec2):
             input0_normalized = (input0_bct - Xmu0) / Xstd0
             # input0_normalized[:, -1] = 0 #set Y_AR to 0
             input0_normalized = input0_normalized.float()
-
+            #print("input0_normalized")
+            #print(input0_normalized[0])
             rho1 = input1_[:, 0].unsqueeze(1)
             input1_Y = input1_[:, 3:].clone()
             input1_bct = input1_[:, 1:]
@@ -148,8 +196,13 @@ def inference(vec0, vec1, vec2):
             output0_normalized = model0(input0_normalized)
             output1_normalized = model1(input1_normalized)
             output2_normalized = model2(input2_normalized)
+            #print("output0_normalized")
+            #print(output0_normalized[0])
+            # for name in model0.state_dict():
+            #     print(name)
 
-
+            # print("fc.0.weight")
+            # print(model0.state_dict()['fc.0.weight'])
             # post_processing
             output0_bct = (output0_normalized * Ystd0 + Ymu0) * delta_t + input0_bct
             output0_Y = (lamda * output0_bct[:, 2:] + 1)**(1 / lamda)

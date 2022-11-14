@@ -16,4 +16,4 @@ $(workDir)/derivedFvPatchFields/mixedEnergy/mixedEnergyFvPatchScalarField.C
 $(workDir)/derivedFvPatchFields/energyJump/energyJump/energyJumpFvPatchScalarField.C
 $(workDir)/derivedFvPatchFields/energyJump/energyJumpAMI/energyJumpAMIFvPatchScalarField.C
 
-LIB = $(FOAM_USER_LIBBIN)/libdfFluidThermophysicalModels
+LIB = $(DF_LIBBIN)/libdfFluidThermophysicalModels

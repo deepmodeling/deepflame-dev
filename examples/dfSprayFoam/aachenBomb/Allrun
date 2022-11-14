@@ -8,4 +8,4 @@ application=dfSprayFoam
 
 runApplication blockMesh
 runApplication decomposePar
-runApplication mpirun -np 32 $application -parallel
+runApplication mpirun -np 4 $application -parallel

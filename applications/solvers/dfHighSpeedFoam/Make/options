@@ -1,6 +1,8 @@
 -include $(GENERAL_RULES)/mplibType
 
 EXE_INC = -std=c++14 \
+    -Wno-unused-variable \
+    -Wno-unused-but-set-variable \
     -Wno-old-style-cast \
     $(PFLAGS) $(PINC) \
     $(if $(LIBTORCH_ROOT),-DUSE_LIBTORCH,) \
@@ -16,7 +18,7 @@ EXE_INC = -std=c++14 \
     -I$(LIB_SRC)/dynamicFvMesh/lnInclude \
     -I$(LIB_SRC)/Pstream/mpi \
     -I$(LIB_SRC)/meshTools/lnInclude \
-    -I$(DF_SRC)/CanteraMixture/lnInclude \
+    -I$(DF_SRC)/dfCanteraMixture/lnInclude \
     -I$(DF_SRC)/dfChemistryModel/lnInclude \
     -I$(DF_SRC)/dfCombustionModels/lnInclude \
     -I$(CANTERA_ROOT)/include \
@@ -31,10 +33,10 @@ EXE_LIBS = \
     -ldynamicFvMesh \
     -ltopoChangerFvMesh \
     -lmeshTools \
-    -L$(FOAM_USER_LIBBIN) \
+    -L$(DF_LIBBIN) \
     -ldfFluidThermophysicalModels \
     -ldfCompressibleTurbulenceModels \
-    -lCanteraMixture \
+    -ldfCanteraMixture \
     -ldfChemistryModel \
     -ldfCombustionModels  \
     $(CANTERA_ROOT)/lib/libcantera.so \

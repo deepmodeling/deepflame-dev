@@ -13,7 +13,7 @@ tmp<fv::convectionScheme<scalar>> mvConvection
     {
         std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
         chemistry.solve(mesh.time().deltaTValue());
-        label flag_mpi_init;    
+        label flag_mpi_init;
         MPI_Initialized(&flag_mpi_init);
         if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
         std::chrono::steady_clock::time_point stop = std::chrono::steady_clock::now();

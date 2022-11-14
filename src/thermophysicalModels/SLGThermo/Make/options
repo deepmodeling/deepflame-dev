@@ -5,12 +5,12 @@ EXE_INC = \
     -I$(DF_SRC)/thermophysicalModels/thermophysicalProperties/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/thermophysicalProperties/lnInclude \
     -I$(CANTERA_ROOT)/include \
-    -I$(DF_SRC)/CanteraMixture/lnInclude \
+    -I$(DF_SRC)/dfCanteraMixture/lnInclude \
     -I$(LIB_SRC)/finiteVolume/lnInclude
 
 LIB_LIBS = \
     $(CANTERA_ROOT)/lib/libcantera.so \
-    -L$(FOAM_USER_LIBBIN) \
-    -lCanteraMixture \
+    -L$(DF_LIBBIN) \
+    -ldfCanteraMixture \
     -lcompressibleTransportModels \
     -lfiniteVolume

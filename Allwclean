@@ -1,37 +1,6 @@
 #!/bin/sh
 cd ${0%/*} || exit 1    # Run from this directory
 
-#clean libso multiphaseSystem
-#wclean libso multiphaseCompressibleTurbulenceModels
-#wclean src/thermophysicalModels/thermophysicalProperties
-#wclean src/thermophysicalModels/basic
-#wclean src/functionObjects/field
-#wclean src/CanteraMixture
-#wclean src/thermophysicalModels/SLGThermo
-#wclean src/dfChemistryModel
-#wclean src/TurbulenceModels/compressible
-#wclean src/TurbulenceModels/turbulenceModels
-#wclean src/regionModels/surfaceFilmModels
-
-#wclean src/dfCombustionModels
-#wclean src/dynamicMesh
-#wclean src/dynamicFvMesh
-
-#wclean applications/solvers/df0DFoam
-#wclean applications/solvers/dfLowMachFoam
-#wclean applications/solvers/dfHighSpeedFoam
-#wclean applications/solvers/dfSprayFoam
-
-#wclean applications/utilities/flameSpeed
-
-wclean ./src_orig/thermophysicalModels/basic
-wclean ./src_orig/thermophysicalModels/thermophysicalProperties
-wclean ./src_orig/functionObjects/field
-wclean ./src_orig/regionModels/surfaceFilmModels
-wclean ./src_orig/regionModels/surfaceFilmModels/derivedFvPatchFields/wallFunctions
-wclean ./src_orig/lagrangian/turbulence
-wclean ./src_orig/lagrangian/intermediate
-wclean ./src_orig/TurbulenceModels/compressible
 wclean ./src/thermophysicalModels/basic
 wclean ./src/thermophysicalModels/SLGThermo
 wclean ./src/thermophysicalModels/thermophysicalProperties
@@ -46,7 +15,7 @@ wclean ./src/dynamicMesh
 wclean ./src/dfCombustionModels
 wclean ./src/TurbulenceModels/compressible
 wclean ./src/TurbulenceModels/turbulenceModels
-wclean ./src/CanteraMixture
+wclean ./src/dfCanteraMixture
 wclean ./applications/utilities/flameSpeed
 wclean ./applications/solvers/dfSprayFoam
 wclean ./applications/solvers/df0DFoam
@@ -54,3 +23,5 @@ wclean ./applications/solvers/dfLowMachFoam
 wclean ./applications/solvers/dfHighSpeedFoam
 
 rm -rf src_orig/
+rm -rf bin/
+rm -rf lib/

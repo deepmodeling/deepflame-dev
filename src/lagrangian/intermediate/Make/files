@@ -121,4 +121,4 @@ clouds/Templates/KinematicCloud/cloudSolution/cloudSolution.C
 $(workDir)/submodels/MPPIC/AveragingMethods/makeAveragingMethods.C
 
 
-LIB = $(FOAM_USER_LIBBIN)/libdfLagrangianIntermediate
+LIB = $(DF_LIBBIN)/libdfLagrangianIntermediate

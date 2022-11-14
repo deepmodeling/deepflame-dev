@@ -7,55 +7,47 @@
 \*---------------------------------------------------------------------------*/
 FoamFile
 {
-    version     2.0;
-    format      ascii;
-    class       dictionary;
-    location    "constant";
-    object      chemistryProperties;
+    version          2.0;
+    format           ascii;
+    class            dictionary;
+    location         "constant";
+    object           CanteraTorchProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+chemistry            on;
 
-chemistry           on;
 CanteraMechanismFile "drm19.yml";
-transportModel "Mix";//"UnityLewis";
+
+transportModel       "Mix";
+
 odeCoeffs
 {
-    "relTol"   1e-15;
-    "absTol"   1e-24;
-}
-inertSpecie        "N2";
-
-zeroDReactor
-{
-    constantProperty "pressure";//cvorcp "UV";
+    "relTol"         1e-6;
+    "absTol"         1e-10;
 }
 
-torch on;
-GPU on;
-torchModel1 "modeldrm19_0.pt"; 
-torchModel2 "modeldrm19_1.pt"; 
-torchModel3 "modeldrm19_2.pt"; 
+inertSpecie          "N2";
 
-torchParameters1  
+splittingStrategy    off;
+
+TorchSettings
 {
-    Tact 700  ;
-    Qdotact  3e7;
-    coresPerGPU 4;
+    torch            on;
+    GPU              on;
+    log              on;
+    torchModel1      "modeldrm19_0.pt"; 
+    torchModel2      "modeldrm19_1.pt"; 
+    torchModel3      "modeldrm19_2.pt"; 
+    coresPerGPU      4;
+    GPUsPerNode      4;
 }
-torchParameters2
-{
-    Tact 2000;
-    Qdotact  3e7;
-}
-torchParameters3
-{
-    Tact 2000;
-    Qdotact  7e8;
-}
+
 loadbalancing
 {
-        active  false;
-        //log   true;
+    active           true;
+    log              false;
 }
+
+
 // ************************************************************************* //

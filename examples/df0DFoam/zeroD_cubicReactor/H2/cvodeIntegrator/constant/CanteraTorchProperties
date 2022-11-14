@@ -7,55 +7,52 @@
 \*---------------------------------------------------------------------------*/
 FoamFile
 {
-    version     2.0;
-    format      ascii;
-    class       dictionary;
-    location    "constant";
-    object      chemistryProperties;
+    version          2.0;
+    format           ascii;
+    class            dictionary;
+    location         "constant";
+    object           CanteraTorchProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+chemistry            on;
 
-chemistry           on;
 CanteraMechanismFile "ES80_H2-7-16.yaml";
-transportModel "Mix";//"UnityLewis";
+
+transportModel       "Mix";
+
 odeCoeffs
 {
-    "relTol"   1e-15;
-    "absTol"   1e-24;
+    "relTol"         1e-15;
+    "absTol"         1e-24;
 }
-inertSpecie        "N2";
+
+inertSpecie          "N2";
 
 zeroDReactor
 {
-    constantProperty "pressure";//cvorcp "UV";
+    constantProperty "pressure";
 }
 
-torch off;
-GPU off;
-torchModel1 "ESH2-sub1.pt"; 
-torchModel2 "ESH2-sub2.pt"; 
-torchModel3 "ESH2-sub3.pt"; 
+splittingStrategy    off;
 
-torchParameters1  
+TorchSettings
 {
-    Tact 700  ;
-    Qdotact  3e7;
-    coresPerGPU 4;
+    torch            off;
+    GPU              off;
+    log              off;
+    torchModel1      "ESH2-sub1.pt"; 
+    torchModel2      "ESH2-sub2.pt"; 
+    torchModel3      "ESH2-sub3.pt"; 
+    coresPerGPU      4;
+    GPUsPerNode      4;
 }
-torchParameters2
-{
-    Tact 2000;
-    Qdotact  3e7;
-}
-torchParameters3
-{
-    Tact 2000;
-    Qdotact  7e8;
-}
+
 loadbalancing
 {
-        active  false;
-        //log   true;
+    active           true;
+    log              false;
 }
+
+
 // ************************************************************************* //

@@ -12,8 +12,8 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 
-file(COPY ./df0DFoam/zeroD_cubicReactor/H2/cvodeSolver/postProcessing/probes/0/T DESTINATION 0DH2)
-file(COPY ./df0DFoam/zeroD_cubicReactor/CH4/cvodeSolver/postProcessing/probes/0/T DESTINATION 0DCH4)
+file(COPY ./df0DFoam/postProcessing/probes/0/T DESTINATION 0DH2)
+
 file(COPY ./dfHighSpeedFoam/oneD_detonationH2/postProcessing/minMax/0/fieldMinMax.dat DESTINATION 1Ddetonation)
 file(COPY ./dfLowMachFoam/twoD_reactingTGV/H2/cvodeSolver/postProcessing/sample/0.0005/data_T.xy DESTINATION 2DTGV/5)
 file(COPY ./dfLowMachFoam/twoD_reactingTGV/H2/cvodeSolver/postProcessing/sample/0.0004/data_T.xy DESTINATION 2DTGV/4)
