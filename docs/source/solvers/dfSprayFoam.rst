@@ -45,7 +45,8 @@ Cantera is used instead of the built-in modules of OpenFOAM to solve the chemica
 .. figure:: aachenBomb.png
    :width: 500
    :align: center
-
+   
+   Visualization of temperature contours with large particle distribution
 
 Sydney Spray Burner
 ------------------------
@@ -92,13 +93,13 @@ Cantera is used instead of the built-in modules of OpenFOAM to solve the chemica
 
 **Note**
 
-When running a wedge case with OpenFOAM, you may come across a error "**Hitting a wedge patch should not be possible**". One solution is to comment out the lines with the “**FatalErrorIn**” call in **src/lagrangian/basic/particle/particleTemplates.C**. Details can be found in the thread [2].
+When running a wedge case with OpenFOAM, you may come across an error "**Hitting a wedge patch should not be possible**". One solution is to comment out the lines with the “**FatalErrorIn**” call in **src/lagrangian/basic/particle/particleTemplates.C**. Details can be found in the thread [2].
 
 **Results** 
 
 
 .. figure:: sydneySprayBurner.png
-   :width: 500
+   :width: 600
    :align: center
    
 **Reference**
