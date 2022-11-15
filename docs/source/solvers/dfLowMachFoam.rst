@@ -117,7 +117,7 @@ The developed 2D TGV are displayed in the figures below.
 
 
 Two-Dimensional homogeneous isotropic turbulence (HIT)
----------------------------------------------------
+----------------------------------------------------------
 
 **Problem Description**
 
