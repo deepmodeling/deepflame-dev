@@ -94,3 +94,66 @@ The developed TGV are displayed in the figures below.
 **Reference**
 
 A.Abdelsamie, G.Lartigue, C.E.Frouzakis, D.Thevenin, The taylor-green vortex as a benchmark for high-fidelity combustion simulations using low-mach solvers, Computers & Fluids 223 (2021): 104935.
+
+
+Two-Dimensional reactive Taylor-Green Vortex
+---------------------------------------------------
+
+**Problem Description**
+
+2D reactive Taylor-Green Vortex (TGV) which is simplified from the 3D reactive TGV above is simulated here. It can be used for debugging, validation of DNN models against CVODE solutions and so on.
+
+The initial fields on the 2D x-y plane are the same as those in the 3D reactive TGV.
+
+**Output**
+
+The developed 2D TGV are displayed in the figures below.
+
+.. figure:: 2D_TGV_0.5ms.png
+   :width: 500
+   :align: center
+
+   Profiles of temperature history and contours of temperature and species mass fraction at t = 0.5 ms (two reference time)
+
+
+Two-Dimensional homogeneous isotropic turbulence (HIT)
+---------------------------------------------------
+
+**Problem Description**
+
+2D reacting flow with HIT is simulated here. It can be used to simulate kinetic energy dissapation and qualitatively assess turbulence effects on combustion under the circumstances that 3D simulations are computationally prohibitive.
+
+The domain is initially filled with stochiometric CH4/air mixture at atmospheric pressure. To initialize 2d HIT simulations, turbulence is generated follwing the procedure described by Vuorinen and Keskinen.
+
+.. list-table:: Operating Conditions in Brief
+   :widths: 40 40
+   :header-rows: 0
+
+   * - Computational Domain size (x)
+     - 20*pi mm * 20*pi mm
+   * - Initial Gas Temperature
+     - 1800 K (ignition region), 800 K  (other area)
+   * - Ignition region
+     - Circle in the domain center with a radius of 1/10 domain length
+
+The figure below shows contour of vorticity at initial time.
+
+.. figure:: 2D_HIT_initial.png
+   :width: 500
+   :align: center
+   
+   Initial contours of temperature and  vorticity for the 2D reactive HIT
+
+**Output**
+
+The developed 2D HIT are displayed in the figures below.
+
+.. figure:: 2D_HIT_1.5ms.png
+   :width: 500
+   :align: center
+   
+   Contours of temperature and vorticity at t = 1.5 ms
+
+**Reference**
+
+Vuorinen, Ville, and K. Keskinen. "DNSLab: A gateway to turbulent flow simulation in Matlab." Computer Physics Communications 203 (2016): 278-289.
