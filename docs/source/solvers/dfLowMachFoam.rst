@@ -123,7 +123,7 @@ Two-Dimensional homogeneous isotropic turbulence (HIT)
 
 2D reacting flow with HIT is simulated here. It can be used to simulate kinetic energy dissapation and qualitatively assess turbulence effects on combustion under the circumstances that 3D simulations are computationally prohibitive.
 
-The domain is initially filled with CH4/air mixture with a equivalence ratio of 0.6 at atmospheric pressure. To initialize 2d HIT simulations, turbulence is generated follwing the procedure described by Vuorinen and Keskinen.
+The domain is initially filled with CH4/air mixture with an equivalence ratio of 0.6 at atmospheric pressure. To initialize 2d HIT simulations, turbulence is generated follwing the procedure described by Vuorinen and Keskinen.
 
 .. list-table:: Operating Conditions in Brief
    :widths: 40 40
