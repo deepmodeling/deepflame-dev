@@ -75,9 +75,9 @@ Two-Dimensional Reactive Taylor-Green Vortex
 
 **Problem Description**
 
-2D reactive Taylor-Green Vortex (TGV) which is simplified from the 3D reactive TGV above is simulated here. It can be used for debugging, validation of DNN models against CVODE solutions and so on.
+2D reactive Taylor-Green Vortex (TGV) which is simplified from the 3D reactive TGV below is simulated here. It can be used for debugging, validation of DNN models against CVODE solutions and so on.
 
-The initial fields on the 2D x-y plane are the same as those in the 3D reactive TGV.
+The initial velocity, pressure and mass fraction fields are set according to a benchmark case established by Abdelsamie et al. The initial temperature of the cold gas is set to be 500 K. 
 
 **Output**
 
@@ -89,6 +89,10 @@ The developed 2D TGV are displayed in the figures below.
 
    Profiles of temperature history and contours of temperature and species mass fraction at t = 0.5 ms (two reference time)
    
+**Reference**
+
+A.Abdelsamie, G.Lartigue, C.E.Frouzakis, D.Thevenin, The taylor-green vortex as a benchmark for high-fidelity combustion simulations using low-mach solvers, Computers & Fluids 223 (2021): 104935.
+
 
 Two-Dimensional Flame in Homogeneous Isotropic Turbulence
 ----------------------------------------------------------
