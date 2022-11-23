@@ -20,7 +20,7 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
        run: |
         apt-get update 
-        apt-get install -y sudo wget unzip git software-properties-common make cmake g++ mpich openmpi-bin libopenmpi-dev libscalapack-mpi-dev vim
+        apt-get install -y sudo wget unzip git software-properties-common make cmake g++ mpich openmpi-bin libopenmpi-dev libscalapack-mpi-dev vim git-core
         sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -" 
         sudo add-apt-repository http://dl.openfoam.org/ubuntu
         sudo apt-get update
@@ -47,6 +47,6 @@ jobs:
         OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1 
         OMPI_MCA_btl_vader_single_copy_mechanism: none
        run: 
-        /bin/bash -c "source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc && . configure.sh --use_pytorch && source ./bashrc && . install.sh && cd test && ./Allrun && cmake -B build && cmake --build build && cd build && ctest"    
+        /bin/bash -c "source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc && . configure.sh --use_pytorch && source ./bashrc && . install.sh && git clone https://github.com/deepcombustion/deepcombustion.git && cp -r deepcombustion/DeePCK/Model/HE04_Hydrogen_ESH2_GMS_sub_20221101/ mechanisms/ && cd test && ./Allrun && cmake -B build && cmake --build build && cd build && ctest"    
         
         
