@@ -50,7 +50,8 @@ jobs:
         /bin/bash -c "git clone https://github.com/deepcombustion/deepcombustion.git && cp -r deepcombustion/DeePCK/Model/HE04_Hydrogen_ESH2_GMS_sub_20221101/ mechanisms/ && source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc && . configure.sh --use_pytorch && source ./bashrc && . install.sh && cd test && ./Allrun && conda deactivate "
      
      - name: test 
-       run: |      
+       run: | 
+         cd test
          cmake -B build
          cmake --build build 
          cd build 
