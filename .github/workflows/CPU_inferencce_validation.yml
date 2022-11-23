@@ -29,6 +29,7 @@ jobs:
         git clone https://github.com/deepmodeling/deepflame-dev.git
         cd deepflame-dev   
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+        wget https://mirrors.edge.kernel.org/ubuntu/pool/main/libf/libffi/libffi7_3.3-4_amd64.deb
         sh Miniconda3-latest-Linux-x86_64.sh -b
         . ~/miniconda3/etc/profile.d/conda.sh
         conda create -n libcantera python=3.8
