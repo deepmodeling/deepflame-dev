@@ -2,6 +2,7 @@
 
 EXE_INC = -std=c++14 \
     -Wno-old-style-cast \
+    $(PFLAGS) $(PINC) \
     $(if $(LIBTORCH_ROOT),-DUSE_LIBTORCH,) \
     $(if $(PYTHON_INC_DIR),-DUSE_PYTORCH,) \
     -I$(LIB_SRC)/transportModels/compressible/lnInclude \
@@ -12,6 +13,7 @@ EXE_INC = -std=c++14 \
     -I$(LIB_SRC)/meshTools/lnInclude \
     -I$(DF_SRC)/dfCanteraMixture/lnInclude \
     -I$(DF_SRC)/dfChemistryModel/lnInclude \
+    -I$(LIB_SRC)/Pstream/mpi \
     -I$(CANTERA_ROOT)/include \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include,) \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include/torch/csrc/api/include,) \

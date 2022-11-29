@@ -47,7 +47,7 @@ struct ChemistryProblem
 
     ChemistryProblem() = default;
     ChemistryProblem(label nSpecie)
-        : Y(nSpecie), Ti(0), pi(0), rhoi(0), deltaT(0), cellid(0)
+        : Y(nSpecie), Ti(0), pi(0), rhoi(0), deltaT(0), cellid(0), local(true)
     {
     }
 
@@ -58,6 +58,7 @@ struct ChemistryProblem
     scalar deltaT;
     scalar cpuTime;
     label cellid;
+    bool local;
 
     // TODO: implement!
     bool operator==(const ChemistryProblem& rhs) const
@@ -82,6 +83,7 @@ static inline Ostream& operator<<(Ostream& os, const ChemistryProblem& p)
     os << p.deltaT;
     os << p.cpuTime;
     os << p.cellid;
+    os << p.local;
 
     return os;
 }
@@ -97,6 +99,7 @@ static inline Istream& operator>>(Istream& is, ChemistryProblem& p)
     is >> p.deltaT;
     is >> p.cpuTime;
     is >> p.cellid;
+    is >> p.local;
 
     return is;
 }
