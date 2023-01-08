@@ -48,8 +48,8 @@ jobs:
         OMPI_MCA_btl_vader_single_copy_mechanism: none
        run: 
         /bin/bash -c "git clone https://github.com/deepcombustion/deepcombustion.git && cp -r deepcombustion/DeePCK/Model/HE04_Hydrogen_ESH2_GMS_sub_20221101/ mechanisms/ && source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc 
-        && . configure.sh --use_pytorch && source ./bashrc && . install.sh && cd examples/df0DFoam/zeroD_cubicReactor/H2/pytorchIntegrator && blockMesh && decomposePar && mpirun -np 4 /__w/deepflame-dev/deepflame-dev/bin/df0DFoam -parallel && ./Allclean
-        && cd ../../../../../test && ./Allrun && conda deactivate "
+        && . configure.sh --use_pytorch && source ./bashrc && . install.sh 
+        && cd test && ./Allrun && conda deactivate "
    
      - name: test 
        run: | 
