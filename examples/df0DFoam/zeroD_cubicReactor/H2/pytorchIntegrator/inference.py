@@ -10,7 +10,6 @@ from easydict import EasyDict as edict
 import torch.profiler
 import os
 
-print('enter the inference file')
 
 torch.set_printoptions(precision=10)
 
@@ -165,7 +164,7 @@ def inference(vec0, vec1, vec2):
             input0_ = torch.from_numpy(vec0).double().to(device=device) #cast ndarray to torch tensor
             input1_ = torch.from_numpy(vec1).double().to(device=device) #cast ndarray to torch tensor
             input2_ = torch.from_numpy(vec2).double().to(device=device) #cast ndarray to torch tensor
-            print('start pre-processing')
+
             # pre_processing
             rho0 = input0_[:, 0].unsqueeze(1)
             input0_Y = input0_[:, 3:].clone()
@@ -191,12 +190,12 @@ def inference(vec0, vec1, vec2):
             input2_normalized = (input2_bct - Xmu2) / Xstd2
             # input2_normalized[:, -1] = 0 #set Y_AR to 0
             input2_normalized = input2_normalized.float()
-            print('inferencing')
+
             #inference
             output0_normalized = model0(input0_normalized)
             output1_normalized = model1(input1_normalized)
             output2_normalized = model2(input2_normalized)
-            print('post-processing starts')                           
+                       
             # post_processing
             output0_bct = (output0_normalized * Ystd0 + Ymu0) * delta_t + input0_bct
             output0_Y = (lamda * output0_bct[:, 2:] + 1)**(1 / lamda)
