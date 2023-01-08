@@ -21,7 +21,9 @@ forAll(Y, i)
 }
 const surfaceScalarField phiUc = linearInterpolate(sumYDiffError) & mesh.Sf();
 
-MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
+label flag_mpi_init;
+MPI_Initialized(&flag_mpi_init);
+if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
 end = std::clock();
 time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
 
@@ -30,8 +32,6 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
     {
         std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
         combustion->correct();
-        label flag_mpi_init;
-        MPI_Initialized(&flag_mpi_init);
         if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
         std::chrono::steady_clock::time_point stop = std::chrono::steady_clock::now();
         std::chrono::duration<double> processingTime = std::chrono::duration_cast<std::chrono::duration<double>>(stop - start);
