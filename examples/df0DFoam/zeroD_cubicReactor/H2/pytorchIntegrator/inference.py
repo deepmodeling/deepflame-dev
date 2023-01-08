@@ -138,7 +138,7 @@ try:
     model0.to(device=device)
     model1.to(device=device)
     model2.to(device=device)
-    print("load models onto the device")
+
     if len(device_ids) > 1:
         model0 = torch.nn.DataParallel(model0, device_ids=device_ids)
         model1 = torch.nn.DataParallel(model1, device_ids=device_ids)
