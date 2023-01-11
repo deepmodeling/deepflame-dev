@@ -644,7 +644,7 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
                     const scalar RT = constant::physicoChemical::R.value()*1e3*pT[facei];
                     forAll(rhoD_, i)
                     {
-                        rhoD_[i].boundaryFieldRef()[patchi][facei] = dTemp_[i];
+                        rhoD_[i].boundaryFieldRef()[patchi][facei] = prho[facei]*dTemp_[i];
 
                         hai_[i].boundaryFieldRef()[patchi][facei] = hrtTemp_[i]*RT/CanteraGas_->molecularWeight(i);
                     }
