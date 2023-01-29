@@ -156,17 +156,24 @@ int main(int argc, char *argv[])
             
             time_monitor_flow += double(end - start) / double(CLOCKS_PER_SEC);
 
-            #include "YEqn.H"
+            if(combModelName!="ESF" && combModelName!="flareFGM" )
+            {
+                #include "YEqn.H"
 
-            start = std::clock();
-            #include "EEqn.H"
-            end = std::clock();
-            time_monitor_E += double(end - start) / double(CLOCKS_PER_SEC);
+                start = std::clock();
+                #include "EEqn.H"
+                end = std::clock();
+                time_monitor_E += double(end - start) / double(CLOCKS_PER_SEC);
 
-            start = std::clock();
-            chemistry->correctThermo();
-            end = std::clock();
-            time_monitor_corrThermo += double(end - start) / double(CLOCKS_PER_SEC);
+                start = std::clock();
+                chemistry->correctThermo();
+                end = std::clock();
+                time_monitor_corrThermo += double(end - start) / double(CLOCKS_PER_SEC);
+            }
+            else
+            {
+                combustion->correct();
+            }
 
             Info<< "min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
 
@@ -199,6 +206,8 @@ int main(int argc, char *argv[])
         rho = thermo.rho();
 
         runTime.write();
+
+        Info << "output time index " << runTime.timeIndex() << endl;
 
         Info<< "========Time Spent in diffenet parts========"<< endl;
         Info<< "whole YEqn                 = " << Yeq << " s" << endl;

@@ -22,6 +22,7 @@ volScalarField rho
     thermo.rho()
 );
 
+
 Info<< "Reading field U\n" << endl;
 volVectorField U
 (
@@ -54,12 +55,34 @@ autoPtr<compressible::turbulenceModel> turbulence
     )
 );
 
+Info<< "Creating field dpdt\n" << endl;
+volScalarField dpdt
+(
+    IOobject
+    (
+        "dpdt",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::NO_WRITE
+    ),
+    mesh,
+    dimensionedScalar("dpdt",p.dimensions()/dimTime, 0)
+);
+
+
 Info<< "Creating reaction model\n" << endl;
 autoPtr<CombustionModel<basicThermo>> combustion
 (
     CombustionModel<basicThermo>::New(thermo, turbulence())
 );
 Info<< "end Creating reaction model\n" << endl;
+
+
+//const word combModelName(combustion->type());
+const word combModelName(mesh.objectRegistry::lookupObject<IOdictionary>("combustionProperties").lookup("combustionModel"));
+Info << "Combustion Model Name is confirmed as "<< combModelName << endl;
+
 dfChemistryModel<basicThermo>* chemistry = combustion->chemistry();
 PtrList<volScalarField>& Y = chemistry->Y();
 const word inertSpecie(chemistry->lookup("inertSpecie"));
@@ -69,28 +92,22 @@ const label inertIndex(chemistry->species()[inertSpecie]);
 chemistry->correctThermo();
 Info<< "At initial time, min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
 
-Info<< "Creating field dpdt\n" << endl;
-volScalarField dpdt
-(
-    IOobject
-    (
-        "dpdt",
-        runTime.timeName(),
-        mesh
-    ),
-    mesh,
-    dimensionedScalar(p.dimensions()/dimTime, 0)
-);
+//for dpdt
 
 Info<< "Creating field kinetic energy K\n" << endl;
 volScalarField K("K", 0.5*magSqr(U));
 
 multivariateSurfaceInterpolationScheme<scalar>::fieldTable fields;
+
+if(combModelName!="flareFGM")
+{
 forAll(Y, i)
 {
     fields.add(Y[i]);
 }
 fields.add(thermo.he());
+}
+
 
 const scalar Sct = chemistry->lookupOrDefault("Sct", 1.);
 volScalarField diffAlphaD
