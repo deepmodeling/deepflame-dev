@@ -1,0 +1,17 @@
+I/O    : uncollated
+Case   : /home/runze/JX/mesh128/GPU_agg_0.1
+nProcs : 1
+Create time
+
+Create mesh for time = 0
+
+
+PIMPLE: No convergence criteria found
+
+
+PIMPLE: Operating solver in transient mode with 1 outer corrector
+PIMPLE: Operating solver in PISO mode
+
+
+Reading thermophysical properties
+

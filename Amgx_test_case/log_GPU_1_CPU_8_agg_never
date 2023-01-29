@@ -1,0 +1,399 @@
+I/O    : uncollated
+Case   : /home/runze/JX/mesh128
+nProcs : 8
+Slaves : 
+7
+(
+"runze-PC.1922331"
+"runze-PC.1922332"
+"runze-PC.1922333"
+"runze-PC.1922334"
+"runze-PC.1922335"
+"runze-PC.1922336"
+"runze-PC.1922337"
+)
+
+Pstream initialized with:
+    floatTransfer      : 0
+    nProcsSimpleSum    : 0
+    commsType          : nonBlocking
+    polling iterations : 0
+Create time
+
+Create mesh for time = 0
+
+
+PIMPLE: No convergence criteria found
+
+
+PIMPLE: Operating solver in transient mode with 1 outer corrector
+PIMPLE: Operating solver in PISO mode
+
+
+Reading thermophysical properties
+
+Reading field U
+
+Reading/calculating face flux field phi
+
+Creating turbulence model
+
+Selecting turbulence model type laminar
+Selecting laminar stress model Stokes
+Creating reaction model
+
+Selecting combustion model laminar
+--- I am here in Cantera-construct ---
+relTol_ === 1e-06
+absTol_ === 1e-10
+    using integrated reaction rate
+end Creating reaction model
+
+At initial time, min/max(T) = 300, 1911.28
+Creating field dpdt
+
+Creating field kinetic energy K
+
+Courant Number mean: 0.5262 max: 1.05219
+
+Starting time loop
+
+Courant Number mean: 0.5262 max: 1.05219
+Time = 1e-06
+
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+DILUPBiCGStab:  Solving for Ux, Initial residual = 0.0142105, Final residual = 7.97825e-10, No Iterations 3
+DILUPBiCGStab:  Solving for Uy, Initial residual = 0.0160286, Final residual = 7.32197e-10, No Iterations 3
+DILUPBiCGStab:  Solving for Uz, Initial residual = 1, Final residual = 8.14709e-10, No Iterations 5
+=== begin solve_CVODE === 
+DILUPBiCGStab:  Solving for H, Initial residual = 0.240727, Final residual = 6.27104e-06, No Iterations 4
+DILUPBiCGStab:  Solving for O, Initial residual = 0.121144, Final residual = 9.50407e-06, No Iterations 2
+DILUPBiCGStab:  Solving for H2O, Initial residual = 0.0150666, Final residual = 2.45159e-06, No Iterations 2
+DILUPBiCGStab:  Solving for OH, Initial residual = 0.081562, Final residual = 8.9342e-06, No Iterations 2
+DILUPBiCGStab:  Solving for O2, Initial residual = 0.00335229, Final residual = 1.18061e-06, No Iterations 2
+DILUPBiCGStab:  Solving for H2, Initial residual = 0.00262775, Final residual = 3.35179e-06, No Iterations 2
+DILUPBiCGStab:  Solving for ha, Initial residual = 0.41805, Final residual = 9.17882e-10, No Iterations 5
+min/max(T) = 299.953, 1804.15
+Initializing PETSc
+Number of GPU devices :: 1 
+AMGX version 2.4.0
+Built on Dec 23 2022, 17:01:28
+Compiled with CUDA Runtime 11.6, using CUDA driver 11.7
+The AMGX_initialize_plugins API call is deprecated and can be safely removed.
+Cannot read file as JSON object, trying as AMGX config
+Cannot read file as JSON object, trying as AMGX config
+Converting config string to current config version
+Parsing configuration string: exception_handling=1 ; 
+Initializing AmgX-p
+Initializing AmgX Linear Solver p
+Offloaded LDU matrix arrays on CUDA device and converted to CSR
+Using Normal MPI (Hostbuffer) communicator...
+Total Time: 24.5799
+    setup: 0.0545493 s
+    solve: 24.5254 s
+    solve(per iteration): 0.0245254 s
+PETSc-AMGx:  Solving for p, Initial residual = 0.000577716, Final residual = 4.47833e-15, No Iterations 999
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+time step continuity errors : sum local = 2.69303e-14, global = 1.18843e-17, cumulative = 1.18843e-17
+Total Time: 26.0084
+    setup: 0.0545493 s
+    solve: 25.9539 s
+    solve(per iteration): 0.0259539 s
+PETSc-AMGx:  Solving for p, Initial residual = 4.47613e-15, Final residual = 4.48082e-15, No Iterations 999
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+time step continuity errors : sum local = 0.000374968, global = 1.19264e-17, cumulative = 2.38107e-17
+========Time Spent in diffenet parts========
+Chemical sources           = 2.8847e-05 s
+Species Equations          = 1.56372 s
+U & p Equations            = 52.7582 s
+    U Equations            = 0.691114 s
+    p Equations            = 52.0671 s
+Energy Equations           = 0.570832 s
+thermo & Trans Properties  = 0.163001 s
+Diffusion Correction Time  = 0.405493 s
+sum Time                   = 55.4612 s
+============================================
+
+ExecutionTime = 56.94 s  ClockTime = 57 s
+Courant Number mean: 0.529721 max: 1.2711
+Time = 2e-06
+
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+DILUPBiCGStab:  Solving for Ux, Initial residual = 0.023622, Final residual = 1.41743e-10, No Iterations 4
+DILUPBiCGStab:  Solving for Uy, Initial residual = 0.0113459, Final residual = 6.79969e-10, No Iterations 3
+DILUPBiCGStab:  Solving for Uz, Initial residual = 0.343861, Final residual = 4.29554e-10, No Iterations 4
+=== begin solve_CVODE === 
+DILUPBiCGStab:  Solving for H, Initial residual = 0.076446, Final residual = 2.41732e-06, No Iterations 4
+DILUPBiCGStab:  Solving for O, Initial residual = 0.0656487, Final residual = 6.15526e-06, No Iterations 2
+DILUPBiCGStab:  Solving for H2O, Initial residual = 0.0137087, Final residual = 1.27442e-06, No Iterations 2
+DILUPBiCGStab:  Solving for OH, Initial residual = 0.0463787, Final residual = 5.75638e-06, No Iterations 2
+DILUPBiCGStab:  Solving for O2, Initial residual = 0.00326396, Final residual = 9.80111e-07, No Iterations 2
+DILUPBiCGStab:  Solving for H2, Initial residual = 0.00236909, Final residual = 6.06471e-06, No Iterations 2
+DILUPBiCGStab:  Solving for ha, Initial residual = 0.237385, Final residual = 7.07532e-10, No Iterations 4
+min/max(T) = 299.91, 1740.28
+Total Time: 26.0176
+    setup: 0.0545493 s
+    solve: 25.963 s
+    solve(per iteration): 0.025963 s
+PETSc-AMGx:  Solving for p, Initial residual = 4.4797e-15, Final residual = 4.47489e-15, No Iterations 999
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+time step continuity errors : sum local = 0.00392279, global = 0.0018832, cumulative = 0.0018832
+Total Time: 26.0548
+    setup: 0.0545493 s
+    solve: 26.0002 s
+    solve(per iteration): 0.0260002 s
+PETSc-AMGx:  Solving for p, Initial residual = 4.4846e-15, Final residual = 4.48623e-15, No Iterations 999
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+time step continuity errors : sum local = 0.00392279, global = 0.0018832, cumulative = 0.0037664
+========Time Spent in diffenet parts========
+Chemical sources           = 4.526e-05 s
+Species Equations          = 3.11533 s
+U & p Equations            = 105.834 s
+    U Equations            = 1.34545 s
+    p Equations            = 104.489 s
+Energy Equations           = 1.13206 s
+thermo & Trans Properties  = 0.323137 s
+Diffusion Correction Time  = 0.811887 s
+sum Time                   = 111.216 s
+============================================
+
+ExecutionTime = 112.73 s  ClockTime = 113 s
+Courant Number mean: 0.533975 max: 1.4946
+Time = 3e-06
+
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+DILUPBiCGStab:  Solving for Ux, Initial residual = 0.0236249, Final residual = 1.40996e-10, No Iterations 4
+DILUPBiCGStab:  Solving for Uy, Initial residual = 0.011433, Final residual = 5.64295e-10, No Iterations 3
+DILUPBiCGStab:  Solving for Uz, Initial residual = 0.206802, Final residual = 2.69589e-10, No Iterations 4
+=== begin solve_CVODE === 
+DILUPBiCGStab:  Solving for H, Initial residual = 0.035795, Final residual = 5.6166e-06, No Iterations 3
+DILUPBiCGStab:  Solving for O, Initial residual = 0.0368117, Final residual = 6.70968e-06, No Iterations 2
+DILUPBiCGStab:  Solving for H2O, Initial residual = 0.0132781, Final residual = 1.35189e-06, No Iterations 2
+DILUPBiCGStab:  Solving for OH, Initial residual = 0.0302583, Final residual = 6.52644e-07, No Iterations 3
+DILUPBiCGStab:  Solving for O2, Initial residual = 0.00326457, Final residual = 1.11319e-06, No Iterations 2
+DILUPBiCGStab:  Solving for H2, Initial residual = 0.00229593, Final residual = 3.77587e-06, No Iterations 2
+DILUPBiCGStab:  Solving for ha, Initial residual = 0.100885, Final residual = 1.51916e-10, No Iterations 5
+min/max(T) = 299.912, 1691.84
+Total Time: 26.0546
+    setup: 0.0545493 s
+    solve: 26 s
+    solve(per iteration): 0.026 s
+PETSc-AMGx:  Solving for p, Initial residual = 4.47921e-15, Final residual = 4.47894e-15, No Iterations 999
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+time step continuity errors : sum local = 0.00578351, global = 0.00136628, cumulative = 0.00513268
+Total Time: 26.0647
+    setup: 0.0545493 s
+    solve: 26.0102 s
+    solve(per iteration): 0.0260102 s
+PETSc-AMGx:  Solving for p, Initial residual = 4.49102e-15, Final residual = 4.47436e-15, No Iterations 999
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+time step continuity errors : sum local = 0.00578351, global = 0.00136628, cumulative = 0.00649897
+========Time Spent in diffenet parts========
+Chemical sources           = 6.0965e-05 s
+Species Equations          = 4.67537 s
+U & p Equations            = 158.958 s
+    U Equations            = 2.00272 s
+    p Equations            = 156.956 s
+Energy Equations           = 1.71405 s
+thermo & Trans Properties  = 0.48383 s
+Diffusion Correction Time  = 1.21692 s
+sum Time                   = 167.049 s
+============================================
+
+ExecutionTime = 168.59 s  ClockTime = 169 s
+Courant Number mean: 0.538541 max: 1.63241
+Time = 4e-06
+
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+DILUPBiCGStab:  Solving for Ux, Initial residual = 0.0235764, Final residual = 1.45953e-10, No Iterations 4
+DILUPBiCGStab:  Solving for Uy, Initial residual = 0.0115506, Final residual = 4.85922e-10, No Iterations 3
+DILUPBiCGStab:  Solving for Uz, Initial residual = 0.148714, Final residual = 2.58684e-10, No Iterations 4
+=== begin solve_CVODE === 
+DILUPBiCGStab:  Solving for H, Initial residual = 0.0256737, Final residual = 8.83122e-06, No Iterations 3
+DILUPBiCGStab:  Solving for O, Initial residual = 0.0262993, Final residual = 4.92258e-07, No Iterations 3
+DILUPBiCGStab:  Solving for H2O, Initial residual = 0.0131381, Final residual = 1.47496e-06, No Iterations 2
+DILUPBiCGStab:  Solving for OH, Initial residual = 0.0239691, Final residual = 7.74281e-06, No Iterations 2
+DILUPBiCGStab:  Solving for O2, Initial residual = 0.00334569, Final residual = 1.25003e-06, No Iterations 2
+DILUPBiCGStab:  Solving for H2, Initial residual = 0.00227819, Final residual = 2.74719e-06, No Iterations 2
+DILUPBiCGStab:  Solving for ha, Initial residual = 0.0854096, Final residual = 5.92746e-10, No Iterations 4
+min/max(T) = 299.914, 1652.05
+Total Time: 26.0746
+    setup: 0.0545493 s
+    solve: 26.02 s
+    solve(per iteration): 0.02602 s
+PETSc-AMGx:  Solving for p, Initial residual = 4.48323e-15, Final residual = 4.49073e-15, No Iterations 999
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+time step continuity errors : sum local = 0.00794702, global = 0.00133605, cumulative = 0.00783502
+Total Time: 26.0795
+    setup: 0.0545493 s
+    solve: 26.0249 s
+    solve(per iteration): 0.0260249 s
+PETSc-AMGx:  Solving for p, Initial residual = 4.47375e-15, Final residual = 4.48201e-15, No Iterations 999
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+time step continuity errors : sum local = 0.00794702, global = 0.00133605, cumulative = 0.00917107
+========Time Spent in diffenet parts========
+Chemical sources           = 7.6824e-05 s
+Species Equations          = 6.22482 s
+U & p Equations            = 212.119 s
+    U Equations            = 2.66256 s
+    p Equations            = 209.456 s
+Energy Equations           = 2.2792 s
+thermo & Trans Properties  = 0.644041 s
+Diffusion Correction Time  = 1.62418 s
+sum Time                   = 222.891 s
+============================================
+
+ExecutionTime = 224.46 s  ClockTime = 224 s
+Courant Number mean: 0.546476 max: 1.7311
+Time = 5e-06
+
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+DILUPBiCGStab:  Solving for Ux, Initial residual = 0.0235818, Final residual = 1.42561e-10, No Iterations 4
+DILUPBiCGStab:  Solving for Uy, Initial residual = 0.0117257, Final residual = 5.48703e-10, No Iterations 3
+DILUPBiCGStab:  Solving for Uz, Initial residual = 0.116855, Final residual = 3.12801e-10, No Iterations 4
+=== begin solve_CVODE === 
+DILUPBiCGStab:  Solving for H, Initial residual = 0.0221704, Final residual = 7.56013e-06, No Iterations 3
+DILUPBiCGStab:  Solving for O, Initial residual = 0.0227605, Final residual = 7.26358e-06, No Iterations 2
+DILUPBiCGStab:  Solving for H2O, Initial residual = 0.0133801, Final residual = 1.49764e-06, No Iterations 2
+DILUPBiCGStab:  Solving for OH, Initial residual = 0.0215609, Final residual = 3.04345e-06, No Iterations 2
+DILUPBiCGStab:  Solving for O2, Initial residual = 0.00359817, Final residual = 1.38667e-06, No Iterations 2
+DILUPBiCGStab:  Solving for H2, Initial residual = 0.00229914, Final residual = 2.40197e-06, No Iterations 2
+DILUPBiCGStab:  Solving for ha, Initial residual = 0.0749586, Final residual = 2.07891e-10, No Iterations 5
+min/max(T) = 299.916, 1616.69
+Total Time: 26.0807
+    setup: 0.0545493 s
+    solve: 26.0261 s
+    solve(per iteration): 0.0260261 s
+PETSc-AMGx:  Solving for p, Initial residual = 4.47253e-15, Final residual = 4.47924e-15, No Iterations 999
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+time step continuity errors : sum local = 0.010045, global = 0.0013593, cumulative = 0.0105304
+Total Time: 26.0819
+    setup: 0.0545493 s
+    solve: 26.0274 s
+    solve(per iteration): 0.0260274 s
+PETSc-AMGx:  Solving for p, Initial residual = 4.47743e-15, Final residual = 4.47718e-15, No Iterations 999
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+time step continuity errors : sum local = 0.010045, global = 0.0013593, cumulative = 0.0118897
+========Time Spent in diffenet parts========
+Chemical sources           = 9.2406e-05 s
+Species Equations          = 7.75736 s
+U & p Equations            = 265.285 s
+    U Equations            = 3.31807 s
+    p Equations            = 261.967 s
+Energy Equations           = 2.86207 s
+thermo & Trans Properties  = 0.803838 s
+Diffusion Correction Time  = 2.03362 s
+sum Time                   = 278.742 s
+============================================
+
+ExecutionTime = 280.34 s  ClockTime = 280 s
+Courant Number mean: 0.557806 max: 1.78725
+Time = 6e-06
+
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+DILUPBiCGStab:  Solving for Ux, Initial residual = 0.023652, Final residual = 1.96689e-10, No Iterations 4
+DILUPBiCGStab:  Solving for Uy, Initial residual = 0.011951, Final residual = 1.1437e-10, No Iterations 4
+DILUPBiCGStab:  Solving for Uz, Initial residual = 0.0969128, Final residual = 4.55534e-10, No Iterations 4
+=== begin solve_CVODE === 
+DILUPBiCGStab:  Solving for H, Initial residual = 0.0204685, Final residual = 9.7027e-06, No Iterations 3
+DILUPBiCGStab:  Solving for O, Initial residual = 0.0217818, Final residual = 3.28443e-06, No Iterations 2
+DILUPBiCGStab:  Solving for H2O, Initial residual = 0.0138133, Final residual = 1.50126e-06, No Iterations 2
+DILUPBiCGStab:  Solving for OH, Initial residual = 0.0207988, Final residual = 2.65559e-06, No Iterations 2
+DILUPBiCGStab:  Solving for O2, Initial residual = 0.00392432, Final residual = 1.49732e-06, No Iterations 2
+DILUPBiCGStab:  Solving for H2, Initial residual = 0.00238313, Final residual = 2.25629e-06, No Iterations 2
+DILUPBiCGStab:  Solving for ha, Initial residual = 0.0700335, Final residual = 8.14585e-10, No Iterations 5
+min/max(T) = 299.92, 1584.1
+Total Time: 26.0969
+    setup: 0.0545493 s
+    solve: 26.0424 s
+    solve(per iteration): 0.0260424 s
+PETSc-AMGx:  Solving for p, Initial residual = 4.47876e-15, Final residual = 4.48154e-15, No Iterations 999
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+time step continuity errors : sum local = 0.01211, global = 0.00143005, cumulative = 0.0133197
+Total Time: 26.1006
+    setup: 0.0545493 s
+    solve: 26.0461 s
+    solve(per iteration): 0.0260461 s
+PETSc-AMGx:  Solving for p, Initial residual = 4.4764e-15, Final residual = 4.48766e-15, No Iterations 999
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+time step continuity errors : sum local = 0.01211, global = 0.00143005, cumulative = 0.0147498
+========Time Spent in diffenet parts========
+Chemical sources           = 0.000109434 s
+Species Equations          = 9.28532 s
+U & p Equations            = 318.505 s
+    U Equations            = 3.99149 s
+    p Equations            = 314.513 s
+Energy Equations           = 3.46153 s
+thermo & Trans Properties  = 0.964395 s
+Diffusion Correction Time  = 2.44255 s
+sum Time                   = 334.659 s
+============================================
+
+ExecutionTime = 336.28 s  ClockTime = 336 s
+Courant Number mean: 0.57127 max: 1.82872
+Time = 7e-06
+
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+DILUPBiCGStab:  Solving for Ux, Initial residual = 0.0237878, Final residual = 2.03119e-10, No Iterations 4
+DILUPBiCGStab:  Solving for Uy, Initial residual = 0.0122233, Final residual = 2.93582e-10, No Iterations 4
+DILUPBiCGStab:  Solving for Uz, Initial residual = 0.0834236, Final residual = 6.68779e-10, No Iterations 4
+=== begin solve_CVODE === 
+DILUPBiCGStab:  Solving for H, Initial residual = 0.0195956, Final residual = 6.96983e-06, No Iterations 3
+DILUPBiCGStab:  Solving for O, Initial residual = 0.0214725, Final residual = 2.93594e-06, No Iterations 2
+DILUPBiCGStab:  Solving for H2O, Initial residual = 0.014355, Final residual = 1.5316e-06, No Iterations 2
+DILUPBiCGStab:  Solving for OH, Initial residual = 0.0207955, Final residual = 2.5793e-06, No Iterations 2
+DILUPBiCGStab:  Solving for O2, Initial residual = 0.00428799, Final residual = 1.59697e-06, No Iterations 2
+DILUPBiCGStab:  Solving for H2, Initial residual = 0.00257953, Final residual = 2.3434e-06, No Iterations 2
+DILUPBiCGStab:  Solving for ha, Initial residual = 0.0679546, Final residual = 1.37213e-10, No Iterations 5
+min/max(T) = 299.924, 1553.5
+Total Time: 26.0766
+    setup: 0.0545493 s
+    solve: 26.0221 s
+    solve(per iteration): 0.0260221 s
+PETSc-AMGx:  Solving for p, Initial residual = 4.47898e-15, Final residual = 4.47271e-15, No Iterations 999
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+time step continuity errors : sum local = 0.0141167, global = 0.00154087, cumulative = 0.0162907
+Total Time: 26.1011
+    setup: 0.0545493 s
+    solve: 26.0466 s
+    solve(per iteration): 0.0260466 s
+PETSc-AMGx:  Solving for p, Initial residual = 4.48138e-15, Final residual = 4.49119e-15, No Iterations 999
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+time step continuity errors : sum local = 0.0141167, global = 0.00154087, cumulative = 0.0178315
+========Time Spent in diffenet parts========
+Chemical sources           = 0.000124785 s
+Species Equations          = 10.817 s
+U & p Equations            = 371.719 s
+    U Equations            = 4.67851 s
+    p Equations            = 367.04 s
+Energy Equations           = 4.06019 s
+thermo & Trans Properties  = 1.12435 s
+Diffusion Correction Time  = 2.85094 s
+sum Time                   = 390.571 s
+============================================
+
+ExecutionTime = 392.23 s  ClockTime = 392 s
+Courant Number mean: 0.586443 max: 1.84289
+Time = 8e-06
+
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+DILUPBiCGStab:  Solving for Ux, Initial residual = 0.0239712, Final residual = 8.19517e-11, No Iterations 4
+DILUPBiCGStab:  Solving for Uy, Initial residual = 0.0125426, Final residual = 5.36356e-10, No Iterations 4
+DILUPBiCGStab:  Solving for Uz, Initial residual = 0.0738401, Final residual = 8.87258e-10, No Iterations 4
+=== begin solve_CVODE === 
+DILUPBiCGStab:  Solving for H, Initial residual = 0.0192698, Final residual = 5.77124e-06, No Iterations 3
+DILUPBiCGStab:  Solving for O, Initial residual = 0.0214842, Final residual = 2.7646e-06, No Iterations 2
+DILUPBiCGStab:  Solving for H2O, Initial residual = 0.0149163, Final residual = 1.56806e-06, No Iterations 2
+DILUPBiCGStab:  Solving for OH, Initial residual = 0.0210088, Final residual = 2.55188e-06, No Iterations 2
+DILUPBiCGStab:  Solving for O2, Initial residual = 0.00468031, Final residual = 1.69512e-06, No Iterations 2
+DILUPBiCGStab:  Solving for H2, Initial residual = 0.00282819, Final residual = 2.38224e-06, No Iterations 2
+DILUPBiCGStab:  Solving for ha, Initial residual = 0.0677864, Final residual = 6.2818e-10, No Iterations 5
+min/max(T) = 299.928, 1523.81
+Total Time: 26.083
+    setup: 0.0545493 s
+    solve: 26.0284 s
+    solve(per iteration): 0.0260284 s
+PETSc-AMGx:  Solving for p, Initial residual = 4.4768e-15, Final residual = 4.48177e-15, No Iterations 999
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+time step continuity errors : sum local = 0.0160427, global = 0.00168428, cumulative = 0.0195158
+Caught signal 15 - SIGTERM (terminated)

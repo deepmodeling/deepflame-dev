@@ -1,0 +1,108 @@
+I/O    : uncollated
+Case   : /home/runze/JX/mesh128
+nProcs : 8
+Slaves : 
+7
+(
+"runze-PC.1927031"
+"runze-PC.1927032"
+"runze-PC.1927033"
+"runze-PC.1927034"
+"runze-PC.1927035"
+"runze-PC.1927036"
+"runze-PC.1927037"
+)
+
+Pstream initialized with:
+    floatTransfer      : 0
+    nProcsSimpleSum    : 0
+    commsType          : nonBlocking
+    polling iterations : 0
+Create time
+
+Create mesh for time = 0
+
+
+PIMPLE: No convergence criteria found
+
+
+PIMPLE: Operating solver in transient mode with 1 outer corrector
+PIMPLE: Operating solver in PISO mode
+
+
+Reading thermophysical properties
+
+Reading field U
+
+Reading/calculating face flux field phi
+
+Creating turbulence model
+
+Selecting turbulence model type laminar
+Selecting laminar stress model Stokes
+Creating reaction model
+
+Selecting combustion model laminar
+--- I am here in Cantera-construct ---
+relTol_ === 1e-06
+absTol_ === 1e-10
+    using integrated reaction rate
+end Creating reaction model
+
+At initial time, min/max(T) = 300, 1911.28
+Creating field dpdt
+
+Creating field kinetic energy K
+
+Courant Number mean: 0.5262 max: 1.05219
+
+Starting time loop
+
+Courant Number mean: 0.5262 max: 1.05219
+Time = 1e-06
+
+diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+DILUPBiCGStab:  Solving for Ux, Initial residual = 0.0142105, Final residual = 7.97825e-10, No Iterations 3
+DILUPBiCGStab:  Solving for Uy, Initial residual = 0.0160286, Final residual = 7.32197e-10, No Iterations 3
+DILUPBiCGStab:  Solving for Uz, Initial residual = 1, Final residual = 8.14709e-10, No Iterations 5
+=== begin solve_CVODE === 
+DILUPBiCGStab:  Solving for H, Initial residual = 0.240727, Final residual = 6.27104e-06, No Iterations 4
+DILUPBiCGStab:  Solving for O, Initial residual = 0.121144, Final residual = 9.50407e-06, No Iterations 2
+DILUPBiCGStab:  Solving for H2O, Initial residual = 0.0150666, Final residual = 2.45159e-06, No Iterations 2
+DILUPBiCGStab:  Solving for OH, Initial residual = 0.081562, Final residual = 8.9342e-06, No Iterations 2
+DILUPBiCGStab:  Solving for O2, Initial residual = 0.00335229, Final residual = 1.18061e-06, No Iterations 2
+DILUPBiCGStab:  Solving for H2, Initial residual = 0.00262775, Final residual = 3.35179e-06, No Iterations 2
+DILUPBiCGStab:  Solving for ha, Initial residual = 0.41805, Final residual = 9.17882e-10, No Iterations 5
+min/max(T) = 299.953, 1804.15
+Initializing PETSc
+Number of GPU devices :: 1 
+AMGX version 2.4.0
+Built on Dec 23 2022, 17:01:28
+Compiled with CUDA Runtime 11.6, using CUDA driver 11.7
+The AMGX_initialize_plugins API call is deprecated and can be safely removed.
+Cannot read file as JSON object, trying as AMGX config
+Cannot read file as JSON object, trying as AMGX config
+Converting config string to current config version
+Parsing configuration string: exception_handling=1 ; 
+Caught amgx exception: Cannot store residual information if residual is not monitored (i.e. store_res_history=1 and monitor_residual=0) 
+ at: /home/runze/AmgX/AMGX/src/solvers/solver.cu:93
+Stack trace:
+ /home/runze/AmgX/AMGX/build/libamgxsh.so : amgx::Solver<amgx::TemplateConfig<(AMGX_MemorySpace)1, (AMGX_VecPrecision)0, (AMGX_MatPrecision)0, (AMGX_IndPrecision)2> >::Solver(amgx::AMG_Config&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, amgx::ThreadManager*)+0x8cc
+ /home/runze/AmgX/AMGX/build/libamgxsh.so : amgx::AlgebraicMultigrid_Solver<amgx::TemplateConfig<(AMGX_MemorySpace)1, (AMGX_VecPrecision)0, (AMGX_MatPrecision)0, (AMGX_IndPrecision)2> >::AlgebraicMultigrid_Solver(amgx::AMG_Config&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, amgx::ThreadManager*)+0x24
+ /home/runze/AmgX/AMGX/build/libamgxsh.so : amgx::AlgebraicMultigrid_SolverFactory<amgx::TemplateConfig<(AMGX_MemorySpace)1, (AMGX_VecPrecision)0, (AMGX_MatPrecision)0, (AMGX_IndPrecision)2> >::create(amgx::AMG_Config&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, amgx::ThreadManager*)+0x36
+ /home/runze/AmgX/AMGX/build/libamgxsh.so : amgx::SolverFactory<amgx::TemplateConfig<(AMGX_MemorySpace)1, (AMGX_VecPrecision)0, (AMGX_MatPrecision)0, (AMGX_IndPrecision)2> >::allocate(amgx::AMG_Config&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, amgx::ThreadManager*)+0x11c
+ /home/runze/AmgX/AMGX/build/libamgxsh.so : amgx::AMG_Solver<amgx::TemplateConfig<(AMGX_MemorySpace)1, (AMGX_VecPrecision)0, (AMGX_MatPrecision)0, (AMGX_IndPrecision)2> >::init()+0x1fa
+ /home/runze/AmgX/AMGX/build/libamgxsh.so : amgx::AMG_Solver<amgx::TemplateConfig<(AMGX_MemorySpace)1, (AMGX_VecPrecision)0, (AMGX_MatPrecision)0, (AMGX_IndPrecision)2> >::AMG_Solver(amgx::Resources*, amgx::AMG_Configuration*)+0x46
+ /home/runze/AmgX/AMGX/build/libamgxsh.so : AMGX_solver_create()+0x1147
+ /home/runze/OpenFOAM/runze-7/platforms/linux64GccDPInt32Opt/lib/libfoam2csr.so : AmgXSolver::initAmgX(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)+0x508
+ /home/runze/OpenFOAM/runze-7/platforms/linux64GccDPInt32Opt/lib/libfoam2csr.so : AmgXSolver::initialize(ompi_communicator_t* const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)+0x285
+ /home/runze/OpenFOAM/runze-7/platforms/linux64GccDPInt32Opt/lib/libpetscFoam.so : Foam::amgxLinearSolverContext::amgxLinearSolverContext(Foam::word, Foam::fileName const&)+0x373
+ /home/runze/OpenFOAM/runze-7/platforms/linux64GccDPInt32Opt/lib/libpetscFoam.so : Foam::linearSolverContextTable<Foam::amgxLinearSolverContext>::getContext(Foam::word const&) const+0x356
+ /home/runze/OpenFOAM/runze-7/platforms/linux64GccDPInt32Opt/lib/libpetscFoam.so : Foam::amgxSolver::solve(Foam::Field<double>&, Foam::Field<double> const&, unsigned char) const+0x13e
+ /home/runze/OpenFOAM/OpenFOAM-7/platforms/linux64GccDPInt32Opt/lib/libfiniteVolume.so : Foam::fvMatrix<double>::solveSegregated(Foam::dictionary const&)+0x18b
+ /home/runze/JX/1117/deepflame-dev-master/bin/dfLowMachFoam : Foam::fvMatrix<double>::solve(Foam::dictionary const&)+0x1e8
+ /home/runze/JX/1117/deepflame-dev-master/bin/dfLowMachFoam : Foam::fvMatrix<double>::solve()+0x11f
+ /home/runze/JX/1117/deepflame-dev-master/bin/dfLowMachFoam : ()+0x408d6
+ /lib/x86_64-linux-gnu/libc.so.6 : __libc_start_main()+0xf3
+ /home/runze/JX/1117/deepflame-dev-master/bin/dfLowMachFoam : ()+0x446de
+

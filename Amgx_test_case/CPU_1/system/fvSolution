@@ -1,0 +1,150 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  7
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+    "rho.*"
+    {
+        solver          diagonal;
+    }
+
+    p
+    {
+        solver          amgx;
+        preconditioner  amgx;
+
+        amgx
+        {
+            dict        "p";
+            options
+            {
+                ksp_type    cg;
+                pc_type     bjacobi;
+                sub_pc_type icc;
+		        ksp_cg_single_reduction true;
+            }
+
+            caching
+            {
+                matrix
+                {
+                    update adaptive;
+                }
+
+                preconditioner
+                {
+                    update adaptive;
+                }
+            }
+    
+    	}
+    	tolerance 1e-9;
+        relTol    0;
+        maxIter   3000;
+    
+    
+    }
+
+
+
+    pFinal
+    {
+        $p;
+    }
+
+
+    "(U|ha|k|epsilon)"
+    {
+        solver          amgx;
+        preconditioner  amgx;
+        amgx
+        {
+            dict        "U";
+            options
+            {
+                ksp_type    cg;
+                pc_type     bjacobi;
+                sub_pc_type icc;
+		        ksp_cg_single_reduction true;
+            }
+
+            caching
+            {
+                matrix
+                {
+                    update adaptive;
+                }
+
+                preconditioner
+                {
+                    update adaptive;
+                }
+            }
+    
+    	}
+    }
+    "(U|ha|k|epsilon)Final"
+    {
+        $U;
+    }
+
+    Yi
+    {
+        solver          amgx;
+        preconditioner  amgx;
+        amgx
+        {
+            dict        "Yi";
+            options
+            {
+                ksp_type    cg;
+                pc_type     bjacobi;
+                sub_pc_type icc;
+		        ksp_cg_single_reduction true;
+            }
+
+            caching
+            {
+                matrix
+                {
+                    update adaptive;
+                }
+
+                preconditioner
+                {
+                    update adaptive;
+                }
+            }
+    
+    	}
+    }
+    YiFinal
+    {
+        $Yi;
+    }
+}
+
+PIMPLE
+{
+    momentumPredictor yes;
+    nOuterCorrectors  1;
+    nCorrectors     2;
+    nNonOrthogonalCorrectors 0;
+}
+
+
+// ************************************************************************* //
