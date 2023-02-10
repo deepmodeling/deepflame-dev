@@ -76,7 +76,8 @@ public:
     virtual bool active() const = 0;
 
     //- The load balancing algorithm which each derived class must define
-    virtual void updateState(const DynamicList<ChemistryProblem>& problems) = 0;
+    virtual void updateState(const DynamicList<ChemistryProblem>& problems, 
+    const label comm = UPstream::worldComm) = 0;
 
     //- Calculate the mean of the given list of loads
     static double getMean(const DynamicList<ChemistryLoad>& loads);
@@ -89,11 +90,13 @@ public:
 
     //- Compute the load based on the given list of chemistry problems
     static ChemistryLoad
-    computeLoad(const DynamicList<ChemistryProblem>& problems);
+    computeLoad(const DynamicList<ChemistryProblem>& problems,
+    const label comm = UPstream::worldComm);
 
     //- Gather the data from all ranks
     template <class T>
-    static DynamicList<T> allGather(const T& myData);
+    static DynamicList<T> allGather(const T& myData, 
+    const label comm = UPstream::worldComm);
 
     //- Set the current state of the rank
     void setState(const BalancerState& state);
@@ -106,11 +109,13 @@ public:
 
     //- Given a list of values, split them evenly between MPI processes
     template <class T>
-    RecvBuffer<T> balance(const DynamicList<T>& values) const;
+    RecvBuffer<T> balance(const DynamicList<T>& values, 
+    const label comm = UPstream::worldComm) const;
 
     //- Given a buffer of values, send the values back to their owner ranks
     template <class T>
-    RecvBuffer<T> unbalance(const RecvBuffer<T>& values) const;
+    RecvBuffer<T> unbalance(const RecvBuffer<T>& values,
+    const label comm = UPstream::worldComm) const;
 
     //- Print the current state information
     void printState() const;
@@ -132,48 +137,55 @@ public:
     static RecvBuffer<ET> sendRecv(
         const Indexable&          send_buffer,
         const std::vector<label>& sources,
-        const std::vector<label>& destinations);
+        const std::vector<label>& destinations,
+        const label comm = UPstream::worldComm);
 
     //- Slice an nRemaining size portion from the _end_ of the values
     template <class T>
-    SubList<T> getRemaining(const DynamicList<T>& values)
+    SubList<T> getRemaining(const DynamicList<T>& values, const label comm = UPstream::worldComm)
     {
-
+        if (Pstream::myProcNo(comm) == -1) 
+        {
+            SubList<T> res(values, state_.nRemaining, values.size() - state_.nRemaining);
+            return res.null();
+        }
         return SubList<T>(
             values, state_.nRemaining, values.size() - state_.nRemaining);
     }
 };
 
 template <class T>
-DynamicList<T> LoadBalancerBase::allGather(const T& myData)
+DynamicList<T> LoadBalancerBase::allGather(const T& myData, 
+const label comm)
 {
 
-    DynamicList<T> ret(Pstream::nProcs(), myData);
-    ret[Pstream::myProcNo()] = myData;
+    DynamicList<T> ret(Pstream::nProcs(comm), myData);
+    ret[Pstream::myProcNo(comm)] = myData;
 
     label tag = 1;
-    Pstream::gatherList(ret, tag);
-    Pstream::scatterList(ret, tag);
+    Pstream::gatherList(ret, tag, comm);
+    Pstream::scatterList(ret, tag, comm);
 
     return ret;
 }
 
 template <class T>
-RecvBuffer<T> LoadBalancerBase::balance(const DynamicList<T>& values) const
+RecvBuffer<T> LoadBalancerBase::balance(const DynamicList<T>& values, const label comm) const
 {
 
     return sendRecv<T, SendBuffer<T>>(
         SendBuffer<T>(values, state_.nProblems),
         state_.sources,
-        state_.destinations);
+        state_.destinations,
+        comm);
 }
 
 template <class T>
-RecvBuffer<T> LoadBalancerBase::unbalance(const RecvBuffer<T>& values) const
+RecvBuffer<T> LoadBalancerBase::unbalance(const RecvBuffer<T>& values, const label comm) const
 {
 
     return sendRecv<T, RecvBuffer<T>>(
-        values, state_.destinations, state_.sources);
+        values, state_.destinations, state_.sources, comm);
 }
 
 template <class T>
@@ -194,7 +206,8 @@ template <class ET, class Indexable>
 RecvBuffer<ET> LoadBalancerBase::sendRecv(
     const Indexable&          send_buffer,
     const std::vector<label>& sources,
-    const std::vector<label>& destinations)
+    const std::vector<label>& destinations,
+    const label comm)
 {
 
     RecvBuffer<ET> ret;
@@ -202,21 +215,39 @@ RecvBuffer<ET> LoadBalancerBase::sendRecv(
     if(Pstream::parRun())
     {
 
-        PstreamBuffers pBufs(Pstream::commsTypes::nonBlocking);
+        PstreamBuffers pBufs(Pstream::commsTypes::nonBlocking, comm);
 
-        for(label i = 0; i < label(destinations.size()); ++i)
+        if (comm == UPstream::worldComm)
         {
-            UOPstream send(destinations[i], pBufs);
-            send << send_buffer[i];
+            for(label i = 0; i < label(destinations.size()); ++i)
+            {
+                UOPstream send(destinations[i], pBufs);
+                send << send_buffer[i];
+            }
+
+            pBufs.finishedSends();
+
+            ret.setSize(sources.size());
+            for(label i = 0; i < label(sources.size()); ++i)
+            {
+                UIPstream recv(sources[i], pBufs);
+                recv >> ret[i];
+            }
         }
-
-        pBufs.finishedSends();
-
-        ret.setSize(sources.size());
-        for(label i = 0; i < label(sources.size()); ++i)
+        else // now use Input inter-processor communications stream (UOPstream & UIPstream dose not work if use children communicator)
         {
-            UIPstream recv(sources[i], pBufs);
-            recv >> ret[i];
+            for(label i = 0; i < label(destinations.size()); ++i)
+            {
+                OPstream send(UPstream::commsTypes::scheduled, destinations[i], 0, 1, comm);
+                send << send_buffer[i];
+            }
+
+            ret.setSize(sources.size());
+            for(label i = 0; i < label(sources.size()); ++i)
+            {
+                IPstream recv(UPstream::commsTypes::scheduled, sources[i], 0, 1, comm);
+                recv >> ret[i];
+            }
         }
     }
 

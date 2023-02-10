@@ -10,11 +10,8 @@ from easydict import EasyDict as edict
 import torch.profiler
 import os
 
-torch.set_printoptions(precision=10)
-print('position 0 in inference.py')
-device = torch.device("cuda")
-device_ids = range(torch.cuda.device_count())
 
+torch.set_printoptions(precision=10)
 
 
 class MyGELU(torch.nn.Module):
@@ -51,51 +48,101 @@ class Net(torch.nn.Module):
         x = self.fc(x)
         return x
 try:
+    #load variables from constant/CanteraTorchProperties
+    path_r = r"./constant/CanteraTorchProperties"
+    with open(path_r, "r") as f:
+        data = f.read()
+        i = data.index('torchModel') 
+        a = data.index('"',i) 
+        b = data.index('sub',a) 
+        c = data.index('"',b+1)
+        modelName_split1 = data[a+1:b+3]
+        modelName_split2 = data[b+3:c]
+
+        modelPath = str(modelName_split1+modelName_split2)
+        model1Path = str("mechanisms/"+modelPath+"/"+modelName_split1+"1"+modelName_split2+"/checkpoint/")
+        model2Path = str("mechanisms/"+modelPath+"/"+modelName_split1+"2"+modelName_split2+"/checkpoint/")
+        model3Path = str("mechanisms/"+modelPath+"/"+modelName_split1+"3"+modelName_split2+"/checkpoint/")
+        
+        i = data.index('GPU')
+        a = data.index(';', i)
+        b = data.rfind(' ',i+1,a)
+        switch_GPU = data[b+1:a]
+
+    #load OpenFOAM switch
+    switch_on = ["true", "True", "on", "yes", "y", "t", "any"]
+    switch_off = ["false", "False", "off", "no", "n", "f", "none"]
+    if switch_GPU in switch_on:
+        device = torch.device("cuda")
+        device_ids = range(torch.cuda.device_count())
+    elif switch_GPU in switch_off:
+        device = torch.device("cpu")
+        device_ids = [0]
+    else:
+        print("invalid setting!")
+        os._exit(0)
+
+
+
     #glbal variable will only init once when called interperter
     #load parameters from json
-    setting0 = json2Parser('settingsdrm19_0.json')
-    setting1 = json2Parser('settingsdrm19_1.json')
-    setting2 = json2Parser('settingsdrm19_2.json')
-    
+
+    norm0 = json2Parser(str(model1Path+"norm.json"))
+    norm1 = json2Parser(str(model2Path+"norm.json"))
+    norm2 = json2Parser(str(model3Path+"norm.json"))
+    setting0 = json2Parser(str(model1Path+"settings.json"))
     lamda = setting0.power_transform
     delta_t = setting0.delta_t
     dim = setting0.dim
     layers = setting0.layers
+    
 
-    Xmu0 = torch.tensor(setting0.Xmu).unsqueeze(0).to(device)
-    Xstd0 = torch.tensor(setting0.Xstd).unsqueeze(0).to(device=device)
-    Ymu0 = torch.tensor(setting0.Ymu).unsqueeze(0).to(device=device)
-    Ystd0 = torch.tensor(setting0.Ystd).unsqueeze(0).to(device=device)
+    Xmu0 = torch.tensor(norm0.input_mean).unsqueeze(0).to(device=device)
+    Xstd0 = torch.tensor(norm0.input_std).unsqueeze(0).to(device=device)
+    Ymu0 = torch.tensor(norm0.label_mean).unsqueeze(0).to(device=device)
+    Ystd0 = torch.tensor(norm0.label_std).unsqueeze(0).to(device=device)
 
-    Xmu1 = torch.tensor(setting1.Xmu).unsqueeze(0).to(device=device)
-    Xstd1 = torch.tensor(setting1.Xstd).unsqueeze(0).to(device=device)
-    Ymu1 = torch.tensor(setting1.Ymu).unsqueeze(0).to(device=device)
-    Ystd1 = torch.tensor(setting1.Ystd).unsqueeze(0).to(device=device)
+    Xmu1 = torch.tensor(norm1.input_mean).unsqueeze(0).to(device=device)
+    Xstd1 = torch.tensor(norm1.input_std).unsqueeze(0).to(device=device)
+    Ymu1 = torch.tensor(norm1.label_mean).unsqueeze(0).to(device=device)
+    Ystd1 = torch.tensor(norm1.label_std).unsqueeze(0).to(device=device)
 
-    Xmu2 = torch.tensor(setting2.Xmu).unsqueeze(0).to(device=device)
-    Xstd2 = torch.tensor(setting2.Xstd).unsqueeze(0).to(device=device)
-    Ymu2 = torch.tensor(setting2.Ymu).unsqueeze(0).to(device=device)
-    Ystd2 = torch.tensor(setting2.Ystd).unsqueeze(0).to(device=device)
-    print('position 1 in inference.py')
+    Xmu2 = torch.tensor(norm2.input_mean).unsqueeze(0).to(device=device)
+    Xstd2 = torch.tensor(norm2.input_std).unsqueeze(0).to(device=device)
+    Ymu2 = torch.tensor(norm2.label_mean).unsqueeze(0).to(device=device)
+    Ystd2 = torch.tensor(norm2.label_std).unsqueeze(0).to(device=device)
 
-    #load module  
+    #load model  
     model0 = Net()
     model1 = Net()
     model2 = Net()
-    check_point0 = torch.load('modeldrm19_0.pt')
-    check_point1 = torch.load('modeldrm19_1.pt')
-    check_point2 = torch.load('modeldrm19_2.pt')
+
+    path_list=os.listdir(model1Path)
+    for filename in path_list:
+        if os.path.splitext(filename)[1] == '.pt':
+            modelname = filename
+    
+    
+    if torch.cuda.is_available()==False:
+        check_point0 = torch.load(str(model1Path+modelname), map_location='cpu')
+        check_point1 = torch.load(str(model2Path+modelname), map_location='cpu')
+        check_point2 = torch.load(str(model3Path+modelname), map_location='cpu')
+    else:
+        check_point0 = torch.load(str(model1Path+modelname))
+        check_point1 = torch.load(str(model2Path+modelname))
+        check_point2 = torch.load(str(model3Path+modelname))
+    
     model0.load_state_dict(check_point0)
     model1.load_state_dict(check_point1)
     model2.load_state_dict(check_point2)
     model0.to(device=device)
     model1.to(device=device)
     model2.to(device=device)
+
     if len(device_ids) > 1:
         model0 = torch.nn.DataParallel(model0, device_ids=device_ids)
         model1 = torch.nn.DataParallel(model1, device_ids=device_ids)
         model2 = torch.nn.DataParallel(model2, device_ids=device_ids)
-    print('call init')
 except Exception as e:
     print(e.args)
 
@@ -105,9 +152,12 @@ def inference(vec0, vec1, vec2):
     use model to inference
     '''
     #args = np.reshape(args, (-1, 9)) #reshape to formed size
-    vec0 = np.reshape(vec0, (-1, 24))
-    vec1 = np.reshape(vec1, (-1, 24))
-    vec2 = np.reshape(vec2, (-1, 24))
+    #vec0 = np.reshape(vec0, (-1, 24))
+    #vec1 = np.reshape(vec1, (-1, 24))
+    #vec2 = np.reshape(vec2, (-1, 24))
+    vec0 = np.reshape(vec0, (-1, 10))
+    vec1 = np.reshape(vec1, (-1, 10))
+    vec2 = np.reshape(vec2, (-1, 10))
 
     try:
         with torch.no_grad():
@@ -116,37 +166,35 @@ def inference(vec0, vec1, vec2):
             input2_ = torch.from_numpy(vec2).double().to(device=device) #cast ndarray to torch tensor
 
             # pre_processing
-            rho0 = input0_[:, 0].unsqueeze(1)
-            input0_Y = input0_[:, 3:].clone()
-            input0_bct = input0_[:, 1:]
+            rho0 = input0_[:, -1].unsqueeze(1)
+            input0_Y = input0_[:, 2:-1].clone()
+            input0_bct = input0_[:, 0:-1]
             input0_bct[:, 2:] = (input0_bct[:, 2:]**(lamda) - 1) / lamda #BCT
             input0_normalized = (input0_bct - Xmu0) / Xstd0
-            input0_normalized[:, -1] = 0 #set Y_AR to 0
+            # input0_normalized[:, -1] = 0 #set Y_AR to 0
             input0_normalized = input0_normalized.float()
 
-            rho1 = input1_[:, 0].unsqueeze(1)
-            input1_Y = input1_[:, 3:].clone()
-            input1_bct = input1_[:, 1:]
+            rho1 = input1_[:, -1].unsqueeze(1)
+            input1_Y = input1_[:, 2:-1].clone()
+            input1_bct = input1_[:, 0:-1]
             input1_bct[:, 2:] = (input1_bct[:, 2:]**(lamda) - 1) / lamda #BCT
             input1_normalized = (input1_bct - Xmu1) / Xstd1
-            input1_normalized[:, -1] = 0 #set Y_AR to 0
+            # input1_normalized[:, -1] = 0 #set Y_AR to 0
             input1_normalized = input1_normalized.float()
 
-
-            rho2 = input2_[:, 0].unsqueeze(1)
-            input2_Y = input2_[:, 3:].clone()
-            input2_bct = input2_[:, 1:]
+            rho2 = input2_[:, -1].unsqueeze(1)
+            input2_Y = input2_[:, 2:-1].clone()
+            input2_bct = input2_[:, 0:-1]
             input2_bct[:, 2:] = (input2_bct[:, 2:]**(lamda) - 1) / lamda #BCT
             input2_normalized = (input2_bct - Xmu2) / Xstd2
-            input2_normalized[:, -1] = 0 #set Y_AR to 0
+            # input2_normalized[:, -1] = 0 #set Y_AR to 0
             input2_normalized = input2_normalized.float()
 
             #inference
             output0_normalized = model0(input0_normalized)
             output1_normalized = model1(input1_normalized)
             output2_normalized = model2(input2_normalized)
-
-
+                       
             # post_processing
             output0_bct = (output0_normalized * Ystd0 + Ymu0) * delta_t + input0_bct
             output0_Y = (lamda * output0_bct[:, 2:] + 1)**(1 / lamda)

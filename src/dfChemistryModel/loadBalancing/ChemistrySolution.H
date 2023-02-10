@@ -48,7 +48,7 @@ struct ChemistrySolution
     ChemistrySolution() = default;
 
     ChemistrySolution(label nspecie)
-        : RRi(nspecie, 0.0), cpuTime(0.0), cellid(0), Qdoti(0.0)
+        : RRi(nspecie, 0.0), cpuTime(0.0), cellid(0), Qdoti(0.0), local(true)
     {
     }
 
@@ -66,6 +66,7 @@ struct ChemistrySolution
     scalar cpuTime;
     label cellid;
     scalar Qdoti;
+    bool local;
 };
 
 //- Serialization for send
@@ -75,6 +76,7 @@ static inline Ostream& operator<<(Ostream& os, const ChemistrySolution& s)
     os << s.cpuTime;
     os << s.cellid;
     os << s.Qdoti;
+    os << s.local;
     return os;
 }
 
@@ -85,6 +87,7 @@ static inline Istream& operator>>(Istream& is, ChemistrySolution& s)
     is >> s.cpuTime;
     is >> s.cellid;
     is >> s.Qdoti;
+    is >> s.local;
     return is;
 }
 

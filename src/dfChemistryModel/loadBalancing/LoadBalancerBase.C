@@ -40,14 +40,16 @@ void Foam::LoadBalancerBase::setState(const BalancerState& state)
 }
 
 Foam::ChemistryLoad
-Foam::LoadBalancerBase::computeLoad(const DynamicList<ChemistryProblem>& problems)
+Foam::LoadBalancerBase::computeLoad(const DynamicList<ChemistryProblem>& problems, 
+const label comm)
 {
     auto lambda = [](scalar sum, const ChemistryProblem& rhs) {
         return sum + rhs.cpuTime;
     };
     scalar sum =
         std::accumulate(problems.begin(), problems.end(), scalar(0), lambda);
-    return ChemistryLoad(Pstream::myProcNo(), sum);
+    
+    return ChemistryLoad(Pstream::myProcNo(comm), sum);
 }
 
 Foam::scalar Foam::LoadBalancerBase::getMean(const DynamicList<ChemistryLoad>& loads)

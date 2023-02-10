@@ -28,10 +28,11 @@ License
 
 void
 Foam::LoadBalancer::updateState(
-    const DynamicList<ChemistryProblem>& problems)
+    const DynamicList<ChemistryProblem>& problems, const label comm)
 {
-    auto myLoad = computeLoad(problems);
-    auto allLoads = allGather(myLoad);
+    if (Pstream::myProcNo(comm) == -1) return;
+    auto myLoad = computeLoad(problems, comm);
+    auto allLoads = allGather(myLoad, comm);
     auto operations = getOperations(allLoads, myLoad);
     auto info = operationsToInfo(operations, problems, myLoad);
 

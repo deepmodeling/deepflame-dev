@@ -39,7 +39,6 @@ jobs:
         conda install pybind11
         conda install --channel https://conda.anaconda.org/zhaofeng-shu33 easydict        
         cd /github/home/miniconda3/envs/libcantera/lib
-        ln -s libmkl_rt.so.1 libmkl_rt.so.2
  
      - name: build and validation with CPU inference 
        env: 

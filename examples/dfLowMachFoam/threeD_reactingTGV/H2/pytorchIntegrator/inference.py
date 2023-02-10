@@ -11,7 +11,6 @@ import torch.profiler
 import os
 
 
-
 torch.set_printoptions(precision=10)
 
 
@@ -167,26 +166,25 @@ def inference(vec0, vec1, vec2):
             input2_ = torch.from_numpy(vec2).double().to(device=device) #cast ndarray to torch tensor
 
             # pre_processing
-            rho0 = input0_[:, 0].unsqueeze(1)
-            input0_Y = input0_[:, 3:].clone()
-            input0_bct = input0_[:, 1:]
+            rho0 = input0_[:, -1].unsqueeze(1)
+            input0_Y = input0_[:, 2:-1].clone()
+            input0_bct = input0_[:, 0:-1]
             input0_bct[:, 2:] = (input0_bct[:, 2:]**(lamda) - 1) / lamda #BCT
             input0_normalized = (input0_bct - Xmu0) / Xstd0
             # input0_normalized[:, -1] = 0 #set Y_AR to 0
             input0_normalized = input0_normalized.float()
 
-            rho1 = input1_[:, 0].unsqueeze(1)
-            input1_Y = input1_[:, 3:].clone()
-            input1_bct = input1_[:, 1:]
+            rho1 = input1_[:, -1].unsqueeze(1)
+            input1_Y = input1_[:, 2:-1].clone()
+            input1_bct = input1_[:, 0:-1]
             input1_bct[:, 2:] = (input1_bct[:, 2:]**(lamda) - 1) / lamda #BCT
             input1_normalized = (input1_bct - Xmu1) / Xstd1
             # input1_normalized[:, -1] = 0 #set Y_AR to 0
             input1_normalized = input1_normalized.float()
 
-
-            rho2 = input2_[:, 0].unsqueeze(1)
-            input2_Y = input2_[:, 3:].clone()
-            input2_bct = input2_[:, 1:]
+            rho2 = input2_[:, -1].unsqueeze(1)
+            input2_Y = input2_[:, 2:-1].clone()
+            input2_bct = input2_[:, 0:-1]
             input2_bct[:, 2:] = (input2_bct[:, 2:]**(lamda) - 1) / lamda #BCT
             input2_normalized = (input2_bct - Xmu2) / Xstd2
             # input2_normalized[:, -1] = 0 #set Y_AR to 0
@@ -196,7 +194,7 @@ def inference(vec0, vec1, vec2):
             output0_normalized = model0(input0_normalized)
             output1_normalized = model1(input1_normalized)
             output2_normalized = model2(input2_normalized)
-                                       
+                       
             # post_processing
             output0_bct = (output0_normalized * Ystd0 + Ymu0) * delta_t + input0_bct
             output0_Y = (lamda * output0_bct[:, 2:] + 1)**(1 / lamda)
