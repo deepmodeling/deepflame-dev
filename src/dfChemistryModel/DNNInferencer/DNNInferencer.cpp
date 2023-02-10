@@ -166,7 +166,6 @@ DNNInferencer::DNNInferencer(torch::jit::script::Module torchModel0, torch::jit:
                                313.3717647966624,
                                2.463374792192512e-10},
                               opts);
-    std::cout << "index = " << int(device_.index()) << std::endl;
     std::cout << "load model and parameters successfully" << std::endl;
 }
 

@@ -2,6 +2,7 @@
 
 EXE_INC = -std=c++14 \
     -Wno-old-style-cast \
+    $(PFLAGS) $(PINC) \
     $(if $(LIBTORCH_ROOT),-DUSE_LIBTORCH,) \
     $(if $(PYTHON_INC_DIR),-DUSE_PYTORCH,) \
     -I$(LIB_SRC)/transportModels/compressible/lnInclude \
@@ -17,12 +18,12 @@ EXE_INC = -std=c++14 \
     -I$(LIB_SRC)/lagrangian/spray/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
     -I$(DF_SRC)/thermophysicalModels/thermophysicalProperties/lnInclude \
-    -I$(LIB_SRC)/thermophysicalModels/thermophysicalProperties/lnInclude \
     -I$(DF_SRC)/thermophysicalModels/SLGThermo/lnInclude \
     -I$(LIB_SRC)/regionModels/regionModel/lnInclude \
     -I$(LIB_SRC)/regionModels/surfaceFilmModels/lnInclude \
     -I$(DF_SRC)/dfCanteraMixture/lnInclude \
     -I$(DF_SRC)/dfChemistryModel/lnInclude \
+    -I$(LIB_SRC)/Pstream/mpi \
     -I$(LIB_SRC)/ODE/lnInclude \
     -I$(LIB_SRC)/functionObjects/field/lnInclude \
     -I$(CANTERA_ROOT)/include \

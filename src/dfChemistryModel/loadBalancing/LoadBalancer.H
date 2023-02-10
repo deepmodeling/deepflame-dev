@@ -79,7 +79,8 @@ public:
     virtual ~LoadBalancer() = default;
 
     //- Given a list of problems, update the balancer state member
-    virtual void updateState(const DynamicList<ChemistryProblem>& problems);
+    virtual void updateState(const DynamicList<ChemistryProblem>& problems,
+    const label comm = UPstream::worldComm);
 
     //- Is load balancing active?
     bool active() const

@@ -71,6 +71,7 @@ SourceFiles
 #include "LoadBalancer.H"
 #include "OFstream.H"
 #include "IOmanip.H"
+#include "PstreamGlobals.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -128,14 +129,35 @@ public IOdictionary
     // DNN selection fields 
     volScalarField selectDNN_;
 
-#ifdef USE_LIBTORCH
+#if defined USE_LIBTORCH || defined USE_PYTORCH
     bool useDNN;
-
     Switch torchSwitch_;
     Switch gpu_;
     Switch gpulog_;
+
+    scalar Tact1_;
+    scalar Qdotact1_;
+    scalar Tact2_;
+    scalar Qdotact2_;
+    scalar Tact3_;
+    scalar Qdotact3_;
+    label cvodeComm;
+
+    // profiling 
+    double time_allsolve_;
+    double time_submaster_;
+    double time_sendProblem_;
+    double time_RecvProblem_;
+    double time_sendRecvSolution_;
+    double time_getDNNinputs_;
+    double time_DNNinference_;
+    double time_updateSolutionBuffer_;
+    double time_getProblems_;
+#endif
+
+#ifdef USE_LIBTORCH
     DNNInferencer DNNInferencer_;
-    int coresPerGPU_;
+    int cores_; // The number of cores per GPU when use libtorch
     int GPUsPerNode_;
 
     word torchModelName_;
@@ -147,51 +169,14 @@ public IOdictionary
     scalar Tact_;
 
     word torchModelName1_;
-    scalar Tact1_;
-    scalar Qdotact1_;
-    
     word torchModelName2_;
-    scalar Tact2_;
-    scalar Qdotact2_;
-    
     word torchModelName3_;  
-    scalar Tact3_;
-    scalar Qdotact3_;
-
-    // profiling
-    double time_allsolve_;
-    double time_submaster_;
-    double time_sendProblem_;
-    double time_RecvProblem_;
-    double time_sendRecvSolution_;
-    double time_getDNNinputs_;
-    double time_DNNinference_;
-    double time_updateSolutionBuffer_;
 #endif
 
 #ifdef USE_PYTORCH
-    bool useDNN;
-
-    Switch torchSwitch_;
-    Switch gpu_;
-    Switch gpulog_;
-    scalar Tact1_;
-    scalar Qdotact1_;
-    scalar Tact2_;
-    scalar Qdotact2_;
-    scalar Tact3_;
-    scalar Qdotact3_;
-    int coresPerNode_;
+    int cores_; // The number of cores per node when use pytorch
 
     // profiling
-    double time_allsolve_;
-    double time_submaster_;
-    double time_sendProblem_;
-    double time_RecvProblem_;
-    double time_sendRecvSolution_;
-    double time_getDNNinputs_;
-    double time_DNNinference_;
-    double time_updateSolutionBuffer_;
     double time_vec2ndarray_;
     double time_python_;
 #endif
@@ -220,55 +205,6 @@ public IOdictionary
         template<class DeltaTType>
         scalar canteraSolve(const DeltaTType& deltaT);
 
-#ifdef USE_LIBTORCH
-
-        //- DNN solver that support the use of GPU (single card & single CPU core)
-        template<class DeltaTType>
-        scalar solve_DNN_GPU_oneCore(const DeltaTType& deltaT);  // TODO: rename it
-
-        //- DNN solver that support the use of GPU (multi-cards)
-        template<class DeltaTType>
-        scalar solve_DNN(const DeltaTType& deltaT);
-
-        /*============= private methods in solve_DNN =============*/
-        //- get a list of GPU problems to be solved
-        template<class DeltaTType>
-        DynamicList<GpuProblem> getGPUProblems(const DeltaTType& deltaT);
-
-        //- get the input for DNN inference
-        void getDNNinputs(const DynamicBuffer<GpuProblem>& problemBuffer, std::vector<label>& outputlength,
-        std::vector<std::vector<double>>& DNNinputs, std::vector<DynamicBuffer<label>>& cellIDBuffer, 
-        std::vector<std::vector<label>>& problemCounter);
-
-        //- construct the output
-        void updateSolutionBuffer(DynamicBuffer<GpuSolution>& solutionBuffer, const std::vector<std::vector<double>>& results,
-        const std::vector<label>& outputLength, const std::vector<DynamicBuffer<label>>& cellIDBuffer,
-        std::vector<std::vector<label>>& problemCounter);
-#endif
-
-#ifdef USE_PYTORCH
-        template<class DeltaTType>
-        scalar solve_DNN_GPU_oneCore(const DeltaTType& deltaT);
-
-        template<class DeltaTType>
-        scalar solve_DNN(const DeltaTType& deltaT);
-
-        /*=======================private methods for solve_DNN=======================*/
-        //- get a list of GPU problems to be solved
-        template<class DeltaTType>
-        DynamicList<GpuProblem> getGPUProblems(const DeltaTType& deltaT);
-
-        //- get the input for DNN inference
-        void getDNNinputs(const DynamicBuffer<GpuProblem>& problemBuffer, std::vector<label>& outputlength,
-        std::vector<std::vector<double>>& DNNinputs, std::vector<DynamicBuffer<label>>& cellIDBuffer,
-        std::vector<std::vector<label>>& problemCounter);
-
-        //- construct the output
-        void updateSolutionBuffer(DynamicBuffer<GpuSolution>& solutionBuffer, const double* star,
-        const std::vector<label>& outputLength, const std::vector<DynamicBuffer<label>>& cellIDBuffer,
-        std::vector<std::vector<label>>& problemCounter);
-#endif
-
         //- Solve a single ChemistryProblem and put the solution to ChemistrySolution
         void solveSingle(ChemistryProblem& problem, ChemistrySolution& solution);
 
@@ -285,7 +221,7 @@ public IOdictionary
         solveBuffer(RecvBuffer<ChemistryProblem>& problems);
 
         //- Update the reaction rates and heat release rates from a list of solutions
-        scalar updateReactionRates(const RecvBuffer<ChemistrySolution>& solutions);
+        scalar updateReactionRates(const RecvBuffer<ChemistrySolution>& solutions, DynamicList<ChemistrySolution>& submasterODESolutions);
 
         //- Create a load balancer object
         LoadBalancer createBalancer();
@@ -301,6 +237,37 @@ public IOdictionary
             return autoPtr<OFstream>(new OFstream(
                 mesh_.time().path() / "loadBal" / this->group() / name));
         }
+
+#if defined USE_LIBTORCH || defined USE_PYTORCH
+        /*============= private methods in solve_DNN =============*/
+        //- get a list of GPU problems to be solved
+        template<class DeltaTType>
+        void getGPUProblems(const DeltaTType& deltaT, Foam::DynamicList<GpuProblem>& GPUproblemList,
+        Foam::DynamicList<ChemistryProblem>& CPUproblemList);
+
+        //- get the input for DNN inference
+        void getDNNinputs(const DynamicBuffer<GpuProblem>& problemBuffer, std::vector<label>& outputlength,
+        std::vector<std::vector<double>>& DNNinputs, std::vector<DynamicBuffer<label>>& cellIDBuffer, 
+        std::vector<std::vector<label>>& problemCounter);
+
+        //- construct the output
+        void updateSolutionBuffer(DynamicBuffer<GpuSolution>& solutionBuffer, const std::vector<std::vector<double>>& results,
+        const std::vector<DynamicBuffer<label>>& cellIDBuffer, std::vector<std::vector<label>>& problemCounter);
+#endif
+
+#ifdef USE_LIBTORCH
+        //- DNN solver that support the use of GPU (multi-cards)
+        template<class DeltaTType>
+        scalar solve_DNN(const DeltaTType& deltaT);
+#endif
+
+#ifdef USE_PYTORCH
+        template<class DeltaTType>
+        scalar solve_DNN_GPU_oneCore(const DeltaTType& deltaT);
+
+        template<class DeltaTType>
+        scalar solve_DNN(const DeltaTType& deltaT);
+#endif
 
 public:
 
@@ -355,27 +322,20 @@ public:
         const CanteraMixture& mixture() {return mixture_;}
 
     // profiling
-#ifdef USE_PYTORCH
+#if defined USE_LIBTORCH || defined USE_PYTORCH
     double time_allsolve() {return time_allsolve_;}
     double time_submaster() {return time_submaster_;}
     double time_sendProblem() {return time_sendProblem_;}
+    double time_getProblem() {return time_getProblems_;}
     double time_RecvProblem() {return time_RecvProblem_;}
     double time_sendRecvSolution() {return time_sendRecvSolution_;}
     double time_getDNNinputs() {return time_getDNNinputs_;}
     double time_DNNinference() {return time_DNNinference_;}
     double time_updateSolutionBuffer() {return time_updateSolutionBuffer_;}
+#endif
+#ifdef USE_PYTORCH
     double time_vec2ndarray() {return time_vec2ndarray_;}
     double time_python() {return time_python_;}
-#endif
-#ifdef USE_LIBTORCH
-    double time_allsolve() {return time_allsolve_;}
-    double time_submaster() {return time_submaster_;}
-    double time_sendProblem() {return time_sendProblem_;}
-    double time_RecvProblem() {return time_RecvProblem_;}
-    double time_sendRecvSolution() {return time_sendRecvSolution_;}
-    double time_getDNNinputs() {return time_getDNNinputs_;}
-    double time_DNNinference() {return time_DNNinference_;}
-    double time_updateSolutionBuffer() {return time_updateSolutionBuffer_;}
 #endif
 
 };
