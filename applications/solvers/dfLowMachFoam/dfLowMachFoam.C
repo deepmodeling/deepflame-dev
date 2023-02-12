@@ -59,6 +59,9 @@ Description
 #include "basicThermo.H"
 #include "CombustionModel.H"
 
+
+
+//#include "amgxSolver.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 int main(int argc, char *argv[])
@@ -80,14 +83,17 @@ int main(int argc, char *argv[])
     #include "createFields.H"
     #include "createRhoUfIfPresent.H"
 
-    double time_monitor_flow=0;
+    double time_monitor_flow,time_monitor_U,time_monitor_p,thermodensityu, rhoEqn,  constructM_p, updateU=0;
     double time_monitor_chem=0;
-    double time_monitor_Y=0;
-    double time_monitor_E=0;
+    double time_monitor_Y,yinside=0;
+    double time_monitor_E, EE_relax, EE_cons=0;
     double time_monitor_corrThermo=0;
     double time_monitor_corrDiff=0;
+    double Y_relax , p_solve, p_relax, EE_solve, U_solve, U_relax, U_construct, p_eq= 0;
+    double Y_solve, Yeq, correctflux_t,laplaciansolve,constructM_Y= 0 ;
     label timeIndex = 0;
     clock_t start, end;
+
 
     turbulence->validate();
 
@@ -146,6 +152,8 @@ int main(int argc, char *argv[])
             start = std::clock();
             #include "UEqn.H"
             end = std::clock();
+            time_monitor_U += double(end - start) / double(CLOCKS_PER_SEC);
+            
             time_monitor_flow += double(end - start) / double(CLOCKS_PER_SEC);
 
             if(combModelName!="ESF" && combModelName!="flareFGM" )
@@ -176,6 +184,7 @@ int main(int argc, char *argv[])
             {
                 if (pimple.consistent())
                 {
+                    
                     #include "pcEqn.H"
                 }
                 else
@@ -185,6 +194,8 @@ int main(int argc, char *argv[])
             }
             end = std::clock();
             time_monitor_flow += double(end - start) / double(CLOCKS_PER_SEC);
+            time_monitor_p += double(end - start) / double(CLOCKS_PER_SEC);
+
 
             if (pimple.turbCorr())
             {
@@ -199,17 +210,47 @@ int main(int argc, char *argv[])
         Info << "output time index " << runTime.timeIndex() << endl;
 
         Info<< "========Time Spent in diffenet parts========"<< endl;
-        Info<< "Chemical sources           = " << time_monitor_chem << " s" << endl;
-        Info<< "Species Equations          = " << time_monitor_Y << " s" << endl;
+        Info<< "whole YEqn                 = " << Yeq << " s" << endl;
+        Info<< "    Chemical sources       = " << time_monitor_chem << " s" << endl;
+        Info<< "    Species Equations      = " << time_monitor_Y << " s" << endl;
+        Info<< "        Y_relax            = " << Y_relax << "s"<< endl;
+        Info<< "        Y_solve            = " << Y_solve << "s"<< endl;
+        Info<< "        correctflux        = " << correctflux_t << "s"<< endl;
+        Info<< "        laplacian solve    = " << laplaciansolve << "s"<< endl;
+        Info<< "        construct matrix   = " << constructM_Y << "s"<< endl;        
+        Info<< "    Diffusion Correction   = " << time_monitor_corrDiff << " s" << endl;       
         Info<< "U & p Equations            = " << time_monitor_flow << " s" << endl;
+        Info<< "    p Equations            = " << time_monitor_p << " s" << endl;
+        Info<< "      consturct matrix     = " << constructM_p << "s"<< endl;
+        Info<< "      p_solve              = " << p_solve << "s"<< endl;
+        Info<< "      p_relax              = " << p_relax << "s"<< endl;
+        Info<< "      rho equation         = " << rhoEqn << "s"<< endl;
+        Info<< "      density update       = " << thermodensityu << "s"<< endl;
+        Info<< "      update U             = " << updateU << "s"<< endl;
+        Info<< "    U Equations            = " << time_monitor_U << " s" << endl;
+        Info<< "      U_construct          = " << U_construct << "s"<< endl;
+        Info<< "      U_solve              = " << U_solve << "s"<< endl;
+        Info<< "      U_relax              = " << U_relax << "s"<< endl;
         Info<< "Energy Equations           = " << time_monitor_E << " s" << endl;
+        Info<< "      EE_construct         = " << EE_cons << "s"<< endl;
+        Info<< "      EE_relax             = " << EE_relax<< "s"<< endl;
+        Info<< "      EE_solve             = " << EE_solve << "s"<< endl;
         Info<< "thermo & Trans Properties  = " << time_monitor_corrThermo << " s" << endl;
-        Info<< "Diffusion Correction Time  = " << time_monitor_corrDiff << " s" << endl;
         Info<< "sum Time                   = " << (time_monitor_chem + time_monitor_Y + time_monitor_flow + time_monitor_E + time_monitor_corrThermo + time_monitor_corrDiff) << " s" << endl;
         Info<< "============================================"<<nl<< endl;
 
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s" << endl;
+            
+            
+        Info<< "========Time Spent in AMGX========"<< endl;
+        //Info<< "      amgx solve             = " << time_amgx << "s"<< endl;
+
+        Info<< "============================================"<<nl<< endl;  
+        
+        
+                    
+            
 #ifdef USE_PYTORCH
         if (log_ && torch_)
         {
