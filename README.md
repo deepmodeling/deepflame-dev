@@ -47,4 +47,6 @@ From v0.1.0 (2022/06/15):
 
 
 ## Useful resources
-- First release v0.1.0 introduction talk (in Chinese) on [DeepModeling Community's official bilibili website](https://www.bilibili.com/video/BV1Vf4y1f7wB?vd_source=309a67109ca33c4ef79bf506f8ce70ab).
+### DeepModeling Community's official bilibili website: 
+- [First release v0.1.0 introduction talk (in Chinese)](https://www.bilibili.com/video/BV1Vf4y1f7wB?vd_source=309a67109ca33c4ef79bf506f8ce70ab)
+- Formal release of v1.0.0 introduction talk [(in English)](https://www.bilibili.com/video/BV1jv4y1U7YM/?spm_id_from=333.788&vd_source=309a67109ca33c4ef79bf506f8ce70ab) and [(in Chinese)](https://www.bilibili.com/video/BV14P411u75u/?spm_id_from=333.788&vd_source=309a67109ca33c4ef79bf506f8ce70ab)
