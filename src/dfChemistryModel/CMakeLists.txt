@@ -1,6 +1,6 @@
 
 project(dfChemistryModel LANGUAGES CXX)
-
+find_package(MPI REQUIRED)
 include_directories(
                     ${dfchemistry_inc}
                     ${OpenFOAM_SRC}/meshTools/lnInclude
@@ -10,6 +10,8 @@ include_directories(
                     ${OpenFOAM_SRC}/TurbulenceModels/compressible/lnInclude
                     ${dfcantera_inc}
                     ${CANTERA_ROOT}/include
+                    ${OpenFOAM_SRC}/Pstream/mpi
+                    ${MPI_INCLUDE_PATH}
                     )
 
 
@@ -51,6 +53,7 @@ target_link_libraries(${PROJECT_NAME} ${CANTERA_ROOT}/lib/libcantera_shared.so.2
 target_link_libraries(${PROJECT_NAME} dfFluidThermophysicalModels
 dfCompressibleTurbulenceModels
 dfCanteraMixture
+${MPI_LIBRARIES}
 )
 
 
