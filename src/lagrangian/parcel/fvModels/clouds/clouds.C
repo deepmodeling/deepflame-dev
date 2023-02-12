@@ -251,6 +251,19 @@ void Foam::fv::clouds::addSup
     else if (fieldName == carrierThermo.he().name())
     {
         eqn += cloudsPtr_().Sh(eqn.psi());
+
+        const CanteraSpecies& composition =
+            refCast<const CanteraSpecies>(carrierThermo);
+
+        const PtrList<volScalarField>& Y = composition.Y();
+
+        tmp<fvScalarMatrix> thcSource(new fvScalarMatrix(eqn.psi(), dimEnergy/dimTime));
+        fvScalarMatrix& hcSource = thcSource.ref();
+        forAll(Y, i)
+        {
+            hcSource.source() += composition.Hf(i)*cloudsPtr_().SYi(i, Y[i]).ref().source();
+        }
+        eqn += hcSource;
     }
     else if
     (

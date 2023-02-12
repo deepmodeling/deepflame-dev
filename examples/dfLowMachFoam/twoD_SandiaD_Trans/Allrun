@@ -1,0 +1,33 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Source tutorial run functions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+# Set application name
+application=$(getApplication)
+
+
+runApplication blockMesh
+
+# Run the application without chemistry until 0.3s to let the flow field develop
+foamDictionary -entry "startTime" -set "0" system/controlDict
+foamDictionary -entry "writeInterval" -set "0.1" system/controlDict
+foamDictionary -entry "endTime" -set "0.3" system/controlDict
+foamDictionary -entry "chemistry" -set "off" constant/CanteraTorchProperties
+
+runApplication setFields
+runApplication decomposePar -force 
+
+runParallel $application
+
+# Run with chemistry until flame reach its full size and its structure does not change significantly
+foamDictionary -entry "startTime" -set "0.3" system/controlDict
+foamDictionary -entry "writeInterval" -set "0.01" system/controlDict
+foamDictionary -entry "endTime" -set "0.6" system/controlDict
+foamDictionary -entry "chemistry" -set "on" constant/CanteraTorchProperties
+
+runParallel -a $application 
+
+
+#------------------------------------------------------------------------------
