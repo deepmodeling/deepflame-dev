@@ -1,3 +1,11 @@
+<p align="center">
+    <img src="https://user-images.githubusercontent.com/121787251/218061666-eb9e4188-d368-41d0-8ed6-fe5121699efe.jpg">
+    <img src="https://img.shields.io/github/v/release/deepmodeling/deepflame-dev?include_prereleases&label=latest%20release&style=for-the-badge">
+    <img src="https://img.shields.io/badge/contributions-welcome-red.svg?style=for-the-badge">
+    <img src="https://img.shields.io/github/license/deepmodeling/deepflame-dev?color=yellow&logo=GitHub&style=for-the-badge">
+    <img src="https://img.shields.io/website?label=Documentation%20HomePage&style=for-the-badge&up_message=online&url=https%3A%2F%2Fdeepflame.deepmodeling.com%2Fen%2Flatest%2F">
+</p>
+
 # DeepFlame v1.0.0
 DeepFlame is a deep learning empowered computational fluid dynamics package for single or multiphase, laminar or turbulent, reacting flows at all speeds. It aims to provide an open-source platform to combine the individual strengths of [OpenFOAM](https://openfoam.org), [Cantera](https://cantera.org), and [PyTorch](https://pytorch.org/) libraries for deep learning assisted reacting flow simulations. It also has the scope to leverage the next-generation heterogenous supercomputing and AI acceleration infrastructures such as GPU and FPGA.
 

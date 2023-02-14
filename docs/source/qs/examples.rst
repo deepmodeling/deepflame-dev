@@ -78,7 +78,7 @@ If the case is successfully run, the result can be found in ``/postProcessing/pr
 
 .. code-block:: bash
 
-    gunplot
+    gnuplot
     plot "/your/path/to/postProcessing/probes/0/T"
 
 You will get a graph:
