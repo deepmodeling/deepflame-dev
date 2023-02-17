@@ -7,6 +7,10 @@ CombustionModel/CombustionModel/CombustionModels.C
 PaSR/PaSRs.C
 EDC/EDCs.C
 
+FGM/flameletTableSolver/tableSolver.C
+FGM/baseFGM/baseFGMs.C
+FGM/flareFGM/flareFGMs.C
+
 laminar/laminars.C
 
 noCombustion/noCombustions.C

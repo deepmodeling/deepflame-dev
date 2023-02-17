@@ -1,4 +1,11 @@
-# DeepFlame v1.0.0
+<p align="center">
+    <img src="https://user-images.githubusercontent.com/121787251/218061666-eb9e4188-d368-41d0-8ed6-fe5121699efe.jpg">
+    <img src="https://img.shields.io/github/v/release/deepmodeling/deepflame-dev?include_prereleases&label=latest%20release&style=for-the-badge">
+    <img src="https://img.shields.io/badge/contributions-welcome-red.svg?style=for-the-badge">
+    <img src="https://img.shields.io/github/license/deepmodeling/deepflame-dev?color=yellow&logo=GitHub&style=for-the-badge">
+    <img src="https://img.shields.io/website?label=Documentation%20HomePage&style=for-the-badge&up_message=online&url=https%3A%2F%2Fdeepflame.deepmodeling.com%2Fen%2Flatest%2F">
+</p>
+
 DeepFlame is a deep learning empowered computational fluid dynamics package for single or multiphase, laminar or turbulent, reacting flows at all speeds. It aims to provide an open-source platform to combine the individual strengths of [OpenFOAM](https://openfoam.org), [Cantera](https://cantera.org), and [PyTorch](https://pytorch.org/) libraries for deep learning assisted reacting flow simulations. It also has the scope to leverage the next-generation heterogenous supercomputing and AI acceleration infrastructures such as GPU and FPGA.
 
 The deep learning algorithms and models used in the DeepFlame tutorial examples are developed and trained independently by our collaborators team – [DeepCombustion](https://github.com/deepcombustion/deepcombustion). Please refer to their website for detailed information.
@@ -47,4 +54,6 @@ From v0.1.0 (2022/06/15):
 
 
 ## Useful resources
-- First release v0.1.0 introduction talk (in Chinese) on [DeepModeling Community's official bilibili website](https://www.bilibili.com/video/BV1Vf4y1f7wB?vd_source=309a67109ca33c4ef79bf506f8ce70ab).
+### DeepModeling Community's official bilibili website: 
+- [First release v0.1.0 introduction talk (in Chinese)](https://www.bilibili.com/video/BV1Vf4y1f7wB?vd_source=309a67109ca33c4ef79bf506f8ce70ab)
+- Formal release of v1.0.0 introduction talk [(in English)](https://www.bilibili.com/video/BV1jv4y1U7YM/?spm_id_from=333.788&vd_source=309a67109ca33c4ef79bf506f8ce70ab) and [(in Chinese)](https://www.bilibili.com/video/BV14P411u75u/?spm_id_from=333.788&vd_source=309a67109ca33c4ef79bf506f8ce70ab)
