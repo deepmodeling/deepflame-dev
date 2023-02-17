@@ -839,26 +839,26 @@ void Foam::dfChemistryModel<ThermoType>::getGPUProblems
         if (((Qdot_[cellI] < 3e7) && (T_[cellI] < 2000) && ( T_[cellI] >= 700)) || (T_[cellI] < 700))//choose1
         {
             // if use CVODE
-            ode_problem.Y = problem.Y;
-            ode_problem.Ti = Ti;
-            ode_problem.pi = pi;
-            ode_problem.rhoi = rhoi;
-            ode_problem.deltaT = deltaT[cellI];
-            ode_problem.cpuTime = cpuTimes_[cellI];
-            ode_problem.cellid = cellI;
-            if (!(Pstream::myProcNo() % cores_)) // submaster
-            {
-                ode_problem.local = false;
-            }
-            CPUproblemList.append(ode_problem);
+            // ode_problem.Y = problem.Y;
+            // ode_problem.Ti = Ti;
+            // ode_problem.pi = pi;
+            // ode_problem.rhoi = rhoi;
+            // ode_problem.deltaT = deltaT[cellI];
+            // ode_problem.cpuTime = cpuTimes_[cellI];
+            // ode_problem.cellid = cellI;
+            // if (!(Pstream::myProcNo() % cores_)) // submaster
+            // {
+            //     ode_problem.local = false;
+            // }
+            // CPUproblemList.append(ode_problem);
             
-            selectDNN_[cellI]=0;
-            continue;
+            // selectDNN_[cellI]=0;
+            // continue;
 
             // if use DNN
-            // problem.DNNid = 0;
-            // GPUproblemList.append(problem);
-            // continue;
+            problem.DNNid = 0;
+            GPUproblemList.append(problem);
+            continue;
         }
         if(((Qdot_[cellI] >= 3e7) && (T_[cellI] < 2000)&&(T_[cellI] >= 700))||((Qdot_[cellI] > 7e8) && T_[cellI] > 2000)) //choose2
         {
@@ -1570,9 +1570,9 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
 
         /*=============================construct solutions=============================*/
         std::chrono::steady_clock::time_point start6 = std::chrono::steady_clock::now();
-        std::vector<double> outputsVec0(star, star+outputLength[0] * 21); //the float number is sample_length*sample_number
-        std::vector<double> outputsVec1(star+outputLength[0] * 21, star+outputLength[1] * 21);
-        std::vector<double> outputsVec2(star+outputLength[1] * 21, star+outputLength[2] * 21);
+        std::vector<double> outputsVec0(star, star+outputLength[0] * 7); //the float number is sample_length*sample_number
+        std::vector<double> outputsVec1(star+outputLength[0] * 7, star+outputLength[1] * 7);
+        std::vector<double> outputsVec2(star+outputLength[1] * 7, star+outputLength[2] * 7);
         std::vector<std::vector<double>> results = {outputsVec0, outputsVec1, outputsVec2};
         updateSolutionBuffer(solutionBuffer, results, cellIDBuffer, problemCounter);
         std::chrono::steady_clock::time_point stop6 = std::chrono::steady_clock::now();

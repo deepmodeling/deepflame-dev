@@ -38,7 +38,7 @@ splittingStrategy    off;
 
 TorchSettings
 {
-    torch            off;
+    torch            on;
     GPU              off;
     log              on;
     torchModel       "HE04_Hydrogen_ESH2_GMS_sub_20221101"; 
