@@ -1,0 +1,27 @@
+!Evans-Schexnayder(1980) kinetic mechanism
+!Ref. <Influence of chemical kinetics and unmixedness on burning in supersonic hydrogen flames>
+ELEMENTS
+O  H  N  AR
+END
+SPECIES
+H   O   H2O   OH   O2   H2   N2
+AR
+END
+REACTIONS
+H2+M<=>2H+M                5.5E+18   -1.0  103300
+                     REV / 1.8E+18   -1.0       0 /
+O2+M<=>2O+M                7.2E+18   -1.0  117910
+                     REV / 4.0E+17   -1.0       0 /
+H2O+M<=>OH+H+M             5.2E+21   -1.5  118000
+                     REV / 4.4E+20   -1.5       0 /
+OH+M<=>O+H+M               8.5E+18   -1.0  101000
+                     REV / 7.1E+18   -1.0       0 /
+H2O+O<=>2OH                5.8E+13    0.0   18000
+                     REV / 5.3E+12    0.0    1000 /
+H2O+H<=>OH+H2              8.4E+13    0.0   20100
+                     REV / 2.0E+13    0.0    5166 /
+O2+H<=>OH+O                2.2E+14    0.0   16800
+                     REV / 1.5E+13    0.0       0 /
+H2+O<=>OH+H                7.5E+13    0.0   11100
+                     REV / 3.0E+13    0.0    8800 /
+END

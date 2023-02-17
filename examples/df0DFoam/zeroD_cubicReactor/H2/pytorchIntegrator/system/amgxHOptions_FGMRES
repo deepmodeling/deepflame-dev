@@ -1,0 +1,9 @@
+config_version=2
+solver(fgmres)=FGMRES
+fgmres:tolerance=0.01
+fgmres:max_iters=40
+fgmres:gmres_n_restart=10
+fgmres:preconditioner=NOSOLVER
+store_res_history=1
+monitor_residual=1
+obtain_timings=1
