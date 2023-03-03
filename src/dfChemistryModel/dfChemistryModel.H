@@ -44,6 +44,9 @@ SourceFiles
 #include "GpuProblem.H"
 #include "GpuSolution.H"
 #include "DynamicBuffer.H"
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <mpi.h>
 #endif
 
 #ifdef USE_PYTORCH
@@ -150,6 +153,23 @@ public IOdictionary
 #endif
 
 #ifdef USE_LIBTORCH
+        struct NNHandles
+        {
+            cudaIpcMemHandle_t NN0handle;
+            cudaIpcMemHandle_t NN1handle;
+            cudaIpcMemHandle_t NN2handle;
+        };
+        double* d_NN0 = nullptr, *d_NN1 = nullptr, *d_NN2 = nullptr;
+
+        std::vector<int> nNN0InDevWorld, nNN1InDevWorld, nNN2InDevWorld,
+        nNN0InputDispls, nNN1InputDispls, nNN2InputDispls,
+        nNN0OutputDispls, nNN1OutputDispls, nNN2OutputDispls;
+        MPI_Comm devWorld = nullptr;
+        int devWorldSize = 0;
+        int devWorldRank = 0;
+        int nNN0Local = 0, nNN1Local = 0, nNN2Local = 0;
+        int nNN0Dev = 0, nNN1Dev = 0, nNN2Dev = 0;
+
         DNNInferencer DNNInferencer_;
         int cores_; // The number of cores per GPU when use libtorch
         int GPUsPerNode_;
@@ -238,13 +258,23 @@ public IOdictionary
 
         //- construct the output
         void updateSolutionBuffer(DynamicBuffer<GpuSolution>& solutionBuffer, const std::vector<std::vector<double>>& results,
-            const std::vector<DynamicBuffer<label>>& cellIDBuffer, std::vector<std::vector<label>>& problemCounter);
+        const std::vector<DynamicBuffer<label>>& cellIDBuffer, std::vector<std::vector<label>>& problemCounter);
+        
+        template<class DeltaTType>
+        void getGPUProblems_libtorch(const DeltaTType& deltaT, DynamicBuffer<label>& cellIDBuffer,
+        Foam::DynamicList<ChemistryProblem>& CPUproblemList);
+
+        void assignResults(const std::vector<std::vector<double>>& results, std::vector<double*>& localResults);
 #endif
 
 #ifdef USE_LIBTORCH
         //- DNN solver that support the use of GPU (multi-cards)
         template<class DeltaTType>
         scalar solve_DNN(const DeltaTType& deltaT);
+
+        //- DNN solver that support the use of GPU (multi-cards)
+        template<class DeltaTType>
+        scalar solve_DNN_new(const DeltaTType& deltaT);
 #endif
 
 #ifdef USE_PYTORCH

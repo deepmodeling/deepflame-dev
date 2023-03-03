@@ -29,6 +29,8 @@ public:
     // Inference
     at::Tensor Inference(torch::Tensor inputs);
     std::vector<std::vector<double>> Inference_multiDNNs(std::vector<std::vector<double>> DNNinputs, int dimension);
+    std::vector<std::vector<double>> Inference_multiDNNs_new(double* d_NN0, double* d_NN1, double* d_NN2, 
+    const int dimension, const int nNN0Dev, const int nNN1Dev, const int nNN2Dev);
 };
 
 #endif

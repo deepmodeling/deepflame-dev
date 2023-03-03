@@ -342,3 +342,133 @@ std::vector<std::vector<double>> DNNInferencer::Inference_multiDNNs(std::vector<
 
     return results;
 }
+
+std::vector<std::vector<double>> DNNInferencer::Inference_multiDNNs_new(double* d_NN0, double* d_NN1, double* d_NN2, 
+const int dimension, const int nNN0Dev, const int nNN1Dev, const int nNN2Dev)
+{
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    
+    torch::Tensor cudaInputs0 = torch::from_blob(d_NN0, {nNN0Dev*dimension}, torch::TensorOptions().device(device_).dtype(torch::kDouble)).reshape({-1, dimension}).to(torch::kFloat);
+    torch::Tensor cudaInputs1 = torch::from_blob(d_NN1, {nNN1Dev*dimension}, torch::TensorOptions().device(device_).dtype(torch::kDouble)).reshape({-1, dimension}).to(torch::kFloat);
+    torch::Tensor cudaInputs2 = torch::from_blob(d_NN2, {nNN2Dev*dimension}, torch::TensorOptions().device(device_).dtype(torch::kDouble)).reshape({-1, dimension}).to(torch::kFloat);
+    
+    // generate tmpTensor
+    auto Xmu0_tensor = torch::unsqueeze(Xmu0_vec, 0);
+    auto Xstd0_tensor = torch::unsqueeze(Xstd0_vec, 0);
+    auto Ymu0_tensor = torch::unsqueeze(Ymu0_vec, 0);
+    auto Ystd0_tensor = torch::unsqueeze(Ystd0_vec, 0);
+
+    auto Xmu1_tensor = torch::unsqueeze(Xmu1_vec, 0);
+    auto Xstd1_tensor = torch::unsqueeze(Xstd1_vec, 0);
+    auto Ymu1_tensor = torch::unsqueeze(Ymu1_vec, 0);
+    auto Ystd1_tensor = torch::unsqueeze(Ystd1_vec, 0);
+
+    auto Xmu2_tensor = torch::unsqueeze(Xmu2_vec, 0);
+    auto Xstd2_tensor = torch::unsqueeze(Xstd2_vec, 0);
+    auto Ymu2_tensor = torch::unsqueeze(Ymu2_vec, 0);
+    auto Ystd2_tensor = torch::unsqueeze(Ystd2_vec, 0);
+
+    // normalization and BCT trans
+    torch::Tensor rhoInputs0 = torch::unsqueeze(cudaInputs0.select(1, cudaInputs0.sizes()[1] - 1), 1);
+    torch::Tensor TInputs0 = torch::unsqueeze(cudaInputs0.select(1, 0), 1);
+    torch::Tensor pInputs0 = torch::unsqueeze(cudaInputs0.select(1, 1), 1);
+    torch::Tensor YIndices = torch::linspace(2, cudaInputs0.sizes()[1] - 2, cudaInputs0.sizes()[1] - 3, device_).toType(torch::kLong);
+    torch::Tensor YInputs0 = torch::index_select(cudaInputs0, 1, YIndices);
+    torch::Tensor YInputs0_BCT = (torch::pow(YInputs0, 0.1) - 1) / 0.1;
+    torch::Tensor InfInputs0 = torch::cat({TInputs0, pInputs0, YInputs0_BCT}, 1);
+    InfInputs0 = (InfInputs0 - Xmu0_tensor) / Xstd0_tensor;
+
+    torch::Tensor rhoInputs1 = torch::unsqueeze(cudaInputs1.select(1, cudaInputs1.sizes()[1] - 1), 1);
+    torch::Tensor TInputs1 = torch::unsqueeze(cudaInputs1.select(1, 0), 1);
+    torch::Tensor pInputs1 = torch::unsqueeze(cudaInputs1.select(1, 1), 1);
+    torch::Tensor YInputs1 = torch::index_select(cudaInputs1, 1, YIndices);
+    torch::Tensor YInputs1_BCT = (torch::pow(YInputs1, 0.1) - 1) / 0.1;
+    torch::Tensor InfInputs1 = torch::cat({TInputs1, pInputs1, YInputs1_BCT}, 1);
+    InfInputs1 = (InfInputs1 - Xmu1_tensor) / Xstd1_tensor;
+
+    torch::Tensor rhoInputs2 = torch::unsqueeze(cudaInputs2.select(1, cudaInputs2.sizes()[1] - 1), 1);
+    torch::Tensor TInputs2 = torch::unsqueeze(cudaInputs2.select(1, 0), 1);
+    torch::Tensor pInputs2 = torch::unsqueeze(cudaInputs2.select(1, 1), 1);
+    torch::Tensor YInputs2 = torch::index_select(cudaInputs2, 1, YIndices);
+    torch::Tensor YInputs2_BCT = (torch::pow(YInputs2, 0.1) - 1) / 0.1;
+    torch::Tensor InfInputs2 = torch::cat({TInputs2, pInputs2, YInputs2_BCT}, 1);
+    InfInputs2 = (InfInputs2 - Xmu2_tensor) / Xstd2_tensor;
+
+    std::chrono::steady_clock::time_point stop = std::chrono::steady_clock::now();
+    std::chrono::duration<double> processingTime = std::chrono::duration_cast<std::chrono::duration<double>>(stop - start);
+    // std::cout << "preInf time = " << processingTime.count() << std::endl;
+    time_preInf += processingTime.count();
+
+    // inference
+    std::chrono::steady_clock::time_point start1 = std::chrono::steady_clock::now();
+
+    std::vector<torch::jit::IValue> INPUTS0;
+    INPUTS0.push_back(InfInputs0);
+    at::Tensor cudaOutput0 = torchModel0_.forward(INPUTS0).toTensor();
+
+    std::vector<torch::jit::IValue> INPUTS1;
+    INPUTS1.push_back(InfInputs1);
+    at::Tensor cudaOutput1 = torchModel1_.forward(INPUTS1).toTensor();
+
+    std::vector<torch::jit::IValue> INPUTS2;
+    INPUTS2.push_back(InfInputs2);
+    at::Tensor cudaOutput2 = torchModel2_.forward(INPUTS2).toTensor();
+
+    std::chrono::steady_clock::time_point stop1 = std::chrono::steady_clock::now();
+    std::chrono::duration<double> processingTime1 = std::chrono::duration_cast<std::chrono::duration<double>>(stop1 - start1);
+    // std::cout << "Inf time = " << processingTime1.count() << std::endl;
+    time_Inference += processingTime1.count();
+
+    // generate outputTensor
+
+    std::chrono::steady_clock::time_point start2 = std::chrono::steady_clock::now();
+
+    std::vector<std::vector<double>> results;
+
+    torch::Tensor deltaY0 = torch::index_select(cudaOutput0, 1, YIndices);
+    deltaY0 = deltaY0 * Ystd0_tensor + Ymu0_tensor;
+    torch::Tensor Youtputs0 = torch::pow((YInputs0_BCT + deltaY0 * 0.000001) * 0.1 + 1, 10);
+    Youtputs0 = Youtputs0 / torch::sum(Youtputs0, 1, 1);
+    Youtputs0 = ((Youtputs0 - YInputs0) * rhoInputs0 / 0.000001);
+
+    torch::Tensor deltaY1 = torch::index_select(cudaOutput1, 1, YIndices);
+    deltaY1 = deltaY1 * Ystd1_tensor + Ymu1_tensor;
+    torch::Tensor Youtputs1 = torch::pow((YInputs1_BCT + deltaY1 * 0.000001) * 0.1 + 1, 10);
+    Youtputs1 = Youtputs1 / torch::sum(Youtputs1, 1, 1);
+    Youtputs1 = ((Youtputs1 - YInputs1) * rhoInputs1 / 0.000001);
+
+    torch::Tensor deltaY2 = torch::index_select(cudaOutput2, 1, YIndices);
+    deltaY2 = deltaY2 * Ystd2_tensor + Ymu2_tensor;
+    torch::Tensor Youtputs2 = torch::pow((YInputs2_BCT + deltaY2 * 0.000001) * 0.1 + 1, 10);
+    Youtputs2 = Youtputs2 / torch::sum(Youtputs2, 1, 1);
+    Youtputs2 = ((Youtputs2 - YInputs2) * rhoInputs2 / 0.000001);
+
+    std::chrono::steady_clock::time_point start3 = std::chrono::steady_clock::now();
+
+    Youtputs0 = Youtputs0.to(torch::kDouble).to(at::kCPU);
+    Youtputs1 = Youtputs1.to(torch::kDouble).to(at::kCPU);
+    Youtputs2 = Youtputs2.to(torch::kDouble).to(at::kCPU);
+
+    std::chrono::steady_clock::time_point stop3 = std::chrono::steady_clock::now();
+    std::chrono::duration<double> processingTime3 = std::chrono::duration_cast<std::chrono::duration<double>>(stop3 - start3);
+    // std::cout << "hot time = " << processingTime3.count() << std::endl;
+    time_hot += processingTime3.count();
+
+    std::vector<double> RRoutputs0(Youtputs0.data_ptr<double>(), Youtputs0.data_ptr<double>() + Youtputs0.numel());
+    std::vector<double> RRoutputs1(Youtputs1.data_ptr<double>(), Youtputs1.data_ptr<double>() + Youtputs1.numel());
+    std::vector<double> RRoutputs2(Youtputs2.data_ptr<double>(), Youtputs2.data_ptr<double>() + Youtputs2.numel());
+
+    results = {RRoutputs0, RRoutputs1, RRoutputs2};
+
+    std::chrono::steady_clock::time_point stop2 = std::chrono::steady_clock::now();
+    std::chrono::duration<double> processingTime2 = std::chrono::duration_cast<std::chrono::duration<double>>(stop2 - start2);
+    // std::cout << "postInf time = " << processingTime2.count() << std::endl;
+    time_postInf += processingTime2.count();
+
+    // std::cout << "preInf sum time = " << time_preInf << std::endl;
+    // std::cout << "Inf sum time = " << time_Inference << std::endl;
+    // std::cout << "postInf sum time = " << time_postInf << std::endl;
+    // std::cout << "hot sum time = " << time_hot << std::endl;
+
+    return results;
+}
