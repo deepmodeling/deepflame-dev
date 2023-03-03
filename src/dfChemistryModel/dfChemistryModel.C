@@ -28,6 +28,15 @@ License
 #include "clockTime.H"
 #include "runtime_assert.H"
 
+#define CHECK(call)                                              \
+    {                                                            \
+        cudaError_t e = call;                                    \
+        if (e != cudaSuccess)                                    \
+        {                                                        \
+            printf("Cuda failure: '%s %d %s'",                   \
+                __FILE__, __LINE__, cudaGetErrorString(e));      \
+        }                                                        \
+    }
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -148,7 +157,43 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
     {
         if (gpu_)
         {
-            if(!(Pstream::myProcNo() % cores_)) // Now is a master
+            // construct device conmmunicator
+            labelList devRank;
+            int masterRank = (Pstream::myProcNo()/cores_)*cores_;
+            for (int rank = 0; rank < cores_; rank ++)
+            {
+                devRank.append(rank + masterRank);
+            }
+            label devComm = UPstream::allocateCommunicator(UPstream::worldComm, devRank, true);
+            devWorld = PstreamGlobals::MPICommunicators_[devComm];
+            MPI_Comm_size(devWorld, &devWorldSize);
+            MPI_Comm_rank(devWorld, &devWorldRank);
+            nNN0InDevWorld.resize(devWorldSize);
+            nNN1InDevWorld.resize(devWorldSize);
+            nNN2InDevWorld.resize(devWorldSize);
+
+            // construct and allocate IPC handles
+            NNHandles handles;
+            if(!devWorldRank) // Now is master
+            {
+                CHECK(cudaMalloc((void **)&d_NN0, sizeof(double)*64000*(mixture_.nSpecies()+3)));
+                CHECK(cudaMalloc((void **)&d_NN1, sizeof(double)*64000*(mixture_.nSpecies()+3)));
+                CHECK(cudaMalloc((void **)&d_NN2, sizeof(double)*64000*(mixture_.nSpecies()+3)));
+
+                CHECK(cudaIpcGetMemHandle(&handles.NN0handle, d_NN0));
+                CHECK(cudaIpcGetMemHandle(&handles.NN1handle, d_NN1));
+                CHECK(cudaIpcGetMemHandle(&handles.NN2handle, d_NN2));
+            }
+            MPI_Bcast(&handles, sizeof(NNHandles), MPI_BYTE, 0, devWorld);
+            if (devWorldRank) // Now is slaver
+            {
+                CHECK(cudaIpcOpenMemHandle((void **)&d_NN0, handles.NN0handle, cudaIpcMemLazyEnablePeerAccess));
+                CHECK(cudaIpcOpenMemHandle((void **)&d_NN1, handles.NN1handle, cudaIpcMemLazyEnablePeerAccess));
+                CHECK(cudaIpcOpenMemHandle((void **)&d_NN2, handles.NN2handle, cudaIpcMemLazyEnablePeerAccess));
+            }
+
+            // initialise DNNInferencer
+            if(!(Pstream::myProcNo() % cores_)) // Now is master
             {
                 torch::jit::script::Module torchModel1_ = torch::jit::load(torchModelName1_);
                 torch::jit::script::Module torchModel2_ = torch::jit::load(torchModelName2_);
@@ -317,7 +362,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve
     {
         if (useDNN)
         {
-            result = solve_DNN(deltaT);
+            result = solve_DNN_new(deltaT);
         }
         else
         {

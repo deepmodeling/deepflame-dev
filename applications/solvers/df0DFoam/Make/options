@@ -20,6 +20,7 @@ EXE_INC = -std=c++14 \
     -I$(DF_SRC)/dfCanteraMixture/lnInclude \
     -I$(DF_SRC)/dfChemistryModel/lnInclude \
     -I$(CANTERA_ROOT)/include \
+    -I/usr/local/cuda-11.6/include \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include,) \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include/torch/csrc/api/include,) \
     $(if $(BOOST_ARCH_PATH),-I$(BOOST_ARCH_PATH),) \
@@ -41,6 +42,7 @@ EXE_LIBS = \
     -ldfCompressibleTurbulenceModels \
     -ldfCanteraMixture \
     -ldfChemistryModel \
+    /usr/local/cuda-11.6/lib64/libcudart.so \
     $(CANTERA_ROOT)/lib/libcantera.so \
     $(if $(LIBTORCH_ROOT),$(LIBTORCH_ROOT)/lib/libtorch.so,) \
     $(if $(LIBTORCH_ROOT),$(LIBTORCH_ROOT)/lib/libc10.so,) \
