@@ -261,23 +261,18 @@ public IOdictionary
         const std::vector<DynamicBuffer<label>>& cellIDBuffer, std::vector<std::vector<label>>& problemCounter);
         
         template<class DeltaTType>
-        void getGPUProblems_libtorch(const DeltaTType& deltaT, DynamicBuffer<label>& cellIDBuffer,
+        void constructNNInput(const DeltaTType& deltaT, DynamicBuffer<label>& cellIDBuffer,
         Foam::DynamicList<ChemistryProblem>& CPUproblemList);
-
-        void assignResults(const std::vector<std::vector<double>>& results, std::vector<double*>& localResults);
 #endif
 
 #ifdef USE_LIBTORCH
         //- DNN solver that support the use of GPU (multi-cards)
         template<class DeltaTType>
         scalar solve_DNN(const DeltaTType& deltaT);
-
-        //- DNN solver that support the use of GPU (multi-cards)
-        template<class DeltaTType>
-        scalar solve_DNN_new(const DeltaTType& deltaT);
 #endif
 
 #ifdef USE_PYTORCH
+        //- DNN solver that support the use of GPU (multi-cards)
         template<class DeltaTType>
         scalar solve_DNN(const DeltaTType& deltaT);
 #endif

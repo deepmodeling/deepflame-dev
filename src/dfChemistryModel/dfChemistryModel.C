@@ -362,7 +362,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve
     {
         if (useDNN)
         {
-            result = solve_DNN_new(deltaT);
+            result = solve_DNN(deltaT);
         }
         else
         {
