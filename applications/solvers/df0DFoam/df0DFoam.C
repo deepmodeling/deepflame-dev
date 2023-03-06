@@ -139,13 +139,13 @@ int main(int argc, char *argv[])
 #ifdef USE_LIBTORCH
         if (log_ && torch_)
         {
-            Info<< "    allsolveTime = " << chemistry.time_allsolve() << " s"
-            << "    submasterTime = " << chemistry.time_submaster() << " s" << nl
-            << "    sendProblemTime = " << chemistry.time_sendProblem() << " s"
-            << "    recvProblemTime = " << chemistry.time_RecvProblem() << " s"
-            << "    sendRecvSolutionTime = " << chemistry.time_sendRecvSolution() << " s" << nl
-            << "    DNNinferenceTime = " << chemistry.time_DNNinference() << " s"
-            << "    updateSolutionBufferTime = " << chemistry.time_updateSolutionBuffer() << " s" << nl;
+            Info<< "    allSolveTime = " << chemistry.time_allsolve() << " s"
+            << "    constructNNInputTime = " << chemistry.time_getProblem() << " s"
+            << "    allocateSharedMemoryTime = " << chemistry.time_RecvProblem() << " s"<< nl
+            << "    NNinferenceTime = " << chemistry.time_DNNinference() << " s"
+            << "    assignNNRsultsTime = " << chemistry.time_sendProblem() << " s"
+            << "    getNNRsultsTime = " << chemistry.time_sendRecvSolution() << " s"<< nl
+            << "    updateFieldsTime = " << chemistry.time_updateSolutionBuffer() << " s" << nl;
         }
 #endif
     }

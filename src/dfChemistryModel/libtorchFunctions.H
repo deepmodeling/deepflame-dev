@@ -190,6 +190,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
             CPUproblemList.append(CPUproblemList_submaster);
         }
         /*============================allocate shared memory to recieve inference result===========================*/
+        std::chrono::steady_clock::time_point start3 = std::chrono::steady_clock::now();
         int sizeResults0 = nNN0Dev * mixture_.nSpecies();
         int sizeResults1 = nNN1Dev * mixture_.nSpecies();
         int sizeResults2 = nNN2Dev * mixture_.nSpecies();
@@ -213,6 +214,10 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
         MPI_Win_fence(0, win0);
         MPI_Win_fence(0, win1);
         MPI_Win_fence(0, win2);
+        std::chrono::steady_clock::time_point stop3 = std::chrono::steady_clock::now();
+        std::chrono::duration<double> processingTime3 = std::chrono::duration_cast<std::chrono::duration<double>>(stop3 - start3);
+        // std::cout << "RecvProblemTime = " << processingTime3.count() << std::endl;
+        time_RecvProblem_ += processingTime3.count();
 
         /*================================================Inference===============================================*/
         if (!devWorldRank) // submaster
