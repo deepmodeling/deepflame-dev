@@ -21,6 +21,7 @@ EXE_INC = -std=c++14 \
     -I$(DF_SRC)/dfChemistryModel/lnInclude \
     -I$(DF_SRC)/dfCombustionModels/lnInclude \
     -I$(CANTERA_ROOT)/include \
+    -I/usr/local/cuda-11.6/include \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include,) \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include/torch/csrc/api/include,) \
     $(PYTHON_INC_DIR)
@@ -37,6 +38,7 @@ EXE_LIBS = \
     -ldfCanteraMixture \
     -ldfChemistryModel \
     -ldfCombustionModels  \
+    /usr/local/cuda-11.6/lib64/libcudart.so \
     $(CANTERA_ROOT)/lib/libcantera.so \
     $(if $(LIBTORCH_ROOT),$(LIBTORCH_ROOT)/lib/libtorch.so,) \
     $(if $(LIBTORCH_ROOT),$(LIBTORCH_ROOT)/lib/libc10.so,) \

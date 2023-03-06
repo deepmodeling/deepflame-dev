@@ -50,9 +50,12 @@ DNNInferencer::DNNInferencer(torch::jit::script::Module torchModel0, torch::jit:
                              torch::jit::script::Module torchModel2, std::string device)
     : torchModel0_(torchModel0), torchModel1_(torchModel1), torchModel2_(torchModel2), device_(device)
 {
+    std::cout<<"location 0 in constructor"<<std::endl;
     torchModel0_.to(device_);
+    std::cout<<"location 1 in constructor"<<std::endl;
     torchModel1_.to(device_);
     torchModel2_.to(device_);
+    std::cout<<"location 2 in constructor"<<std::endl;
 
     // at::TensorOptions opts = at::TensorOptions().dtype(at::kDouble).device(device_);
     at::TensorOptions opts = at::TensorOptions().dtype(at::kFloat).device(device_);
@@ -347,11 +350,11 @@ std::vector<std::vector<double>> DNNInferencer::Inference_multiDNNs_new(double* 
 const int dimension, const int nNN0Dev, const int nNN1Dev, const int nNN2Dev)
 {
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-    
+
     torch::Tensor cudaInputs0 = torch::from_blob(d_NN0, {nNN0Dev*dimension}, torch::TensorOptions().device(device_).dtype(torch::kDouble)).reshape({-1, dimension}).to(torch::kFloat);
     torch::Tensor cudaInputs1 = torch::from_blob(d_NN1, {nNN1Dev*dimension}, torch::TensorOptions().device(device_).dtype(torch::kDouble)).reshape({-1, dimension}).to(torch::kFloat);
     torch::Tensor cudaInputs2 = torch::from_blob(d_NN2, {nNN2Dev*dimension}, torch::TensorOptions().device(device_).dtype(torch::kDouble)).reshape({-1, dimension}).to(torch::kFloat);
-    
+
     // generate tmpTensor
     auto Xmu0_tensor = torch::unsqueeze(Xmu0_vec, 0);
     auto Xstd0_tensor = torch::unsqueeze(Xstd0_vec, 0);
@@ -385,6 +388,7 @@ const int dimension, const int nNN0Dev, const int nNN1Dev, const int nNN2Dev)
     torch::Tensor YInputs1_BCT = (torch::pow(YInputs1, 0.1) - 1) / 0.1;
     torch::Tensor InfInputs1 = torch::cat({TInputs1, pInputs1, YInputs1_BCT}, 1);
     InfInputs1 = (InfInputs1 - Xmu1_tensor) / Xstd1_tensor;
+    // std::cout<<"InfInputs1 = "<<InfInputs1<<std::endl;
 
     torch::Tensor rhoInputs2 = torch::unsqueeze(cudaInputs2.select(1, cudaInputs2.sizes()[1] - 1), 1);
     torch::Tensor TInputs2 = torch::unsqueeze(cudaInputs2.select(1, 0), 1);
@@ -400,6 +404,8 @@ const int dimension, const int nNN0Dev, const int nNN1Dev, const int nNN2Dev)
     time_preInf += processingTime.count();
 
     // inference
+    std::cout<<"position 0"<<std::endl;
+    std::cout << "Tensor location: GPU " << InfInputs0.device() << std::endl;
     std::chrono::steady_clock::time_point start1 = std::chrono::steady_clock::now();
 
     std::vector<torch::jit::IValue> INPUTS0;

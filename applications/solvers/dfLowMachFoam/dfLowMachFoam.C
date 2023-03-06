@@ -234,6 +234,7 @@ int main(int argc, char *argv[])
             << "    recvProblemTime = " << chemistry->time_RecvProblem() << " s"
             << "    sendRecvSolutionTime = " << chemistry->time_sendRecvSolution() << " s" << nl
             << "    DNNinferenceTime = " << chemistry->time_DNNinference() << " s"
+            << "    GetProblemTime = " << chemistry->time_getProblem() << " s"
             << "    updateSolutionBufferTime = " << chemistry->time_updateSolutionBuffer() << " s" << nl;
         }
 #endif

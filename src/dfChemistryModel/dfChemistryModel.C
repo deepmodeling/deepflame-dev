@@ -157,6 +157,10 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
     {
         if (gpu_)
         {
+            // device label
+            int CUDANo = (Pstream::myProcNo() / cores_) % GPUsPerNode_;
+            CHECK(cudaSetDevice(CUDANo));
+            MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
             // construct device conmmunicator
             labelList devRank;
             int masterRank = (Pstream::myProcNo()/cores_)*cores_;
@@ -172,13 +176,18 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
             nNN1InDevWorld.resize(devWorldSize);
             nNN2InDevWorld.resize(devWorldSize);
 
+            // reduce cell number
+            int localCell = T_.size();
+            int sumCell;
+            MPI_Reduce(&localCell, &sumCell, 1, MPI_INT, MPI_SUM, 0, devWorld);
+
             // construct and allocate IPC handles
             NNHandles handles;
             if(!devWorldRank) // Now is master
             {
-                CHECK(cudaMalloc((void **)&d_NN0, sizeof(double)*64000*(mixture_.nSpecies()+3)));
-                CHECK(cudaMalloc((void **)&d_NN1, sizeof(double)*64000*(mixture_.nSpecies()+3)));
-                CHECK(cudaMalloc((void **)&d_NN2, sizeof(double)*64000*(mixture_.nSpecies()+3)));
+                CHECK(cudaMalloc((void **)&d_NN0, sizeof(double)*sumCell*(mixture_.nSpecies()+3)));
+                CHECK(cudaMalloc((void **)&d_NN1, sizeof(double)*sumCell*(mixture_.nSpecies()+3)));
+                CHECK(cudaMalloc((void **)&d_NN2, sizeof(double)*sumCell*(mixture_.nSpecies()+3)));
 
                 CHECK(cudaIpcGetMemHandle(&handles.NN0handle, d_NN0));
                 CHECK(cudaIpcGetMemHandle(&handles.NN1handle, d_NN1));
@@ -193,13 +202,12 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
             }
 
             // initialise DNNInferencer
-            if(!(Pstream::myProcNo() % cores_)) // Now is master
+            if(!devWorldRank) // Now is master
             {
                 torch::jit::script::Module torchModel1_ = torch::jit::load(torchModelName1_);
                 torch::jit::script::Module torchModel2_ = torch::jit::load(torchModelName2_);
                 torch::jit::script::Module torchModel3_ = torch::jit::load(torchModelName3_);
                 std::string device_;
-                int CUDANo = (Pstream::myProcNo() / cores_) % GPUsPerNode_;
                 device_ = "cuda:" + std::to_string(CUDANo);
                 DNNInferencer DNNInferencer(torchModel1_, torchModel2_, torchModel3_, device_);
                 DNNInferencer_ = DNNInferencer;
@@ -242,8 +250,6 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
         {
             label sub_rank;
             MPI_Comm_rank(PstreamGlobals::MPICommunicators_[cvodeComm], &sub_rank);
-            std::cout<<"my ProcessNo in worldComm = " << Pstream::myProcNo() << ' '
-            << "my ProcessNo in cvodeComm = "<<Pstream::myProcNo(cvodeComm)<<std::endl;
         }
     }
 #endif
@@ -362,7 +368,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve
     {
         if (useDNN)
         {
-            result = solve_DNN_new(deltaT);
+            result = solve_DNN(deltaT);
         }
         else
         {
