@@ -17,7 +17,7 @@ print_finish() {
     echo "| deepflame (linked with libcantera) compiled successfully! Enjoy!! |"
     echo " = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ="
 }
-if [ $USE_LIBTORCH = true ]; then
+if [ ! -z "$LIBTORCH_ROOT" ]; then
     cd "$DF_SRC/dfChemistryModel/DNNInferencer"
     mkdir build
     cd build

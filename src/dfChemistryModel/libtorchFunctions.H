@@ -194,9 +194,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
         int sizeResults0 = nNN0Dev * mixture_.nSpecies();
         int sizeResults1 = nNN1Dev * mixture_.nSpecies();
         int sizeResults2 = nNN2Dev * mixture_.nSpecies();
-        double *sharedResult0 = nullptr;
-        double *sharedResult1 = nullptr;
-        double *sharedResult2 = nullptr;
+        double *sharedResult0, *sharedResult1, *sharedResult2;
         int disp_unit  = sizeof(double);
         MPI_Win win0, win1, win2;
         // allocate results
@@ -345,6 +343,9 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
         delete[] localResults0;
         delete[] localResults1;
         delete[] localResults2;
+        MPI_Win_free(&win0);
+        MPI_Win_free(&win1);
+        MPI_Win_free(&win2);
     }
     else
     {

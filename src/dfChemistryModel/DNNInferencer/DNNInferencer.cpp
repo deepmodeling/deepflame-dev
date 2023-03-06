@@ -411,7 +411,6 @@ const int dimension, const int nNN0Dev, const int nNN1Dev, const int nNN2Dev)
     std::vector<torch::jit::IValue> INPUTS0;
     INPUTS0.push_back(InfInputs0);
     at::Tensor cudaOutput0 = torchModel0_.forward(INPUTS0).toTensor();
-    std::cout<<"position 1"<<std::endl;
 
     std::vector<torch::jit::IValue> INPUTS1;
     INPUTS1.push_back(InfInputs1);
