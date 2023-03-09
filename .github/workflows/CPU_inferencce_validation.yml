@@ -25,7 +25,7 @@ jobs:
         sudo add-apt-repository http://dl.openfoam.org/ubuntu
         sudo apt-get update
         export DEBIAN_FRONTEND=noninteractive
-        sudo apt-get -y install openfoam7 
+        apt-get -y install openfoam7 
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
         bash Miniconda3-latest-Linux-x86_64.sh -b
         . ~/miniconda3/etc/profile.d/conda.sh
