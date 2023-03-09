@@ -36,7 +36,7 @@ jobs:
         conda install --channel https://conda.anaconda.org/zhaofeng-shu33 easydict
         wget https://github.com/JX278/DeepFlame-flareFGM-table/raw/main/flareFGM_Table_Download.zip
         unzip flareFGM_Table_Download.zip
-        cp -r ${{ github.workspace }}/flflareFGM_Table_Download/SandiaD/flare.tbl ${{ github.workspace }}/example/dfLowMachFoam/2DSandiaD_flareFGM
+        cp -r ${{ github.workspace }}/flareFGM_Table_Download/SandiaD/flare.tbl ${{ github.workspace }}/example/dfLowMachFoam/2DSandiaD_flareFGM
  
      - name: build and validation with CPU inference 
        env: 
