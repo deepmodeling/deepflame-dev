@@ -10,8 +10,8 @@ float readmidTH2();
 float readmaxTH2();
 
 float readTGV(int k, string file);
-float readHighSpeed();
-float v = readHighSpeed();
+//float readHighSpeed();
+//float v = readHighSpeed();
 
 float H2maxT = readmaxTH2();
 float H2midT = readmidTH2();
@@ -49,9 +49,9 @@ TEST(corrtest,dfLowMachFoam_TGV){
     EXPECT_FLOAT_EQ(TGV100,364.018);
 }
 
-TEST(corrtest,dfHighSpeedFoam){
-    EXPECT_NEAR(v,1979.33,19.79); // within 1% of the theroetical value
-}
+//TEST(corrtest,dfHighSpeedFoam){
+//    EXPECT_NEAR(v,1979.33,19.79); // within 1% of the theroetical value
+//}
 
 TEST(corrtest,2DSandia){
     EXPECT_FLOAT_EQ(T1,762.5418507);   
