@@ -44,7 +44,15 @@ jobs:
         OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1 
         OMPI_MCA_btl_vader_single_copy_mechanism: none
        run: 
-        /bin/bash -c " echo $PWD && ls $PWD"
+        /bin/bash -c " echo $PWD && ls $PWD
+        && wget https://github.com/JX278/DeepFlame-flareFGM-table/raw/main/flareFGM_Table_Download.zip
+        && unzip flareFGM_Table_Download.zip
+        && ls $PWD
+        && ls flareFGM_Table_Download
+        "
+
+        
+    
 
         
         
