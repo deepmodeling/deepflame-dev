@@ -33,5 +33,11 @@ jobs:
          sudo add-apt-repository http://dl.openfoam.org/ubuntu
          sudo apt-get update
          export DEBIAN_FRONTEND=noninteractive
-         sudo apt-get -y install openfoam7         
+         sudo apt-get -y install openfoam7
+
+
+         
+      - name: Build
+        run: |
+         ls /opt/openfoam7
 
