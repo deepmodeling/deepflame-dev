@@ -1,0 +1,37 @@
+name: Caching with of
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Cache openfoam
+        id: cache-of
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-node-modules
+        with:
+          # of cache files are stored in `~/.of` on Linux/macOS
+          path: /opt
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - if: ${{ steps.cache-of.outputs.cache-hit != 'true' }}
+        name: List the state of node modules
+        continue-on-error: true
+        run: ls /opt/openfoam7
+
+      - name: Install dependencies
+        run: |
+        apt-get update 
+        apt-get install -y sudo wget unzip git software-properties-common make cmake g++ mpich openmpi-bin libopenmpi-dev libscalapack-mpi-dev vim git-core
+        sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -" 
+        sudo add-apt-repository http://dl.openfoam.org/ubuntu
+        sudo apt-get update
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get -y install openfoam7         
+
