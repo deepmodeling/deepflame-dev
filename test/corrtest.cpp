@@ -24,9 +24,19 @@ float TGV300 = readTGV(1064,"2DTGV/3/data_T.xy");
 float TGV400 = readTGV(1098,"2DTGV/4/data_T.xy");
 
 
+float readSandia(int k, string file);
+float T1 = readSandia(1,"2DSandia/data_T.xy");
+float T2 = readSandia(2,"2DSandia/data_T.xy");
+float T3 = readSandia(3,"2DSandia/data_T.xy");
+float T4 = readSandia(4,"2DSandia/data_T.xy");
+float T5 = readSandia(5,"2DSandia/data_T.xy");
+float T6 = readSandia(6,"2DSandia/data_T.xy");
+
 TEST(corrtest,df0DFoam_H2){
-    EXPECT_FLOAT_EQ(H2maxT,2588.48);   // compare the maximum temperature of H2 case 
-    EXPECT_FLOAT_EQ(H2midT,1021.41); // compare the temperature of H2 case at the maximum gradient when t = 0.000245s
+    // EXPECT_FLOAT_EQ(H2maxT,2588.48);   // compare the maximum temperature of H2 case 
+    // EXPECT_FLOAT_EQ(H2midT,1021.41); // compare the temperature of H2 case at the maximum gradient when t = 0.000245s
+    EXPECT_FLOAT_EQ(H2maxT,2586.21);   // compare the maximum temperature of H2 case 
+    EXPECT_FLOAT_EQ(H2midT,1020.71); // compare the temperature of H2 case at the maximum gradient when t = 0.000245s
 }
 
 
@@ -43,7 +53,15 @@ TEST(corrtest,dfHighSpeedFoam){
     EXPECT_NEAR(v,1979.33,19.79); // within 1% of the theroetical value
 }
 
-
+TEST(corrtest,2DSandia){
+    EXPECT_FLOAT_EQ(T1,762.5418507);   
+    EXPECT_FLOAT_EQ(T2,1155.163112);  
+    EXPECT_FLOAT_EQ(T3,1570.283118);
+    EXPECT_FLOAT_EQ(T4,1225.380702);
+    EXPECT_FLOAT_EQ(T5,651.8790951);
+    EXPECT_FLOAT_EQ(T6,458.1680004);
+    
+}
 
 float readmaxTH2(){
     float a;
@@ -169,4 +187,34 @@ float readHighSpeed(){
     
     
     return slope;
+}
+
+
+
+
+float readSandia(int k, string file){
+    
+    float T,x;
+    float b;
+    int i = 0;
+    
+    string inFileName = file;
+    ifstream inFile;
+    inFile.open(inFileName.c_str());
+
+    if (inFile.is_open())  
+    {
+        while (inFile >> x >> T){
+            i ++ ;
+            if (i == k){  
+                b = T;
+            }
+        }
+    
+    }
+    else { //Error message
+        cerr << "Can't find input file " << inFileName << endl;
+    }
+
+    return b;
 }

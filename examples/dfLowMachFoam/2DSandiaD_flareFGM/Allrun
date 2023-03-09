@@ -13,6 +13,8 @@ runApplication blockMesh
 runApplication decomposePar -force 
 
 runParallel $application
+
+./postProcess
  
 
 
