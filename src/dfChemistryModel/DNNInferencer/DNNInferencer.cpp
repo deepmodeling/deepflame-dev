@@ -346,8 +346,8 @@ std::vector<std::vector<double>> DNNInferencer::Inference_multiDNNs(std::vector<
     return results;
 }
 
-std::vector<std::vector<double>> DNNInferencer::Inference_multiDNNs_new(double* d_NN0, double* d_NN1, double* d_NN2, 
-const int dimension, const int nNN0Dev, const int nNN1Dev, const int nNN2Dev)
+void DNNInferencer::Inference_multiDNNs_new(double* d_NN0, double* d_NN1, double* d_NN2, const int dimension, const int nNN0Dev, 
+const int nNN1Dev, const int nNN2Dev, double *& d_output0, double *& d_output1, double *& d_output2)
 {
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
@@ -404,8 +404,6 @@ const int dimension, const int nNN0Dev, const int nNN1Dev, const int nNN2Dev)
     time_preInf += processingTime.count();
 
     // inference
-    std::cout<<"position 0"<<std::endl;
-    std::cout << "Tensor location: GPU " << InfInputs0.device() << std::endl;
     std::chrono::steady_clock::time_point start1 = std::chrono::steady_clock::now();
 
     std::vector<torch::jit::IValue> INPUTS0;
@@ -422,7 +420,6 @@ const int dimension, const int nNN0Dev, const int nNN1Dev, const int nNN2Dev)
 
     std::chrono::steady_clock::time_point stop1 = std::chrono::steady_clock::now();
     std::chrono::duration<double> processingTime1 = std::chrono::duration_cast<std::chrono::duration<double>>(stop1 - start1);
-    // std::cout << "Inf time = " << processingTime1.count() << std::endl;
     time_Inference += processingTime1.count();
 
     // generate outputTensor
@@ -449,26 +446,17 @@ const int dimension, const int nNN0Dev, const int nNN1Dev, const int nNN2Dev)
     Youtputs2 = Youtputs2 / torch::sum(Youtputs2, 1, 1);
     Youtputs2 = ((Youtputs2 - YInputs2) * rhoInputs2 / 0.000001);
 
-    std::chrono::steady_clock::time_point start3 = std::chrono::steady_clock::now();
+    Youtputs0 = Youtputs0.to(torch::kDouble);
+    Youtputs1 = Youtputs1.to(torch::kDouble);
+    Youtputs2 = Youtputs2.to(torch::kDouble);
 
-    Youtputs0 = Youtputs0.to(torch::kDouble).to(at::kCPU);
-    Youtputs1 = Youtputs1.to(torch::kDouble).to(at::kCPU);
-    Youtputs2 = Youtputs2.to(torch::kDouble).to(at::kCPU);
-
-    std::chrono::steady_clock::time_point stop3 = std::chrono::steady_clock::now();
-    std::chrono::duration<double> processingTime3 = std::chrono::duration_cast<std::chrono::duration<double>>(stop3 - start3);
-    // std::cout << "hot time = " << processingTime3.count() << std::endl;
-    time_hot += processingTime3.count();
-
-    std::vector<double> RRoutputs0(Youtputs0.data_ptr<double>(), Youtputs0.data_ptr<double>() + Youtputs0.numel());
-    std::vector<double> RRoutputs1(Youtputs1.data_ptr<double>(), Youtputs1.data_ptr<double>() + Youtputs1.numel());
-    std::vector<double> RRoutputs2(Youtputs2.data_ptr<double>(), Youtputs2.data_ptr<double>() + Youtputs2.numel());
-
-    results = {RRoutputs0, RRoutputs1, RRoutputs2};
+    cudaMemcpy(d_output0, Youtputs0.data_ptr<double>(), Youtputs0.numel() * sizeof(double), cudaMemcpyDeviceToDevice);
+    cudaMemcpy(d_output1, Youtputs1.data_ptr<double>(), Youtputs1.numel() * sizeof(double), cudaMemcpyDeviceToDevice);
+    cudaMemcpy(d_output2, Youtputs2.data_ptr<double>(), Youtputs2.numel() * sizeof(double), cudaMemcpyDeviceToDevice);
+    cudaDeviceSynchronize();
 
     std::chrono::steady_clock::time_point stop2 = std::chrono::steady_clock::now();
     std::chrono::duration<double> processingTime2 = std::chrono::duration_cast<std::chrono::duration<double>>(stop2 - start2);
-    // std::cout << "postInf time = " << processingTime2.count() << std::endl;
     time_postInf += processingTime2.count();
 
     // std::cout << "preInf sum time = " << time_preInf << std::endl;
@@ -476,5 +464,5 @@ const int dimension, const int nNN0Dev, const int nNN1Dev, const int nNN2Dev)
     // std::cout << "postInf sum time = " << time_postInf << std::endl;
     // std::cout << "hot sum time = " << time_hot << std::endl;
 
-    return results;
+    return;
 }

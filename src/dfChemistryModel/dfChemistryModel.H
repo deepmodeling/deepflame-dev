@@ -158,17 +158,33 @@ public IOdictionary
             cudaIpcMemHandle_t NN0handle;
             cudaIpcMemHandle_t NN1handle;
             cudaIpcMemHandle_t NN2handle;
+            cudaIpcMemHandle_t output0handle;
+            cudaIpcMemHandle_t output1handle;
+            cudaIpcMemHandle_t output2handle;
         };
+        // pointer to device memory 
         double* d_NN0 = nullptr, *d_NN1 = nullptr, *d_NN2 = nullptr;
+        double* d_output0 = nullptr, *d_output1 = nullptr, *d_output2 = nullptr;
 
-        std::vector<int> nNN0InDevWorld, nNN1InDevWorld, nNN2InDevWorld,
-        nNN0InputDispls, nNN1InputDispls, nNN2InputDispls,
+        // The displacements per rank associated with a single device
+        std::vector<int> nNN0InputDispls, nNN1InputDispls, nNN2InputDispls,
         nNN0OutputDispls, nNN1OutputDispls, nNN2OutputDispls;
-        MPI_Comm devWorld = nullptr;
-        int devWorldSize = 0;
-        int devWorldRank = 0;
+
+        // The number of cells in each process
         int nNN0Local = 0, nNN1Local = 0, nNN2Local = 0;
+        std::vector<int> nNN0InDevWorld, nNN1InDevWorld, nNN2InDevWorld;
+
+        // The number of cells in a single device
         int nNN0Dev = 0, nNN1Dev = 0, nNN2Dev = 0;
+
+        // A communicator for processes sharing the same device
+        MPI_Comm devWorld = nullptr;
+
+        // Size of "devWorld"
+        int devWorldSize = 0;
+
+        // Rank in "devWorld"
+        int devWorldRank = 0;
 
         DNNInferencer DNNInferencer_;
         int cores_; // The number of cores per GPU when use libtorch
@@ -344,6 +360,9 @@ public:
 #ifdef USE_PYTORCH
     double time_vec2ndarray() {return time_vec2ndarray_;}
     double time_python() {return time_python_;}
+#endif
+#ifdef USE_LIBTORCH
+    void finalize();
 #endif
 
 };

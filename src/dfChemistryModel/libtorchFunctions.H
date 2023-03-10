@@ -117,9 +117,6 @@ void Foam::dfChemistryModel<ThermoType>::constructNNInput
     nNN2Dev = std::accumulate(nNN2InDevWorld.begin(), nNN2InDevWorld.end(), 0);
 
     // Calculate displacements
-    nNN0InputDispls.resize(devWorldSize + 1, 0);
-    nNN1InputDispls.resize(devWorldSize + 1, 0);
-    nNN2InputDispls.resize(devWorldSize + 1, 0);
     std::partial_sum(nNN0InDevWorld.begin(), nNN0InDevWorld.end(), nNN0InputDispls.begin() + 1);
     std::partial_sum(nNN1InDevWorld.begin(), nNN1InDevWorld.end(), nNN1InputDispls.begin() + 1);
     std::partial_sum(nNN2InDevWorld.begin(), nNN2InDevWorld.end(), nNN2InputDispls.begin() + 1);
@@ -189,53 +186,17 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
             recv >> CPUproblemList_submaster;
             CPUproblemList.append(CPUproblemList_submaster);
         }
-        /*============================allocate shared memory to recieve inference result===========================*/
-        std::chrono::steady_clock::time_point start3 = std::chrono::steady_clock::now();
-        int sizeResults0 = nNN0Dev * mixture_.nSpecies();
-        int sizeResults1 = nNN1Dev * mixture_.nSpecies();
-        int sizeResults2 = nNN2Dev * mixture_.nSpecies();
-        double *sharedResult0, *sharedResult1, *sharedResult2;
-        int disp_unit  = sizeof(double);
-        MPI_Win win0, win1, win2;
-        // allocate results
-        MPI_Win_allocate_shared(devWorldRank==0 ? sizeResults0*disp_unit : 0, disp_unit, MPI_INFO_NULL, devWorld, &sharedResult0, &win0);
-        MPI_Win_allocate_shared(devWorldRank==0 ? sizeResults1*disp_unit : 0, disp_unit, MPI_INFO_NULL, devWorld, &sharedResult1, &win1);
-        MPI_Win_allocate_shared(devWorldRank==0 ? sizeResults2*disp_unit : 0, disp_unit, MPI_INFO_NULL, devWorld, &sharedResult2, &win2);
-        if (devWorldRank) // slavers
-        {
-            MPI_Aint winsize;
-            int windisp;
-            MPI_Win_shared_query(win0, 0, &winsize, &windisp, &sharedResult0);
-            MPI_Win_shared_query(win1, 0, &winsize, &windisp, &sharedResult1);
-            MPI_Win_shared_query(win2, 0, &winsize, &windisp, &sharedResult2);
-        }
-        MPI_Win_fence(0, win0);
-        MPI_Win_fence(0, win1);
-        MPI_Win_fence(0, win2);
-        std::chrono::steady_clock::time_point stop3 = std::chrono::steady_clock::now();
-        std::chrono::duration<double> processingTime3 = std::chrono::duration_cast<std::chrono::duration<double>>(stop3 - start3);
-        // std::cout << "RecvProblemTime = " << processingTime3.count() << std::endl;
-        time_RecvProblem_ += processingTime3.count();
-
         /*================================================Inference===============================================*/
         if (!devWorldRank) // submaster
         {
             // -Inference
             std::chrono::steady_clock::time_point start7 = std::chrono::steady_clock::now();
             std::vector<std::vector<double>> results;
-            results = DNNInferencer_.Inference_multiDNNs_new(d_NN0, d_NN1, d_NN2, mixture_.nSpecies() + 3,
-            nNN0Dev, nNN1Dev, nNN2Dev);
+            DNNInferencer_.Inference_multiDNNs_new(d_NN0, d_NN1, d_NN2, mixture_.nSpecies() + 3,
+            nNN0Dev, nNN1Dev, nNN2Dev, d_output0, d_output1, d_output2);
             std::chrono::steady_clock::time_point stop7 = std::chrono::steady_clock::now();
             std::chrono::duration<double> processingTime7 = std::chrono::duration_cast<std::chrono::duration<double>>(stop7 - start7);
             time_DNNinference_ += processingTime7.count();
-            // -Copy results to shared region
-            std::chrono::steady_clock::time_point start2 = std::chrono::steady_clock::now();
-            std::copy(results[0].begin(), results[0].end(), sharedResult0);
-            std::copy(results[1].begin(), results[1].end(), sharedResult1);
-            std::copy(results[2].begin(), results[2].end(), sharedResult2);
-            std::chrono::steady_clock::time_point stop2 = std::chrono::steady_clock::now();
-            std::chrono::duration<double> processingTime2 = std::chrono::duration_cast<std::chrono::duration<double>>(stop2 - start2);
-            time_sendProblem_ += processingTime2.count();
         }
         /*====================================calculates RR with CVODE use DLB====================================*/
         DynamicList<ChemistrySolution> CPUSolutionList;
@@ -264,16 +225,8 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
         double * localResults2 = new double[nNN2Local*mixture_.nSpecies()];
         std::vector<double*> localResults = {localResults0, localResults1, localResults2};
 
-        // wait for master to finish writing
-        MPI_Win_fence(0, win0);
-        MPI_Win_fence(0, win1);
-        MPI_Win_fence(0, win2);
-
         // processes read data from shared memory simultaneously
         // - calculate the data offset for each MPI rank
-        nNN0OutputDispls.resize(devWorldSize + 1, 0);
-        nNN1OutputDispls.resize(devWorldSize + 1, 0);
-        nNN2OutputDispls.resize(devWorldSize + 1, 0);
         std::partial_sum(nNN0InDevWorld.begin(), nNN0InDevWorld.end(), nNN0OutputDispls.begin() + 1);
         std::partial_sum(nNN1InDevWorld.begin(), nNN1InDevWorld.end(), nNN1OutputDispls.begin() + 1);
         std::partial_sum(nNN2InDevWorld.begin(), nNN2InDevWorld.end(), nNN2OutputDispls.begin() + 1);
@@ -283,9 +236,9 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
         std::transform(nNN2OutputDispls.begin(), nNN2OutputDispls.end(), nNN2OutputDispls.begin(), [=](int x) {return x * scale;});
 
         // - get results from shared memory
-        std::copy(sharedResult0+nNN0OutputDispls[devWorldRank], sharedResult0+nNN0OutputDispls[devWorldRank]+nNN0Local*mixture_.nSpecies(), localResults0);
-        std::copy(sharedResult1+nNN1OutputDispls[devWorldRank], sharedResult1+nNN1OutputDispls[devWorldRank]+nNN1Local*mixture_.nSpecies(), localResults1);
-        std::copy(sharedResult2+nNN2OutputDispls[devWorldRank], sharedResult2+nNN2OutputDispls[devWorldRank]+nNN2Local*mixture_.nSpecies(), localResults2);
+        cudaMemcpy(localResults0, d_output0+nNN0OutputDispls[devWorldRank], nNN0Local*mixture_.nSpecies()*sizeof(double),cudaMemcpyDeviceToHost);
+        cudaMemcpy(localResults1, d_output1+nNN1OutputDispls[devWorldRank], nNN1Local*mixture_.nSpecies()*sizeof(double),cudaMemcpyDeviceToHost);
+        cudaMemcpy(localResults2, d_output2+nNN2OutputDispls[devWorldRank], nNN2Local*mixture_.nSpecies()*sizeof(double),cudaMemcpyDeviceToHost);
         std::chrono::steady_clock::time_point stop4 = std::chrono::steady_clock::now();
         std::chrono::duration<double> processingTime4 = std::chrono::duration_cast<std::chrono::duration<double>>(stop4 - start4);
         time_sendRecvSolution_ += processingTime4.count();
@@ -343,9 +296,6 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
         delete[] localResults0;
         delete[] localResults1;
         delete[] localResults2;
-        MPI_Win_free(&win0);
-        MPI_Win_free(&win1);
-        MPI_Win_free(&win2);
     }
     else
     {
@@ -397,4 +347,43 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
     time_allsolve_ += processingTime.count();
 
     return deltaTMin;
+}
+template <class ThermoType>
+void Foam::dfChemistryModel<ThermoType>::finalize()
+{
+    // free pointer
+    if (!devWorldRank)
+    {
+        CHECK(cudaFree(d_NN0));
+        CHECK(cudaFree(d_NN1));
+        CHECK(cudaFree(d_NN2));
+        CHECK(cudaFree(d_output0));
+        CHECK(cudaFree(d_output1));
+        CHECK(cudaFree(d_output2));
+    }
+    else
+    {
+        CHECK(cudaIpcCloseMemHandle(d_NN0));
+        CHECK(cudaIpcCloseMemHandle(d_NN1));
+        CHECK(cudaIpcCloseMemHandle(d_NN2));
+        CHECK(cudaIpcCloseMemHandle(d_output0));
+        CHECK(cudaIpcCloseMemHandle(d_output1));
+        CHECK(cudaIpcCloseMemHandle(d_output2));
+    }
+
+    // clear vector
+    nNN0InDevWorld.clear();
+    nNN1InDevWorld.clear();
+    nNN2InDevWorld.clear();
+    nNN0InputDispls.clear();
+    nNN1InputDispls.clear();
+    nNN2InputDispls.clear();
+    nNN0OutputDispls.clear();
+    nNN1OutputDispls.clear();
+    nNN2OutputDispls.clear();
+
+    // destory devWorld
+    MPI_Comm_free(&devWorld);  
+    
+    return;
 }

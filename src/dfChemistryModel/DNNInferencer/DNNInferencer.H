@@ -5,6 +5,8 @@
 #include <iostream>
 #include <string> 
 #include <memory>
+#include <cuda.h>
+#include <cuda_runtime.h>
 
 class DNNInferencer
 {
@@ -29,8 +31,9 @@ public:
     // Inference
     at::Tensor Inference(torch::Tensor inputs);
     std::vector<std::vector<double>> Inference_multiDNNs(std::vector<std::vector<double>> DNNinputs, int dimension);
-    std::vector<std::vector<double>> Inference_multiDNNs_new(double* d_NN0, double* d_NN1, double* d_NN2, 
-    const int dimension, const int nNN0Dev, const int nNN1Dev, const int nNN2Dev);
+    void Inference_multiDNNs_new(double* d_NN0, double* d_NN1, double* d_NN2, 
+    const int dimension, const int nNN0Dev, const int nNN1Dev, const int nNN2Dev, double*& d_output0,
+    double*& d_output1, double*& d_output2);
 };
 
 #endif

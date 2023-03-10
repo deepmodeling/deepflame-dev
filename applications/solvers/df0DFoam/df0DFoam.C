@@ -141,14 +141,13 @@ int main(int argc, char *argv[])
         {
             Info<< "    allSolveTime = " << chemistry.time_allsolve() << " s"
             << "    constructNNInputTime = " << chemistry.time_getProblem() << " s"
-            << "    allocateSharedMemoryTime = " << chemistry.time_RecvProblem() << " s"<< nl
             << "    NNinferenceTime = " << chemistry.time_DNNinference() << " s"
-            << "    assignNNRsultsTime = " << chemistry.time_sendProblem() << " s"
             << "    getNNRsultsTime = " << chemistry.time_sendRecvSolution() << " s"<< nl
             << "    updateFieldsTime = " << chemistry.time_updateSolutionBuffer() << " s" << nl;
         }
 #endif
     }
+    chemistry.finalize();
 
     Info<< "End\n" << endl;
 

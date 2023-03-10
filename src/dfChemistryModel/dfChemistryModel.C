@@ -175,6 +175,12 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
             nNN0InDevWorld.resize(devWorldSize);
             nNN1InDevWorld.resize(devWorldSize);
             nNN2InDevWorld.resize(devWorldSize);
+            nNN0InputDispls.resize(devWorldSize + 1, 0);
+            nNN1InputDispls.resize(devWorldSize + 1, 0);
+            nNN2InputDispls.resize(devWorldSize + 1, 0);
+            nNN0OutputDispls.resize(devWorldSize + 1, 0);
+            nNN1OutputDispls.resize(devWorldSize + 1, 0);
+            nNN2OutputDispls.resize(devWorldSize + 1, 0);
 
             // reduce cell number
             int localCell = T_.size();
@@ -188,17 +194,30 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
                 CHECK(cudaMalloc((void **)&d_NN0, sizeof(double)*sumCell*(mixture_.nSpecies()+3)));
                 CHECK(cudaMalloc((void **)&d_NN1, sizeof(double)*sumCell*(mixture_.nSpecies()+3)));
                 CHECK(cudaMalloc((void **)&d_NN2, sizeof(double)*sumCell*(mixture_.nSpecies()+3)));
+                CHECK(cudaMalloc((void **)&d_output0, sizeof(double)*sumCell*mixture_.nSpecies()));
+                CHECK(cudaMalloc((void **)&d_output1, sizeof(double)*sumCell*mixture_.nSpecies()));
+                CHECK(cudaMalloc((void **)&d_output2, sizeof(double)*sumCell*mixture_.nSpecies()));
 
                 CHECK(cudaIpcGetMemHandle(&handles.NN0handle, d_NN0));
                 CHECK(cudaIpcGetMemHandle(&handles.NN1handle, d_NN1));
                 CHECK(cudaIpcGetMemHandle(&handles.NN2handle, d_NN2));
+                CHECK(cudaIpcGetMemHandle(&handles.output0handle, d_output0));
+                CHECK(cudaIpcGetMemHandle(&handles.output1handle, d_output1));
+                CHECK(cudaIpcGetMemHandle(&handles.output2handle, d_output2));
             }
             MPI_Bcast(&handles, sizeof(NNHandles), MPI_BYTE, 0, devWorld);
+            while (1)
+            {
+                int i = 1;
+            }
             if (devWorldRank) // Now is slaver
             {
                 CHECK(cudaIpcOpenMemHandle((void **)&d_NN0, handles.NN0handle, cudaIpcMemLazyEnablePeerAccess));
                 CHECK(cudaIpcOpenMemHandle((void **)&d_NN1, handles.NN1handle, cudaIpcMemLazyEnablePeerAccess));
                 CHECK(cudaIpcOpenMemHandle((void **)&d_NN2, handles.NN2handle, cudaIpcMemLazyEnablePeerAccess));
+                CHECK(cudaIpcOpenMemHandle((void **)&d_output0, handles.output0handle, cudaIpcMemLazyEnablePeerAccess));
+                CHECK(cudaIpcOpenMemHandle((void **)&d_output1, handles.output1handle, cudaIpcMemLazyEnablePeerAccess));
+                CHECK(cudaIpcOpenMemHandle((void **)&d_output2, handles.output2handle, cudaIpcMemLazyEnablePeerAccess));
             }
 
             // initialise DNNInferencer
