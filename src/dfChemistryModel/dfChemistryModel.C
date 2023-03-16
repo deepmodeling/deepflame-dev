@@ -206,10 +206,7 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
                 CHECK(cudaIpcGetMemHandle(&handles.output2handle, d_output2));
             }
             MPI_Bcast(&handles, sizeof(NNHandles), MPI_BYTE, 0, devWorld);
-            while (1)
-            {
-                int i = 1;
-            }
+
             if (devWorldRank) // Now is slaver
             {
                 CHECK(cudaIpcOpenMemHandle((void **)&d_NN0, handles.NN0handle, cudaIpcMemLazyEnablePeerAccess));
