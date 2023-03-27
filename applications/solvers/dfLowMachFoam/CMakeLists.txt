@@ -104,6 +104,7 @@ add_definitions("${DEFINITIONS_COMPILE}")
 
 FIND_PACKAGE(MPI REQUIRED)
 
+
 include_directories(
     ${OpenFOAM_SRC}/transportModels/compressible/lnInclude 
     ${OpenFOAM_SRC}/thermophysicalModels/basic/lnInclude 
@@ -139,25 +140,21 @@ target_link_libraries(${PROJECT_NAME} $ENV{FOAM_LIBBIN}/libfiniteVolume.so libme
 
 target_link_libraries(${PROJECT_NAME} ${CANTERA_ROOT}/lib/libcantera_shared.so.2)
 
-target_link_libraries(${PROJECT_NAME} /home/runze/JX/deepflame-cmake/lib/libdfCanteraMixture.so
-/home/runze/JX/deepflame-cmake/lib/libdfChemistryModel.so
-/home/runze/JX/deepflame-cmake/lib/libdfCanteraMixture.so
-/home/runze/JX/deepflame-cmake/lib/libdfFluidThermophysicalModels.so
-/home/runze/JX/deepflame-cmake/lib/libdfCombustionModels.so
-)
-link_directories(${OpenFOAM_LIB_DIR} ${OpenFOAM_LIB_DIR}/dummy)
-
-
-target_link_libraries(${PROJECT_NAME} 
-$ENV{FOAM_LIBBIN}/openmpi-system/libPstream.so
-${MPI_LIBRARIES}
-)
-
 
 #set_target_properties(${PROJECT_NAME}
 #     PROPERTIES
 #     LINK_OPTIONS "-Xlinker --add-needed -Xlinker --no-as-needed"
 #     )
+
+target_link_libraries(${PROJECT_NAME} dfCompressibleTurbulenceModels
+dfChemistryModel
+dfCanteraMixture
+dfFluidThermophysicalModels
+dfCombustionModels
+${MPI_LIBRARIES}
+$ENV{FOAM_LIBBIN}/openmpi-system/libPstream.so
+)
+
 
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)

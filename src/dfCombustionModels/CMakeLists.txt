@@ -3,6 +3,7 @@ project(dfCombustionModels LANGUAGES CXX)
 #set(INC_DIR R_SEARCH(search_paths))
 
 message(STATUS "header" ${header_dir})
+
 #set the options for the shared library
 set(LINK_FLAGS  "-fuse-ld=bfd -shared -Xlinker --add-needed -Xlinker --no-as-needed")
 
@@ -24,6 +25,7 @@ set(DEFINITIONS_COMPILE "-std=c++11 -m64 -Dlinux64 -DWM_ARCH_OPTION=64
 
 # Compiling configure
 add_definitions("${DEFINITIONS_COMPILE}")
+
 include_directories(
 
     ${OpenFOAM_SRC}/transportModels/compressible/lnInclude 
@@ -36,6 +38,12 @@ include_directories(
     ${PROJECT_SOURCE_DIR}
     ${dfcombustion_inc}
     ${dfchemistry_inc}
+
+    ${OpenFOAM_SRC}/Pstream/mpi 
+    ${OpenFOAM_SRC}/ODE/lnInclude
+    ${MPI_INCLUDE_PATH}
+ 
+
 
     $ENV{CANTERA_ROOT}/include
     /usr/include/python3.8
@@ -84,6 +92,9 @@ libfiniteVolume.so libmeshTools.so )
 target_link_libraries(${PROJECT_NAME} dfCompressibleTurbulenceModels
 dfCanteraMixture
 dfChemistryModel
+${MPI_LIBRARIES}
+$ENV{FOAM_LIBBIN}/openmpi-system/libPstream.so
+
 )
 
 target_link_libraries(${PROJECT_NAME} ${CANTERA_ROOT}/lib/libcantera_shared.so.2)
@@ -92,5 +103,4 @@ target_link_libraries(${PROJECT_NAME} ${CANTERA_ROOT}/lib/libcantera_shared.so.2
 
 install(TARGETS ${PROJECT_NAME}
     LIBRARY DESTINATION lib
-    PERMISSIONS WORLD_EXECUTE
     )

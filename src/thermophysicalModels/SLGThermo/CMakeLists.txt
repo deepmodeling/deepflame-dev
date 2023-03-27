@@ -1,4 +1,5 @@
 project(dfSLGThermo  LANGUAGES CXX)
+
 #set the options for the shared library
 set(LINK_FLAGS  "-fuse-ld=bfd -shared -Xlinker --add-needed -Xlinker --no-as-needed")
 
@@ -20,6 +21,7 @@ set(DEFINITIONS_COMPILE "-std=c++11 -m64 -Dlinux64 -DWM_ARCH_OPTION=64
 
 # Compiling configure
 add_definitions("${DEFINITIONS_COMPILE}")
+
 # add library
 
 add_library(${PROJECT_NAME} SHARED 
@@ -52,5 +54,4 @@ dfCanteraMixture
 # install
 install(TARGETS ${PROJECT_NAME}
     LIBRARY DESTINATION lib
-    PERMISSIONS WORLD_EXECUTE
     )

@@ -1,6 +1,8 @@
 
 project(dfChemistryModel LANGUAGES CXX)
 
+find_package(MPI REQUIRED)
+
 include_directories(
                     ${dfchemistry_inc}
                     ${OpenFOAM_SRC}/meshTools/lnInclude
@@ -10,6 +12,7 @@ include_directories(
                     ${OpenFOAM_SRC}/TurbulenceModels/compressible/lnInclude
                     ${dfcantera_inc}
                     ${CANTERA_ROOT}/include
+
                     )
 
 #set the options for the shared library
@@ -33,6 +36,10 @@ set(DEFINITIONS_COMPILE "-std=c++11 -m64 -Dlinux64 -DWM_ARCH_OPTION=64
 
 # Compiling configure
 add_definitions("${DEFINITIONS_COMPILE}")
+
+                    ${OpenFOAM_SRC}/Pstream/mpi
+                    ${MPI_INCLUDE_PATH}
+                    )
 
 
 add_library(dfChemistryModel SHARED
@@ -71,10 +78,11 @@ target_link_libraries(${PROJECT_NAME} ${CANTERA_ROOT}/lib/libcantera_shared.so.2
 target_link_libraries(${PROJECT_NAME} dfFluidThermophysicalModels
 dfCompressibleTurbulenceModels
 dfCanteraMixture
+${MPI_LIBRARIES}
+
 )
 
 
 install(TARGETS ${PROJECT_NAME}
     LIBRARY DESTINATION lib
-    PERMISSIONS WORLD_EXECUTE
     )

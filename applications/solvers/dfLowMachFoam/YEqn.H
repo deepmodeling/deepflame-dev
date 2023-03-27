@@ -1,3 +1,4 @@
+double start_Yeq = std::clock();
 start = std::clock();
 
 hDiffCorrFlux = Zero;
@@ -45,13 +46,20 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
 
     start = std::clock();
     forAll(Y, i)
-    {
+    {    
         volScalarField& Yi = Y[i];
+        double cfs = std::clock();
         hDiffCorrFlux += chemistry->hai(i)*(chemistry->rhoD(i)*fvc::grad(Yi) - Yi*sumYDiffError);
+        double cfe = std::clock();
+        correctflux_t += double(cfe - cfs) / double(CLOCKS_PER_SEC);
+        
+        double lss = std::clock();
         diffAlphaD += fvc::laplacian(thermo.alpha()*chemistry->hai(i), Yi);
-
+        double lse = std::clock();
+        laplaciansolve += double(lse - lss) / double(CLOCKS_PER_SEC);
         if (i != inertIndex)
-        {
+        {   
+            double constructMs = std::clock();
             tmp<volScalarField> DEff = chemistry->rhoD(i) + turbulence->mut()/Sct;
             fvScalarMatrix YiEqn
             (
@@ -65,19 +73,32 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
                 :  (fvm::laplacian(DEff(), Yi) + combustion->R(Yi))
                 )
             );
-
+            double constructMe = std::clock();
+            constructM_Y  += double(constructMe - constructMs) / double(CLOCKS_PER_SEC);
+            
+            double startY_relax = std::clock();
             YiEqn.relax();
-
+            double endY_relax = std::clock();
+            Y_relax += double(endY_relax - startY_relax) / double(CLOCKS_PER_SEC);
+            
+            double start_Ysolve = std::clock();
             YiEqn.solve("Yi");
-
+            //end = MPI_Wtime();
+            double end_Ysolve = std::clock();
+            Y_solve += double(end_Ysolve - start_Ysolve) / double(CLOCKS_PER_SEC);
+            
             Yi.max(0.0);
             Yt += Yi;
         }
+
     }
 
     Y[inertIndex] = scalar(1) - Yt;
     Y[inertIndex].max(0.0);
 
     end = std::clock();
-    time_monitor_Y += double(end - start) / double(CLOCKS_PER_SEC);
+    
+    time_monitor_Y += double(end-start)/double(CLOCKS_PER_SEC);
 }
+double end_Yeq = std::clock();
+Yeq += double(end_Yeq-start_Yeq)/double(CLOCKS_PER_SEC);

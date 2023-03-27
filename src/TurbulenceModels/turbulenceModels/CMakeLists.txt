@@ -21,6 +21,7 @@ set(DEFINITIONS_COMPILE "-std=c++11 -m64 -Dlinux64 -DWM_ARCH_OPTION=64
 
 # Compiling configure
 add_definitions("${DEFINITIONS_COMPILE}")
+
 include_directories(
 ${dfturbulence_inc}
     ${OpenFOAM_SRC}/TurbulenceModels/compressible/lnInclude 
@@ -50,5 +51,4 @@ dfFluidThermophysicalModels
 
 install(TARGETS ${PROJECT_NAME}
     LIBRARY DESTINATION lib
-    PERMISSIONS WORLD_EXECUTE
     )

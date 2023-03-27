@@ -21,6 +21,7 @@ set(DEFINITIONS_COMPILE "-std=c++11 -m64 -Dlinux64 -DWM_ARCH_OPTION=64
 
 # Compiling configure
 add_definitions("${DEFINITIONS_COMPILE}")
+
 set(workDir ${SRC_ORIG}/regionModels/surfaceFilmModels)
 set(KINEMATICMODELS ${workDir}/submodels/kinematic)
 set(THERMOMODELS ${workDir}/submodels/thermo)
@@ -149,5 +150,4 @@ include_directories(
 # install
 install(TARGETS ${PROJECT_NAME}
     LIBRARY DESTINATION lib
-    PERMISSIONS WORLD_EXECUTE
     )

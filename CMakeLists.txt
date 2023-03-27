@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.5)
 project(deepflame LANGUAGES CXX)
+
 FIND_PACKAGE(MPI REQUIRED)
+message(STATUS "mpi_include_path" ${MPI_INCLUDE_PATH})
+message(STATUS "mpi_libs" ${MPI_LIBRARIES})
+
 # Check valid OpenFOAM
 if(DEFINED ENV{WM_PROJECT_DIR})
 	MESSAGE(STATUS "OpenFOAM: " $ENV{WM_PROJECT_DIR})
@@ -11,6 +15,9 @@ set(OpenFOAM_VERSION $ENV{WM_PROJECT_VERSION})
 set(OpenFOAM_DIR $ENV{WM_PROJECT_DIR})
 set(OpenFOAM_LIB_DIR $ENV{FOAM_LIBBIN})
 set(OpenFOAM_SRC $ENV{FOAM_SRC})
+
+set(OpenFOAM_APP $ENV{FOAM_APP}) 
+
 
 set(SRC_ORIG ${CMAKE_CURRENT_SOURCE_DIR}/src_orig)
 
@@ -28,13 +35,13 @@ ENDFUNCTION(R_SEARCH)
 
 set(DF_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 set(DF_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
        
 set(CMAKE_INSTALL_PREFIX ${DF_ROOT})
 
 #set the options for the shared library
 set(LINK_FLAGS  "-fuse-ld=bfd -Xlinker --add-needed -Xlinker --no-as-needed")
 
-#set the link options
 set(CMAKE_SHARED_LINKER_FLAGS "${LINK_FLAGS}")
 set(CMAKE_EXE_LINKER_FLAGS "${LINK_FLAGS}")
 
@@ -59,7 +66,7 @@ R_SEARCH(${DF_SRC}/lagrangian/spray dflagrangianspray_inc)
 R_SEARCH(${DF_SRC}/lagrangian/turbulence dflagrangianturb_inc)
 R_SEARCH(${DF_SRC}/dfChemistryModel dfchemistry_inc)
 R_SEARCH(${DF_SRC}/thermophysicalModels/thermophysicalProperties dfthermophysicalprop_inc)
-R_SEARCH(${DF_SRC}/thermophysicalModels/thermophysicalProperties dfthermophysicalprop_inc)
+
 R_SEARCH(${DF_SRC}/thermophysicalModels/basic dfthermophysicalbasic_inc)
 R_SEARCH(${DF_SRC}/thermophysicalModels/SLGThermo dfthermophysicalslg_inc)
 R_SEARCH(${DF_SRC}/TurbulenceModels dfturbulence_inc)
@@ -76,13 +83,6 @@ else()
 endif(DEFINED ENV{CANTERA_ROOT}) 
 
 
-# Check valid Torch
-#if(DEFINED $ENV{PYTHON_INC_DIR)})
-#	MESSAGE(STATUS "Torch: " $ENV{CANTERA_ROOT})
-#else()
-#	message(FATAL_ERROR "no torch used")
-#endif(DEFINED ENV{PYTHON_INC_DIR}) 
-
 
 
 include_directories(
@@ -92,8 +92,20 @@ include_directories(
                     ${OpenFOAM_SRC}/OpenFOAM/lnInclude
                     )
 
-# message(STATUS "dummydir:" ${OpenFOAM_LIB_DIR}/dummy)
 link_directories(${OpenFOAM_LIB_DIR} ${OpenFOAM_LIB_DIR}/dummy )
+
+
+
+# Compiling configure
+add_definitions("${DEFINITIONS_COMPILE}")
+
+include_directories(
+  ${OpenFOAM_SRC}/finiteVolume/lnInclude
+  ${OpenFOAM_SRC}/OSspecific/POSIX/lnInclude
+  ${OpenFOAM_SRC}/OpenFOAM/lnInclude
+  )
+
+
 
 set(CMAKE_INSTALL_PREFIX ${DF_ROOT})
 
@@ -113,8 +125,9 @@ add_subdirectory(${DF_SRC}/dfCombustionModels)
 add_subdirectory(${DF_SRC}/dynamicMesh)
 add_subdirectory(${DF_SRC}/dynamicFvMesh)
 
-
 # add_subdirectory(${DF_ROOT}/applications/solvers/df0DFoam)
 #add_subdirectory(${DF_ROOT}/applications/solvers/dfLowMachFoam)
 # add_subdirectory(${DF_ROOT}/applications/solvers/dfHighSpeedFoam)
 # add_subdirectory(${DF_ROOT}/applications/solvers/dfSprayFoam)
+
+

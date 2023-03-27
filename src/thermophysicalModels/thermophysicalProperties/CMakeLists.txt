@@ -1,4 +1,5 @@
 project(dfThermophysicalProperties  LANGUAGES CXX)
+
 #set the options for the shared library
 set(LINK_FLAGS  "-fuse-ld=bfd -shared -Xlinker --add-needed -Xlinker --no-as-needed")
 
@@ -20,6 +21,7 @@ set(DEFINITIONS_COMPILE "-std=c++11 -m64 -Dlinux64 -DWM_ARCH_OPTION=64
 
 # Compiling configure
 add_definitions("${DEFINITIONS_COMPILE}")
+
 # add library
 set(workDir
     ${SRC_ORIG}/thermophysicalModels/thermophysicalProperties/)
@@ -99,5 +101,4 @@ message("PROJECT_SOURCE_DIR: " ${PROJECT_SOURCE_DIR})
 # install
 install(TARGETS ${PROJECT_NAME}
     LIBRARY DESTINATION lib
-    PERMISSIONS WORLD_EXECUTE
     )
