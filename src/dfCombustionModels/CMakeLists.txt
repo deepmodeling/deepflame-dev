@@ -4,6 +4,28 @@ project(dfCombustionModels LANGUAGES CXX)
 
 message(STATUS "header" ${header_dir})
 
+#set the options for the shared library
+set(LINK_FLAGS  "-fuse-ld=bfd -shared -Xlinker --add-needed -Xlinker --no-as-needed")
+
+#set the link options
+set(CMAKE_SHARED_LINKER_FLAGS "${LINK_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS "${LINK_FLAGS}")
+
+
+SET(CMAKE_C_COMPILER g++)
+set(PATH_LIB_OPENMPI "openmpi-system")  # Foundation version
+set(DEFINITIONS_COMPILE "-std=c++11 -m64 -Dlinux64 -DWM_ARCH_OPTION=64 
+-DWM_DP -DWM_LABEL_SIZE=32 -Wall -Wextra -Wold-style-cast -Wnon-virtual-dtor 
+-Wno-unused-parameter -Wno-invalid-offsetof -Wno-attributes -O3  
+-DNoRepository -ftemplate-depth-100 -std=c++14 
+-Wno-unused-variable -Wno-unused-but-set-variable -Wno-old-style-cast -DOMPI_SKIP_MPICXX  
+-pthread
+-fPIC -c")
+
+
+# Compiling configure
+add_definitions("${DEFINITIONS_COMPILE}")
+
 include_directories(
 
     ${OpenFOAM_SRC}/transportModels/compressible/lnInclude 
@@ -16,10 +38,12 @@ include_directories(
     ${PROJECT_SOURCE_DIR}
     ${dfcombustion_inc}
     ${dfchemistry_inc}
+
     ${OpenFOAM_SRC}/Pstream/mpi 
     ${OpenFOAM_SRC}/ODE/lnInclude
     ${MPI_INCLUDE_PATH}
  
+
 
     $ENV{CANTERA_ROOT}/include
     /usr/include/python3.8
@@ -70,6 +94,7 @@ dfCanteraMixture
 dfChemistryModel
 ${MPI_LIBRARIES}
 $ENV{FOAM_LIBBIN}/openmpi-system/libPstream.so
+
 )
 
 target_link_libraries(${PROJECT_NAME} ${CANTERA_ROOT}/lib/libcantera_shared.so.2)
