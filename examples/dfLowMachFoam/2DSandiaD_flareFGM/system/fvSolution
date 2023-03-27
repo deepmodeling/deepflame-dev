@@ -1,0 +1,131 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.3.0                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+    "rho.*"
+    {
+        solver          diagonal;
+    }
+    
+    p
+    {
+        solver          GAMG;
+        tolerance       1e-09;
+        relTol          0.001;
+        smoother        GaussSeidel;
+        nPreSweeps      0;
+        nPostSweeps     2;
+        cacheAgglomeration on;
+        agglomerator    faceAreaPair;
+        nCellsInCoarsestLevel 10;
+        mergeLevels     1;
+    }
+
+    pFinal
+    {
+        $p;
+        tolerance       1e-09;
+        relTol          0.001;
+        // minIter         1;
+    }
+
+    U
+    {
+        solver          PBiCG;
+        preconditioner  DILU;
+        tolerance       1e-9;
+        relTol          0.0001;
+    }
+
+    UFinal
+    {
+        $U;
+        tolerance       1e-9;
+        relTol          0.0001;
+        // minIter         1;
+    }
+
+    "(k|epsilon)"
+    {
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        tolerance       1e-9;
+        relTol          0.001;
+    }
+
+/*
+    "(k|epsilon)"
+    {
+        solver          PBiCG;
+        preconditioner  DILU;
+        tolerance       1e-09;
+        relTol          0.001;
+    }
+*/
+
+    "(k|epsilon)Final"
+    {
+        $k;
+        tolerance       1e-09;
+        relTol          0.001;
+        // minIter         1;
+    }
+
+    "(Z|H|Zvar|c|cvar|Zcvar).*"
+    {
+        solver          PBiCG;
+        preconditioner  DILU;
+        tolerance       1e-09;
+        relTol          0.001;
+        // minIter         1;
+    }
+
+}
+
+PIMPLE
+{
+    nOuterCorrectors 1;
+    nCorrectors     2;
+    nNonOrthogonalCorrectors 0;
+    momentumPredictor yes;
+
+    // outerCorrectorResidualControl
+    // {
+    //     "(U)"
+    //     {
+    //         tolerance       1e-04;
+    //         relTol          0;
+    //     }
+    // }
+}
+
+/*
+relaxationFactors
+{
+    fields
+    {
+       p               0.5;
+    }
+    equations
+    {
+       U               0.8;
+//       phiFilt         0.5;
+    }
+}
+*/
+// ************************************************************************* //

@@ -26,19 +26,17 @@ jobs:
         sudo apt-get update
         export DEBIAN_FRONTEND=noninteractive
         apt-get -y install openfoam7 
-        git clone https://github.com/deepmodeling/deepflame-dev.git
-        cd deepflame-dev   
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-        wget https://mirrors.edge.kernel.org/ubuntu/pool/main/libf/libffi/libffi7_3.3-4_amd64.deb
         bash Miniconda3-latest-Linux-x86_64.sh -b
         . ~/miniconda3/etc/profile.d/conda.sh
         conda create -n libcantera python=3.8
         conda activate libcantera
         conda install -c cantera libcantera-devel
-        conda install pytorch 
-        conda install pybind11
-        conda install --channel https://conda.anaconda.org/zhaofeng-shu33 easydict        
-        cd /github/home/miniconda3/envs/libcantera/lib
+        conda install pytorch pybind11
+        conda install --channel https://conda.anaconda.org/zhaofeng-shu33 easydict
+        git clone https://github.com/deepmodeling/deepflame-dev.git
+        cd deepflame-dev
+
  
      - name: build and validation with CPU inference 
        env: 
@@ -46,16 +44,27 @@ jobs:
         OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1 
         OMPI_MCA_btl_vader_single_copy_mechanism: none
        run: 
-        /bin/bash -c "git clone https://github.com/deepcombustion/deepcombustion.git && cp -r deepcombustion/DeePCK/Model/HE04_Hydrogen_ESH2_GMS_sub_20221101/ mechanisms/ && source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc 
+        /bin/bash -c " echo $PWD && ls $PWD
+        && wget https://github.com/JX278/DeepFlame-flareFGM-table/raw/main/flareFGM_Table_Download.zip
+        && unzip flareFGM_Table_Download.zip
+        && ls $PWD
+        && ls flareFGM_Table_Download
+        && cp -r flareFGM_Table_Download/SandiaD/flare.tbl examples/dfLowMachFoam/2DSandiaD_flareFGM/
+        && git clone https://github.com/deepcombustion/deepcombustion.git 
+        && cp -r deepcombustion/DeePCK/Model/HE04_Hydrogen_ESH2_GMS_sub_20221101/ mechanisms/ && source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc 
         && . configure.sh --use_pytorch && source ./bashrc && . install.sh 
         && cd test && ./Allrun && conda deactivate "
-   
+
      - name: test 
        run: | 
          cd test
          cmake -B build
          cmake --build build 
          cd build 
-         ctest   
+         ctest
+
+        
+    
+
         
         

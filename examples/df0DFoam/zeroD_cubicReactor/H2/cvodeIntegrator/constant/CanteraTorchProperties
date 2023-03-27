@@ -49,6 +49,7 @@ loadbalancing
 {
     active           true;
     log              false;
+    algorithm        allAverage;//headTail;
 }
 
 

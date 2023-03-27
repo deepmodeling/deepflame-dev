@@ -33,7 +33,23 @@ Foam::LoadBalancer::updateState(
     if (Pstream::myProcNo(comm) == -1) return;
     auto myLoad = computeLoad(problems, comm);
     auto allLoads = allGather(myLoad, comm);
-    auto operations = getOperations(allLoads, myLoad);
+    std::vector<Foam::LoadBalancer::Operation> operations;
+    if (algorithm_ == "allAverage")
+    {
+        operations = getOperations(allLoads, myLoad);
+        if (log_)
+        {
+            Info << "now perform load balance with allAverage (DLB) algorithm" << endl;
+        }
+    }
+    else 
+    {
+        operations = getOperationsRedezVous(allLoads, myLoad);
+        if (log_)
+        {
+            Info << "now perform load balance with headTail (RedezVous) algorithm" << endl;
+        }
+    }
     auto info = operationsToInfo(operations, problems, myLoad);
 
     setState(info);
@@ -161,6 +177,58 @@ Foam::LoadBalancer::getOperations(
         std::abs(getMean(loads) - globalMean) < 1E-7, "Vanishing load");
 
     return large;
+}
+
+//perform load balance with Redez-vous algorithm
+std::vector<Foam::LoadBalancer::Operation>
+Foam::LoadBalancer::getOperationsRedezVous(
+        DynamicList<ChemistryLoad>& loads, const ChemistryLoad& myLoad)
+{
+    double globalMean = getMean(loads); //calculate the mean load
+
+    std::vector<Operation> operations;
+
+    std::sort(loads.begin(), loads.end()); //sort the loads
+
+    auto sender = loads.end() - 1; //the last load greater than the mean load
+    auto receiver = loads.begin();
+
+    for (int i = 0; i < int(loads.size()/2); ++i)
+    {
+        //std::cout << "sender: " << sender->rank << " receiver: " << receiver->rank << std::endl;
+
+        double send_value = (sender->value - receiver->value) / 2; // calculate the send value
+
+        Operation operation{sender->rank, receiver->rank, send_value};
+        if(sender->rank == myLoad.rank || receiver->rank == myLoad.rank)
+        {
+            operations.push_back(operation); // if send or recv rank related to my rank, add to operations
+        }
+        sender->value -= send_value; // update the load
+        receiver->value += send_value; // update the load
+
+        sender--;
+        receiver++;
+    }
+
+    // explicitly filter very small operations
+    std::vector<Operation> large;
+    for(const auto& op:operations)
+    {
+        if(op.value > 0.01 * globalMean) //if send value is larger than 1% of global mean
+        {
+            large.push_back(op); // add to large operations
+        }
+    }
+    runtime_assert(
+            !((isSender(operations, myLoad.rank) &&
+            isReceiver(operations, myLoad.rank))),
+            "Only sender or receiver should be possible.");
+
+    runtime_assert(
+            std::abs(getMean(loads) - globalMean) < 1E-7, "Vanishing load");
+
+    return large; //return large operations
 }
 
 bool

@@ -44,5 +44,6 @@ loadbalancing
 {
         active  false;
         //log   true;
+	algorithm allAverage;
 }
 // ************************************************************************* //

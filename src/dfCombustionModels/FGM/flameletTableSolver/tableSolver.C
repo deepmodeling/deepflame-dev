@@ -119,7 +119,7 @@ double Foam::tableSolver::cal_gcor
     }
     else
     {
-        gcor = (Zcvar - Z * c) /(Foam::sqrt(Zvar * cvar));
+        gcor = Zcvar/(Foam::sqrt(Zvar * cvar));
     }
 
     gcor = fmin(1.0,gcor);

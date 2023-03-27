@@ -71,8 +71,17 @@ public:
         : LoadBalancerBase(), dict_(dict),
           coeffsDict_(dict.subDict("loadbalancing")),
           active_(coeffsDict_.lookupOrDefault<Switch>("active", true)),
-          log_(coeffsDict_.lookupOrDefault<Switch>("log", false))
+          log_(coeffsDict_.lookupOrDefault<Switch>("log", false)),
+          algorithm_(coeffsDict_.lookup("algorithm"))
     {
+        if ((algorithm_ != "allAverage") && (algorithm_ != "headTail"))
+        {
+            FatalError
+            << "in loadBalancing Settings, unknown algorithm type "
+            << algorithm_ << nl
+            << "    Valid types are: allAverage or headTail."
+            << exit(FatalError);
+        }
     }
 
     // Destructor
@@ -103,6 +112,11 @@ protected:
     static std::vector<LoadBalancer::Operation> getOperations(
         DynamicList<ChemistryLoad>& loads, const ChemistryLoad& myLoad);
 
+    //- Get the operations for this rank that would minimize the load to
+    //  global mean with Redez-vous algorithm
+    static std::vector<LoadBalancer::Operation> getOperationsRedezVous(
+        DynamicList<ChemistryLoad>& loads, const ChemistryLoad& myLoad);
+    
     //- Convert the operations to send and receive info to handle balancing
     static BalancerState operationsToInfo(
         const std::vector<Operation>& operations,
@@ -127,6 +141,9 @@ private:
 
     // Is load balancing logged?
     Switch log_;
+
+    // chose the appropriate load balancing algorithm
+    const word algorithm_;
 
     //- Check if the rank is a sender
     static bool isSender(const std::vector<Operation>& operations, int rank);

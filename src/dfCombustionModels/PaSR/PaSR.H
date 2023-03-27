@@ -58,13 +58,91 @@ class PaSR
     public laminar<ReactionThermo>
 {
     // Private Data
+        
+        //- thermo mu
+        volScalarField& mu_;
+        
+        //- thermo T and p
+        const volScalarField& p_;
+        const volScalarField& T_;
 
-        //- Mixing constant
-        scalar Cmix_;
+        //- mixing scale dictionary
+        dictionary mixingScaleDict_;
+
+        //- chemistry scale dictionary
+        dictionary chemistryScaleDict_;
+
+        //- mixing scale type
+        word mixingScaleType_;
+
+        //- chemistry scale type
+        word chemistryScaleType_;
+
+        //- dictionary 
+        dictionary mixingScaleCoeffs_;
+        dictionary chemistryScaleCoeffs_;
+
+        //- fuel 
+        word fuel_;
+
+        //- oxidizer
+        word oxidizer_;
+
+        //- global mixing constant
+        scalar Cmix_;    
+
+        //- stochastic mixture fraction
+        scalar Zst_;
+
+        //- scalar mixing constant
+        scalar Cd1_;  
+        scalar Cd2_;  
+        scalar Cp1_; 
+        scalar Cp2_;   
+        scalar maxChi_;   
+
+        //- laminar flame speed constant
+        scalar W_;          
+        scalar eta_; 
+        scalar xi_;
+        scalar alpha_; 
+        scalar beta_;                 
+
+
+        //- mixing scale time
+        volScalarField tmix_;         
+
+        //- chemistry scale time
+        volScalarField tc_; 
+
+        //- Da number
+        volScalarField Da_;
+
+        //- laminar flame speed  
+
+        //- mixture facraction variance 
+        volScalarField Z_;
+
+        //- mixture facraction variance 
+        volScalarField Zvar_;
+
+        //- scalar dissipation rate 
+        volScalarField Chi_;
+
+        //- equivalence ratio
+        volScalarField eqR_;
+
+        //- laminar flame speed
+        volScalarField Su_;
 
         //- Mixing parameter
         volScalarField kappa_;
+  
+        //-switch for solving transport chi
+       // Switch  transportChi_;
+        word ChiType_; 
 
+        multivariateSurfaceInterpolationScheme<scalar>::fieldTable fields_;
 
 public:
 
@@ -104,6 +182,8 @@ public:
 
         //- Update properties from given dictionary
         virtual bool read();
+
+        void transport();       
 
 
     // Member Operators

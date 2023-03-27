@@ -1,4 +1,21 @@
-# DeepFlame v1.0.0
+<p align="center">
+    <a href="https://github.com/deepmodeling/deepflame-dev">
+        <img src="https://user-images.githubusercontent.com/121787251/218061666-eb9e4188-d368-41d0-8ed6-fe5121699efe.jpg">
+    </a>
+    <a href="https://github.com/deepmodeling/deepflame-dev/releases">
+        <img src="https://img.shields.io/github/v/release/deepmodeling/deepflame-dev?include_prereleases&label=latest%20release&style=for-the-badge">
+    </a>    
+    <a href="https://github.com/deepmodeling/deepflame-dev/pulls">
+        <img src="https://img.shields.io/badge/contributions-welcome-red.svg?style=for-the-badge">
+    </a>    
+    <a href="https://github.com/deepmodeling/deepflame-dev/blob/master/LICENSE">
+        <img src="https://img.shields.io/github/license/deepmodeling/deepflame-dev?color=yellow&logo=GitHub&style=for-the-badge">
+    </a>    
+    <a href="https://deepflame.deepmodeling.com/en/latest/">
+        <img src="https://img.shields.io/website?label=Documentation%20HomePage&style=for-the-badge&up_message=online&url=https%3A%2F%2Fdeepflame.deepmodeling.com%2Fen%2Flatest%2F">
+    </a>  
+</p>
+
 DeepFlame is a deep learning empowered computational fluid dynamics package for single or multiphase, laminar or turbulent, reacting flows at all speeds. It aims to provide an open-source platform to combine the individual strengths of [OpenFOAM](https://openfoam.org), [Cantera](https://cantera.org), and [PyTorch](https://pytorch.org/) libraries for deep learning assisted reacting flow simulations. It also has the scope to leverage the next-generation heterogenous supercomputing and AI acceleration infrastructures such as GPU and FPGA.
 
 The deep learning algorithms and models used in the DeepFlame tutorial examples are developed and trained independently by our collaborators team – [DeepCombustion](https://github.com/deepcombustion/deepcombustion). Please refer to their website for detailed information.
@@ -7,8 +24,15 @@ The deep learning algorithms and models used in the DeepFlame tutorial examples 
 Detailed guide for installation and tutorials is available on [our documentation website](https://deepflame.deepmodeling.com).
 
 ## Features
-New in v0.6.0 (2022/11/14):
+New features as of 2023/03/01:
+- New load balancing algorithm
+- Add support for solving chemical source term simultaneously on GPU (DNN) and CPU (CVODE)
+- Add FGM model
+- Reconstruct dfChemistryModel 
+
+New in v1.0.0 (2022/11/15):
 - Add support for the parallel computation of DNN using libtorch on multiple GPUs 
+- Add TCI model
 
 New in v0.5.0 (2022/10/15):
 - Add support for the parallel computation of DNN via single and multiple GPUs

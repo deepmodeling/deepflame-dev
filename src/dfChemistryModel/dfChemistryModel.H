@@ -89,104 +89,90 @@ public IOdictionary
 {
 
     // Private Data
-    ThermoType& thermo_;
-    CanteraMixture& mixture_;
-    std::shared_ptr<Cantera::ThermoPhase> CanteraGas_;
-    const fvMesh& mesh_;
-    Switch chemistry_;
+        ThermoType& thermo_;
+        CanteraMixture& mixture_;
+        std::shared_ptr<Cantera::ThermoPhase> CanteraGas_;
+        const fvMesh& mesh_;
+        Switch chemistry_;
 
-    //- Relative tolerance to control CVode
-    scalar relTol_;
-    //- Absolute tolerance to control CVode
-    scalar absTol_;
+        //- Relative tolerance to control CVode
+        scalar relTol_;
+        //- Absolute tolerance to control CVode
+        scalar absTol_;
 
-    PtrList<volScalarField>& Y_;
-    // species mass diffusion coefficients, [kg/m/s]
-    PtrList<volScalarField> rhoD_;
-    // species absolute enthalpy, [J/kg]
-    PtrList<volScalarField> hai_;
-    // species chemistry enthalpy, [J/kg]
-    scalarList hc_;
-    // temp mass fraction
-    mutable scalarList yTemp_;
-    // temp mass diffusion coefficients
-    mutable scalarList dTemp_;
-    // temp H/RT
-    mutable scalarList hrtTemp_; // absolute_enthalpy/RT
-    // temp molar concentration
-    mutable scalarList cTemp_;
-    // mass change rate, [kg/m^3/s]
-    PtrList<volScalarField::Internal> RR_;
-    hashedWordList species_;
-    volScalarField& alpha_;
-    volScalarField& T_;
-    const volScalarField& p_;
-    const volScalarField& rho_;
-    volScalarField& mu_;
-    volScalarField& psi_;
-    // heat release rate, [J/m^3/s]
-    volScalarField Qdot_;
-    // DNN selection fields 
-    volScalarField selectDNN_;
+        PtrList<volScalarField>& Y_;
+        // species mass diffusion coefficients, [kg/m/s]
+        PtrList<volScalarField> rhoD_;
+        // species absolute enthalpy, [J/kg]
+        PtrList<volScalarField> hai_;
+        // species chemistry enthalpy, [J/kg]
+        scalarList hc_;
+        // temp mass fraction
+        mutable scalarList yTemp_;
+        // temp mass diffusion coefficients
+        mutable scalarList dTemp_;
+        // temp H/RT
+        mutable scalarList hrtTemp_; // absolute_enthalpy/RT
+        // temp molar concentration
+        mutable scalarList cTemp_;
+        // mass change rate, [kg/m^3/s]
+        PtrList<volScalarField::Internal> RR_;
+        hashedWordList species_;
+        volScalarField& alpha_;
+        volScalarField& T_;
+        const volScalarField& p_;
+        const volScalarField& rho_;
+        volScalarField& mu_;
+        volScalarField& psi_;
+        // heat release rate, [J/m^3/s]
+        volScalarField Qdot_;
+        // DNN selection fields
+        volScalarField selectDNN_;
 
 #if defined USE_LIBTORCH || defined USE_PYTORCH
-    bool useDNN;
-    Switch torchSwitch_;
-    Switch gpu_;
-    Switch gpulog_;
+        bool useDNN;
+        Switch torchSwitch_;
+        Switch gpu_;
+        Switch gpulog_;
 
-    scalar Tact1_;
-    scalar Qdotact1_;
-    scalar Tact2_;
-    scalar Qdotact2_;
-    scalar Tact3_;
-    scalar Qdotact3_;
-    label cvodeComm;
+        label cvodeComm;
 
-    // profiling 
-    double time_allsolve_;
-    double time_submaster_;
-    double time_sendProblem_;
-    double time_RecvProblem_;
-    double time_sendRecvSolution_;
-    double time_getDNNinputs_;
-    double time_DNNinference_;
-    double time_updateSolutionBuffer_;
-    double time_getProblems_;
+        // profiling
+        double time_allsolve_;
+        double time_submaster_;
+        double time_sendProblem_;
+        double time_RecvProblem_;
+        double time_sendRecvSolution_;
+        double time_getDNNinputs_;
+        double time_DNNinference_;
+        double time_updateSolutionBuffer_;
+        double time_getProblems_;
 #endif
 
 #ifdef USE_LIBTORCH
-    DNNInferencer DNNInferencer_;
-    int cores_; // The number of cores per GPU when use libtorch
-    int GPUsPerNode_;
+        DNNInferencer DNNInferencer_;
+        int cores_; // The number of cores per GPU when use libtorch
+        int GPUsPerNode_;
 
-    word torchModelName_;
-    scalarList Xmu_;
-    scalarList Xstd_;
-    scalarList Ymu_;
-    scalarList Ystd_;
-    scalar Qdotact_;
-    scalar Tact_;
-
-    word torchModelName1_;
-    word torchModelName2_;
-    word torchModelName3_;  
+        word torchModelName1_;
+        word torchModelName2_;
+        word torchModelName3_;
 #endif
 
 #ifdef USE_PYTORCH
-    int cores_; // The number of cores per node when use pytorch
+        int cores_; // The number of cores per node when use pytorch
 
-    // profiling
-    double time_vec2ndarray_;
-    double time_python_;
+        // profiling
+        double time_vec2ndarray_;
+        double time_python_;
 #endif
 
-    // Load balancing object
-    LoadBalancer balancer_;
-    // Field containing chemistry CPU time information
-    volScalarField cpuTimes_;
-    // A file to output the balancing stats
-    autoPtr<OFstream>        cpuSolveFile_;
+        // Load balancing object
+        LoadBalancer balancer_;
+        // Field containing chemistry CPU time information
+        volScalarField cpuTimes_;
+        // A file to output the balancing stats
+        autoPtr<OFstream>        cpuSolveFile_;
 
     // Private Member Functions
 
@@ -221,7 +207,8 @@ public IOdictionary
         solveBuffer(RecvBuffer<ChemistryProblem>& problems);
 
         //- Update the reaction rates and heat release rates from a list of solutions
-        scalar updateReactionRates(const RecvBuffer<ChemistrySolution>& solutions, DynamicList<ChemistrySolution>& submasterODESolutions);
+        scalar updateReactionRates(const RecvBuffer<ChemistrySolution>& solutions,
+            DynamicList<ChemistrySolution>& submasterODESolutions);
 
         //- Create a load balancer object
         LoadBalancer createBalancer();
@@ -234,8 +221,7 @@ public IOdictionary
         Foam::autoPtr<Foam::OFstream> logFile(const word& name) const
         {
             mkDir(mesh_.time().path() / "loadBal" / this->group());
-            return autoPtr<OFstream>(new OFstream(
-                mesh_.time().path() / "loadBal" / this->group() / name));
+            return autoPtr<OFstream>(new OFstream(mesh_.time().path() / "loadBal" / this->group() / name));
         }
 
 #if defined USE_LIBTORCH || defined USE_PYTORCH
@@ -243,16 +229,16 @@ public IOdictionary
         //- get a list of GPU problems to be solved
         template<class DeltaTType>
         void getGPUProblems(const DeltaTType& deltaT, Foam::DynamicList<GpuProblem>& GPUproblemList,
-        Foam::DynamicList<ChemistryProblem>& CPUproblemList);
+            Foam::DynamicList<ChemistryProblem>& CPUproblemList);
 
         //- get the input for DNN inference
         void getDNNinputs(const DynamicBuffer<GpuProblem>& problemBuffer, std::vector<label>& outputlength,
-        std::vector<std::vector<double>>& DNNinputs, std::vector<DynamicBuffer<label>>& cellIDBuffer, 
+        std::vector<std::vector<double>>& DNNinputs, std::vector<DynamicBuffer<label>>& cellIDBuffer,
         std::vector<std::vector<label>>& problemCounter);
 
         //- construct the output
         void updateSolutionBuffer(DynamicBuffer<GpuSolution>& solutionBuffer, const std::vector<std::vector<double>>& results,
-        const std::vector<DynamicBuffer<label>>& cellIDBuffer, std::vector<std::vector<label>>& problemCounter);
+            const std::vector<DynamicBuffer<label>>& cellIDBuffer, std::vector<std::vector<label>>& problemCounter);
 #endif
 
 #ifdef USE_LIBTORCH
@@ -262,9 +248,6 @@ public IOdictionary
 #endif
 
 #ifdef USE_PYTORCH
-        template<class DeltaTType>
-        scalar solve_DNN_GPU_oneCore(const DeltaTType& deltaT);
-
         template<class DeltaTType>
         scalar solve_DNN(const DeltaTType& deltaT);
 #endif
