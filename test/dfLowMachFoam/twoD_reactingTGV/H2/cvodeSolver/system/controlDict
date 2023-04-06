@@ -33,7 +33,7 @@ adjustTimeStep  off;
 
 writeControl    adjustableRunTime;
 
-writeInterval   5e-6;
+writeInterval   1e-4;
 
 purgeWrite      0;
 
