@@ -76,7 +76,6 @@ autoPtr<compressible::turbulenceModel> turbulence
 );
 
 const word turbName(mesh.objectRegistry::lookupObject<IOdictionary>("turbulenceProperties").lookup("simulationType"));
-Info << "Turbulence Model Name is confirmed as "<< turbName << endl;
 
 Info<< "Creating reaction model\n" << endl;
 autoPtr<CombustionModel<basicThermo>> combustion

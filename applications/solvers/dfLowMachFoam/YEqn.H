@@ -54,49 +54,36 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
         {
             tmp<volScalarField> DEff = chemistry->rhoD(i) + turbulence->mut()/Sct;
 
-            if (turbName == "laminar")
-            {
-                fvScalarMatrix YiEqn
+            fvScalarMatrix YiEqn
+            (
+                (turbName == "laminar")
+                ?
                 (
-                    fvm::ddt(rho, Yi)
-                +   mvConvection->fvmDiv(phi, Yi)
-                +   mvConvection->fvmDiv(phiUc, Yi)
-                ==
-                    (
-                        splitting
-                    ?   fvm::laplacian(DEff(), Yi)
-                    :  (fvm::laplacian(DEff(), Yi) + combustion->R(Yi))
-                    )
-                );
-
-                YiEqn.relax();
-
-                YiEqn.solve("Yi");
-
-                Yi.max(0.0);
-                Yt += Yi;
-            }
-            else
-            {
-                fvScalarMatrix YiEqn
+                fvm::ddt(rho, Yi)
+            +   mvConvection->fvmDiv(phi, Yi)
+            +   mvConvection->fvmDiv(phiUc, Yi)
+                )
+                :
                 (
-                    fvm::ddt(rho, Yi)
-                +   mvConvection->fvmDiv(phi, Yi)
-                ==
-                    (
-                        splitting
-                    ?   fvm::laplacian(DEff(), Yi)
-                    :  (fvm::laplacian(DEff(), Yi) + combustion->R(Yi))
-                    )
-                );
-                
-                YiEqn.relax();
+                fvm::ddt(rho, Yi)
+            +   mvConvection->fvmDiv(phi, Yi)
+                )
+            ==
+                (
+                    splitting
+                ?   fvm::laplacian(DEff(), Yi)
+                :  (fvm::laplacian(DEff(), Yi) + combustion->R(Yi))
+                )
+            );
 
-                YiEqn.solve("Yi");
+            YiEqn.relax();
 
-                Yi.max(0.0);
-                Yt += Yi;
-            }
+            YiEqn.solve("Yi");
+
+            Yi.max(0.0);
+            Yt += Yi;
+            
+            
 
         }
     }
