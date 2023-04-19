@@ -56,7 +56,7 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
 
             fvScalarMatrix YiEqn
             (
-                (turbName == "laminar")
+                turbName == "laminar"
                 ?
                 (
                 fvm::ddt(rho, Yi)
