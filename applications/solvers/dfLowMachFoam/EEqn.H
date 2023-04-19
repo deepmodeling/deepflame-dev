@@ -11,7 +11,7 @@
         -   dpdt
         -   fvm::laplacian(turbulence->alphaEff(), he)
         +   diffAlphaD
-        ==
+        ==  
             fvc::div(hDiffCorrFlux)
         )
         :
