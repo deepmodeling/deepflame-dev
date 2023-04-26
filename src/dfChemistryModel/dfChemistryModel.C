@@ -384,7 +384,7 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
         T_[celli] = CanteraGas_->temperature();
 
         // meanMolecularWeight() kg/kmol    RT() Joules/kmol
-        psi_[celli] = thermo_(p_[celli],T_[celli]);
+        psi_[celli] = thermo_.psi(p_[celli],T_[celli]);
 
         mu_[celli] = mixture_.CanteraTransport()->viscosity(); // Pa-s
 
