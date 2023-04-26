@@ -117,7 +117,7 @@ public:
             const scalar& T
         ) const
         {
-            return CanteraGas_->meanMolecularWeight()/CanteraGas_->RT();
+            return CanteraGas_->density()/p;
         }
 
         scalar mu
