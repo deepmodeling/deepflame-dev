@@ -117,6 +117,7 @@ public:
             const scalar& T
         ) const
         {
+            // for ideal gas, psi = CanteraGas_->density()/p = 1/RT
             return CanteraGas_->density()/p;
         }
 
