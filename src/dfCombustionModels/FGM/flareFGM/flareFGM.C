@@ -436,6 +436,9 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
     this->T_.max(TMin);  
     this->T_.min(TMax);  
 
+    dimensionedScalar R_uniGas("R_uniGas",dimensionSet(1,2,-2,-1,-1,0,0),8.314e3);
+    this->psi_ = this->Wt_/(R_uniGas*this->T_);
+  
     if(this->mesh().time().timeIndex() > 0)   
     {
         dimensionedScalar p_operateDim("p_operateDim", dimensionSet(1,-1,-2,0,0,0,0),this->incompPref_);  
@@ -449,9 +452,7 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
             this->rho_ = this->p_*this->psi_;
         }
     }
-
-    dimensionedScalar R_uniGas("R_uniGas",dimensionSet(1,2,-2,-1,-1,0,0),8.314e3);
-    this->psi_ = this->Wt_/(R_uniGas*this->T_);
+  
 }
 
 // ************************************************************************* //
