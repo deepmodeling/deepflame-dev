@@ -305,6 +305,37 @@ public:
 
         const CanteraMixture& mixture() {return mixture_;}
 
+        void setEnergyName(word name){
+            mixture_.setEnergyName(name);
+        }
+        void updateEnergy()
+        {
+            scalarField& heCells = thermo_.he().primitiveFieldRef();
+            const scalarField& pCells = p_;
+            const scalarField& TCells = T_;
+
+            forAll(heCells, celli)
+            {
+                heCells[celli] =
+                    mixture_.cellMixture(celli).HE(pCells[celli], TCells[celli]);
+            }
+
+            volScalarField::Boundary& heBf = thermo_.he().boundaryFieldRef();
+
+            forAll(heBf, patchi)
+            {
+                fvPatchScalarField& phe = heBf[patchi];
+                forAll(phe, facei)
+                {
+                    phe[facei] = mixture_.patchFaceMixture(patchi,facei).HE
+                    (
+                        p_.boundaryField()[patchi][facei],
+                        T_.boundaryField()[patchi][facei]
+                    );
+                }
+            }
+        }
+
     // profiling
 #if defined USE_LIBTORCH || defined USE_PYTORCH
     double time_allsolve() {return time_allsolve_;}

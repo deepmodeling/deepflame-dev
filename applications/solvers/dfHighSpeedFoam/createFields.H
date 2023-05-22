@@ -137,6 +137,8 @@ dfChemistryModel<basicThermo>* chemistry = combustion->chemistry();
 PtrList<volScalarField>& Y = chemistry->Y();
 const word inertSpecie(chemistry->lookup("inertSpecie"));
 const label inertIndex(chemistry->species()[inertSpecie]);
+chemistry->setEnergyName("ea");
+chemistry->updateEnergy();
 
 chemistry->correctThermo();
 Info<< "At initial time, min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;

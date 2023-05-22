@@ -73,7 +73,7 @@ class CanteraMixture
         const volScalarField& Tref_;
         const volScalarField& pref_;
         mutable scalarList yTemp_;
-
+        word energyName_;
 
         //- Construct as copy (not implemented)
         CanteraMixture(const CanteraMixture&);
@@ -154,7 +154,8 @@ public:
             const scalar& T
         ) const
         {
-            return CanteraGas_->enthalpy_mass(); // J/kg
+            if(energyName_=="ha") return CanteraGas_->enthalpy_mass(); // J/kg
+            if(energyName_=="ea") return CanteraGas_->intEnergy_mass(); // J/kg
         }
 
         scalar Hc() const; // J/kg
@@ -209,7 +210,7 @@ public:
             return CanteraGas_->meanMolecularWeight();
         }
 
-        static inline word heName() {return "ha";}
+        inline word heName() {return energyName_;}
 
         PtrList<volScalarField>& Y() {return Y_;}
         const PtrList<volScalarField>& Y() const {return Y_;}
@@ -323,6 +324,8 @@ public:
 
     //- Read dictionary
     void read(const dictionary&);
+
+    void setEnergyName(word name){energyName_=name;}
 };
 
 

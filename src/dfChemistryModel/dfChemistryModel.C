@@ -382,7 +382,16 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
             yTemp_[i] = Y_[i][celli];
         }
         CanteraGas_->setState_PY(p_[celli], yTemp_.begin());
-        CanteraGas_->setState_HP(thermo_.he()[celli], p_[celli]); // setState_HP needs (J/kg)
+        if(mixture_.heName()=="ha")
+        {
+            CanteraGas_->setState_HP(thermo_.he()[celli], p_[celli]); // setState_HP needs (J/kg)
+        }
+        else if(mixture_.heName()=="ea")
+        {
+            scalar ha = thermo_.he()[celli] + p_[celli]/rho_[celli];
+            CanteraGas_->setState_HP(ha, p_[celli]);
+        }
+
 
         T_[celli] = CanteraGas_->temperature();
 
@@ -496,7 +505,15 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
                     yTemp_[i] = Y_[i].boundaryField()[patchi][facei];
                 }
                 CanteraGas_->setState_PY(pp[facei], yTemp_.begin());
-                CanteraGas_->setState_HP(ph[facei], pp[facei]);
+                if(mixture_.heName()=="ha")
+                {
+                    CanteraGas_->setState_HP(ph[facei], pp[facei]);
+                }
+                else if(mixture_.heName()=="ea")
+                {
+                    scalar ha = ph[facei] + pp[facei]/prho[facei];
+                    CanteraGas_->setState_HP(ha, pp[facei]);
+                }
 
                 pT[facei] = CanteraGas_->temperature();
 
