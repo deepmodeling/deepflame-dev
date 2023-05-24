@@ -9,7 +9,7 @@ export CANTERA_DATA=$CANTERA_ROOT/share/cantera/data
 export LD_LIBRARY_PATH=$LIBTORCH_ROOT/lib:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=$CANTERA_ROOT/lib:$LD_LIBRARY_PATH
 
-export DF_APPBIN=pwd/bin
-export DF_LIBBIN=pwd/lib
+export DF_APPBIN=pwd/platforms/$WM_OPTIONS/bin
+export DF_LIBBIN=pwd/platforms/$WM_OPTIONS/lib
 export PATH=$DF_APPBIN:$PATH
 export LD_LIBRARY_PATH=$DF_LIBBIN:$LD_LIBRARY_PATH
