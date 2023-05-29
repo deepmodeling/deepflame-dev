@@ -1,0 +1,3 @@
+[submodule "libROUNDSchemes"]
+	path = libROUNDSchemes
+	url = git@github.com:advanCFD/libROUNDSchemes.git
