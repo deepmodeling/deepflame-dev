@@ -34,7 +34,7 @@ jobs:
         conda install -c cantera libcantera-devel
         conda install pytorch pybind11
         conda install --channel https://conda.anaconda.org/zhaofeng-shu33 easydict
-        git clone https://github.com/deepmodeling/deepflame-dev.git
+        git clone --recursive https://github.com/deepmodeling/deepflame-dev.git
         cd deepflame-dev
 
  
