@@ -34,8 +34,6 @@ jobs:
         conda install -c cantera libcantera-devel
         conda install pytorch pybind11
         conda install --channel https://conda.anaconda.org/zhaofeng-shu33 easydict
-        git clone --recursive https://github.com/deepmodeling/deepflame-dev.git
-        cd deepflame-dev
 
  
      - name: build and validation with CPU inference 
@@ -44,7 +42,9 @@ jobs:
         OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1 
         OMPI_MCA_btl_vader_single_copy_mechanism: none
        run: 
-        /bin/bash -c " echo $PWD && ls $PWD/sumodules/ROUND/src/
+        /bin/bash -c "git clone --recursive https://github.com/deepmodeling/deepflame-dev.git
+        && cd deepflame-dev
+        && echo $PWD && ls $PWD/submodules/ROUND/src/
         && wget https://github.com/JX278/DeepFlame-flareFGM-table/raw/main/flareFGM_Table_Download.zip
         && unzip flareFGM_Table_Download.zip
         && ls $PWD
