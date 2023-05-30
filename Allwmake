@@ -17,7 +17,7 @@ src/lagrangian/Allwmake $targetType $*
 wmake src/dfCombustionModels
 wmake src/dynamicMesh
 wmake src/dynamicFvMesh
-wmake submodules/ROUND/src
+wmake ./submodules/ROUND/src/
 
 wmake applications/solvers/df0DFoam
 wmake applications/solvers/dfLowMachFoam
