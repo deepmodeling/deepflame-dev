@@ -47,7 +47,7 @@ Foam::autoPtr<Foam::hexRef> Foam::hexRef::New
 
     // Infer the type of hexRef we need to use from the number of dimensions in
     // the polymesh
-    // nSolutionD == 3 && nGeometricD == 3: 3D mesh => hexRef8
+    // nSolutionD == 3 && nGeometricD == 3: 3D mesh => hexRef8of
     // nSolutionD == 3 && nGeometricD == 2: axisymmetric mesh => hexRef4Axi
     // nSolutionD == 2 && nGeometricD == 2: 2D mesh => hexRef4
     // nSolutionD == 1 && nGeometricD == 1: 1D mesh => hexRef2
@@ -57,7 +57,7 @@ Foam::autoPtr<Foam::hexRef> Foam::hexRef::New
 
     if (nSoluD == 3 && nGeomD == 3)
     {
-        hexRefTypeName = "hexRef8";
+        hexRefTypeName = "hexRef8of";
     }
     else if (nSoluD == 3 && nGeomD == 2)
     {
@@ -103,7 +103,7 @@ Foam::autoPtr<Foam::hexRef> Foam::hexRef::New
 
     // Infer the type of hexRef we need to use from the number of dimensions in
     // the polymesh
-    // nSolutionD == 3 && nGeometricD == 3: 3D mesh => hexRef8
+    // nSolutionD == 3 && nGeometricD == 3: 3D mesh => hexRef8of
     // nSolutionD == 3 && nGeometricD == 2: axisymmetric mesh => hexRef4Axi
     // nSolutionD == 2 && nGeometricD == 2: 2D mesh => hexRef4
     // nSolutionD == 1 && nGeometricD == 1: 1D mesh => hexRef2
@@ -113,7 +113,7 @@ Foam::autoPtr<Foam::hexRef> Foam::hexRef::New
 
     if (nSoluD == 3 && nGeomD == 3)
     {
-        hexRefTypeName = "hexRef8";
+        hexRefTypeName = "hexRef8of";
     }
     else if (nSoluD == 3 && nGeomD == 2)
     {
@@ -158,7 +158,7 @@ Foam::autoPtr<Foam::hexRef> Foam::hexRef::New
 
     // Infer the type of hexRef we need to use from the number of dimensions in
     // the polymesh
-    // nSolutionD == 3 && nGeometricD == 3: 3D mesh => hexRef8
+    // nSolutionD == 3 && nGeometricD == 3: 3D mesh => hexRef8of
     // nSolutionD == 3 && nGeometricD == 2: axisymmetric mesh => hexRef4Axi
     // nSolutionD == 2 && nGeometricD == 2: 2D mesh => hexRef4
     // nSolutionD == 1 && nGeometricD == 1: 1D mesh => hexRef2
@@ -168,7 +168,7 @@ Foam::autoPtr<Foam::hexRef> Foam::hexRef::New
 
     if (nSoluD == 3 && nGeomD == 3)
     {
-        hexRefTypeName = "hexRef8";
+        hexRefTypeName = "hexRef8of";
     }
     else if (nSoluD == 3 && nGeomD == 2)
     {

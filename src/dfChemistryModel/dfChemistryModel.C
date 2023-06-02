@@ -51,6 +51,7 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
     thermo_(thermo),
     mixture_(dynamic_cast<CanteraMixture&>(thermo)),
     CanteraGas_(mixture_.CanteraGas()),
+    CanteraKinetics_(mixture_.CanteraKinetics()),
     mesh_(thermo.p().mesh()),
     chemistry_(lookup("chemistry")),
     relTol_(this->subDict("odeCoeffs").lookupOrDefault("relTol",1e-9)),
@@ -58,7 +59,7 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
     Y_(mixture_.Y()),
     rhoD_(mixture_.nSpecies()),
     hai_(mixture_.nSpecies()),
-    hc_(mixture_.nSpecies()),
+    hc_(mixture_.nSpecies()), 
     yTemp_(mixture_.nSpecies()),
     dTemp_(mixture_.nSpecies()),
     hrtTemp_(mixture_.nSpecies()),
@@ -719,7 +720,69 @@ Foam::dfChemistryModel<ThermoType>::updateReactionRates
     return deltaTMin;
 }
 
+template<class ThermoType>
+Foam::tmp<Foam::DimensionedField<Foam::scalar, Foam::volMesh>>
+Foam::dfChemistryModel<ThermoType>::calculateRR
+(
+    const label reactionI,
+    const label speciei
+) const
+{
+    tmp<volScalarField::Internal> tRR
+    (
+        volScalarField::Internal::New
+        (
+           "RR",
+           mesh_,
+           dimensionedScalar(dimMass/dimVolume/dimTime, 0)
+        )
+    );
+  
+    volScalarField::Internal& RR = tRR.ref();
+	
+    doublereal netRate[mixture_.nReactions()];
+    doublereal X[mixture_.nSpecies()];
 
+    forAll(rho_, celli)
+    {
+        const scalar rhoi = rho_[celli];
+        const scalar Ti = T_[celli];
+        const scalar pi = p_[celli];
+
+        for (label i=0; i<mixture_.nSpecies(); i++)
+        {
+            const scalar Yi = Y_[i][celli];
+
+            X[i] = rhoi*Yi/CanteraGas_->molecularWeight(i);
+        }
+
+	CanteraGas_->setState_TPX(Ti, pi, X);
+
+	CanteraKinetics_->getNetRatesOfProgress(netRate);
+
+	auto R = CanteraKinetics_->reaction(reactionI);
+
+	for (const auto& sp : R->reactants)
+        {
+		if (speciei == static_cast<int>(CanteraGas_->speciesIndex(sp.first)))
+		{
+			RR[celli] -= sp.second*netRate[reactionI];
+		}
+			
+	}			
+	for (const auto& sp : R->products)
+	{
+		if (speciei == static_cast<int>(CanteraGas_->speciesIndex(sp.first)))
+		{
+			RR[celli] += sp.second*netRate[reactionI];
+		}
+	}					
+		
+        RR[celli] *= CanteraGas_->molecularWeight(speciei);
+    }
+
+    return tRR;
+}
 
 template <class ThermoType>
 Foam::LoadBalancer

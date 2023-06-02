@@ -22,18 +22,18 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::hexRef8
+    Foam::hexRef8of
 
 Description
     Refinement of (split) hexes using polyTopoChange.
 
 SourceFiles
-    hexRef8.C
+    hexRef8of.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef hexRef8_H
-#define hexRef8_H
+#ifndef hexRef8of_H
+#define hexRef8of_H
 
 #include "hexRef.H"
 
@@ -64,10 +64,10 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class hexRef8 Declaration
+                           Class hexRef8of Declaration
 \*---------------------------------------------------------------------------*/
 
-class hexRef8 : public hexRef
+class hexRef8of : public hexRef
 {
 
 protected:
@@ -116,16 +116,16 @@ protected:
         ) const;
 
         //- Disallow default bitwise copy construct
-        hexRef8(const hexRef8&);
+        hexRef8of(const hexRef8of&);
 
         //- Disallow default bitwise assignment
-        void operator=(const hexRef8&);
+        void operator=(const hexRef8of&);
 
 
 public:
 
     //- Runtime type information
-    TypeName("hexRef8");
+    TypeName("hexRef8of");
 
 
     // Constructors
@@ -133,11 +133,11 @@ public:
         //- Construct from mesh, read_if_present refinement data
         //  (from write below). If readHistory is true does read_if_present
         //  of refinement history. If false clears all history
-        hexRef8(const polyMesh& mesh, const bool readHistory = true);
+        hexRef8of(const polyMesh& mesh, const bool readHistory = true);
 
         //- Construct from mesh and un/refinement data and optional size of
         //  starting cells
-        hexRef8
+        hexRef8of
         (
             const polyMesh& mesh,
             const labelList& cellLevel,
@@ -148,7 +148,7 @@ public:
 
         //- Construct from mesh and refinement data and optional size of
         //  starting cells
-        hexRef8
+        hexRef8of
         (
             const polyMesh& mesh,
             const labelList& cellLevel,
