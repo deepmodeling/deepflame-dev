@@ -23,7 +23,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "hexRef8.H"
+#include "hexRef8of.H"
 
 #include "addToRunTimeSelectionTable.H"
 
@@ -51,10 +51,10 @@ License
 
 namespace Foam
 {
-    defineTypeNameAndDebug(hexRef8, 0);
-    addToRunTimeSelectionTable(hexRef, hexRef8, mesh);
-    addToRunTimeSelectionTable(hexRef, hexRef8, levelsHist);
-    addToRunTimeSelectionTable(hexRef, hexRef8, levels);
+    defineTypeNameAndDebug(hexRef8of, 0);
+    addToRunTimeSelectionTable(hexRef, hexRef8of, mesh);
+    addToRunTimeSelectionTable(hexRef, hexRef8of, levelsHist);
+    addToRunTimeSelectionTable(hexRef, hexRef8of, levels);
 }
 
 
@@ -62,7 +62,7 @@ namespace Foam
 
 // Check whether pointi is an anchor on celli.
 // If it is not check whether any other point on the face is an anchor cell.
-Foam::label Foam::hexRef8::getAnchorCell
+Foam::label Foam::hexRef8of::getAnchorCell
 (
     const labelListList& cellAnchorPoints,
     const labelListList& cellAddedCells,
@@ -125,7 +125,7 @@ Foam::label Foam::hexRef8::getAnchorCell
 // we add the face. Note that this routine can get called anywhere from
 // two times (two unrefined faces) to four times (two refined faces) so
 // the first call that adds the information creates the face.
-Foam::label Foam::hexRef8::storeMidPointInfo
+Foam::label Foam::hexRef8of::storeMidPointInfo
 (
     const labelListList& cellAnchorPoints,
     const labelListList& cellAddedCells,
@@ -356,7 +356,7 @@ Foam::label Foam::hexRef8::storeMidPointInfo
 
 
 // Creates all the 12 internal faces for celli.
-void Foam::hexRef8::createInternalFaces
+void Foam::hexRef8of::createInternalFaces
 (
     const labelListList& cellAnchorPoints,
     const labelListList& cellAddedCells,
@@ -643,14 +643,14 @@ void Foam::hexRef8::createInternalFaces
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 // Construct from mesh, read refinement data
-Foam::hexRef8::hexRef8(const polyMesh& mesh, const bool readHistory)
+Foam::hexRef8of::hexRef8of(const polyMesh& mesh, const bool readHistory)
 :
     hexRef(mesh, readHistory)
 {}
 
 
 // Construct from components
-Foam::hexRef8::hexRef8
+Foam::hexRef8of::hexRef8of
 (
     const polyMesh& mesh,
     const labelList& cellLevel,
@@ -664,7 +664,7 @@ Foam::hexRef8::hexRef8
 
 
 // Construct from components
-Foam::hexRef8::hexRef8
+Foam::hexRef8of::hexRef8of
 (
     const polyMesh& mesh,
     const labelList& cellLevel,
@@ -679,7 +679,7 @@ Foam::hexRef8::hexRef8
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 // Top level driver to insert topo changes to do all refinement.
-Foam::labelListList Foam::hexRef8::setRefinement
+Foam::labelListList Foam::hexRef8of::setRefinement
 (
     const labelList& cellLabels,
     polyTopoChange& meshMod
@@ -687,7 +687,7 @@ Foam::labelListList Foam::hexRef8::setRefinement
 {
     if (debug)
     {
-        Pout<< "hexRef8::setRefinement :"
+        Pout<< "hexRef8of::setRefinement :"
             << " Checking initial mesh just to make sure" << endl;
 
         checkMesh();
@@ -716,7 +716,7 @@ Foam::labelListList Foam::hexRef8::setRefinement
 
     if (debug)
     {
-        Pout<< "hexRef8::setRefinement :"
+        Pout<< "hexRef8of::setRefinement :"
             << " Allocating " << cellLabels.size() << " cell midpoints."
             << endl;
     }
@@ -760,7 +760,7 @@ Foam::labelListList Foam::hexRef8::setRefinement
             }
         }
 
-        Pout<< "hexRef8::setRefinement : Dumping " << splitCells.size()
+        Pout<< "hexRef8of::setRefinement : Dumping " << splitCells.size()
             << " cells to split to cellSet " << splitCells.objectPath()
             << endl;
 
@@ -774,7 +774,7 @@ Foam::labelListList Foam::hexRef8::setRefinement
 
     if (debug)
     {
-        Pout<< "hexRef8::setRefinement :"
+        Pout<< "hexRef8of::setRefinement :"
             << " Allocating edge midpoints."
             << endl;
     }
@@ -895,7 +895,7 @@ Foam::labelListList Foam::hexRef8::setRefinement
             }
         }
 
-        Pout<< "hexRef8::setRefinement :"
+        Pout<< "hexRef8of::setRefinement :"
             << " Dumping edge centres to split to file " << str.name() << endl;
     }
 
@@ -906,7 +906,7 @@ Foam::labelListList Foam::hexRef8::setRefinement
 
     if (debug)
     {
-        Pout<< "hexRef8::setRefinement :"
+        Pout<< "hexRef8of::setRefinement :"
             << " Allocating face midpoints."
             << endl;
     }
@@ -1078,7 +1078,7 @@ Foam::labelListList Foam::hexRef8::setRefinement
             }
         }
 
-        Pout<< "hexRef8::setRefinement : Dumping " << splitFaces.size()
+        Pout<< "hexRef8of::setRefinement : Dumping " << splitFaces.size()
             << " faces to split to faceSet " << splitFaces.objectPath() << endl;
 
         splitFaces.write();
@@ -1100,7 +1100,7 @@ Foam::labelListList Foam::hexRef8::setRefinement
 
     if (debug)
     {
-        Pout<< "hexRef8::setRefinement :"
+        Pout<< "hexRef8of::setRefinement :"
             << " Finding cell anchorPoints (8 per cell)"
             << endl;
     }
@@ -1183,7 +1183,7 @@ Foam::labelListList Foam::hexRef8::setRefinement
 
     if (debug)
     {
-        Pout<< "hexRef8::setRefinement :"
+        Pout<< "hexRef8of::setRefinement :"
             << " Adding cells (1 per anchorPoint)"
             << endl;
     }
@@ -1236,7 +1236,7 @@ Foam::labelListList Foam::hexRef8::setRefinement
 
     if (debug)
     {
-        Pout<< "hexRef8::setRefinement :"
+        Pout<< "hexRef8of::setRefinement :"
             << " Marking faces to be handled"
             << endl;
     }
@@ -1286,7 +1286,7 @@ Foam::labelListList Foam::hexRef8::setRefinement
 
     if (debug)
     {
-        Pout<< "hexRef8::setRefinement : Splitting faces" << endl;
+        Pout<< "hexRef8of::setRefinement : Splitting faces" << endl;
     }
 
     forAll(faceMidPoint, facei)
@@ -1422,7 +1422,7 @@ Foam::labelListList Foam::hexRef8::setRefinement
 
     if (debug)
     {
-        Pout<< "hexRef8::setRefinement :"
+        Pout<< "hexRef8of::setRefinement :"
             << " Adding edge splits to unsplit faces"
             << endl;
     }
@@ -1535,7 +1535,7 @@ Foam::labelListList Foam::hexRef8::setRefinement
 
     if (debug)
     {
-        Pout<< "hexRef8::setRefinement :"
+        Pout<< "hexRef8of::setRefinement :"
             << " Changing owner/neighbour for otherwise unaffected faces"
             << endl;
     }
@@ -1580,7 +1580,7 @@ Foam::labelListList Foam::hexRef8::setRefinement
 
     if (debug)
     {
-        Pout<< "hexRef8::setRefinement :"
+        Pout<< "hexRef8of::setRefinement :"
             << " Create new internal faces for split cells"
             << endl;
     }
@@ -1664,7 +1664,7 @@ Foam::labelListList Foam::hexRef8::setRefinement
     {
         if (debug)
         {
-            Pout<< "hexRef8::setRefinement :"
+            Pout<< "hexRef8of::setRefinement :"
                 << " Updating refinement history to " << cellLevel_.size()
                 << " cells" << endl;
         }
@@ -1699,7 +1699,7 @@ Foam::labelListList Foam::hexRef8::setRefinement
 }
 
 
-Foam::labelList Foam::hexRef8::consistentUnrefinement
+Foam::labelList Foam::hexRef8of::consistentUnrefinement
 (
     const labelList& elemsToUnrefine,
     const bool maxSet
@@ -1707,7 +1707,7 @@ Foam::labelList Foam::hexRef8::consistentUnrefinement
 {
     if (debug)
     {
-        Pout<< "hexRef8::consistentUnrefinement :"
+        Pout<< "hexRef8of::consistentUnrefinement :"
             << " Determining 2:1 consistent unrefinement" << endl;
     }
 
@@ -1718,7 +1718,7 @@ Foam::labelList Foam::hexRef8::consistentUnrefinement
             << abort(FatalError);
     }
 
-    // For hexRef8, unrefinement is based on points
+    // For hexRef8of, unrefinement is based on points
     const labelList& pointsToUnrefine(elemsToUnrefine);
 
     // Loop, modifying pointsToUnrefine, until no more changes to due to 2:1
@@ -1875,7 +1875,7 @@ Foam::labelList Foam::hexRef8::consistentUnrefinement
 
         if (debug)
         {
-            Pout<< "hexRef8::consistentUnrefinement :"
+            Pout<< "hexRef8of::consistentUnrefinement :"
                 << " Changed " << nChanged
                 << " refinement levels due to 2:1 conflicts."
                 << endl;
@@ -1935,7 +1935,7 @@ Foam::labelList Foam::hexRef8::consistentUnrefinement
     return newPointsToUnrefine;
 }
 
-void Foam::hexRef8::setUnrefinement
+void Foam::hexRef8of::setUnrefinement
 (
     const labelList& splitElemLabels,
     polyTopoChange& meshMod
@@ -1948,12 +1948,12 @@ void Foam::hexRef8::setUnrefinement
             << abort(FatalError);
     }
 
-    // For hexRef8, unrefinement is based on points
+    // For hexRef8of, unrefinement is based on points
     const labelList& splitPointLabels(splitElemLabels);
 
     if (debug)
     {
-        Pout<< "hexRef8::setUnrefinement :"
+        Pout<< "hexRef8of::setUnrefinement :"
             << " Checking initial mesh just to make sure" << endl;
 
         checkMesh();
@@ -1987,7 +1987,7 @@ void Foam::hexRef8::setUnrefinement
         }
         cSet.write();
 
-        Pout<< "hexRef8::setRefinement : Dumping " << pSet.size()
+        Pout<< "hexRef8of::setRefinement : Dumping " << pSet.size()
             << " points and "
             << cSet.size() << " cells for unrefinement to" << nl
             << "    pointSet " << pSet.objectPath() << nl
@@ -2126,7 +2126,7 @@ void Foam::hexRef8::setUnrefinement
     // history_.updateMesh will take care of truncating.
 }
 
-void Foam::hexRef8::calcFaceToSplitPoint
+void Foam::hexRef8of::calcFaceToSplitPoint
 (
     const labelList& splitElems,
     Map<label>& faceToSplitPoint
@@ -2135,7 +2135,7 @@ void Foam::hexRef8::calcFaceToSplitPoint
     // Save information on faces that will be combined
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    // For hexRef8, the split elems are points
+    // For hexRef8of, the split elems are points
     const labelList& splitPoints(splitElems);
 
     faceToSplitPoint.resize(3*splitElems.size());
@@ -2163,7 +2163,7 @@ void Foam::hexRef8::calcFaceToSplitPoint
 }
 
 
-Foam::labelList Foam::hexRef8::getSplitElems() const
+Foam::labelList Foam::hexRef8of::getSplitElems() const
 {
     if (debug)
     {
@@ -2172,7 +2172,7 @@ Foam::labelList Foam::hexRef8::getSplitElems() const
 
     if (debug)
     {
-        Pout<< "hexRef8::getSplitPoints :"
+        Pout<< "hexRef8of::getSplitPoints :"
             << " Calculating unrefineable points" << endl;
     }
 
@@ -2304,7 +2304,7 @@ Foam::labelList Foam::hexRef8::getSplitElems() const
 }
 
 
-Foam::labelList Foam::hexRef8::selectUnrefineElems
+Foam::labelList Foam::hexRef8of::selectUnrefineElems
 (
     const scalar unrefineLevel,
     const PackedBoolList& markedCell,

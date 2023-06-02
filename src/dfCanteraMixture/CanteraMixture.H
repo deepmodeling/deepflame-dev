@@ -39,6 +39,7 @@ SourceFiles
 #include "cantera/zerodim.h"
 #include "cantera/transport.h"
 #include "cantera/thermo/IdealGasPhase.h"
+#include "cantera/kinetics.h"
 #include "IOdictionary.H"
 #include "fvMesh.H"
 #include "word.H"
@@ -66,6 +67,7 @@ class CanteraMixture
         const string CanteraMechanismFile_;
         std::shared_ptr<Cantera::Solution> CanteraSolution_;
         std::shared_ptr<Cantera::ThermoPhase> CanteraGas_;
+        std::shared_ptr<Cantera::Kinetics> CanteraKinetics_;
         word transportModelName_;
         Cantera::Transport* CanteraTransport_;
         hashedWordList species_;
@@ -223,10 +225,13 @@ public:
 
         const hashedWordList& species() const {return species_;}
         int nSpecies() {return int(CanteraGas_->nSpecies());}
+        int nReactions() {return int(CanteraKinetics_->nReactions());} 
 
         std::shared_ptr<Cantera::ThermoPhase> CanteraGas() {return CanteraGas_;}
 
         std::shared_ptr<Cantera::Solution> CanteraSolution() {return CanteraSolution_;}
+  
+        std::shared_ptr<Cantera::Kinetics> CanteraKinetics() {return CanteraKinetics_;}
 
         Cantera::Transport* CanteraTransport() {return CanteraTransport_;}
 

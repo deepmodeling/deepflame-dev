@@ -63,6 +63,7 @@ Foam::CanteraMixture::CanteraMixture
 
     CanteraSolution_=Cantera::newSolution(CanteraMechanismFile_, "");
     CanteraGas_=CanteraSolution_->thermo();
+    CanteraKinetics_=CanteraSolution_->kinetics();
     CanteraTransport_=newTransportMgr(transportModelName_, CanteraGas_.get());
 
     Y_.resize(nSpecies());

@@ -5,7 +5,7 @@ $(hexRef)/hexRefData.C
 $(hexRef)/dfRefinementHistory.C
 $(hexRef)/hexRefNew.C
 
-$(hexRef)/hexRef8/hexRef8.C
+$(hexRef)/hexRef8of/hexRef8of.C
 $(hexRef)/hexRef4/hexRef4.C
 $(hexRef)/hexRef4Axi/hexRef4Axi.C
 $(hexRef)/hexRef2/hexRef2.C
