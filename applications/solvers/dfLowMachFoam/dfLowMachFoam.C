@@ -196,9 +196,7 @@ int main(int argc, char *argv[])
         rho = thermo.rho();
 
         runTime.write();
-
-        Info << "output time index " << runTime.timeIndex() << endl;
-
+      
         Info<< "========Time Spent in diffenet parts========"<< endl;
         Info<< "Chemical sources           = " << time_monitor_chem << " s" << endl;
         Info<< "Species Equations          = " << time_monitor_Y << " s" << endl;
