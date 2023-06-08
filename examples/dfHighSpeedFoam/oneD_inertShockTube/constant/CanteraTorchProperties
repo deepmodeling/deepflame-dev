@@ -10,58 +10,41 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    location    "system";
-    object      fvSolution;
+    location    "constant";
+    object      chemistryProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-solvers
+chemistry            off;
+
+CanteraMechanismFile "H2_AR.yaml";
+
+transportModel       "Mix";
+
+odeCoeffs
 {
-	U
-	{
-		//solver		smoothSolver;
-		//smoother	GaussSeidel;
-		//nSweeps		2;
-		//tolerance	1e-17;
-		//relTol		0;
-
-		solver			PBiCGStab;
-		preconditioner	DIC;
-		tolerance		1e-11;
-		relTol			0;
-	}
-	
-	h
-	{
-		$U;
-		tolerance	1e-11;
-		relTol		0;
-	}
-
-	ea
-	{
-		$U;
-		tolerance	1e-11;
-		relTol		0;
-	}
-
-	"rho.*"
-	{
-		solver		diagonal;
-	}
-
-	"(O2|N2|Yi)"
-	{
-		solver          PBiCGStab;
-        preconditioner	DILU;
-        tolerance       1e-11;
-        relTol          0;
-	}
-	
+    "relTol"         1e-6;
+    "absTol"         1e-10;
 }
 
-CENTRAL
+inertSpecie          "AR";
+
+splittingStrategy    off;
+
+TorchSettings
 {
+    torch            off;
+    GPU              off;
+    log              off;
+    torchModel       ""; 
+    coresPerNode     4;
+}
+
+loadbalancing
+{
+    active           true;
+    log              false;
+    algorithm        allAverage;//headTail;
 }
 
 // ************************************************************************* //

@@ -11,57 +11,29 @@ FoamFile
     format      ascii;
     class       dictionary;
     location    "system";
-    object      fvSolution;
+    object      sample;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-solvers
-{
-	U
-	{
-		//solver		smoothSolver;
-		//smoother	GaussSeidel;
-		//nSweeps		2;
-		//tolerance	1e-17;
-		//relTol		0;
+type sets;
+libs            ("libsampling.so");
 
-		solver			PBiCGStab;
-		preconditioner	DIC;
-		tolerance		1e-11;
-		relTol			0;
-	}
-	
-	h
-	{
-		$U;
-		tolerance	1e-11;
-		relTol		0;
-	}
+interpolationScheme cellPoint;
 
-	ea
-	{
-		$U;
-		tolerance	1e-11;
-		relTol		0;
-	}
+setFormat       raw;
 
-	"rho.*"
-	{
-		solver		diagonal;
-	}
+sets
+(
+    data
+    {
+        type    lineFace;
+        axis    x;
+        start   (-4.995 0 0);
+        end     (4.995 0 0);
+        nPoints 1000;
+    }
+);
 
-	"(O2|N2|Yi)"
-	{
-		solver          PBiCGStab;
-        preconditioner	DILU;
-        tolerance       1e-11;
-        relTol          0;
-	}
-	
-}
-
-CENTRAL
-{
-}
+fields          (T mag(U) p);
 
 // ************************************************************************* //

@@ -37,32 +37,63 @@ tmp<fv::convectionScheme<scalar>> mvConvection
     {
         volScalarField& Yi = Y[i];
 
+        if (!inviscid)
+        {
+            hDiffCorrFlux += chemistry->hai(i)*(chemistry->rhoD(i)*fvc::grad(Yi) - Yi*sumYDiffError);
+            diffAlphaD += fvc::laplacian(thermo.alpha()*chemistry->hai(i), Yi);
+        }
+
         if (i != inertIndex)
         {          
-            fvScalarMatrix YiEqn
+            // original convection term
+            // fvScalarMatrix YiEqn
+            // (
+            //      fvm::ddt(rho, Yi)
+            //    + mvConvection->fvmDiv(phi, Yi)
+            //   ==
+            //     combustion->R(Yi)
+            // );
+
+            solve
             (
-                 fvm::ddt(rho, Yi)
-               + mvConvection->fvmDiv(phi, Yi)
-              ==
-                combustion->R(Yi)
+                  fvm::ddt(rhoYi[i])
+                + fvc::div(phiYi[i])
+               == 
+                  chemistry->RR(i)
             );
+
+            Yi=rhoYi[i]/rho;
+            Yi.max(0.0);
 
             if (!inviscid)
             {
                 const surfaceScalarField phiUc = linearInterpolate(sumYDiffError) & mesh.Sf();
-
-                hDiffCorrFlux += chemistry->hai(i)*(chemistry->rhoD(i)*fvc::grad(Yi) - Yi*sumYDiffError);
-                diffAlphaD += fvc::laplacian(thermo.alpha()*chemistry->hai(i), Yi);
                 tmp<volScalarField> DEff = chemistry->rhoD(i) + turbulence->mut()/Sct;
 
-                YiEqn -= fvm::laplacian(DEff(), Yi) - mvConvection->fvmDiv(phiUc, Yi);
+                // original term
+                // YiEqn -= fvm::laplacian(DEff(), Yi) - mvConvection->fvmDiv(phiUc, Yi);
+
+                fvScalarMatrix YiEqn
+                (
+                    fvm::ddt(rho, Yi) - fvc::ddt(rho, Yi)
+                  - fvm::laplacian(DEff(), Yi)
+                  + mvConvection->fvmDiv(phiUc, Yi)
+                );
+
+                YiEqn.relax();
+
+                YiEqn.solve("Yi");
+
+                Yi.max(0.0);
+
             }
 
-            YiEqn.relax();
+            // original term
+            // YiEqn.relax();
+            // YiEqn.solve("Yi");
+            // Yi.max(0.0);
 
-            YiEqn.solve("Yi");
-
-            Yi.max(0.0);
+            rhoYi[i] = rho*Yi;
             Yt += Yi;
         }
     }

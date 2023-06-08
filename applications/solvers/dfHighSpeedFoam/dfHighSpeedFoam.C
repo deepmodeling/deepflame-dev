@@ -132,6 +132,48 @@ int main(int argc, char *argv[])
         surfaceScalarField rho_pos(interpolate(rho, pos));
         surfaceScalarField rho_neg(interpolate(rho, neg));
 
+        PtrList<surfaceScalarField> rhoYi_pos(nspecies);
+        PtrList<surfaceScalarField> rhoYi_neg(nspecies);
+        forAll(rhoYi_pos,i)
+        {
+            rhoYi_pos.set
+            (
+                i,
+                new surfaceScalarField
+                (
+                    IOobject
+                    (
+                        "rhoYi_pos" + Y[i].name(),
+                        runTime.timeName(),
+                        mesh,
+                        IOobject::NO_READ,
+                        IOobject::NO_WRITE
+                    ),
+                    interpolate(rhoYi[i], pos,"Yi")
+                )
+            );
+        }
+
+        forAll(rhoYi_neg,i)
+        {
+            rhoYi_neg.set
+            (
+                i,
+                new surfaceScalarField
+                (
+                    IOobject
+                    (
+                        "rhoYi_neg" + Y[i].name(),
+                        runTime.timeName(),
+                        mesh,
+                        IOobject::NO_READ,
+                        IOobject::NO_WRITE
+                    ),
+                    interpolate(rhoYi[i], neg,"Yi")
+                )
+            );
+        }
+
         surfaceVectorField rhoU_pos(interpolate(rhoU, pos, U.name()));
         surfaceVectorField rhoU_neg(interpolate(rhoU, neg, U.name()));
 
@@ -139,8 +181,8 @@ int main(int argc, char *argv[])
         surfaceScalarField rPsi_pos(interpolate(rPsi, pos, T.name()));
         surfaceScalarField rPsi_neg(interpolate(rPsi, neg, T.name()));
 
-        surfaceScalarField e_pos(interpolate(e, pos, T.name()));
-        surfaceScalarField e_neg(interpolate(e, neg, T.name()));
+        surfaceScalarField ea_pos(interpolate(ea, pos, T.name()));
+        surfaceScalarField ea_neg(interpolate(ea, neg, T.name()));
 
         surfaceVectorField U_pos("U_pos", rhoU_pos/rho_pos);
         surfaceVectorField U_neg("U_neg", rhoU_neg/rho_neg);
@@ -217,6 +259,27 @@ int main(int argc, char *argv[])
 
         phi = aphiv_pos*rho_pos + aphiv_neg*rho_neg;
 
+        PtrList<surfaceScalarField> phiYi(nspecies);
+        forAll(phiYi,i)
+        {
+            phiYi.set
+            (
+                i,
+                new surfaceScalarField
+                (
+                    IOobject
+                    (
+                        "phiYi_" + Y[i].name(),
+                        runTime.timeName(),
+                        mesh,
+                        IOobject::NO_READ,
+                        IOobject::NO_WRITE
+                    ),
+                    aphiv_pos*rhoYi_pos[i] + aphiv_neg*rhoYi_neg[i]
+                )
+            );
+        }
+
         surfaceVectorField phiUp
         (
             (aphiv_pos*rhoU_pos + aphiv_neg*rhoU_neg)
@@ -226,8 +289,8 @@ int main(int argc, char *argv[])
         surfaceScalarField phiEp
         (
             "phiEp",
-            aphiv_pos*(rho_pos*(e_pos + 0.5*magSqr(U_pos)) + p_pos)
-          + aphiv_neg*(rho_neg*(e_neg + 0.5*magSqr(U_neg)) + p_neg)
+            aphiv_pos*(rho_pos*(ea_pos + 0.5*magSqr(U_pos)) + p_pos)
+          + aphiv_neg*(rho_neg*(ea_neg + 0.5*magSqr(U_neg)) + p_neg)
           + aSf*p_pos - aSf*p_neg
         );
 

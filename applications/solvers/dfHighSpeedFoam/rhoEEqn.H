@@ -15,31 +15,31 @@ solve
     - fvc::div(sigmaDotU)
 );
 
-e = rhoE/rho - 0.5*magSqr(U);
-e.correctBoundaryConditions();
+ea = rhoE/rho - 0.5*magSqr(U);
+ea.correctBoundaryConditions();
 
-ha = e + p/rho;
+ha = ea + p/rho;
 chemistry->correctThermo(); // before this, we must update ha = e + p/rho
 
-rhoE.boundaryFieldRef() == rho.boundaryField()*(e.boundaryField() + 0.5*magSqr(U.boundaryField()));
+rhoE.boundaryFieldRef() == rho.boundaryField()*(ea.boundaryField() + 0.5*magSqr(U.boundaryField()));
 
 if (!inviscid)
 {
     fvScalarMatrix eEqn
     (
-           fvm::ddt(rho, e) - fvc::ddt(rho, e)
+           fvm::ddt(rho, ea) - fvc::ddt(rho, ea)
         // alpha in deepflame is considered to calculate h by default (kappa/Cp), so multiply gamma to correct alpha
-         - fvm::laplacian(turbulence->alphaEff()*thermo.gamma(), e)
+         - fvm::laplacian(turbulence->alphaEff()*thermo.gamma(), ea)
          + diffAlphaD
       ==
            fvc::div(hDiffCorrFlux)
     );
 
-    eEqn.solve("e");
+    eEqn.solve("ea");
 
-    ha = e + p/rho;
+    ha = ea + p/rho;
     chemistry->correctThermo();
-    rhoE = rho*(e + 0.5*magSqr(U));
+    rhoE = rho*(ea + 0.5*magSqr(U));
 }
 
 Info<< "min/max(T) = "

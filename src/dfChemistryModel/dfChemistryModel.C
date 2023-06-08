@@ -467,7 +467,14 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
                     }
                     CanteraGas_->setState_TPY(pT[facei], pp[facei], yTemp_.begin());
 
-                    ph[facei] = CanteraGas_->enthalpy_mass();
+                    if(mixture_.heName()=="ha")
+                    {
+                        ph[facei] = CanteraGas_->enthalpy_mass();
+                    }
+                    else if(mixture_.heName()=="ea")
+                    {
+                        ph[facei] = CanteraGas_->intEnergy_mass();
+                    }
 
                     ppsi[facei] = mixture_.psi(pp[facei],pT[facei]);
 

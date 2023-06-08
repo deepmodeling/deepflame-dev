@@ -11,57 +11,44 @@ FoamFile
     format      ascii;
     class       dictionary;
     location    "system";
-    object      fvSolution;
+    object      controlDict;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-solvers
-{
-	U
-	{
-		//solver		smoothSolver;
-		//smoother	GaussSeidel;
-		//nSweeps		2;
-		//tolerance	1e-17;
-		//relTol		0;
+application     dfHighSpeedFoam;
 
-		solver			PBiCGStab;
-		preconditioner	DIC;
-		tolerance		1e-11;
-		relTol			0;
-	}
-	
-	h
-	{
-		$U;
-		tolerance	1e-11;
-		relTol		0;
-	}
+startFrom       startTime;
 
-	ea
-	{
-		$U;
-		tolerance	1e-11;
-		relTol		0;
-	}
+startTime       0;
 
-	"rho.*"
-	{
-		solver		diagonal;
-	}
+stopAt          endTime;
 
-	"(O2|N2|Yi)"
-	{
-		solver          PBiCGStab;
-        preconditioner	DILU;
-        tolerance       1e-11;
-        relTol          0;
-	}
-	
-}
+endTime         4e-5;
 
-CENTRAL
-{
-}
+deltaT          1e-08;
+
+writeControl    adjustableRunTime;
+
+writeInterval   5e-6;
+
+cycleWrite      0;
+
+writeFormat     ascii;
+
+writePrecision  6;
+
+writeCompression on;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable true;
+
+adjustTimeStep  yes;
+
+maxCo           0.02;
+
+maxDeltaT       1;
 
 // ************************************************************************* //

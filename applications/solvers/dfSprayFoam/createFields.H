@@ -88,6 +88,8 @@ dfChemistryModel<basicThermo>* chemistry = combustion->chemistry();
 PtrList<volScalarField>& Y = chemistry->Y();
 const word inertSpecie(chemistry->lookup("inertSpecie"));
 const label inertIndex(chemistry->species()[inertSpecie]);
+chemistry->setEnergyName("ha");
+chemistry->updateEnergy();
 
 
 chemistry->correctThermo();
