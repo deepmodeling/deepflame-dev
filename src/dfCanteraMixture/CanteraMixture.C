@@ -50,7 +50,7 @@ Foam::CanteraMixture::CanteraMixture
     transportModelName_(CanteraTorchProperties_.lookup("transportModel")),
     Tref_(mesh.objectRegistry::lookupObject<volScalarField>("T")),
     pref_(mesh.objectRegistry::lookupObject<volScalarField>("p")),
-    energyName_("energy")
+    energyName_("ha")
 {
     if(!isFile(CanteraMechanismFile_))
     {

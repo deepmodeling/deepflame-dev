@@ -1,3 +1,4 @@
+print ("Entering the first line")
 from builtins import Exception, print
 from calendar import prcal
 import torch
@@ -10,7 +11,7 @@ from easydict import EasyDict as edict
 import torch.profiler
 import os
 
-
+print("Entering Inference")
 torch.set_printoptions(precision=10)
 
 
