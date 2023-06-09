@@ -48,7 +48,7 @@
 
     //fvOptions.constrain(EEqn);
 
-    EEqn.solve();
+    EEqn.solve("ha");
 
     //fvOptions.correct(he);
 

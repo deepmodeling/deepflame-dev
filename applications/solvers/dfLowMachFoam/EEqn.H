@@ -25,7 +25,7 @@
 
         EEqn.relax();
 
-        EEqn.solve();
+        EEqn.solve("ha");
     
     
 }
