@@ -10,8 +10,8 @@ float readmidTH2();
 float readmaxTH2();
 
 float readTGV(int k, string file);
-//float readHighSpeed();
-//float v = readHighSpeed();
+float readHighSpeed();
+float v = readHighSpeed();
 
 float H2maxT = readmaxTH2();
 float H2midT = readmidTH2();
@@ -51,9 +51,9 @@ TEST(corrtest,df0DFoam_H2){
 
 
 
-//TEST(corrtest,dfHighSpeedFoam){
-//    EXPECT_NEAR(v,1979.33,19.79); // within 1% of the theroetical value
-//}
+TEST(corrtest,dfHighSpeedFoam){
+   EXPECT_NEAR(v,1979.33,19.79); // within 1% of the theroetical value
+}
 
 TEST(corrtest,dfLowMachFoam_TGV){
     EXPECT_FLOAT_EQ(TGV500,1532.92);   // compare the maximum temperature along y direction in 2D TGV after 500 time steps
