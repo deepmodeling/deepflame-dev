@@ -1,5 +1,44 @@
 #include "createRDeltaT.H"
 
+word ddtSchemes("Euler");
+if (mesh.schemesDict().readIfPresent("timeScheme", ddtSchemes))
+{
+    if(ddtSchemes == "RK2SSP" || ddtSchemes == "RK3SSP")
+    {
+        Info<< "ddtSchemes: " << ddtSchemes << endl;
+    }
+}
+
+word chemScheme("RR");
+mesh.schemesDict().readIfPresent("chemScheme", chemScheme);
+
+if ((chemScheme == "wrate") || (chemScheme == "RR"))
+{
+    Info<< "chemScheme: " << chemScheme << endl;
+}
+else
+{
+    FatalErrorInFunction
+        << "chemScheme: " << chemScheme
+        << " is not a valid choice. "
+        << "Options are: wrate, RR"
+        << abort(FatalError);
+}
+
+
+if((ddtSchemes != "RK2SSP") && (ddtSchemes != "RK3SSP"))
+{
+    if(chemScheme == "wrate")
+    {
+        FatalErrorInFunction
+            << "This combination is not a valid choice. "
+            << "If you want to use wrate for chemistry, please use RK2SSP or RK3SSP scheme."
+            << abort(FatalError);
+    }
+}
+
+
+
 Info<< "Reading thermophysical properties\n" << endl;
 
 // psiThermo* pThermo = new hePsiThermo<psiThermo, CanteraMixture>(mesh, word::null);

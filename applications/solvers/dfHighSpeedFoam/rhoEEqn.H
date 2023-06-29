@@ -8,12 +8,23 @@ surfaceScalarField sigmaDotU
     & (a_pos*U_pos + a_neg*U_neg)
 );
 
-solve
-(
-      fvm::ddt(rhoE)
-    + fvc::div(phiEp)
-    - fvc::div(sigmaDotU)
-);
+if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
+{
+    rhoE_rhs = -fvc::div(phiEp)+fvc::div(sigmaDotU);
+
+    rhoE =  rkcoe1[nrk]*rhoE_save
+          + rkcoe2[nrk]*rhoE
+          + rkcoe3[nrk]*rhoE_rhs*runTime.deltaT();
+}
+else
+{
+    solve
+    (
+          fvm::ddt(rhoE)
+        + fvc::div(phiEp)
+        - fvc::div(sigmaDotU)
+    );
+}
 
 ea = rhoE/rho - 0.5*magSqr(U);
 ea.correctBoundaryConditions();
@@ -25,21 +36,39 @@ rhoE.boundaryFieldRef() == rho.boundaryField()*(ea.boundaryField() + 0.5*magSqr(
 
 if (!inviscid)
 {
-    fvScalarMatrix eEqn
-    (
-           fvm::ddt(rho, ea) - fvc::ddt(rho, ea)
-        // alpha in deepflame is considered to calculate h by default (kappa/Cp), so multiply gamma to correct alpha
-         - fvm::laplacian(turbulence->alphaEff()*thermo.gamma(), ea)
-         + diffAlphaD
-      ==
-           fvc::div(hDiffCorrFlux)
-    );
+    if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
+    {
+        rhoE_rhs =   fvc::laplacian(turbulence->alphaEff()*thermo.gamma(), ea)
+                  - diffAlphaD 
+                  + fvc::div(hDiffCorrFlux);
+        
+        rhoE +=  rkcoe3[nrk]*rhoE_rhs*runTime.deltaT();
 
-    eEqn.solve("ea");
+        ea = rhoE/rho - 0.5*magSqr(U);
+        ea.correctBoundaryConditions();
 
-    ha = ea + p/rho;
-    chemistry->correctThermo();
-    rhoE = rho*(ea + 0.5*magSqr(U));
+        ha = ea + p/rho;
+        chemistry->correctThermo(); // before this, we must update ha = e + p/rho
+    }
+    else
+    {
+        fvScalarMatrix eEqn
+        (
+              fvm::ddt(rho, ea) - fvc::ddt(rho, ea)
+            // alpha in deepflame is considered to calculate h by default (kappa/Cp), so multiply gamma to correct alpha
+            - fvm::laplacian(turbulence->alphaEff()*thermo.gamma(), ea)
+            + diffAlphaD
+          ==
+              fvc::div(hDiffCorrFlux)
+        );
+
+        eEqn.solve("ea");
+
+        ha = ea + p/rho;
+        chemistry->correctThermo();
+        rhoE = rho*(ea + 0.5*magSqr(U));
+    }
+    
 }
 
 Info<< "min/max(T) = "

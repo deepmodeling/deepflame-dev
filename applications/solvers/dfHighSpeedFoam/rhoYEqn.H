@@ -22,13 +22,33 @@ tmp<fv::convectionScheme<scalar>> mvConvection
 );
 
 {
-    start = std::clock();
-    combustion->correct();
-    label flag_mpi_init;
-    MPI_Initialized(&flag_mpi_init);
-    if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
-    end = std::clock();
-    time_monitor_chem += double(end - start) / double(CLOCKS_PER_SEC);
+    if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
+    {
+        if(chemScheme == "wrate")
+        {
+            start = std::clock();
+
+            chemistry->calculateW();
+        
+            label flag_mpi_init;
+            MPI_Initialized(&flag_mpi_init);
+            if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
+            end = std::clock();
+            time_monitor_chem += double(end - start) / double(CLOCKS_PER_SEC);
+        }
+    }
+    else
+    {
+        start = std::clock();
+
+        combustion->correct();
+        
+        label flag_mpi_init;
+        MPI_Initialized(&flag_mpi_init);
+        if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
+        end = std::clock();
+        time_monitor_chem += double(end - start) / double(CLOCKS_PER_SEC);
+    }    
 
     volScalarField Yt(0.0*Y[0]);
 
@@ -44,23 +64,41 @@ tmp<fv::convectionScheme<scalar>> mvConvection
         }
 
         if (i != inertIndex)
-        {          
-            // original convection term
-            // fvScalarMatrix YiEqn
-            // (
-            //      fvm::ddt(rho, Yi)
-            //    + mvConvection->fvmDiv(phi, Yi)
-            //   ==
-            //     combustion->R(Yi)
-            // );
+        {   
+            if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
+            {
+                rhoYi_rhs = -fvc::div(phiYi[i]);
 
-            solve
-            (
-                  fvm::ddt(rhoYi[i])
-                + fvc::div(phiYi[i])
-               == 
-                  chemistry->RR(i)
-            );
+                if(chemScheme == "wrate")
+                {
+                    rhoYi_rhs.ref() += chemistry->wrate(i);
+                    Info <<"max reaction rate "<< Yi.name() << " is " << max(chemistry->wrate(i)).value() << endl;
+                }
+                
+
+                rhoYi[i] =   rkcoe1[nrk]*rhoYi_save[i]
+                        + rkcoe2[nrk]*rhoYi[i]
+                        + rkcoe3[nrk]*rhoYi_rhs*runTime.deltaT();
+            } 
+            else
+            {
+                // original convection term
+                // fvScalarMatrix YiEqn
+                // (
+                //      fvm::ddt(rho, Yi)
+                //    + mvConvection->fvmDiv(phi, Yi)
+                //   ==
+                //     combustion->R(Yi)
+                // );
+
+                solve
+                (
+                    fvm::ddt(rhoYi[i])
+                    + fvc::div(phiYi[i])
+                == 
+                    chemistry->RR(i)
+                );
+            }      
 
             Yi=rhoYi[i]/rho;
             Yi.max(0.0);
@@ -70,22 +108,34 @@ tmp<fv::convectionScheme<scalar>> mvConvection
                 const surfaceScalarField phiUc = linearInterpolate(sumYDiffError) & mesh.Sf();
                 tmp<volScalarField> DEff = chemistry->rhoD(i) + turbulence->mut()/Sct;
 
-                // original term
-                // YiEqn -= fvm::laplacian(DEff(), Yi) - mvConvection->fvmDiv(phiUc, Yi);
+                if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
+                {
+                    rhoYi_rhs = fvc::laplacian(DEff(), Yi) - fvc::div(phiUc,Yi,"div(phic,Yi)");
 
-                fvScalarMatrix YiEqn
-                (
-                    fvm::ddt(rho, Yi) - fvc::ddt(rho, Yi)
-                  - fvm::laplacian(DEff(), Yi)
-                  + mvConvection->fvmDiv(phiUc, Yi)
-                );
+                    rhoYi[i] += rkcoe3[nrk]*rhoYi_rhs*runTime.deltaT();
 
-                YiEqn.relax();
+                    Yi = rhoYi[i]/rho;
+                    Yi.max(0.0);
+                }
+                else
+                {
+                    // original term
+                    // YiEqn -= fvm::laplacian(DEff(), Yi) - mvConvection->fvmDiv(phiUc, Yi);
 
-                YiEqn.solve("Yi");
+                    fvScalarMatrix YiEqn
+                    (
+                        fvm::ddt(rho, Yi) - fvc::ddt(rho, Yi)
+                    - fvm::laplacian(DEff(), Yi)
+                    + mvConvection->fvmDiv(phiUc, Yi)
+                    );
 
-                Yi.max(0.0);
+                    YiEqn.relax();
 
+                    YiEqn.solve("Yi");
+
+                    Yi.max(0.0);
+                }
+                
             }
 
             // original term
@@ -93,6 +143,7 @@ tmp<fv::convectionScheme<scalar>> mvConvection
             // YiEqn.solve("Yi");
             // Yi.max(0.0);
 
+            if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP")) Yi.correctBoundaryConditions();
             rhoYi[i] = rho*Yi;
             Yt += Yi;
         }
@@ -100,6 +151,7 @@ tmp<fv::convectionScheme<scalar>> mvConvection
 
     Y[inertIndex] = scalar(1) - Yt;
     Y[inertIndex].max(0.0);
+    rhoYi[inertIndex] = rho*Y[inertIndex];
 
     end = std::clock();
     time_monitor_Y += double(end - start) / double(CLOCKS_PER_SEC);
