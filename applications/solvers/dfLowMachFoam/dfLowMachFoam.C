@@ -218,19 +218,31 @@ int main(int argc, char *argv[])
             time_monitor_rho += double(end - start) / double(CLOCKS_PER_SEC);
             
             start = std::clock();
+            #ifdef GPUSolver_
+            #include "UEqn_GPU.H"
+            #else
             #include "UEqn.H"
+            #endif
             end = std::clock();
             time_monitor_U += double(end - start) / double(CLOCKS_PER_SEC);
 
             if(combModelName!="ESF" && combModelName!="flareFGM" && combModelName!="DeePFGM")
             {
                 start = std::clock();
+                #ifdef GPUSolver_
+                #include "YEqn_GPU.H"
+                #else
                 #include "YEqn.H"
+                #endif
                 end = std::clock();
                 time_monitor_Y += double(end - start) / double(CLOCKS_PER_SEC);
 
                 start = std::clock();
+                #ifdef GPUSolver_
+                #include "EEqn_GPU.H"
+                #else
                 #include "EEqn.H"
+                #endif
                 end = std::clock();
                 time_monitor_E += double(end - start) / double(CLOCKS_PER_SEC);
 
