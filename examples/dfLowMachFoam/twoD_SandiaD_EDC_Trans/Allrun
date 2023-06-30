@@ -19,7 +19,7 @@ foamDictionary -entry "chemistry" -set "off" constant/CanteraTorchProperties
 runApplication setFields
 runApplication decomposePar -force 
 
-runParallel $application
+runParallel --allow-run-as-root $application
 
 # Run with chemistry until flame reach its full size and its structure does not change significantly
 foamDictionary -entry "startTime" -set "0.3" system/controlDict
@@ -27,7 +27,7 @@ foamDictionary -entry "writeInterval" -set "0.01" system/controlDict
 foamDictionary -entry "endTime" -set "0.6" system/controlDict
 foamDictionary -entry "chemistry" -set "on" constant/CanteraTorchProperties
 
-runParallel -a $application 
+runParallel -a --allow-run-as-root $application 
 
 
 #------------------------------------------------------------------------------

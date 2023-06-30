@@ -12,7 +12,7 @@ runApplication blockMesh
 
 runApplication decomposePar -force 
 
-mpirun --oversubscribe -np 8 dfLowMachFoam -parallel
+mpirun --oversubscribe -np 8 --allow-run-as-root dfLowMachFoam -parallel
 
 ./postProcess
  
