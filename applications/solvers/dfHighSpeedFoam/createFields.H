@@ -9,10 +9,10 @@ if (mesh.schemesDict().readIfPresent("timeScheme", ddtSchemes))
     }
 }
 
-word chemScheme("RR");
+word chemScheme("ode");
 mesh.schemesDict().readIfPresent("chemScheme", chemScheme);
 
-if ((chemScheme == "wrate") || (chemScheme == "RR"))
+if ((chemScheme == "direct") || (chemScheme == "ode"))
 {
     Info<< "chemScheme: " << chemScheme << endl;
 }
@@ -21,22 +21,21 @@ else
     FatalErrorInFunction
         << "chemScheme: " << chemScheme
         << " is not a valid choice. "
-        << "Options are: wrate, RR"
+        << "Options are: 'ode' | 'direct'"
         << abort(FatalError);
 }
 
 
 if((ddtSchemes != "RK2SSP") && (ddtSchemes != "RK3SSP"))
 {
-    if(chemScheme == "wrate")
+    if(chemScheme == "direct")
     {
         FatalErrorInFunction
             << "This combination is not a valid choice. "
-            << "If you want to use wrate for chemistry, please use RK2SSP or RK3SSP scheme."
+            << "If you want to use direct integrate for chemistry, please use RK2SSP or RK3SSP scheme."
             << abort(FatalError);
     }
 }
-
 
 
 Info<< "Reading thermophysical properties\n" << endl;
