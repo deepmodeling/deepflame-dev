@@ -24,6 +24,18 @@ The deep learning algorithms and models used in the DeepFlame tutorial examples 
 Detailed guide for installation and tutorials is available on [our documentation website](https://deepflame.deepmodeling.com).
 
 ## Features
+New in v1.2.0 (2023/06/30):
+- Enable GPU acceleration for fast and efficient discrete matrix construction for solving partial differential equations
+- Introduce `DeePFGM` model: a neural network-based approach to replace the flame surface database of the FGM model and reduce memory consumption
+- Support real fluid density calculation with Cantera equation of state and updated isentropic compression coefficient method
+- Improve dfHighSpeedFoam solver
+  - Apply flux splitting to the convective term of the component equation for consistency and accuracy
+  - Adopt Runge-Kutta Strong Stability Preserving (RKSSP) time advancement format for enhanced stability and performance
+- Incorporate [`WENO scheme`](https://github.com/WENO-OF/WENOEXT) and [`libROUNDSchemes`](https://github.com/advanCFD/libROUNDSchemes) formats for flux reconstruction
+- Provide interface to access the reaction rates of each component in a given elementary reaction
+- Implement mechanism file detection function to verify the validity of the mechanism file input
+- Capture and report Cantera errors for better error handling and user experience
+
 New in v1.1.0 (2023/03/31):
 - Add FGM model
 - Add GPU-compatible linear solver [AmgX](https://github.com/NVIDIA/AMGX) (adopted from [petsc4Foam](https://develop.openfoam.com/modules/external-solver) and [FOAM2CSR](https://gitlab.hpc.cineca.it/openfoam/foam2csr))
@@ -31,7 +43,7 @@ New in v1.1.0 (2023/03/31):
 - Add support for solving chemical source term simultaneously on GPU (DNN) and CPU (CVODE)
 - Add support for compilation using CMake
 - Improve DNN solving procedure when using pure CPU
-- Reconstruct dfChemistryModel 
+- Reconstruct `dfChemistryModel`
 - Update chemical and mixing time scale models in PaSR combustion model
 
 New in v1.0.0 (2022/11/15):
@@ -44,13 +56,13 @@ New in v0.5.0 (2022/10/15):
 
 New in v0.4.0 (2022/09/26):
 - Adapt combustion library from OpenFOAM into DeepFlame
-- laminar; EDC; PaSR combustion models
+- `laminar`; `EDC`; `PaSR` combustion models
 
 New in v0.3.0 (2022/08/29):
 - 1/2/3D adaptive mesh refinement (2/3D adopted from [SOFTX_2018_143](https://github.com/ElsevierSoftwareX/SOFTX_2018_143) and [multiDimAMR](https://github.com/HenningScheufler/multiDimAMR))
 - Add Sigma/dynSmag LES turbulence models
 - Add functionObjects/field library
-- New example reactiveShockTube for dfHighSpeedFoam
+- New example reactiveShockTube for `dfHighSpeedFoam`
 
 New in v0.2.0 (2022/07/25):
 - Dynamic load balancing for chemistry solver (adopted from [DLBFoam](https://github.com/blttkgl/DLBFoam-1.0))
