@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     #include "createTime.H"
     #include "createDynamicFvMesh.H"
     #include "createFields.H"
-    #include "createFields_rk2.H"
+    #include "createFieldsSave.H"
     #include "createTimeControls.H"
 
     double time_monitor_flow=0;
@@ -97,27 +97,6 @@ int main(int argc, char *argv[])
     // Courant numbers used to adjust the time-step
     scalar CoNum = 0.0;
     scalar meanCoNum = 0.0;
-
-    std::vector<double> rkcoe1(3);
-    std::vector<double> rkcoe2(3);
-    std::vector<double> rkcoe3(3);
-    scalar rk;
-    label nrk=0;
-
-    if(ddtSchemes == "RK2SSP")
-    {
-        rkcoe1[0]=1.0; rkcoe2[0]=0.0; rkcoe3[0]=1.0;
-        rkcoe1[1]=0.5; rkcoe2[1]=0.5; rkcoe3[1]=0.5;
-        rkcoe1[2]=0.0; rkcoe2[2]=0.0; rkcoe3[2]=0.0;
-        rk=2;
-    }
-    else if(ddtSchemes == "RK3SSP")
-    {
-        rkcoe1[0]=1.0; rkcoe2[0]=0.0; rkcoe3[0]=1.0;
-        rkcoe1[1]=0.75; rkcoe2[1]=0.25; rkcoe3[1]=0.25;
-        rkcoe1[2]=0.33; rkcoe2[2]=0.66; rkcoe3[2]=0.66;
-        rk=3;
-    }
 
     Info<< "\nStarting time loop\n" << endl;
 
