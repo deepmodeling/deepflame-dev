@@ -26,12 +26,12 @@ Detailed guide for installation and tutorials is available on [our documentation
 ## Features
 New in v1.2.0 (2023/06/30):
 - Enable GPU acceleration for fast and efficient discrete matrix construction for solving partial differential equations
-- Introduce `DeePFGM` model: a neural network-based approach to replace the flame surface database of the FGM model and reduce memory consumption
-- Support real fluid density calculation with Cantera equation of state and updated isentropic compression coefficient method
+- Introduce `DeePFGM` model: a neural network-based approach to replace the flamelet database of the FGM model and reduce memory requirement
+- Support real fluid density calculation with Cantera's PR/RK equation of state and updated the calculation of isentropic compression coefficient (psi)
 - Improve dfHighSpeedFoam solver
-  - Apply flux splitting to the convective term of the component equation for consistency and accuracy
-  - Adopt Runge-Kutta Strong Stability Preserving (RKSSP) time advancement format for enhanced stability and performance
-- Incorporate [`WENO scheme`](https://github.com/WENO-OF/WENOEXT) and [`libROUNDSchemes`](https://github.com/advanCFD/libROUNDSchemes) formats for flux reconstruction
+  - Apply flux splitting to the convective term of the species equations for consistency and accuracy
+  - Adopt Strong Stability Preserving Runge-Kutta (RKSSP) time scheme for enhanced stability and performance
+- Incorporate [`WENO scheme`](https://github.com/WENO-OF/WENOEXT) and [`libROUNDSchemes`](https://github.com/advanCFD/libROUNDSchemes) as third-party submodules for convective flux reconstruction
 - Provide interface to access the reaction rates of each component in a given elementary reaction
 - Implement mechanism file detection function to verify the validity of the mechanism file input
 - Capture and report Cantera errors for better error handling and user experience
