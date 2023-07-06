@@ -83,6 +83,8 @@ int main(int argc, char *argv[])
     double time_monitor_chem=0;
     double time_monitor_Y=0;
     double time_monitor_AMR=0;
+    double time_monitor_E=0;
+    double time_monitor_corrDiff=0;
     clock_t start, end;
 
     turbulence->validate();
@@ -170,10 +172,13 @@ int main(int argc, char *argv[])
                 // --- Solve species
                 #include "rhoYEqn.H"
 
+                start = std::clock();
                 // --- Solve energy
                 #include "rhoEEqn.H"
+                end = std::clock();
+                time_monitor_E += double(end - start) / double(CLOCKS_PER_SEC);
 
-                if ((nrk == rk-1) && (chemScheme == "RR"))
+                if ((nrk == rk-1) && (chemScheme == "ode"))
                 {
                     #include "calculateR.H"
                 }
@@ -208,19 +213,25 @@ int main(int argc, char *argv[])
             // --- Solve species
             #include "rhoYEqn.H"
 
+            start = std::clock();
             // --- Solve energy
             #include "rhoEEqn.H"
+            end = std::clock();
+            time_monitor_E += double(end - start) / double(CLOCKS_PER_SEC);
         }
 
         turbulence->correct();
 
         runTime.write();
 
-        Info<< "MonitorTime_chem = " << time_monitor_chem << " s" << nl << endl;
-        Info<< "MonitorTime_Y = " << time_monitor_Y << " s" << nl << endl;
-        Info<< "MonitorTime_flow = " << time_monitor_flow << " s" << nl << endl;
-        Info<< "MonitorTime_AMR = " << time_monitor_AMR << " s" << nl << endl;
-
+        Info<< "========Time Spent in diffenet parts========"<< endl;
+        Info<< "MonitorTime_AMR            = " << time_monitor_AMR << " s" << endl;
+        Info<< "MonitorTime_flow           = " << time_monitor_flow << " s" << endl;
+        Info<< "Diffusion Correction Time  = " << time_monitor_corrDiff << " s" << endl;
+        Info<< "MonitorTime_chem           = " << time_monitor_chem << " s" << endl;
+        Info<< "MonitorTime_Y              = " << time_monitor_Y << " s" << endl;
+        Info<< "MonitorTime_E              = " << time_monitor_E << " s" << endl;
+        Info<< "============================================"<<nl<< endl;
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"
             << nl << endl;

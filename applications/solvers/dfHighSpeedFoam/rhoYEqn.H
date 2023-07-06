@@ -1,3 +1,5 @@
+start = std::clock();
+
 if (!inviscid)
 {
     hDiffCorrFlux = Zero;
@@ -21,34 +23,29 @@ tmp<fv::convectionScheme<scalar>> mvConvection
     )
 );
 
+end = std::clock();
+time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
+
 {
+    start = std::clock();
+
     if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
     {
-        if(chemScheme == "wrate")
+        if(chemScheme == "direct")
         {
-            start = std::clock();
-
             chemistry->calculateW();
-        
-            label flag_mpi_init;
-            MPI_Initialized(&flag_mpi_init);
-            if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
-            end = std::clock();
-            time_monitor_chem += double(end - start) / double(CLOCKS_PER_SEC);
         }
     }
     else
     {
-        start = std::clock();
-
         combustion->correct();
-        
-        label flag_mpi_init;
-        MPI_Initialized(&flag_mpi_init);
-        if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
-        end = std::clock();
-        time_monitor_chem += double(end - start) / double(CLOCKS_PER_SEC);
-    }    
+    }
+
+    label flag_mpi_init;
+    MPI_Initialized(&flag_mpi_init);
+    if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
+    end = std::clock();
+    time_monitor_chem += double(end - start) / double(CLOCKS_PER_SEC);  
 
     volScalarField Yt(0.0*Y[0]);
 
@@ -69,7 +66,7 @@ tmp<fv::convectionScheme<scalar>> mvConvection
             {
                 rhoYi_rhs = -fvc::div(phiYi[i]);
 
-                if(chemScheme == "wrate")
+                if(chemScheme == "direct")
                 {
                     rhoYi_rhs.ref() += chemistry->wrate(i);
                     Info <<"max reaction rate "<< Yi.name() << " is " << max(chemistry->wrate(i)).value() << endl;

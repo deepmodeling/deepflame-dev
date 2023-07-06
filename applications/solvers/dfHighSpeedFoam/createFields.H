@@ -7,6 +7,13 @@ if (mesh.schemesDict().readIfPresent("timeScheme", ddtSchemes))
     {
         Info<< "ddtSchemes: " << ddtSchemes << endl;
     }
+    else
+    {
+        FatalErrorInFunction
+            << "This timeScheme is not a valid choice. "
+            << "Please use RK2SSP or RK3SSP scheme."
+            << abort(FatalError);
+    }
 }
 
 word chemScheme("ode");
