@@ -38,9 +38,21 @@ if (!inviscid)
 {
     if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
     {
-        rhoE_rhs =   fvc::laplacian(turbulence->alphaEff()*thermo.gamma(), ea)
+        rhoE_rhs =   
+            (
+                turbName == "laminar"
+                ?
+                (
+                    fvc::laplacian(turbulence->alphaEff()*thermo.gamma(), ea)
                   - diffAlphaD 
-                  + fvc::div(hDiffCorrFlux);
+                  + fvc::div(hDiffCorrFlux)
+                )
+                :
+                (
+                    fvc::laplacian(turbulence->alphaEff()*thermo.gamma(), ea)
+                )
+            );
+                  
         
         rhoE +=  rkcoe3[nrk]*rhoE_rhs*runTime.deltaT();
 
@@ -54,12 +66,22 @@ if (!inviscid)
     {
         fvScalarMatrix eEqn
         (
-              fvm::ddt(rho, ea) - fvc::ddt(rho, ea)
-            // alpha in deepflame is considered to calculate h by default (kappa/Cp), so multiply gamma to correct alpha
-            - fvm::laplacian(turbulence->alphaEff()*thermo.gamma(), ea)
-            + diffAlphaD
-          ==
-              fvc::div(hDiffCorrFlux)
+                fvm::ddt(rho, ea) - fvc::ddt(rho, ea)
+            ==
+                (
+                    turbName == "laminar"
+                    ?
+                    (
+                        // alpha in deepflame is considered to calculate h by default (kappa/Cp), so multiply gamma to correct alpha
+                        fvm::laplacian(turbulence->alphaEff()*thermo.gamma(), ea)
+                    -   diffAlphaD
+                    +   fvc::div(hDiffCorrFlux)
+                    )
+                    :
+                    (
+                        fvm::laplacian(turbulence->alphaEff()*thermo.gamma(), ea)
+                    )
+                )
         );
 
         eEqn.solve("ea");

@@ -143,6 +143,7 @@ surfaceScalarField neg
 surfaceScalarField phi("phi", fvc::flux(rhoU));
 
 Info<< "Creating turbulence model\n" << endl;
+const word turbName(mesh.objectRegistry::lookupObject<IOdictionary>("turbulenceProperties").lookup("simulationType"));
 autoPtr<compressible::turbulenceModel> turbulence
 (
     compressible::turbulenceModel::New

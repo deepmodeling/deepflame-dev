@@ -107,7 +107,7 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
 
                 if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
                 {
-                    rhoYi_rhs = fvc::laplacian(DEff(), Yi) - fvc::div(phiUc,Yi,"div(phic,Yi)");
+                    rhoYi_rhs = (turbName == "laminar")? (fvc::laplacian(DEff(), Yi) - fvc::div(phiUc,Yi,"div(phic,Yi)")) : (fvc::laplacian(DEff(), Yi));
 
                     rhoYi[i] += rkcoe3[nrk]*rhoYi_rhs*runTime.deltaT();
 
@@ -121,9 +121,19 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
 
                     fvScalarMatrix YiEqn
                     (
-                        fvm::ddt(rho, Yi) - fvc::ddt(rho, Yi)
-                    - fvm::laplacian(DEff(), Yi)
-                    + mvConvection->fvmDiv(phiUc, Yi)
+                            fvm::ddt(rho, Yi) - fvc::ddt(rho, Yi)
+                        -
+                            (
+                                turbName == "laminar"
+                                ?
+                                (
+                                    fvm::laplacian(DEff(), Yi) + mvConvection->fvmDiv(phiUc, Yi)
+                                )
+                                :
+                                (
+                                    fvm::laplacian(DEff(), Yi)
+                                )
+                            )
                     );
 
                     YiEqn.relax();
