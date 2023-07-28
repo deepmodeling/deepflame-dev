@@ -24,7 +24,14 @@ The deep learning algorithms and models used in the DeepFlame tutorial examples 
 Detailed guide for installation and tutorials is available on [our documentation website](https://deepflame.deepmodeling.com).
 
 ## Features
+New in v1.2.1(2023/07/28):
+
+- Two cases based on FPV (flamelet progress variable) with `Allrun` and `Allclean` scripts
+  - 2DSandiaD_FPV_FGM
+  - 2DsydneySpray.FPV
+
 New in v1.2.0 (2023/06/30):
+
 - Enable GPU acceleration for fast and efficient discrete matrix construction for solving partial differential equations
 - Introduce `DeePFGM` model: a neural network-based approach to replace the flamelet database of the FGM model and reduce memory requirement
 - Support real fluid density calculation with Cantera's PR/RK equation of state and updated the calculation of isentropic compression coefficient (psi)

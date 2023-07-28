@@ -1,0 +1,76 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.3.0                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvSchemes;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+ddtSchemes
+{
+    default           Euler;
+}
+
+gradSchemes
+{
+    default         Gauss linear;
+}
+
+divSchemes
+{
+    default         none;
+
+    div(phi,U)       Gauss linear;
+//    div(phi,U)       Gauss linearUpwind grad(U);
+    div(phi,Ulinear)    Gauss linearUpwind grad(U);
+    div(phi,scalarUW)   Gauss limitedLinear 1;
+    div(phi,H)      Gauss limitedLinear 1;
+    div(phi,Zvar)   Gauss limitedLinear 1;
+    div(phi,Z)      Gauss limitedLinear01 1;
+    div((muEff*dev2(T(grad(U))))) Gauss linear;
+
+    div(phi,c)      Gauss limitedLinear01 1;
+    div(phi,cvar)   Gauss limitedLinear 1;
+    div(phi,Zcvar)   Gauss limitedLinear 1;
+    div(((rho*nuEff)*dev2(T(grad(U))))) Gauss linear;
+
+    div(phid,p)         Gauss limitedLinear 1;
+    div(phi,epsilon)    Gauss limitedLinear 1;
+    div(phi,k)          Gauss limitedLinear 1;
+    div(phiv,p)         Gauss limitedLinear 1;
+    div(phi,K)         Gauss limitedLinear 1;
+}
+
+laplacianSchemes
+{
+    default         Gauss linear corrected;
+    laplacian(phiFilt) Gauss linear limited 0.5;
+}
+
+interpolationSchemes
+{
+    default         linear;
+}
+
+snGradSchemes
+{
+    default         corrected;
+}
+
+fluxRequired
+{
+    default         no;
+    p;
+}
+
+
+// ************************************************************************* //
