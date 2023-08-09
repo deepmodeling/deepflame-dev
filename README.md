@@ -3,17 +3,20 @@
         <img src="https://user-images.githubusercontent.com/121787251/218061666-eb9e4188-d368-41d0-8ed6-fe5121699efe.jpg">
     </a>
     <a href="https://github.com/deepmodeling/deepflame-dev/releases">
-        <img src="https://img.shields.io/github/v/release/deepmodeling/deepflame-dev?include_prereleases&label=latest%20release&style=for-the-badge">
+        <img src="https://img.shields.io/github/v/release/deepmodeling/deepflame-dev?include_prereleases&label=latest%20release&rgb(0%2C%20113%2C%20189)">
     </a>    
     <a href="https://github.com/deepmodeling/deepflame-dev/pulls">
-        <img src="https://img.shields.io/badge/contributions-welcome-red.svg?style=for-the-badge">
+        <img src="https://img.shields.io/badge/contributions-welcome-red.svg?color=rgb(48%2C%20185%2C%20237)">
     </a>    
     <a href="https://github.com/deepmodeling/deepflame-dev/blob/master/LICENSE">
-        <img src="https://img.shields.io/github/license/deepmodeling/deepflame-dev?color=yellow&logo=GitHub&style=for-the-badge">
+        <img src="https://img.shields.io/github/license/deepmodeling/deepflame-dev?logo=GitHub&color=rgb(255%2C%20232%2C%2054)">
     </a>    
     <a href="https://deepflame.deepmodeling.com/en/latest/">
-        <img src="https://img.shields.io/website?label=Documentation%20HomePage&style=for-the-badge&up_message=online&url=https%3A%2F%2Fdeepflame.deepmodeling.com%2Fen%2Flatest%2F">
+        <img src="https://img.shields.io/website?label=Documentation%20HomePage&up_message=online&url=https%3A%2F%2Fdeepflame.deepmodeling.com%2Fen%2Flatest%2F&color=rgb(241%2C%20155%2C%2068)">
     </a>  
+    <a href="https://doi.org/10.1016/j.cpc.2023.108842">
+        <img src="https://img.shields.io/badge/DOI-10.1016%2Fj.cpc.2023.108842-black?color=rgb(232%2C%2093%2C%2050)">
+    </a> 
 </p>
 
 DeepFlame is a deep learning empowered computational fluid dynamics package for single or multiphase, laminar or turbulent, reacting flows at all speeds. It aims to provide an open-source platform to combine the individual strengths of [OpenFOAM](https://openfoam.org), [Cantera](https://cantera.org), and [PyTorch](https://pytorch.org/) libraries for deep learning assisted reacting flow simulations. It also has the scope to leverage the next-generation heterogenous supercomputing and AI acceleration infrastructures such as GPU and FPGA.
