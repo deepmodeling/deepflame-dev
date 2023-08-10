@@ -466,7 +466,7 @@ void Foam::combustionModels::PaSR<ReactionThermo>::transport()
     - fvm::laplacian(muEff, this->Z_)
   );
   ZEqn.relax();
-  ZEqn.solve(mesh.solver("Z"));
+  ZEqn.solve(this->mesh().solver("Z"));
   this->Z_.max(0.0);
 
    Info<< "min/max(Z_) = " << min(Z_).value() << ", " << max(Z_).value() << endl;
@@ -484,7 +484,7 @@ void Foam::combustionModels::PaSR<ReactionThermo>::transport()
     );
 
     ZvarEqn.relax();
-    ZvarEqn.solve(mesh.solver("Zvar"));
+    ZvarEqn.solve(this->mesh().solver("Zvar"));
     this->Zvar_.max(0.0);
     this->Zvar_.min(0.25);
 
