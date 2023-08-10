@@ -1,17 +1,16 @@
 /*--------------------------------*- C++ -*----------------------------------*\
-  =========                 |
-  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Version:  7
-     \\/     M anipulation  |
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2212                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
 \*---------------------------------------------------------------------------*/
 FoamFile
 {
     version     2.0;
-    format      binary;
+    format      ascii;
     class       dictionary;
-    location    "constant";
-    object      SprayCloudProperties;
+    object      sprayCloudProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -78,14 +77,14 @@ subModels
     {
         model1
         {
-            type            coneInjection;
+            type            coneNozzleInjection;
             SOI             0;
             massTotal       6.0e-6;
             parcelBasisType mass;
             injectionMethod disc;
             flowType        flowRateAndDischarge;
-            dInner          0;
-            dOuter          1.9e-4;
+            outerDiameter   1.9e-4;
+            innerDiameter   0;
             duration        1.25e-3;
             position        (0 0.0995 0);
             direction       (0 -1 0);
@@ -140,7 +139,7 @@ subModels
                 {
                     minValue        1e-06;
                     maxValue        0.00015;
-                    d               0.00015;
+                    lambda          0.00015;
                     n               3;
                 }
             }
@@ -228,7 +227,27 @@ subModels
 
 
 cloudFunctions
-{}
+{
+    WeberNumber1
+    {
+        type    WeberNumber;
+    }
+
+    ReynoldsNumber1
+    {
+        type    ReynoldsNumber;
+    }
+
+    NusseltNumber1
+    {
+        type    NusseltNumber;
+    }
+
+    HeatTransferCoeff1
+    {
+        type    HeatTransferCoeff;
+    }
+}
 
 
 // ************************************************************************* //
