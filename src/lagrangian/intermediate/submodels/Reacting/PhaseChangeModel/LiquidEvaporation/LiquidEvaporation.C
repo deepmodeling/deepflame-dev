@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -43,7 +46,7 @@ Foam::tmp<Foam::scalarField> Foam::LiquidEvaporation<CloudType>::calcXc
     {
         Xc[i] =
             this->owner().thermo().carrier().Y()[i][celli]
-           /this->owner().thermo().carrier().Wi(i);
+           /this->owner().thermo().carrier().W(i);
     }
 
     return Xc/sum(Xc);
@@ -137,16 +140,19 @@ void Foam::LiquidEvaporation<CloudType>::calculate
     const scalar Pr,
     const scalar d,
     const scalar nu,
+    const scalar rho,
     const scalar T,
     const scalar Ts,
     const scalar pc,
     const scalar Tc,
     const scalarField& X,
+    const scalarField& solMass,
+    const scalarField& liqMass,
     scalarField& dMassPC
 ) const
 {
     // immediately evaporate mass that has reached critical condition
-    if ((liquids_.Tc(X) - T) < small)
+    if ((liquids_.Tc(X) - T) < SMALL)
     {
         if (debug)
         {
@@ -158,7 +164,7 @@ void Foam::LiquidEvaporation<CloudType>::calculate
         forAll(activeLiquids_, i)
         {
             const label lid = liqToLiqMap_[i];
-            dMassPC[lid] = great;
+            dMassPC[lid] = GREAT;
         }
 
         return;
@@ -185,19 +191,19 @@ void Foam::LiquidEvaporation<CloudType>::calculate
         const scalar pSat = liquids_.properties()[lid].pv(pc, T);
 
         // Schmidt number
-        const scalar Sc = nu/(Dab + rootVSmall);
+        const scalar Sc = nu/(Dab + ROOTVSMALL);
 
         // Sherwood number
         const scalar Sh = this->Sh(Re, Sc);
 
         // mass transfer coefficient [m/s]
-        const scalar kc = Sh*Dab/(d + rootVSmall);
+        const scalar kc = Sh*Dab/(d + ROOTVSMALL);
 
-        // vapour concentration at surface [kmol/m^3] at film temperature
+        // vapour concentration at surface [kmol/m3] at film temperature
         const scalar RR = 1000.0*constant::physicoChemical::R.value(); // J/(kmol·k)
         const scalar Cs = pSat/(RR*Ts);
 
-        // vapour concentration in bulk gas [kmol/m^3] at film temperature
+        // vapour concentration in bulk gas [kmol/m3] at film temperature
         const scalar Cinf = Xc[gid]*pc/(RR*Ts);
 
         // molar flux of vapour [kmol/m2/s]

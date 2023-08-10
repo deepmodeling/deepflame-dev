@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2013-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2013-2017 OpenFOAM Foundation
+    Copyright (C) 2016-2019 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -23,6 +26,9 @@ License
 
 Class
     Foam::MPPICParcel
+
+Group
+    grpLagrangianIntermediateParcels
 
 Description
     Wrapper around kinematic parcel types to add MPPIC modelling
@@ -47,7 +53,7 @@ SourceFiles
 namespace Foam
 {
 
-// Forward declaration of clases
+// Forward declaration of classes
 
 template<class ParcelType>
 class MPPICParcel;
@@ -73,13 +79,11 @@ class MPPICParcel
 :
     public ParcelType
 {
-    // Private Data
-
-        //- Size in bytes of the fields
-        static const std::size_t sizeofFields_;
-
-
 public:
+
+    //- Size in bytes of the fields
+    static const std::size_t sizeofFields;
+
 
     class trackingData
     :
@@ -99,7 +103,7 @@ public:
 
     private:
 
-        // Private Data
+        // Private data
 
             // MPPIC Averages
 
@@ -115,7 +119,7 @@ public:
                 //- Velocity average
                 autoPtr<AveragingMethod<vector>> uAverage_;
 
-                //- Magnitude velocity sqyuared average
+                //- Magnitude velocity squared average
                 autoPtr<AveragingMethod<scalar>> uSqrAverage_;
 
                 //- Frequency average
@@ -167,7 +171,7 @@ protected:
 
 public:
 
-    // Static Data Members
+    // Static data members
 
         //- Runtime type information
         TypeName("MPPICParcel");
@@ -176,7 +180,7 @@ public:
         AddToPropertyList
         (
             ParcelType,
-            "(UCorrectx UCorrecty UCorrectz)"
+            " (UCorrectx UCorrecty UCorrectz)"
         );
 
 
@@ -224,7 +228,8 @@ public:
         (
             const polyMesh& mesh,
             Istream& is,
-            bool readFields = true
+            bool readFields = true,
+            bool newFormat = true
         );
 
         //- Construct as a copy
@@ -302,6 +307,23 @@ public:
             //- Write
             template<class CloudType>
             static void writeFields(const CloudType& c);
+
+            //- Write individual parcel properties to stream
+            void writeProperties
+            (
+                Ostream& os,
+                const wordRes& filters,
+                const word& delim,
+                const bool namesOnly = false
+            ) const;
+
+            //- Read particle fields as objects from the obr registry
+            template<class CloudType>
+            static void readObjects(CloudType& c, const objectRegistry& obr);
+
+            //- Write particle fields as objects into the obr registry
+            template<class CloudType>
+            static void writeObjects(const CloudType& c, objectRegistry& obr);
 
 
         // Ostream operator

@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2016-2021 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -23,6 +26,9 @@ License
 
 Class
     Foam::KinematicParcel
+
+Group
+    grpLagrangianIntermediateParcels
 
 Description
     Kinematic parcel class with rotational motion (as spherical
@@ -49,8 +55,8 @@ SourceFiles
 #include "autoPtr.H"
 #include "interpolation.H"
 #include "demandDrivenEntry.H"
-
-// #include "ParticleForceList.H" // TODO
+#include "labelFieldIOField.H"
+#include "vectorFieldIOField.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -59,6 +65,9 @@ namespace Foam
 
 template<class ParcelType>
 class KinematicParcel;
+
+template<class Type>
+class AveragingMethod;
 
 // Forward declaration of friend functions
 
@@ -80,21 +89,22 @@ class KinematicParcel
 {
     // Private Data
 
-        //- Size in bytes of the fields
-        static const std::size_t sizeofFields_;
-
         //- Number of particle tracking attempts before we assume that it stalls
         static label maxTrackAttempts;
 
 
 public:
 
+    //- Size in bytes of the fields
+    static const std::size_t sizeofFields;
+
+
     //- Class to hold kinematic particle constant properties
     class constantProperties
     {
     protected:
 
-        // Protected data
+        // Protected Data
 
             //- Constant properties dictionary
             const dictionary dict_;
@@ -105,13 +115,13 @@ public:
         // Private Data
 
             //- Parcel type id - used for post-processing to flag the type
-            //  of parcels issued by this cloud
+            //- of parcels issued by this cloud
             demandDrivenEntry<label> parcelTypeId_;
 
-            //- Minimum density [kg/m^3]
+            //- Minimum density [kg/m3]
             demandDrivenEntry<scalar> rhoMin_;
 
-            //- Particle density [kg/m^3] (constant)
+            //- Particle density [kg/m3] (constant)
             demandDrivenEntry<scalar> rho0_;
 
             //- Minimum parcel mass [kg]
@@ -122,14 +132,14 @@ public:
 
         // Constructors
 
-            //- Null constructor
-            constantProperties();
+            //- Default construct
+            inline constantProperties();
 
             //- Copy constructor
-            constantProperties(const constantProperties& cp);
+            inline constantProperties(const constantProperties& cp);
 
             //- Construct from dictionary
-            constantProperties(const dictionary& parentDict);
+            inline constantProperties(const dictionary& parentDict);
 
 
         // Member Functions
@@ -183,7 +193,7 @@ public:
 
             // Cached continuous phase properties
 
-                //- Density [kg/m^3]
+                //- Density [kg/m3]
                 scalar rhoc_;
 
                 //- Velocity [m/s]
@@ -193,11 +203,35 @@ public:
                 scalar muc_;
 
 
+            // MPPIC Averages
+
+                //- Volume average
+                autoPtr<AveragingMethod<scalar>> volumeAverage_;
+
+                //- Radius average [ volume^(1/3) ]
+                autoPtr<AveragingMethod<scalar>> radiusAverage_;
+
+                //- Density average
+                autoPtr<AveragingMethod<scalar>> rhoAverage_;
+
+                //- Velocity average
+                autoPtr<AveragingMethod<vector>> uAverage_;
+
+                //- Magnitude velocity squared average
+                autoPtr<AveragingMethod<scalar>> uSqrAverage_;
+
+                //- Frequency average
+                autoPtr<AveragingMethod<scalar>> frequencyAverage_;
+
+                //- Mass average
+                autoPtr<AveragingMethod<scalar>> massAverage_;
+
+
             //- Local gravitational or other body-force acceleration
             const vector& g_;
 
-            // label specifying which part of the integration
-            // algorithm is taking place
+            //- label specifying which part of the integration
+            //- algorithm is taking place
             trackPart part_;
 
 
@@ -216,16 +250,16 @@ public:
 
         // Member Functions
 
-            //- Return conat access to the interpolator for continuous
-            //  phase density field
+            //- Return const access to the interpolator for continuous
+            //- phase density field
             inline const interpolation<scalar>& rhoInterp() const;
 
-            //- Return conat access to the interpolator for continuous
-            //  phase velocity field
+            //- Return const access to the interpolator for continuous
+            //- phase velocity field
             inline const interpolation<vector>& UInterp() const;
 
-            //- Return conat access to the interpolator for continuous
-            //  phase dynamic viscosity field
+            //- Return const access to the interpolator for continuous
+            //- phase dynamic viscosity field
             inline const interpolation<scalar>& muInterp() const;
 
             //- Return the continuous phase density
@@ -254,17 +288,23 @@ public:
 
             //- Return access to the part of the tracking operation taking place
             inline trackPart& part();
+
+            //- Update the MPPIC averages
+            template<class TrackCloudType>
+            inline void updateAverages(const TrackCloudType& cloud);
+
     };
 
 
 protected:
 
-    // Protected data
+    // Protected Data
 
         // Parcel properties
 
             //- Active flag - tracking inactive when active = false
-            bool active_;
+            //  Store as label for data alignment, but only has bool states
+            label active_;
 
             //- Parcel type id
             label typeId_;
@@ -281,7 +321,7 @@ protected:
             //- Velocity of Parcel [m/s]
             vector U_;
 
-            //- Density [kg/m^3]
+            //- Density [kg/m3]
             scalar rho_;
 
             //- Age [s]
@@ -292,6 +332,9 @@ protected:
 
             //- Turbulent velocity fluctuation [m/s]
             vector UTurb_;
+
+            //- Velocity correction due to collisions MPPIC [m/s]
+            vector UCorrect_;
 
 
     // Protected Member Functions
@@ -314,7 +357,7 @@ protected:
 
 public:
 
-    // Static Data Members
+    // Static data members
 
         //- Runtime type information
         TypeName("KinematicParcel");
@@ -327,12 +370,13 @@ public:
           + " typeId"
           + " nParticle"
           + " d"
-          + " dTarget "
+          + " dTarget"
           + " (Ux Uy Uz)"
           + " rho"
           + " age"
           + " tTurb"
           + " (UTurbx UTurby UTurbz)"
+          + " (UCorrectx UCorrecty UCorrectz)"
         );
 
 
@@ -379,7 +423,8 @@ public:
         (
             const polyMesh& mesh,
             Istream& is,
-            bool readFields = true
+            bool readFields = true,
+            bool newFormat = true
         );
 
         //- Construct as a copy
@@ -457,11 +502,14 @@ public:
             //- Return const access to turbulent velocity fluctuation
             inline const vector& UTurb() const;
 
+            //- Return const access to correction velocity
+            inline const vector& UCorrect() const;
+
 
         // Edit
 
-            //- Return const access to active flag
-            inline bool& active();
+            //- Set active flag to the specified state
+            inline void active(const bool state);
 
             //- Return access to type id
             inline label& typeId();
@@ -489,6 +537,9 @@ public:
 
             //- Return access to turbulent velocity fluctuation
             inline vector& UTurb();
+
+            //- Return access to correction velocity
+            inline vector& UCorrect();
 
 
         // Helper functions
@@ -603,6 +654,15 @@ public:
                 const scalar dt
             );
 
+            //- Correct U following MP-PIC sub-models
+            template<class TrackCloudType>
+            void calcUCorrection
+            (
+                TrackCloudType& cloud,
+                trackingData& td,
+                const scalar dt
+            );
+
 
         // Tracking
 
@@ -650,6 +710,23 @@ public:
             //- Write
             template<class TrackCloudType>
             static void writeFields(const TrackCloudType& c);
+
+            //- Write individual parcel properties to stream
+            void writeProperties
+            (
+                Ostream& os,
+                const wordRes& filters,
+                const word& delim,
+                const bool namesOnly = false
+            ) const;
+
+            //- Read particle fields as objects from the obr registry
+            template<class CloudType>
+            static void readObjects(CloudType& c, const objectRegistry& obr);
+
+            //- Write particle fields as objects into the obr registry
+            template<class CloudType>
+            static void writeObjects(const CloudType& c, objectRegistry& obr);
 
 
     // Ostream Operator

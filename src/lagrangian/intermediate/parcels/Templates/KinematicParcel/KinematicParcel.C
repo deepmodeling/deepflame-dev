@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -27,6 +30,7 @@ License
 #include "forceSuSp.H"
 #include "integrationScheme.H"
 #include "meshTools.H"
+#include "cloudSolution.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -89,6 +93,28 @@ void Foam::KinematicParcel<ParcelType>::calcDispersion
 
 template<class ParcelType>
 template<class TrackCloudType>
+void Foam::KinematicParcel<ParcelType>::calcUCorrection
+(
+    TrackCloudType& cloud,
+    trackingData& td,
+    const scalar dt
+)
+{
+    typename TrackCloudType::parcelType& p =
+        static_cast<typename TrackCloudType::parcelType&>(*this);
+
+    this->UCorrect_ = Zero;
+
+    this->UCorrect_ =
+        cloud.dampingModel().velocityCorrection(p, dt);
+
+    this->UCorrect_ +=
+        cloud.packingModel().velocityCorrection(p, dt);
+}
+
+
+template<class ParcelType>
+template<class TrackCloudType>
 void Foam::KinematicParcel<ParcelType>::cellValueSourceCorrection
 (
     TrackCloudType& cloud,
@@ -138,6 +164,7 @@ void Foam::KinematicParcel<ParcelType>::calc
     this->U_ =
         calcVelocity(cloud, td, dt, Re, td.muc(), mass0, Su, dUTrans, Spu);
 
+    this->U_ += this->UCorrect_;
 
     // Accumulate carrier phase source terms
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -246,7 +273,8 @@ Foam::KinematicParcel<ParcelType>::KinematicParcel
     rho_(p.rho_),
     age_(p.age_),
     tTurb_(p.tTurb_),
-    UTurb_(p.UTurb_)
+    UTurb_(p.UTurb_),
+    UCorrect_(p.UCorrect_)
 {}
 
 
@@ -267,7 +295,8 @@ Foam::KinematicParcel<ParcelType>::KinematicParcel
     rho_(p.rho_),
     age_(p.age_),
     tTurb_(p.tTurb_),
-    UTurb_(p.UTurb_)
+    UTurb_(p.UTurb_),
+    UCorrect_(p.UCorrect_)
 {}
 
 
@@ -290,8 +319,9 @@ bool Foam::KinematicParcel<ParcelType>::move
     ttd.switchProcessor = false;
     ttd.keepParticle = true;
 
+    const cloudSolution& solution = cloud.solution();
     const scalarField& cellLengthScale = cloud.cellLengthScale();
-    const scalar maxCo = cloud.solution().maxCo();
+    const scalar maxCo = solution.maxCo();
 
     while (ttd.keepParticle && !ttd.switchProcessor && p.stepFraction() < 1)
     {
@@ -313,7 +343,7 @@ bool Foam::KinematicParcel<ParcelType>::move
         // maxCo times the total value.
         scalar f = 1 - p.stepFraction();
         f = min(f, maxCo);
-        f = min(f, maxCo*l/max(small*l, mag(s)));
+        f = min(f, maxCo*l/max(SMALL*l, mag(s)));
         if (p.active())
         {
             // Track to the next face
@@ -332,17 +362,19 @@ bool Foam::KinematicParcel<ParcelType>::move
         const scalar dt = (p.stepFraction() - sfrac)*trackTime;
 
         // Avoid problems with extremely small timesteps
-        if (dt > rootVSmall)
+        if (dt > ROOTVSMALL)
         {
             // Update cell based properties
             p.setCellValues(cloud, ttd);
 
             p.calcDispersion(cloud, ttd, dt);
 
-            if (cloud.solution().cellValueSourceCorrection())
+            if (solution.cellValueSourceCorrection())
             {
                 p.cellValueSourceCorrection(cloud, ttd, dt);
             }
+
+            p.calcUCorrection(cloud, ttd, dt);
 
             p.calc(cloud, ttd, dt);
         }
@@ -353,12 +385,11 @@ bool Foam::KinematicParcel<ParcelType>::move
         {
             cloud.functions().postFace(p, ttd.keepParticle);
         }
-
         cloud.functions().postMove(p, dt, start, ttd.keepParticle);
 
         if (p.active() && p.onFace() && ttd.keepParticle)
         {
-            p.hitFace(f*s - d, f, cloud, ttd);
+            p.hitFace(s, cloud, ttd);
         }
     }
 
@@ -382,19 +413,27 @@ bool Foam::KinematicParcel<ParcelType>::hitPatch
     // Invoke post-processing model
     cloud.functions().postPatch(p, pp, td.keepParticle);
 
-    // Invoke surface film model
-    if (cloud.surfaceFilm().transferParcel(p, pp, td.keepParticle))
+    if (isA<processorPolyPatch>(pp))
     {
-        // All interactions done
-        return true;
-    }
-    else if (pp.coupled())
-    {
-        // Don't apply the patchInteraction models to coupled boundaries
+        // Skip processor patches
         return false;
+    }
+    else if (cloud.surfaceFilm().transferParcel(p, pp, td.keepParticle))
+    {
+        // Surface film model consumes the interaction, i.e. all
+        // interactions done
+        return true;
     }
     else
     {
+        // This does not take into account the wall interaction model
+        // Just the polyPatch type. Then, a patch type which has 'rebound'
+        // interaction model will count as escaped parcel while it is not
+        if (!isA<wallPolyPatch>(pp) && !polyPatch::constraintType(pp.type()))
+        {
+            cloud.patchInteraction().addToEscapedParcels(nParticle_*mass());
+        }
+
         // Invoke patch interaction model
         return cloud.patchInteraction().correct(p, pp, td.keepParticle);
     }

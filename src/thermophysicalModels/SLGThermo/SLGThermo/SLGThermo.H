@@ -45,9 +45,9 @@ SourceFiles
 #ifndef SLGThermo_H
 #define SLGThermo_H
 
+#include "CanteraMixture.H"
 #include "regIOobject.H"
 #include "fluidThermo.H"
-#include "CanteraMixture.H" //#include "basicSpecieMixture.H"
 #include "liquidMixtureProperties.H"
 #include "solidMixtureProperties.H"
 

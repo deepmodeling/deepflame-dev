@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2015 OpenFOAM Foundation
+    Copyright (C) 2020-2021 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -25,10 +28,10 @@ License
 
 #include "basicReactingMultiphaseCloud.H"
 
-#include "makeParcelCloudFunctionObjects.H"
+#include "makeReactingParcelCloudFunctionObjects.H"
 
 // Kinematic
-#include "makeParcelForces.H"
+#include "makeThermoParcelForces.H" // thermo variant
 #include "makeParcelDispersionModels.H"
 #include "makeReactingMultiphaseParcelInjectionModels.H" // MP variant
 #include "makeParcelPatchInteractionModels.H"
@@ -46,12 +49,17 @@ License
 #include "makeReactingMultiphaseParcelDevolatilisationModels.H"
 #include "makeReactingMultiphaseParcelSurfaceReactionModels.H"
 
+// MPPIC sub-models
+#include "makeMPPICParcelDampingModels.H"
+#include "makeMPPICParcelIsotropyModels.H"
+#include "makeMPPICParcelPackingModels.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-makeParcelCloudFunctionObjects(basicReactingMultiphaseCloud);
+makeReactingParcelCloudFunctionObjects(basicReactingMultiphaseCloud);
 
 // Kinematic sub-models
-makeParcelForces(basicReactingMultiphaseCloud);
+makeThermoParcelForces(basicReactingMultiphaseCloud);
 makeParcelDispersionModels(basicReactingMultiphaseCloud);
 makeReactingMultiphaseParcelInjectionModels(basicReactingMultiphaseCloud);
 makeParcelPatchInteractionModels(basicReactingMultiphaseCloud);
@@ -81,5 +89,9 @@ makeReactingMultiphaseParcelSurfaceReactionModels
     basicReactingMultiphaseCloud
 );
 
+// MPPIC sub-models
+makeMPPICParcelDampingModels(basicReactingMultiphaseCloud);
+makeMPPICParcelIsotropyModels(basicReactingMultiphaseCloud);
+makeMPPICParcelPackingModels(basicReactingMultiphaseCloud);
 
 // ************************************************************************* //

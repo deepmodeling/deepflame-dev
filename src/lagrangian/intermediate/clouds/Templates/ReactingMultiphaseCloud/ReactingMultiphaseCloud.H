@@ -1,9 +1,11 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2016 OpenFOAM Foundation
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -23,6 +25,9 @@ License
 
 Class
     Foam::ReactingMultiphaseCloud
+
+Group
+    grpLagrangianIntermediateClouds
 
 Description
     Templated base class for multiphase reacting cloud
@@ -68,7 +73,7 @@ class ReactingMultiphaseCloud
 {
 public:
 
-    // Public Typedefs
+    // Public typedefs
 
         //- Type of cloud this cloud was instantiated for
         typedef CloudType cloudType;
@@ -82,10 +87,19 @@ public:
 
 private:
 
-    // Private Data
+    // Private data
 
         //- Cloud copy pointer
         autoPtr<ReactingMultiphaseCloud<CloudType>> cloudCopyPtr_;
+
+
+    // Private member functions
+
+        //- No copy construct
+        ReactingMultiphaseCloud(const ReactingMultiphaseCloud&) = delete;
+
+        //- No copy assignment
+        void operator=(const ReactingMultiphaseCloud&) = delete;
 
 
 protected:
@@ -167,9 +181,6 @@ public:
             const word& name,
             const ReactingMultiphaseCloud<CloudType>& c
         );
-
-        //- Disallow default bitwise copy construction
-        ReactingMultiphaseCloud(const ReactingMultiphaseCloud&) = delete;
 
         //- Construct and return clone based on (this) with new name
         virtual autoPtr<Cloud<parcelType>> clone(const word& name)
@@ -284,12 +295,6 @@ public:
 
             //- Write the field data for the cloud
             virtual void writeFields() const;
-
-
-    // Member Operators
-
-        //- Disallow default bitwise assignment
-        void operator=(const ReactingMultiphaseCloud&) = delete;
 };
 
 

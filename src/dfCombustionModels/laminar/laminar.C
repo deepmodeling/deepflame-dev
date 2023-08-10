@@ -93,7 +93,7 @@ Foam::combustionModels::laminar<ReactionThermo>::tc() const
         {
             scalar tc_i = 0;
             const scalar mag_RR = mag(this->chemistryPtr_->RR(i)[cellI]);
-            if(mag_RR > small) tc_i = Y[i][cellI]/mag_RR;
+            if(mag_RR > SMALL) tc_i = Y[i][cellI]/mag_RR;
             tc[cellI] = max(tc[cellI], tc_i);
         }
     }

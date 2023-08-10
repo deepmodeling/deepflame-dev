@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2019-2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -24,6 +27,9 @@ License
 Class
     Foam::SingleKineticRateDevolatilisation
 
+Group
+    grpLagrangianIntermediateDevolatilisationSubModels
+
 Description
     Single kinetic rate devolatisation model.
     - acts on a per-specie basis
@@ -33,8 +39,8 @@ Description
 
     Where:
         kappa = rate constant
-        A1    = pre-exponential factor (user input)
-        E     = activation energy (user input)
+        A1    = activation energy (user input)
+        E     = pre-exponential factor (user input)
         R     = universal gas constant
         T     = temperature
 
@@ -62,6 +68,7 @@ Description
 
 namespace Foam
 {
+
 /*---------------------------------------------------------------------------*\
               Class SingleKineticRateDevolatilisation Declaration
 \*---------------------------------------------------------------------------*/
@@ -71,7 +78,7 @@ class SingleKineticRateDevolatilisation
 :
     public DevolatilisationModel<CloudType>
 {
-    // Helper class to store specie-local volatile data
+    //- Helper class to store specie-local volatile data
     class volatileData
     {
         // Private Data
@@ -85,21 +92,20 @@ class SingleKineticRateDevolatilisation
             //- Pre-exponential factor
             scalar E_;
 
-
     public:
 
         // Constructors
 
-            //- Null constructor
+            //- Default construct
             volatileData()
             :
-                name_(word::null),
-                A1_(0.0),
-                E_(0.0)
+                name_(),
+                A1_(0),
+                E_(0)
             {}
 
             //- Construct from Istream
-            volatileData(Istream& is)
+            explicit volatileData(Istream& is)
             :
                 name_(is),
                 A1_(readScalar(is)),
@@ -107,12 +113,7 @@ class SingleKineticRateDevolatilisation
             {}
 
 
-        //- Destructor
-        ~volatileData()
-        {}
-
-
-        // Public Member Functions
+        // Member Functions
 
             // Access
 
@@ -140,9 +141,9 @@ class SingleKineticRateDevolatilisation
             //- Read from Istream
             friend Istream& operator>>(Istream& is, volatileData& vd)
             {
-                is.readBeginList("volatileData");
+                is.readBegin("volatileData");
                 is  >>  vd.name_  >> vd.A1_  >> vd.E_;
-                is.readEndList("volatileData");
+                is.readEnd("volatileData");
 
                 return is;
             }
@@ -163,7 +164,7 @@ class SingleKineticRateDevolatilisation
 
     // Private Data
 
-        // Model constants
+        // Model Constants
 
             //- List of volatile data - (name A1 E)
             List<volatileData> volatileData_;
@@ -182,7 +183,7 @@ class SingleKineticRateDevolatilisation
 
 public:
 
-    //- Runtime type information
+    //- Declare type-name, virtual type (with debug switch)
     TypeName("singleKineticRateDevolatilisation");
 
 
@@ -206,7 +207,7 @@ public:
 
 
     //- Destructor
-    virtual ~SingleKineticRateDevolatilisation();
+    virtual ~SingleKineticRateDevolatilisation() = default;
 
 
     // Member Functions

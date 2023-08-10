@@ -1,9 +1,11 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -69,17 +71,23 @@ void Foam::ThermoParcel<ParcelType>::cellValueSourceCorrection
     const scalar dt
 )
 {
-    td.Uc() += cloud.UTrans()[this->cell()]/this->massCell(td);
+    const label celli = this->cell();
+    const scalar massCell = this->massCell(td);
 
-    const scalar CpMean = td.CpInterp().psi()[this->cell()];
-    td.Tc() += cloud.hsTrans()[this->cell()]/(CpMean*this->massCell(td));
+    td.Uc() += cloud.UTrans()[celli]/massCell;
+
+//    tetIndices tetIs = this->currentTetIndices();
+//    Tc_ = td.TInterp().interpolate(this->coordinates(), tetIs);
+
+    const scalar CpMean = td.CpInterp().psi()[celli];
+    td.Tc() += cloud.hsTrans()[celli]/(CpMean*massCell);
 
     if (td.Tc() < cloud.constProps().TMin())
     {
         if (debug)
         {
             WarningInFunction
-                << "Limiting observed temperature in cell " << this->cell()
+                << "Limiting observed temperature in cell " << celli
                 << " to " << cloud.constProps().TMin() <<  nl << endl;
         }
 
@@ -127,7 +135,7 @@ void Foam::ThermoParcel<ParcelType>::calcSurfaceValues
     kappas = td.kappaInterp().interpolate(this->coordinates(), tetIs)/TRatio;
 
     Pr = td.Cpc()*mus/kappas;
-    Pr = max(rootVSmall, Pr);
+    Pr = max(ROOTVSMALL, Pr);
 }
 
 

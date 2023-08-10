@@ -1,9 +1,11 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2015 OpenFOAM Foundation
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -98,6 +100,12 @@ inline Foam::label Foam::cloudSolution::nextIter()
 inline Foam::scalar Foam::cloudSolution::trackTime() const
 {
     return trackTime_;
+}
+
+
+inline Foam::scalar Foam::cloudSolution::deltaTMax() const
+{
+    return deltaTMax_;
 }
 
 

@@ -2,10 +2,10 @@ start = std::clock();
 
 if (!inviscid)
 {
-    hDiffCorrFlux = Zero;
-    diffAlphaD = Zero;
-    sumYDiffError = Zero;
-    
+    hDiffCorrFlux = dimensionedVector(dimensionSet(1,0,-3,0,0,0,0), Zero);
+    diffAlphaD = dimensionedScalar(dimEnergy/dimTime/dimVolume, 0);
+    sumYDiffError = dimensionedVector(dimDynamicViscosity/dimLength, Zero);
+
     forAll(Y, i)
     {
         sumYDiffError += chemistry->rhoD(i)*fvc::grad(Y[i]);
@@ -43,9 +43,9 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
 
     label flag_mpi_init;
     MPI_Initialized(&flag_mpi_init);
-    if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
+    if(flag_mpi_init) MPI_Barrier(MPI_COMM_WORLD);
     end = std::clock();
-    time_monitor_chem += double(end - start) / double(CLOCKS_PER_SEC);  
+    time_monitor_chem += double(end - start) / double(CLOCKS_PER_SEC);
 
     volScalarField Yt(0.0*Y[0]);
 
@@ -61,7 +61,7 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
         }
 
         if (i != inertIndex)
-        {   
+        {
             if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
             {
                 rhoYi_rhs = -fvc::div(phiYi[i]);
@@ -71,12 +71,12 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
                     rhoYi_rhs.ref() += chemistry->wrate(i);
                     Info <<"max reaction rate "<< Yi.name() << " is " << max(chemistry->wrate(i)).value() << endl;
                 }
-                
+
 
                 rhoYi[i] =   rkcoe1[nrk]*rhoYi_save[i]
                         + rkcoe2[nrk]*rhoYi[i]
                         + rkcoe3[nrk]*rhoYi_rhs*runTime.deltaT();
-            } 
+            }
             else
             {
                 // original convection term
@@ -92,10 +92,10 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
                 (
                     fvm::ddt(rhoYi[i])
                     + fvc::div(phiYi[i])
-                == 
+                ==
                     chemistry->RR(i)
                 );
-            }      
+            }
 
             Yi=rhoYi[i]/rho;
             Yi.max(0.0);
@@ -107,10 +107,10 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
 
                 if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
                 {
-                    rhoYi_rhs = 
+                    rhoYi_rhs =
                         (
                             turbName == "laminar"
-                            ?  (fvc::laplacian(DEff(), Yi) - fvc::div(phiUc,Yi,"div(phic,Yi)")) 
+                            ?  (fvc::laplacian(DEff(), Yi) - fvc::div(phiUc,Yi,"div(phic,Yi)"))
                             :  fvc::laplacian(DEff(), Yi)
                         );
 
@@ -137,11 +137,11 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
 
                     YiEqn.relax();
 
-                    YiEqn.solve("Yi");
+                    YiEqn.solve(mesh.solver("Yi"));
 
                     Yi.max(0.0);
                 }
-                
+
             }
 
             // original term

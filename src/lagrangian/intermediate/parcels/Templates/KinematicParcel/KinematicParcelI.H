@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2016-2021 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -33,7 +36,7 @@ template<class ParcelType>
 inline
 Foam::KinematicParcel<ParcelType>::constantProperties::constantProperties()
 :
-    dict_(dictionary::null),
+    dict_(),
     parcelTypeId_(dict_, -1),
     rhoMin_(dict_, 0.0),
     rho0_(dict_, 0.0),
@@ -64,7 +67,7 @@ inline Foam::KinematicParcel<ParcelType>::constantProperties::constantProperties
     dict_(parentDict.subOrEmptyDict("constantProperties")),
     parcelTypeId_(dict_, "parcelTypeId", -1),
     rhoMin_(dict_, "rhoMin", 1e-15),
-    rho0_(dict_, "rho0"),
+    rho0_(dict_, "rho0", -1),
     minParcelMass_(dict_, "minParcelMass", 1e-15)
 {}
 
@@ -260,9 +263,9 @@ inline const Foam::vector& Foam::KinematicParcel<ParcelType>::UTurb() const
 
 
 template<class ParcelType>
-inline bool& Foam::KinematicParcel<ParcelType>::active()
+inline void Foam::KinematicParcel<ParcelType>::active(const bool state)
 {
-    return active_;
+    active_ = state;
 }
 
 
@@ -298,6 +301,20 @@ template<class ParcelType>
 inline Foam::vector& Foam::KinematicParcel<ParcelType>::U()
 {
     return U_;
+}
+
+
+template<class ParcelType>
+inline const Foam::vector& Foam::KinematicParcel<ParcelType>::UCorrect() const
+{
+    return UCorrect_;
+}
+
+
+template<class ParcelType>
+inline Foam::vector& Foam::KinematicParcel<ParcelType>::UCorrect()
+{
+    return UCorrect_;
 }
 
 
@@ -415,7 +432,7 @@ inline Foam::scalar Foam::KinematicParcel<ParcelType>::Re
     const scalar muc
 )
 {
-    return rhoc*mag(U - Uc)*d/max(muc, rootVSmall);
+    return rhoc*mag(U - Uc)*d/max(muc, ROOTVSMALL);
 }
 
 
@@ -440,7 +457,7 @@ inline Foam::scalar Foam::KinematicParcel<ParcelType>::We
     const scalar sigma
 )
 {
-    return rhoc*magSqr(U - Uc)*d/max(sigma, rootVSmall);
+    return rhoc*magSqr(U - Uc)*d/max(sigma, ROOTVSMALL);
 }
 
 
@@ -466,8 +483,8 @@ inline Foam::scalar Foam::KinematicParcel<ParcelType>::Eo
     const scalar sigma
 )
 {
-    const vector dir = U/max(mag(U), rootVSmall);
-    return mag(g & dir)*mag(rho - rhoc)*sqr(d)/max(sigma, rootVSmall);
+    const vector dir = U/max(mag(U), ROOTVSMALL);
+    return mag(g & dir)*mag(rho - rhoc)*sqr(d)/max(sigma, ROOTVSMALL);
 }
 
 

@@ -113,7 +113,7 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
             IOobject::AUTO_WRITE
         ),
         mesh_,
-        scalar(0.0)
+        dimensionedScalar(dimless, 0.0)
     )
 {
 
@@ -722,7 +722,7 @@ Foam::dfChemistryModel<ThermoType>::updateReactionRates
     DynamicList<ChemistrySolution>& submasterODESolutions
 )
 {
-    scalar deltaTMin = great;
+    scalar deltaTMin = GREAT;
 
     for(const auto& array : solutions)
     {
@@ -879,7 +879,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_CVODE
 
     if(!chemistry_)
     {
-        return great;
+        return GREAT;
     }
 
     timer.timeIncrement();

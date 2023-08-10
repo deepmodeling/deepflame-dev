@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -23,6 +26,9 @@ License
 
 Class
     Foam::CompositionModel
+
+Group
+    grpLagrangianIntermediateCompositionSubModels
 
 Description
     Templated reacting parcel composition model class
@@ -48,8 +54,6 @@ SourceFiles
 
 #include "phasePropertiesList.H"
 
-#include "CanteraMixture.H"
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -64,7 +68,7 @@ class CompositionModel
 :
     public CloudSubModelBase<CloudType>
 {
-    // Private Data
+    // Private data
 
         //- Reference to the thermo database
         const SLGThermo& thermo_;
@@ -190,7 +194,11 @@ public:
 
                 //- Return the list of phase phaseI volume fractions fractions
                 //  based on supplied mass fractions Y
-                scalarField X(const label phaseI, const scalarField& Y) const;
+                tmp<scalarField> X
+                (
+                    const label phaseI,
+                    const scalarField& Y
+                ) const;
 
 
             // Mixture properties
@@ -241,7 +249,7 @@ public:
                 const scalar T
             ) const;
 
-            //- Return specific heat caoacity for the phase phaseI
+            //- Return specific heat capacity for the phase phaseI
             virtual scalar Cp
             (
                 const label phaseI,
@@ -258,6 +266,16 @@ public:
                 const scalar p,
                 const scalar T
             ) const;
+
+            //- Return rho of the full composition
+            // virtual scalar rho
+            // (
+            //     const scalarField& Ygas,
+            //     const scalarField& Yliq,
+            //     const scalarField& Ysol,
+            //     const scalar T,
+            //     const scalar p
+            // ) const;
 };
 
 

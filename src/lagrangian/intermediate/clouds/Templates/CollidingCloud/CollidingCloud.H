@@ -1,9 +1,11 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -23,6 +25,9 @@ License
 
 Class
     Foam::CollidingCloud
+
+Group
+    grpLagrangianIntermediateClouds
 
 Description
     Adds coolisions to kinematic clouds
@@ -64,7 +69,7 @@ class CollidingCloud
 {
 public:
 
-    // Public Typedefs
+    // Public typedefs
 
         //- Type of cloud this cloud was instantiated for
         typedef CloudType cloudType;
@@ -78,10 +83,19 @@ public:
 
 private:
 
-    // Private Data
+    // Private data
 
         //- Cloud copy pointer
         autoPtr<CollidingCloud<CloudType>> cloudCopyPtr_;
+
+
+    // Private Member Functions
+
+        //- No copy construct
+        CollidingCloud(const CollidingCloud&) = delete;
+
+        //- No copy assignment
+        void operator=(const CollidingCloud&) = delete;
 
 
 protected:
@@ -149,9 +163,6 @@ public:
             const word& name,
             const CollidingCloud<CloudType>& c
         );
-
-        //- Disallow default bitwise copy construction
-        CollidingCloud(const CollidingCloud&) = delete;
 
         //- Construct and return clone based on (this) with new name
         virtual autoPtr<Cloud<parcelType>> clone(const word& name)
@@ -228,12 +239,6 @@ public:
 
             //- Print cloud information
             void info();
-
-
-    // Member Operators
-
-        //- Disallow default bitwise assignment
-        void operator=(const CollidingCloud&) = delete;
 };
 
 

@@ -9,8 +9,8 @@
         hcSource.source() -= parcels.rhoTrans(i)*chemistry->mixture().Hc(i)/runTime.deltaT();
     }
     //hSource.source() -= parcels.hsTrans()/runTime.deltaT();// equivalent to parcels.Sh(he)
-    
-    
+
+
     fvScalarMatrix EEqn
     (
         turbName == "laminar"
@@ -48,10 +48,10 @@
 
     //fvOptions.constrain(EEqn);
 
-    EEqn.solve("ha");
+    EEqn.solve(mesh.solver("ha"));
 
     //fvOptions.correct(he);
 
     //radiation->correct();
-    
+
 }

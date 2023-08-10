@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2013-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2013-2016 OpenFOAM Foundation
+    Copyright (C) 2019 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -46,11 +49,9 @@ namespace Foam
 {
     typedef MPPICParcel<KinematicParcel<particle>> basicKinematicMPPICParcel;
 
+    //- Contiguous data for basicKinematicMPPICParcel
     template<>
-    inline bool contiguous<basicKinematicMPPICParcel>()
-    {
-        return true;
-    }
+    struct is_contiguous<basicKinematicMPPICParcel> : std::true_type {};
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

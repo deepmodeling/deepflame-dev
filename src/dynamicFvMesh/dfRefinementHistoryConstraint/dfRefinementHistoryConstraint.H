@@ -75,7 +75,8 @@ public:
     // Constructors
 
         //- Construct with constraint dictionary
-        explicit dfRefinementHistoryConstraint(const dictionary& dict,const word& type);
+        //explicit dfRefinementHistoryConstraint(const dictionary& dict,const word& type);
+        explicit dfRefinementHistoryConstraint(const dictionary& dict);
 
         //- Construct from components
         dfRefinementHistoryConstraint();

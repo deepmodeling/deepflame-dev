@@ -1,9 +1,12 @@
-/*---------------------------------------------------------------------------*\
+/*---------------------------------------------------------------------------* \
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2020-2022 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -48,12 +51,16 @@ Foam::liquidMixtureProperties::liquidMixtureProperties
 
     forAll(components_, i)
     {
-        if (dict.isDict(components_[i]))
+        // Handle sub-dictionary or primitive entry
+
+        const dictionary* subDictPtr = dict.findDict(components_[i]);
+
+        if (subDictPtr)
         {
             properties_.set
             (
                 i,
-                liquidProperties::New(dict.subDict(components_[i]))
+                liquidProperties::New(*subDictPtr)
             );
         }
         else
@@ -74,13 +81,8 @@ Foam::liquidMixtureProperties::liquidMixtureProperties
 )
 :
     components_(lm.components_),
-    properties_(lm.properties_.size())
-{
-    forAll(properties_, i)
-    {
-        properties_.set(i, lm.properties_(i)->clone());
-    }
-}
+    properties_(lm.properties_.clone())
+{}
 
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
@@ -91,10 +93,7 @@ Foam::liquidMixtureProperties::New
     const dictionary& thermophysicalProperties
 )
 {
-    return autoPtr<liquidMixtureProperties>
-    (
-        new liquidMixtureProperties(thermophysicalProperties)
-    );
+    return autoPtr<liquidMixtureProperties>::New(thermophysicalProperties);
 }
 
 
@@ -112,7 +111,7 @@ Foam::scalar Foam::liquidMixtureProperties::Tc(const scalarField& X) const
         vTc += x1*properties_[i].Tc();
     }
 
-    return vTc/vc;
+    return vTc/(vc + ROOTVSMALL);
 }
 
 
@@ -196,6 +195,7 @@ Foam::scalar Foam::liquidMixtureProperties::Ppc(const scalarField& X) const
         Vc += X[i]*properties_[i].Vc();
         Zc += X[i]*properties_[i].Zc();
     }
+
     const scalar RR = 1000.0*constant::physicoChemical::R.value(); // J/(kmol·k)
     return RR*Zc*Tpc(X)/Vc;
 }
@@ -260,7 +260,7 @@ Foam::scalarField Foam::liquidMixtureProperties::Y(const scalarField& X) const
         sumY += Y[i];
     }
 
-    Y /= sumY;
+    Y /= (sumY + ROOTVSMALL);
 
     return Y;
 }
@@ -277,7 +277,7 @@ Foam::scalarField Foam::liquidMixtureProperties::X(const scalarField& Y) const
         sumX += X[i];
     }
 
-    X /= sumX;
+    X /= (sumX + ROOTVSMALL);
 
     return X;
 }
@@ -295,12 +295,12 @@ Foam::scalar Foam::liquidMixtureProperties::rho
 
     forAll(properties_, i)
     {
-        if (X[i] > small)
+        if (X[i] > SMALL)
         {
             scalar Ti = min(TrMax*properties_[i].Tc(), T);
             scalar rho = properties_[i].rho(p, Ti);
 
-            if (rho > small)
+            if (rho > SMALL)
             {
                 scalar Yi = X[i]*properties_[i].W();
                 sumY += Yi;
@@ -309,7 +309,7 @@ Foam::scalar Foam::liquidMixtureProperties::rho
         }
     }
 
-    return sumY/v;
+    return sumY/(v + ROOTVSMALL);
 }
 
 
@@ -325,7 +325,7 @@ Foam::scalar Foam::liquidMixtureProperties::pv
 
     forAll(properties_, i)
     {
-        if (X[i] > small)
+        if (X[i] > SMALL)
         {
             scalar Yi = X[i]*properties_[i].W();
             sumY += Yi;
@@ -335,7 +335,7 @@ Foam::scalar Foam::liquidMixtureProperties::pv
         }
     }
 
-    return pv/sumY;
+    return pv/(sumY + ROOTVSMALL);
 }
 
 
@@ -351,7 +351,7 @@ Foam::scalar Foam::liquidMixtureProperties::hl
 
     forAll(properties_, i)
     {
-        if (X[i] > small)
+        if (X[i] > SMALL)
         {
             scalar Yi = X[i]*properties_[i].W();
             sumY += Yi;
@@ -361,7 +361,7 @@ Foam::scalar Foam::liquidMixtureProperties::hl
         }
     }
 
-    return hl/sumY;
+    return hl/(sumY + ROOTVSMALL);
 }
 
 
@@ -377,7 +377,7 @@ Foam::scalar Foam::liquidMixtureProperties::Cp
 
     forAll(properties_, i)
     {
-        if (X[i] > small)
+        if (X[i] > SMALL)
         {
             scalar Yi = X[i]*properties_[i].W();
             sumY += Yi;
@@ -387,7 +387,7 @@ Foam::scalar Foam::liquidMixtureProperties::Cp
         }
     }
 
-    return Cp/sumY;
+    return Cp/(sumY + ROOTVSMALL);
 }
 
 
@@ -413,11 +413,11 @@ Foam::scalar Foam::liquidMixtureProperties::sigma
         XsSum += Xs[i];
     }
 
-    Xs /= XsSum;
+    Xs /= (XsSum + ROOTVSMALL);
 
     forAll(properties_, i)
     {
-        if (Xs[i] > small)
+        if (Xs[i] > SMALL)
         {
             scalar Ti = min(TrMax*properties_[i].Tc(), T);
             sigma += Xs[i]*properties_[i].sigma(p, Ti);
@@ -439,7 +439,7 @@ Foam::scalar Foam::liquidMixtureProperties::mu
 
     forAll(properties_, i)
     {
-        if (X[i] > small)
+        if (X[i] > SMALL)
         {
             scalar Ti = min(TrMax*properties_[i].Tc(), T);
             mu += X[i]*log(properties_[i].mu(p, Ti));
@@ -470,9 +470,9 @@ Foam::scalar Foam::liquidMixtureProperties::kappa
         pSum += phii[i];
     }
 
-    phii /= pSum;
+    phii /= (pSum + ROOTVSMALL);
 
-    scalar K = 0.0;
+    scalar K = 0;
 
     forAll(properties_, i)
     {
@@ -508,14 +508,14 @@ Foam::scalar Foam::liquidMixtureProperties::D
 
     forAll(properties_, i)
     {
-        if (X[i] > small)
+        if (X[i] > SMALL)
         {
             scalar Ti = min(TrMax*properties_[i].Tc(), T);
             Dinv += X[i]/properties_[i].D(p, Ti);
         }
     }
 
-    return 1.0/Dinv;
+    return 1/(Dinv + ROOTVSMALL);
 }
 
 

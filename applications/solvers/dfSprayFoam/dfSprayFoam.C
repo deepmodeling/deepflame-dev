@@ -44,7 +44,7 @@ Description
 #ifdef USE_LIBTORCH
 #include <torch/script.h>
 #include "DNNInferencer.H"
-#endif 
+#endif
 
 #include "fvCFD.H"
 #include "dynamicFvMesh.H"
@@ -68,10 +68,10 @@ int main(int argc, char *argv[])
     #include "postProcess.H"
 
     // #include "setRootCaseLists.H"
-    #include "listOptions.H"
+    #include "setRootCaseListOptions.H"
     #include "setRootCase2.H"
-    #include "listOutput.H"
-    
+    #include "setRootCaseListOutput.H"
+
     #include "createTime.H"
     #include "createDynamicFvMesh.H"
     #include "createDyMControls.H"
@@ -97,10 +97,13 @@ int main(int argc, char *argv[])
         autoPtr<volScalarField> divrhoU;
         if (correctPhi)
         {
-            divrhoU = new volScalarField
+            divrhoU.reset
             (
-                "divrhoU",
-                fvc::div(fvc::absolute(phi, rho, U))
+                new volScalarField
+                (
+                    "divrhoU",
+                    fvc::div(fvc::absolute(phi, rho, U))
+                )
             );
         }
 
@@ -112,11 +115,7 @@ int main(int argc, char *argv[])
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
         // Store momentum to set rhoUf for introduced faces.
-        autoPtr<volVectorField> rhoU;
-        if (rhoUf.valid())
-        {
-            rhoU = new volVectorField("rhoU", rho*U);
-        }
+        volVectorField rhoU("rhoU", rho*U);
 
         // Store the particle positions
         parcels.storeGlobalPositions();

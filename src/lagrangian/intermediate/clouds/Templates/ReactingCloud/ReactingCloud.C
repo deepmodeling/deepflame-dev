@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2019-2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -24,7 +27,6 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "ReactingCloud.H"
-
 #include "CompositionModel.H"
 #include "PhaseChangeModel.H"
 
@@ -133,7 +135,7 @@ Foam::ReactingCloud<CloudType>::ReactingCloud
                     IOobject::AUTO_WRITE
                 ),
                 this->mesh(),
-                dimensionedScalar(dimMass, 0)
+                dimensionedScalar(dimMass, Zero)
             )
         );
     }
@@ -197,16 +199,8 @@ Foam::ReactingCloud<CloudType>::ReactingCloud
     cloudCopyPtr_(nullptr),
     constProps_(),
     compositionModel_(c.compositionModel_->clone()),
-//    compositionModel_(nullptr),
     phaseChangeModel_(nullptr),
     rhoTrans_(0)
-{}
-
-
-// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
-
-template<class CloudType>
-Foam::ReactingCloud<CloudType>::~ReactingCloud()
 {}
 
 
@@ -342,17 +336,24 @@ void Foam::ReactingCloud<CloudType>::info()
 {
     CloudType::info();
 
-    this->phaseChange().info(Info);
+    this->phaseChange().info();
 }
 
 
 template<class CloudType>
 void Foam::ReactingCloud<CloudType>::writeFields() const
 {
-    if (compositionModel_.valid())
+    if (compositionModel_)
     {
         CloudType::particleType::writeFields(*this, this->composition());
     }
+}
+
+
+template<class CloudType>
+void Foam::ReactingCloud<CloudType>::writeObjects(objectRegistry& obr) const
+{
+    CloudType::particleType::writeObjects(*this, this->composition(), obr);
 }
 
 

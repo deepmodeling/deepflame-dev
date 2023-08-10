@@ -103,7 +103,7 @@ forAll(Y, i)
 }
 fields.add(thermo.he());
 
-const word constProp = CanteraTorchProperties.subDict("zeroDReactor").lookup("constantProperty");
+const word constProp = CanteraTorchProperties.subDict("zeroDReactor").get<word>("constantProperty");
 
 if
 (

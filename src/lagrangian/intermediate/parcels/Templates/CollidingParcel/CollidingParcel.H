@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2016-2019 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -24,6 +27,9 @@ License
 Class
     Foam::CollidingParcel
 
+Group
+    grpLagrangianIntermediateParcels
+
 Description
     Wrapper around kinematic parcel types to add collision modelling
 
@@ -41,6 +47,7 @@ SourceFiles
 #include "CollisionRecordList.H"
 #include "labelFieldIOField.H"
 #include "vectorFieldIOField.H"
+#include "demandDrivenEntry.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -72,13 +79,11 @@ class CollidingParcel
 :
     public ParcelType
 {
-    // Private member data
-
-        //- Size in bytes of the fields
-        static const std::size_t sizeofFields_;
-
-
 public:
+
+    //- Size in bytes of the fields
+    static const std::size_t sizeofFields;
+
 
     //- Class to hold thermo particle constant properties
     class constantProperties
@@ -86,9 +91,9 @@ public:
         public ParcelType::constantProperties
     {
 
-        // Private Data
+        // Private data
 
-            //- Young's modulus [N/m^2]
+            //- Young's modulus [N/m2]
             demandDrivenEntry<scalar> youngsModulus_;
 
             //- Poisson's ratio
@@ -109,7 +114,7 @@ public:
             constantProperties(const dictionary& parentDict);
 
 
-        // Member Functions
+        // Member functions
 
             //- Return const access to Young's Modulus
             inline scalar youngsModulus() const;
@@ -143,7 +148,7 @@ protected:
 
 public:
 
-    // Static Data Members
+    // Static data members
 
         //- Runtime type information
         TypeName("CollidingParcel");
@@ -211,7 +216,8 @@ public:
         (
             const polyMesh& mesh,
             Istream& is,
-            bool readFields = true
+            bool readFields = true,
+            bool newFormat = true
         );
 
         //- Construct as a copy
@@ -316,6 +322,23 @@ public:
             //- Write
             template<class CloudType>
             static void writeFields(const CloudType& c);
+
+            //- Write individual parcel properties to stream
+            void writeProperties
+            (
+                Ostream& os,
+                const wordRes& filters,
+                const word& delim,
+                const bool namesOnly
+            ) const;
+
+            //- Read particle fields as objects from the obr registry
+            template<class CloudType>
+            static void readObjects(CloudType& c, const objectRegistry& obr);
+
+            //- Write particle fields as objects into the obr registry
+            template<class CloudType>
+            static void writeObjects(const CloudType& c, objectRegistry& obr);
 
 
     // Ostream Operator

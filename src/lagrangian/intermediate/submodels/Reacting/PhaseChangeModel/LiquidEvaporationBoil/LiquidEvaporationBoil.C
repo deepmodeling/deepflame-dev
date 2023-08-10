@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -43,7 +46,7 @@ Foam::tmp<Foam::scalarField> Foam::LiquidEvaporationBoil<CloudType>::calcXc
     {
         Xc[i] =
             this->owner().thermo().carrier().Y()[i][celli]
-           /this->owner().thermo().carrier().Wi(i);
+           /this->owner().thermo().carrier().W(i);
     }
 
     return Xc/sum(Xc);
@@ -137,16 +140,19 @@ void Foam::LiquidEvaporationBoil<CloudType>::calculate
     const scalar Pr,
     const scalar d,
     const scalar nu,
+    const scalar rho,
     const scalar T,
     const scalar Ts,
     const scalar pc,
     const scalar Tc,
     const scalarField& X,
+    const scalarField& solMass,
+    const scalarField& liqMass,
     scalarField& dMassPC
 ) const
 {
     // immediately evaporate mass that has reached critical condition
-    if ((liquids_.Tc(X) - T) < small)
+    if ((liquids_.Tc(X) - T) < SMALL)
     {
         if (debug)
         {
@@ -158,7 +164,7 @@ void Foam::LiquidEvaporationBoil<CloudType>::calculate
         forAll(activeLiquids_, i)
         {
             const label lid = liqToLiqMap_[i];
-            dMassPC[lid] = great;
+            dMassPC[lid] = GREAT;
         }
 
         return;
@@ -167,7 +173,7 @@ void Foam::LiquidEvaporationBoil<CloudType>::calculate
     // droplet surface pressure assumed to surface vapour pressure
     scalar ps = liquids_.pv(pc, Ts, X);
 
-    // vapour density at droplet surface [kg/m^3]
+    // vapour density at droplet surface [kg/m3]
     const scalar RR = 1000.0*constant::physicoChemical::R.value(); // J/(kmol·k)
     scalar rhos = ps*liquids_.W(X)/(RR*Ts);
 
@@ -191,7 +197,7 @@ void Foam::LiquidEvaporationBoil<CloudType>::calculate
     this->owner().thermo().carrier().calcMu(Ts, ps);
     forAll(this->owner().thermo().carrier().Y(), i)
     {
-        const scalar Yc = this->owner().thermo().carrier().Y()[i][celli];
+        scalar Yc = this->owner().thermo().carrier().Y()[i][celli];
         Hsc += Yc*this->owner().thermo().carrier().Ha(i, ps, Ts);
         Cpc += Yc*this->owner().thermo().carrier().Cp(i, ps, Ts);
         kappac += Yc*this->owner().thermo().carrier().kappa(i, ps, Ts);
@@ -226,7 +232,7 @@ void Foam::LiquidEvaporationBoil<CloudType>::calculate
             const scalar Dab = liquids_.properties()[lid].D(ps, Ts);
 
             // Schmidt number
-            const scalar Sc = nu/(Dab + rootVSmall);
+            const scalar Sc = nu/(Dab + ROOTVSMALL);
 
             // Sherwood number
             const scalar Sh = this->Sh(Re, Sc);
@@ -295,7 +301,7 @@ void Foam::LiquidEvaporationBoil<CloudType>::calculate
                 const scalar Xs = X[lid]*pSat/pc;
 
                 // molar ratio
-                const scalar Xr = (Xs - Xc)/max(small, 1.0 - Xs);
+                const scalar Xr = (Xs - Xc)/max(SMALL, 1.0 - Xs);
 
                 if (Xr > 0)
                 {

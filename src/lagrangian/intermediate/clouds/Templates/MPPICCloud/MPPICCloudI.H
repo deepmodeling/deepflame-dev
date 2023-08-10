@@ -1,9 +1,11 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2013-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2013-2016 OpenFOAM Foundation
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -29,7 +31,7 @@ template<class CloudType>
 inline const Foam::MPPICCloud<CloudType>&
 Foam::MPPICCloud<CloudType>::cloudCopy() const
 {
-    return cloudCopyPtr_();
+    return *cloudCopyPtr_;
 }
 
 
@@ -37,7 +39,7 @@ template<class CloudType>
 inline const Foam::PackingModel<Foam::MPPICCloud<CloudType>>&
 Foam::MPPICCloud<CloudType>::packingModel() const
 {
-    return packingModel_();
+    return *packingModel_;
 }
 
 
@@ -45,7 +47,7 @@ template<class CloudType>
 inline Foam::PackingModel<Foam::MPPICCloud<CloudType>>&
 Foam::MPPICCloud<CloudType>::packingModel()
 {
-    return packingModel_();
+    return *packingModel_;
 }
 
 
@@ -53,7 +55,7 @@ template<class CloudType>
 inline const Foam::DampingModel<Foam::MPPICCloud<CloudType>>&
 Foam::MPPICCloud<CloudType>::dampingModel() const
 {
-    return dampingModel_();
+    return *dampingModel_;
 }
 
 
@@ -61,7 +63,7 @@ template<class CloudType>
 inline Foam::DampingModel<Foam::MPPICCloud<CloudType>>&
 Foam::MPPICCloud<CloudType>::dampingModel()
 {
-    return dampingModel_();
+    return *dampingModel_;
 }
 
 
@@ -69,7 +71,7 @@ template<class CloudType>
 inline const Foam::IsotropyModel<Foam::MPPICCloud<CloudType>>&
 Foam::MPPICCloud<CloudType>::isotropyModel() const
 {
-    return isotropyModel_();
+    return *isotropyModel_;
 }
 
 
@@ -77,7 +79,7 @@ template<class CloudType>
 inline Foam::IsotropyModel<Foam::MPPICCloud<CloudType>>&
 Foam::MPPICCloud<CloudType>::isotropyModel()
 {
-    return isotropyModel_();
+    return *isotropyModel_;
 }
 
 

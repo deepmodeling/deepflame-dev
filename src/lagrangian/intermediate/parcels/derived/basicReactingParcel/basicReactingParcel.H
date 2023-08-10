@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2019 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -48,11 +51,8 @@ namespace Foam
     typedef ReactingParcel<ThermoParcel<KinematicParcel<particle>>>
         basicReactingParcel;
 
-    template<>
-    inline bool contiguous<basicReactingParcel>()
-    {
-        return false;
-    }
+    //- Non-contiguous data for basicReactingParcel
+    template<> struct is_contiguous<basicReactingParcel> : std::false_type {};
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

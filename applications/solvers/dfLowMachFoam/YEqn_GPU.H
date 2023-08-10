@@ -42,7 +42,7 @@ for (size_t i = 0; i < Y.size(); ++i)
     // {
     //     Info << "rhoD_CPU" << rhoDi << endl;
     // }
-    
+
 }
 // Info << "rhoD from nuEff\n" << nuEff * rho / 0.7 << endl;
 updateBoundaryFields = false;
@@ -97,10 +97,10 @@ time_monitor_YEqn += double(end1 - start1) / double(CLOCKS_PER_SEC);
 time_monitor_YEqn_solve += double(end1 - start1) / double(CLOCKS_PER_SEC);
 
 
-//MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
+//MPI_Barrier(MPI_COMM_WORLD);
 label flag_mpi_init;
 MPI_Initialized(&flag_mpi_init);
-if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
+if(flag_mpi_init) MPI_Barrier(MPI_COMM_WORLD);
 
 {
     if (!splitting)
@@ -109,7 +109,7 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
         combustion->correct();
         //label flag_mpi_init;
         //MPI_Initialized(&flag_mpi_init);
-        if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
+        if(flag_mpi_init) MPI_Barrier(MPI_COMM_WORLD);
         std::chrono::steady_clock::time_point stop = std::chrono::steady_clock::now();
         std::chrono::duration<double> processingTime = std::chrono::duration_cast<std::chrono::duration<double>>(stop - start);
         time_monitor_chem += processingTime.count();

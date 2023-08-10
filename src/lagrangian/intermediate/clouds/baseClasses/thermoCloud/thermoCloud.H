@@ -1,9 +1,11 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011 OpenFOAM Foundation
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -53,35 +55,31 @@ public:
     //- Runtime type information
     TypeName("thermoCloud");
 
+
     // Constructors
 
         //- Null constructor
-        thermoCloud();
-
-        //- Disallow default bitwise copy construction
-        thermoCloud(const thermoCloud&) = delete;
+        thermoCloud() = default;
 
 
     //- Destructor
-    virtual ~thermoCloud();
+    virtual ~thermoCloud() = default;
 
 
     // Member Functions
 
-        //- Return tmp equivalent particulate emission
-        virtual tmp<volScalarField> Ep() const = 0;
+        // Access
 
-        //- Return tmp equivalent particulate absorption
-        virtual tmp<volScalarField> ap() const = 0;
+            // Radiation
 
-        //- Return tmp equivalent particulate scattering factor
-        virtual tmp<volScalarField> sigmap() const = 0;
+                //- Return tmp equivalent particulate emission
+                virtual tmp<volScalarField> Ep() const = 0;
 
+                //- Return tmp equivalent particulate absorption
+                virtual tmp<volScalarField> ap() const = 0;
 
-    // Member Operators
-
-        //- Disallow default bitwise assignment
-        void operator=(const thermoCloud&) = delete;
+                //- Return tmp equivalent particulate scattering factor
+                virtual tmp<volScalarField> sigmap() const = 0;
 };
 
 

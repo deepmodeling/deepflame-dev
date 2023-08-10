@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2013-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2013-2015 OpenFOAM Foundation
+    Copyright (C) 2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -54,9 +57,15 @@ makeParcelStochasticCollisionModels(basicKinematicMPPICCloud);
 makeParcelSurfaceFilmModels(basicKinematicMPPICCloud);
 
 // MPPIC sub-models
+// WIP: These models are defined in Kinematic and MPPIC clouds temporarily
 makeMPPICParcelDampingModels(basicKinematicMPPICCloud);
+makeMPPICCloudParcelDampingModels(basicKinematicMPPICCloud);
+
 makeMPPICParcelIsotropyModels(basicKinematicMPPICCloud);
+makeMPPICCloudParcelIsotropyModels(basicKinematicMPPICCloud);
+
 makeMPPICParcelPackingModels(basicKinematicMPPICCloud);
+makeMPPICCloudParcelPackingModels(basicKinematicMPPICCloud);
 
 
 // ************************************************************************* //

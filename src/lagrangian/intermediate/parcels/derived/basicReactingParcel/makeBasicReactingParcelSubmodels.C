@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2015 OpenFOAM Foundation
+    Copyright (C) 2020-2021 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -25,10 +28,10 @@ License
 
 #include "basicReactingCloud.H"
 
-#include "makeParcelCloudFunctionObjects.H"
+#include "makeReactingParcelCloudFunctionObjects.H"
 
 // Kinematic
-#include "makeParcelForces.H"
+#include "makeThermoParcelForces.H" // thermo variant
 #include "makeParcelDispersionModels.H"
 #include "makeReactingParcelInjectionModels.H" // Reacting variant
 #include "makeParcelPatchInteractionModels.H"
@@ -42,12 +45,17 @@ License
 #include "makeReactingParcelCompositionModels.H"
 #include "makeReactingParcelPhaseChangeModels.H"
 
+// MPPIC sub-models
+#include "makeMPPICParcelDampingModels.H"
+#include "makeMPPICParcelIsotropyModels.H"
+#include "makeMPPICParcelPackingModels.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-makeParcelCloudFunctionObjects(basicReactingCloud);
+makeReactingParcelCloudFunctionObjects(basicReactingCloud);
 
 // Kinematic sub-models
-makeParcelForces(basicReactingCloud);
+makeThermoParcelForces(basicReactingCloud);
 makeParcelDispersionModels(basicReactingCloud);
 makeReactingParcelInjectionModels(basicReactingCloud);
 makeParcelPatchInteractionModels(basicReactingCloud);
@@ -60,6 +68,11 @@ makeParcelHeatTransferModels(basicReactingCloud);
 // Reacting sub-models
 makeReactingParcelCompositionModels(basicReactingCloud);
 makeReactingParcelPhaseChangeModels(basicReactingCloud);
+
+// MPPIC sub-models
+makeMPPICParcelDampingModels(basicReactingCloud);
+makeMPPICParcelIsotropyModels(basicReactingCloud);
+makeMPPICParcelPackingModels(basicReactingCloud);
 
 
 // ************************************************************************* //

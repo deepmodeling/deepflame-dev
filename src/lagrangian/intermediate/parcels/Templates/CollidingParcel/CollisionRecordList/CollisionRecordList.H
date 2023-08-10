@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -45,7 +48,7 @@ SourceFiles
 namespace Foam
 {
 
-// Forward declaration of friend functions and operators
+// Forward Declarations
 template<class PairType, class WallType>
 class CollisionRecordList;
 
@@ -88,13 +91,16 @@ class CollisionRecordList
 
 public:
 
+    // Generated Methods
+
+        //- Default construct
+        CollisionRecordList() = default;
+
+
     // Constructors
 
-        //- Construct null
-        CollisionRecordList();
-
         //- Construct from Istream
-        CollisionRecordList(Istream&);
+        explicit CollisionRecordList(Istream& is);
 
         //- Construct from component fields (for IO)
         CollisionRecordList
@@ -107,9 +113,6 @@ public:
             const vectorField& wallPRel,
             const Field<WallType>& wallData
         );
-
-    //- Destructor
-    ~CollisionRecordList();
 
 
     // Member Functions

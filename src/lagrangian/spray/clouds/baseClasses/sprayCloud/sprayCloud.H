@@ -1,9 +1,11 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011 OpenFOAM Foundation
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -56,20 +58,11 @@ public:
     // Constructors
 
         //- Null constructor
-        sprayCloud();
-
-        //- Disallow default bitwise copy construction
-        sprayCloud(const sprayCloud&) = delete;
+        sprayCloud() = default;
 
 
     //- Destructor
-    virtual ~sprayCloud();
-
-
-    // Member Operators
-
-        //- Disallow default bitwise assignment
-        void operator=(const sprayCloud&) = delete;
+    virtual ~sprayCloud() = default;
 };
 
 

@@ -1,4 +1,4 @@
-if (!pimple.simpleRho())
+if (!pimple.SIMPLErho())
 {
     rho = thermo.rho();
 }
@@ -77,7 +77,7 @@ start2 = std::clock();
     surfaceScalarField rhorAUf("rhorAUf", fvc::interpolate(rho*rAU));
     volVectorField HbyA(constrainHbyA(rAU*UEqn.H(), U, p));
 
-    if (pimple.nCorrPiso() <= 1)
+    if (pimple.nCorrPISO() <= 1)
     {
         tUEqn.clear();
     }
@@ -181,7 +181,7 @@ K = 0.5*magSqr(U);
     time_monitor_UEqn_correctBC += double(end1 - start1) / double(CLOCKS_PER_SEC);
 #endif
 
-if (pimple.simpleRho())
+if (pimple.SIMPLErho())
 {
     rho = thermo.rho();
 }

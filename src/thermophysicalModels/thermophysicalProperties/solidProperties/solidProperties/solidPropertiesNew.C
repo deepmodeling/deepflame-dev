@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2019-2021 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -33,24 +36,21 @@ Foam::autoPtr<Foam::solidProperties> Foam::solidProperties::New
     const word& name
 )
 {
-    if (debug)
+    DebugInFunction << "Constructing solidProperties" << endl;
+
+    auto* ctorPtr = ConstructorTable(name);
+
+    if (!ctorPtr)
     {
-        InfoInFunction << "Constructing solidProperties" << endl;
+        FatalErrorInLookup
+        (
+            "solidProperties",
+            name,
+            *ConstructorTablePtr_
+        ) << exit(FatalError);
     }
 
-    ConstructorTable::iterator cstrIter = ConstructorTablePtr_->find(name);
-
-    if (cstrIter == ConstructorTablePtr_->end())
-    {
-        FatalErrorInFunction
-            << "Unknown solidProperties type "
-            << name << nl << nl
-            << "Valid solidProperties types are:" << nl
-            << ConstructorTablePtr_->sortedToc()
-            << exit(FatalError);
-    }
-
-    return autoPtr<solidProperties>(cstrIter()());
+    return autoPtr<solidProperties>(ctorPtr());
 }
 
 
@@ -59,10 +59,7 @@ Foam::autoPtr<Foam::solidProperties> Foam::solidProperties::New
     const dictionary& dict
 )
 {
-    if (debug)
-    {
-        InfoInFunction << "Constructing solid" << endl;
-    }
+    DebugInFunction << "Constructing solid" << endl;
 
     const word solidType(dict.dictName());
 
@@ -70,35 +67,31 @@ Foam::autoPtr<Foam::solidProperties> Foam::solidProperties::New
     {
         // Backward-compatibility
 
-        if (Switch(dict.lookup("defaultCoeffs")))
+        if (dict.get<bool>("defaultCoeffs"))
         {
             return New(solidType);
         }
-        else
-        {
-            return autoPtr<solidProperties>
-            (
-                new solidProperties(dict.optionalSubDict(solidType + "Coeffs"))
-            );
-        }
+
+        return autoPtr<solidProperties>::New
+        (
+            dict.optionalSubDict(solidType + "Coeffs")
+        );
     }
-    else
+
+    auto* ctorPtr = dictionaryConstructorTable(solidType);
+
+    if (!ctorPtr)
     {
-        dictionaryConstructorTable::iterator cstrIter =
-            dictionaryConstructorTablePtr_->find(solidType);
-
-        if (cstrIter == dictionaryConstructorTablePtr_->end())
-        {
-            FatalErrorInFunction
-                << "Unknown solidProperties type "
-                << solidType << nl << nl
-                << "Valid solidProperties types are:" << nl
-                << dictionaryConstructorTablePtr_->sortedToc()
-                << exit(FatalError);
-        }
-
-        return autoPtr<solidProperties>(cstrIter()(dict));
+        FatalIOErrorInLookup
+        (
+            dict,
+            "solidProperties",
+            solidType,
+            *dictionaryConstructorTablePtr_
+        ) << exit(FatalIOError);
     }
+
+    return autoPtr<solidProperties>(ctorPtr(dict));
 }
 
 

@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011 OpenFOAM Foundation
+    Copyright (C) 2019 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -61,11 +64,8 @@ namespace Foam
         >
     > basicSprayParcel;
 
-    template<>
-    inline bool contiguous<basicSprayParcel>()
-    {
-        return false;
-    }
+    //- Non-contiguous data for basicSprayParcel
+    template<> struct is_contiguous<basicSprayParcel> : std::false_type {};
 }
 
 

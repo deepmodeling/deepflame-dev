@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -24,6 +27,9 @@ License
 Class
     Foam::ThermoCloud
 
+Group
+    grpLagrangianIntermediateClouds
+
 Description
     Templated base class for thermodynamic cloud
 
@@ -39,9 +45,10 @@ SourceFiles
 #ifndef ThermoCloud_H
 #define ThermoCloud_H
 
+#include "SLGThermo.H"
 #include "KinematicCloud.H"
 #include "thermoCloud.H"
-#include "SLGThermo.H"
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -65,7 +72,7 @@ class ThermoCloud
 {
 public:
 
-    // Public Typedefs
+    // Public typedefs
 
         //- Type of cloud this cloud was instantiated for
         typedef CloudType cloudType;
@@ -79,10 +86,19 @@ public:
 
 private:
 
-    // Private Data
+    // Private data
 
         //- Cloud copy pointer
         autoPtr<ThermoCloud<CloudType>> cloudCopyPtr_;
+
+
+    // Private member functions
+
+        //- No copy construct
+        ThermoCloud(const ThermoCloud&) = delete;
+
+        //- No copy assignment
+        void operator=(const ThermoCloud&) = delete;
 
 
 protected:
@@ -182,9 +198,6 @@ public:
             const ThermoCloud<CloudType>& c
         );
 
-        //- Disallow default bitwise copy construction
-        ThermoCloud(const ThermoCloud&) = delete;
-
         //- Construct and return clone based on (this) with new name
         virtual autoPtr<Cloud<parcelType>> clone(const word& name)
         {
@@ -205,7 +218,7 @@ public:
 
 
     //- Destructor
-    virtual ~ThermoCloud();
+    virtual ~ThermoCloud() = default;
 
 
     // Member Functions
@@ -228,7 +241,7 @@ public:
             //- Return const access to the carrier temperature field
             inline const volScalarField& T() const;
 
-            //- Return const access to the carrier prressure field
+            //- Return const access to the carrier pressure field
             inline const volScalarField& p() const;
 
 
@@ -250,10 +263,10 @@ public:
                  //- Radiation flag
                 inline bool radiation() const;
 
-                //- Radiation sum of parcel projected areas [m^2]
+                //- Radiation sum of parcel projected areas [m2]
                 inline volScalarField::Internal& radAreaP();
 
-                //- Radiation sum of parcel projected areas [m^2]
+                //- Radiation sum of parcel projected areas [m2]
                 inline const volScalarField::Internal&
                     radAreaP() const;
 
@@ -289,7 +302,7 @@ public:
                     inline const volScalarField::Internal&
                         hsCoeff() const;
 
-                    //- Return sensible enthalpy source term [J/kg/m^3/s]
+                    //- Return sensible enthalpy source term [J/kg/m3/s]
                     inline tmp<fvScalarMatrix> Sh(volScalarField& hs) const;
 
 
@@ -347,7 +360,7 @@ public:
             void scaleSources();
 
             //- Pre-evolve
-            void preEvolve();
+            void preEvolve(const typename parcelType::trackingData& td);
 
             //- Evolve the cloud
             void evolve();
@@ -364,12 +377,6 @@ public:
 
             //- Print cloud information
             void info();
-
-
-    // Member Operators
-
-        //- Disallow default bitwise assignment
-        void operator=(const ThermoCloud&) = delete;
 };
 
 

@@ -7,7 +7,7 @@ add_definitions("${SHARED_COMPILE_OPTION}")
 
 SET(hexRef ${DF_SRC}/dynamicMesh/polyTopoChange/polyTopoChange/hexRef)
 
-SET(SOURCES 
+SET(SOURCES
 ${hexRef}/hexRef.C
 ${hexRef}/hexRefData.C
 ${hexRef}/dfRefinementHistory.C
@@ -21,12 +21,11 @@ ${hexRef}/hexRef2/hexRef2.C
 add_library(newdynamicMesh SHARED ${SOURCES})
 
 # dynamic link
-target_link_libraries(${PROJECT_NAME} ${OpenFOAM_LIB_DIR}/libfiniteVolume.so 
-libmeshTools.so 
-libtriSurface.so 
-libdynamicMesh.so 
+target_link_libraries(${PROJECT_NAME} ${OpenFOAM_LIB_DIR}/libfiniteVolume.so
+libmeshTools.so
+libdynamicMesh.so
 libdynamicFvMesh.so
-libextrudeModel.so 
+libextrudeModel.so
 libdecompositionMethods.so
 )
 
@@ -42,14 +41,13 @@ target_link_libraries(${PROJECT_NAME} ${OpenFOAM_LIB_DIR}/dummy/libscotchDecomp.
 include_directories(
     ${dfnewdynamic_inc}
     ${OpenFOAM_SRC}/meshTools/lnInclude
-    ${OpenFOAM_SRC}/triSurface/lnInclude
     ${OpenFOAM_SRC}/dynamicFvMesh/lnInclude
     ${OpenFOAM_SRC}/dynamicMesh/lnInclude
     ${OpenFOAM_SRC}/dynamicMesh/lnInclude
     ${OpenFOAM_SRC}/parallel/decompose/decompositionMethods/lnInclude
-    ${OpenFOAM_SRC}/mesh/extrudeModel/lnInclude   
+    ${OpenFOAM_SRC}/mesh/extrudeModel/lnInclude
 )
-    
+
 
 
 # install

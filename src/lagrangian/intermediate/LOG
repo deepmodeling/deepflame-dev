@@ -1,0 +1,784 @@
+/bin/bash: /home/zy/software/anaconda3/envs/libcantera2/lib/libtinfo.so.6: no version information available (required by /bin/bash)
+Compiling enabled on 16 cores
+Making dependencies: makeBasicReactingMultiphaseParcelSubmodels.C
+Making dependencies: defineBasicReactingMultiphaseParcel.C
+wmkdepend: could not open 'Reactor.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'config.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'ct_defs.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'Making dependencies: makeBasicReactingParcelSubmodels.C
+fmt/format.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'fmt/printf.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'fmt/ostream.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'core.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'os.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'format-inl.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'ostream.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'format.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'ReactorBase.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'ConstPressureReactor.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'FlowDevice.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'transport/TransportFactory.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'ThermoPhase.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'kinetics/Kinetics.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'kinetics/Reaction.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'kinetics/KineticsFactory.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'kinetics/importKinetics.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C': No such file or directory
+Making dependencies: defineBasicReactingParcel.C
+wmkdepend: could not open 'Reactor.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'config.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'ct_defs.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'fmt/format.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'fmt/printf.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'fmt/ostream.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'core.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'os.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'format-inl.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'ostream.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+Making dependencies: makeBasicThermoParcelSubmodels.C
+wmkdepend: could not open 'format.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'ReactorBase.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'ConstPressureReactor.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'FlowDevice.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'transport/TransportFactory.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'ThermoPhase.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'kinetics/Kinetics.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'kinetics/Reaction.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'kinetics/KineticsFactory.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'kinetics/importKinetics.h' for source file 'parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C': No such file or directory
+Making dependencies: defineBasicThermoParcel.C
+wmkdepend: could not open 'Reactor.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'config.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'ct_defs.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'fmt/format.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'fmt/printf.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'fmt/ostream.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'core.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'os.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'format-inl.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'ostream.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'format.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'ReactorBase.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'ConstPressureReactor.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'FlowDevice.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'transport/TransportFactory.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'ThermoPhase.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'kinetics/Kinetics.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'kinetics/Reaction.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'kinetics/KineticsFactory.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'kinetics/importKinetics.h' for source file 'parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C': No such file or directory
+wmkdepend: could not open 'Reactor.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'config.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'ct_defs.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'fmt/format.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'fmt/printf.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'fmt/ostream.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'core.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'os.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'format-inl.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'ostream.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'format.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'ReactorBase.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'ConstPressureReactor.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'FlowDevice.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'transport/TransportFactory.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'ThermoPhase.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'kinetics/Kinetics.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'kinetics/Reaction.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'kinetics/KineticsFactory.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'kinetics/importKinetics.h' for source file 'parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C': No such file or directory
+wmkdepend: could not open 'Reactor.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'config.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'ct_defs.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'fmt/format.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'fmt/printf.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'fmt/ostream.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'core.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'os.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'format-inl.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'ostream.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'format.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'ReactorBase.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'ConstPressureReactor.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'FlowDevice.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'transport/TransportFactory.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'ThermoPhase.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'kinetics/Kinetics.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'kinetics/Reaction.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'kinetics/KineticsFactory.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'kinetics/importKinetics.h' for source file 'parcels/derived/basicReactingParcel/defineBasicReactingParcel.C': No such file or directory
+wmkdepend: could not open 'Reactor.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'config.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'ct_defs.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'fmt/format.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'fmt/printf.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'fmt/ostream.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'core.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'os.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'format-inl.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'ostream.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'format.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'ReactorBase.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'ConstPressureReactor.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'FlowDevice.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'transport/TransportFactory.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'ThermoPhase.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'kinetics/Kinetics.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'kinetics/Reaction.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'kinetics/KineticsFactory.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+wmkdepend: could not open 'kinetics/importKinetics.h' for source file 'parcels/derived/basicThermoParcel/defineBasicThermoParcel.C': No such file or directory
+g++ -std=c++11 -m64 -pthread -DOPENFOAM=2212 -DWM_DP -DWM_LABEL_SIZE=32 -Wall -Wextra -Wold-style-cast -Wnon-virtual-dtor -Wno-unused-parameter -Wno-invalid-offsetof -Wno-attributes -Wno-unknown-pragmas -O3  -DNoRepository -ftemplate-depth-100  -Wno-old-style-cast -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/basic/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/distributionModels/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/intermediate/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/transportModels/compressible/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/thermophysicalModels/basic/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/thermophysicalProperties/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/thermophysicalModels/thermophysicalProperties/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude -I/home/zy/software/anaconda3/envs/libcantera2/include -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/transportModels -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionModels/regionModel/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionModels/surfaceFilmModels/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionFaModels/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/finiteArea/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/faOptions/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/surfMesh/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/dynamicFvMesh/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/sampling/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/finiteVolume/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/meshTools/lnInclude -iquote. -IlnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/OpenFOAM/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/OSspecific/POSIX/lnInclude   -fPIC -c parcels/derived/basicThermoParcel/defineBasicThermoParcel.C -o Make/linux64GccDPInt32Opt/parcels/derived/basicThermoParcel/defineBasicThermoParcel.o
+g++ -std=c++11 -m64 -pthread -DOPENFOAM=2212 -DWM_DP -DWM_LABEL_SIZE=32 -Wall -Wextra -Wold-style-cast -Wnon-virtual-dtor -Wno-unused-parameter -Wno-invalid-offsetof -Wno-attributes -Wno-unknown-pragmas -O3  -DNoRepository -ftemplate-depth-100  -Wno-old-style-cast -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/basic/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/distributionModels/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/intermediate/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/transportModels/compressible/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/thermophysicalModels/basic/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/thermophysicalProperties/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/thermophysicalModels/thermophysicalProperties/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude -I/home/zy/software/anaconda3/envs/libcantera2/include -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/transportModels -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionModels/regionModel/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionModels/surfaceFilmModels/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionFaModels/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/finiteArea/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/faOptions/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/surfMesh/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/dynamicFvMesh/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/sampling/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/finiteVolume/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/meshTools/lnInclude -iquote. -IlnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/OpenFOAM/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/OSspecific/POSIX/lnInclude   -fPIC -c parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C -o Make/linux64GccDPInt32Opt/parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.o
+g++ -std=c++11 -m64 -pthread -DOPENFOAM=2212 -DWM_DP -DWM_LABEL_SIZE=32 -Wall -Wextra -Wold-style-cast -Wnon-virtual-dtor -Wno-unused-parameter -Wno-invalid-offsetof -Wno-attributes -Wno-unknown-pragmas -O3  -DNoRepository -ftemplate-depth-100  -Wno-old-style-cast -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/basic/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/distributionModels/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/intermediate/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/transportModels/compressible/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/thermophysicalModels/basic/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/thermophysicalProperties/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/thermophysicalModels/thermophysicalProperties/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude -I/home/zy/software/anaconda3/envs/libcantera2/include -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/transportModels -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionModels/regionModel/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionModels/surfaceFilmModels/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionFaModels/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/finiteArea/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/faOptions/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/surfMesh/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/dynamicFvMesh/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/sampling/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/finiteVolume/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/meshTools/lnInclude -iquote. -IlnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/OpenFOAM/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/OSspecific/POSIX/lnInclude   -fPIC -c parcels/derived/basicReactingParcel/defineBasicReactingParcel.C -o Make/linux64GccDPInt32Opt/parcels/derived/basicReactingParcel/defineBasicReactingParcel.o
+g++ -std=c++11 -m64 -pthread -DOPENFOAM=2212 -DWM_DP -DWM_LABEL_SIZE=32 -Wall -Wextra -Wold-style-cast -Wnon-virtual-dtor -Wno-unused-parameter -Wno-invalid-offsetof -Wno-attributes -Wno-unknown-pragmas -O3  -DNoRepository -ftemplate-depth-100  -Wno-old-style-cast -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/basic/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/distributionModels/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/intermediate/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/transportModels/compressible/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/thermophysicalModels/basic/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/thermophysicalProperties/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/thermophysicalModels/thermophysicalProperties/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude -I/home/zy/software/anaconda3/envs/libcantera2/include -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/transportModels -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionModels/regionModel/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionModels/surfaceFilmModels/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionFaModels/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/finiteArea/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/faOptions/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/surfMesh/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/dynamicFvMesh/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/sampling/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/finiteVolume/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/meshTools/lnInclude -iquote. -IlnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/OpenFOAM/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/OSspecific/POSIX/lnInclude   -fPIC -c parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C -o Make/linux64GccDPInt32Opt/parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.o
+g++ -std=c++11 -m64 -pthread -DOPENFOAM=2212 -DWM_DP -DWM_LABEL_SIZE=32 -Wall -Wextra -Wold-style-cast -Wnon-virtual-dtor -Wno-unused-parameter -Wno-invalid-offsetof -Wno-attributes -Wno-unknown-pragmas -O3  -DNoRepository -ftemplate-depth-100  -Wno-old-style-cast -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/basic/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/distributionModels/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/intermediate/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/transportModels/compressible/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/thermophysicalModels/basic/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/thermophysicalProperties/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/thermophysicalModels/thermophysicalProperties/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude -I/home/zy/software/anaconda3/envs/libcantera2/include -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/transportModels -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionModels/regionModel/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionModels/surfaceFilmModels/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionFaModels/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/finiteArea/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/faOptions/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/surfMesh/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/dynamicFvMesh/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/sampling/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/finiteVolume/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/meshTools/lnInclude -iquote. -IlnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/OpenFOAM/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/OSspecific/POSIX/lnInclude   -fPIC -c parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C -o Make/linux64GccDPInt32Opt/parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.o
+g++ -std=c++11 -m64 -pthread -DOPENFOAM=2212 -DWM_DP -DWM_LABEL_SIZE=32 -Wall -Wextra -Wold-style-cast -Wnon-virtual-dtor -Wno-unused-parameter -Wno-invalid-offsetof -Wno-attributes -Wno-unknown-pragmas -O3  -DNoRepository -ftemplate-depth-100  -Wno-old-style-cast -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/basic/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/distributionModels/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/intermediate/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/transportModels/compressible/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/thermophysicalModels/basic/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/thermophysicalProperties/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/thermophysicalModels/thermophysicalProperties/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude -I/home/zy/software/anaconda3/envs/libcantera2/include -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/transportModels -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionModels/regionModel/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionModels/surfaceFilmModels/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionFaModels/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/finiteArea/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/faOptions/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/surfMesh/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/dynamicFvMesh/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/sampling/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/finiteVolume/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/meshTools/lnInclude -iquote. -IlnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/OpenFOAM/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/OSspecific/POSIX/lnInclude   -fPIC -c parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C -o Make/linux64GccDPInt32Opt/parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.o
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Arrhenius.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/RxnRates.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicReactingMultiphaseCloud.H:37,
+                 from parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/ReactionData.h:25:8: warning: ‘struct Cantera::ReactionData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+   25 | struct ReactionData
+      |        ^~~~~~~~~~~~
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/RxnRates.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicReactingMultiphaseCloud.H:37,
+                 from parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Arrhenius.h:29:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   29 | struct ArrheniusData : public ReactionData
+      |        ^~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Arrhenius.h:29:8: warning: ‘struct Cantera::ArrheniusData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Arrhenius.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/RxnRates.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicThermoCloud.H:37,
+                 from parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/ReactionData.h:25:8: warning: ‘struct Cantera::ReactionData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+   25 | struct ReactionData
+      |        ^~~~~~~~~~~~
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/RxnRates.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicThermoCloud.H:37,
+                 from parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Arrhenius.h:29:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   29 | struct ArrheniusData : public ReactionData
+      |        ^~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Arrhenius.h:29:8: warning: ‘struct Cantera::ArrheniusData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/RxnRates.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicReactingMultiphaseCloud.H:37,
+                 from parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/PlogRate.h:21:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   21 | struct PlogData : public ReactionData
+      |        ^~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/PlogRate.h:21:8: warning: ‘struct Cantera::PlogData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/RxnRates.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicThermoCloud.H:37,
+                 from parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/PlogRate.h:21:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   21 | struct PlogData : public ReactionData
+      |        ^~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/PlogRate.h:21:8: warning: ‘struct Cantera::PlogData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicReactingMultiphaseCloud.H:37,
+                 from parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/ChebyshevRate.h:23:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   23 | struct ChebyshevData : public ReactionData
+      |        ^~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/ChebyshevRate.h:23:8: warning: ‘struct Cantera::ChebyshevData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicThermoCloud.H:37,
+                 from parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/ChebyshevRate.h:23:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   23 | struct ChebyshevData : public ReactionData
+      |        ^~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/ChebyshevRate.h:23:8: warning: ‘struct Cantera::ChebyshevData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/InterfaceRate.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:16,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicReactingMultiphaseCloud.H:37,
+                 from parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/BlowersMaselRate.h:19:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   19 | struct BlowersMaselData : public ReactionData
+      |        ^~~~~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/BlowersMaselRate.h:19:8: warning: ‘struct Cantera::BlowersMaselData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/InterfaceRate.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:16,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicThermoCloud.H:37,
+                 from parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/BlowersMaselRate.h:19:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   19 | struct BlowersMaselData : public ReactionData
+      |        ^~~~~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/BlowersMaselRate.h:19:8: warning: ‘struct Cantera::BlowersMaselData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:16,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicReactingMultiphaseCloud.H:37,
+                 from parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/InterfaceRate.h:39:8: warning: base class ‘struct Cantera::BlowersMaselData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   39 | struct InterfaceData : public BlowersMaselData
+      |        ^~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/InterfaceRate.h:39:8: warning: ‘struct Cantera::InterfaceData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:16,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicThermoCloud.H:37,
+                 from parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/InterfaceRate.h:39:8: warning: base class ‘struct Cantera::BlowersMaselData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   39 | struct InterfaceData : public BlowersMaselData
+      |        ^~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/InterfaceRate.h:39:8: warning: ‘struct Cantera::InterfaceData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Arrhenius.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/RxnRates.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicReactingCloud.H:37,
+                 from parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/ReactionData.h:25:8: warning: ‘struct Cantera::ReactionData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+   25 | struct ReactionData
+      |        ^~~~~~~~~~~~
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/RxnRates.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicReactingCloud.H:37,
+                 from parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Arrhenius.h:29:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   29 | struct ArrheniusData : public ReactionData
+      |        ^~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Arrhenius.h:29:8: warning: ‘struct Cantera::ArrheniusData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/RxnRates.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicReactingCloud.H:37,
+                 from parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/PlogRate.h:21:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   21 | struct PlogData : public ReactionData
+      |        ^~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/PlogRate.h:21:8: warning: ‘struct Cantera::PlogData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicReactingCloud.H:37,
+                 from parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/ChebyshevRate.h:23:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   23 | struct ChebyshevData : public ReactionData
+      |        ^~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/ChebyshevRate.h:23:8: warning: ‘struct Cantera::ChebyshevData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/InterfaceRate.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:16,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicReactingCloud.H:37,
+                 from parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/BlowersMaselRate.h:19:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   19 | struct BlowersMaselData : public ReactionData
+      |        ^~~~~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/BlowersMaselRate.h:19:8: warning: ‘struct Cantera::BlowersMaselData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:16,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicReactingCloud.H:37,
+                 from parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/InterfaceRate.h:39:8: warning: base class ‘struct Cantera::BlowersMaselData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   39 | struct InterfaceData : public BlowersMaselData
+      |        ^~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/InterfaceRate.h:39:8: warning: ‘struct Cantera::InterfaceData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Arrhenius.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/RxnRates.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicReactingParcel/basicReactingParcel.H:44,
+                 from parcels/derived/basicReactingParcel/defineBasicReactingParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/ReactionData.h:25:8: warning: ‘struct Cantera::ReactionData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+   25 | struct ReactionData
+      |        ^~~~~~~~~~~~
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/RxnRates.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicReactingParcel/basicReactingParcel.H:44,
+                 from parcels/derived/basicReactingParcel/defineBasicReactingParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Arrhenius.h:29:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   29 | struct ArrheniusData : public ReactionData
+      |        ^~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Arrhenius.h:29:8: warning: ‘struct Cantera::ArrheniusData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/RxnRates.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicReactingParcel/basicReactingParcel.H:44,
+                 from parcels/derived/basicReactingParcel/defineBasicReactingParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/PlogRate.h:21:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   21 | struct PlogData : public ReactionData
+      |        ^~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/PlogRate.h:21:8: warning: ‘struct Cantera::PlogData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicReactingParcel/basicReactingParcel.H:44,
+                 from parcels/derived/basicReactingParcel/defineBasicReactingParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/ChebyshevRate.h:23:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   23 | struct ChebyshevData : public ReactionData
+      |        ^~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/ChebyshevRate.h:23:8: warning: ‘struct Cantera::ChebyshevData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/InterfaceRate.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:16,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicReactingParcel/basicReactingParcel.H:44,
+                 from parcels/derived/basicReactingParcel/defineBasicReactingParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/BlowersMaselRate.h:19:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   19 | struct BlowersMaselData : public ReactionData
+      |        ^~~~~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/BlowersMaselRate.h:19:8: warning: ‘struct Cantera::BlowersMaselData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:16,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicReactingParcel/basicReactingParcel.H:44,
+                 from parcels/derived/basicReactingParcel/defineBasicReactingParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/InterfaceRate.h:39:8: warning: base class ‘struct Cantera::BlowersMaselData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   39 | struct InterfaceData : public BlowersMaselData
+      |        ^~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/InterfaceRate.h:39:8: warning: ‘struct Cantera::InterfaceData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Arrhenius.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/RxnRates.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicThermoParcel/basicThermoParcel.H:44,
+                 from parcels/derived/basicThermoParcel/defineBasicThermoParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/ReactionData.h:25:8: warning: ‘struct Cantera::ReactionData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+   25 | struct ReactionData
+      |        ^~~~~~~~~~~~
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/RxnRates.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicThermoParcel/basicThermoParcel.H:44,
+                 from parcels/derived/basicThermoParcel/defineBasicThermoParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Arrhenius.h:29:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   29 | struct ArrheniusData : public ReactionData
+      |        ^~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Arrhenius.h:29:8: warning: ‘struct Cantera::ArrheniusData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/RxnRates.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicThermoParcel/basicThermoParcel.H:44,
+                 from parcels/derived/basicThermoParcel/defineBasicThermoParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/PlogRate.h:21:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   21 | struct PlogData : public ReactionData
+      |        ^~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/PlogRate.h:21:8: warning: ‘struct Cantera::PlogData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicThermoParcel/basicThermoParcel.H:44,
+                 from parcels/derived/basicThermoParcel/defineBasicThermoParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/ChebyshevRate.h:23:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   23 | struct ChebyshevData : public ReactionData
+      |        ^~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/ChebyshevRate.h:23:8: warning: ‘struct Cantera::ChebyshevData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/InterfaceRate.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:16,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicThermoParcel/basicThermoParcel.H:44,
+                 from parcels/derived/basicThermoParcel/defineBasicThermoParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/BlowersMaselRate.h:19:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   19 | struct BlowersMaselData : public ReactionData
+      |        ^~~~~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/BlowersMaselRate.h:19:8: warning: ‘struct Cantera::BlowersMaselData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Arrhenius.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/RxnRates.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicReactingMultiphaseParcel/basicReactingMultiphaseParcel.H:45,
+                 from parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/ReactionData.h:25:8: warning: ‘struct Cantera::ReactionData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+   25 | struct ReactionData
+      |        ^~~~~~~~~~~~
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:16,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicThermoParcel/basicThermoParcel.H:44,
+                 from parcels/derived/basicThermoParcel/defineBasicThermoParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/InterfaceRate.h:39:8: warning: base class ‘struct Cantera::BlowersMaselData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   39 | struct InterfaceData : public BlowersMaselData
+      |        ^~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/InterfaceRate.h:39:8: warning: ‘struct Cantera::InterfaceData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/RxnRates.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicReactingMultiphaseParcel/basicReactingMultiphaseParcel.H:45,
+                 from parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Arrhenius.h:29:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   29 | struct ArrheniusData : public ReactionData
+      |        ^~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Arrhenius.h:29:8: warning: ‘struct Cantera::ArrheniusData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/RxnRates.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicReactingMultiphaseParcel/basicReactingMultiphaseParcel.H:45,
+                 from parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/PlogRate.h:21:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   21 | struct PlogData : public ReactionData
+      |        ^~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/PlogRate.h:21:8: warning: ‘struct Cantera::PlogData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicReactingMultiphaseParcel/basicReactingMultiphaseParcel.H:45,
+                 from parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/ChebyshevRate.h:23:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   23 | struct ChebyshevData : public ReactionData
+      |        ^~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/ChebyshevRate.h:23:8: warning: ‘struct Cantera::ChebyshevData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/InterfaceRate.h:13,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:16,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicReactingMultiphaseParcel/basicReactingMultiphaseParcel.H:45,
+                 from parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/BlowersMaselRate.h:19:8: warning: base class ‘struct Cantera::ReactionData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   19 | struct BlowersMaselData : public ReactionData
+      |        ^~~~~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/BlowersMaselRate.h:19:8: warning: ‘struct Cantera::BlowersMaselData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Reaction.h:16,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:13,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicReactingMultiphaseParcel/basicReactingMultiphaseParcel.H:45,
+                 from parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/InterfaceRate.h:39:8: warning: base class ‘struct Cantera::BlowersMaselData’ has accessible non-virtual destructor [-Wnon-virtual-dtor]
+   39 | struct InterfaceData : public BlowersMaselData
+      |        ^~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/InterfaceRate.h:39:8: warning: ‘struct Cantera::InterfaceData’ has virtual functions and accessible non-virtual destructor [-Wnon-virtual-dtor]
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/SparseCore:42,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/Sparse:26,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/numerics/eigen_sparse.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/StoichManager.h:11,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Kinetics.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:12,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicReactingParcel/basicReactingParcel.H:44,
+                 from parcels/derived/basicReactingParcel/defineBasicReactingParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/SparseCore/SparseMatrix.h: In instantiation of ‘Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex>& Eigen::SparseMatrix<_Scalar, _Flags, _StorageIndex>::operator=(const Eigen::SparseMatrixBase<OtherDerived>&) [with OtherDerived = Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >; _Scalar = double; int _Options = 0; _StorageIndex = int]’:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/SparseCore/SparseMatrix.h:684:15:   required from ‘Eigen::SparseMatrix<_Scalar, _Flags, _StorageIndex>::SparseMatrix(const Eigen::SparseMatrixBase<OtherDerived>&) [with OtherDerived = Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >; _Scalar = double; int _Options = 0; _StorageIndex = int]’
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/StoichManager.h:626:68:   required from here
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/SparseCore/SparseMatrix.h:1079:15: warning: implicitly-declared ‘constexpr Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >::Transpose(const Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >&)’ is deprecated [-Wdeprecated-copy]
+ 1079 |     OtherCopy otherCopy(other.derived());
+      |               ^~~~~~~~~
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/Core:88,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/SparseCore:11,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/Sparse:26,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/numerics/eigen_sparse.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/StoichManager.h:11,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Kinetics.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:12,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicReactingParcel/basicReactingParcel.H:44,
+                 from parcels/derived/basicReactingParcel/defineBasicReactingParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/Core/util/Macros.h:830:52: note: because ‘Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >’ has user-provided ‘Eigen::Transpose<MatrixType>& Eigen::Transpose<MatrixType>::operator=(const Eigen::Transpose<MatrixType>&) [with MatrixType = Eigen::SparseMatrix<double, 0, int>]’
+  830 |     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& operator=(const Derived& other) \
+      |                                                    ^~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/Core/util/Macros.h:830:52: note: in definition of macro ‘EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR’
+  830 |     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& operator=(const Derived& other) \
+      |                                                    ^~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/Core/Transpose.h:66:5: note: in expansion of macro ‘EIGEN_INHERIT_ASSIGNMENT_OPERATORS’
+   66 |     EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Transpose)
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/SparseCore:42,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/Sparse:26,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/numerics/eigen_sparse.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/StoichManager.h:11,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Kinetics.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:12,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicThermoParcel/basicThermoParcel.H:44,
+                 from parcels/derived/basicThermoParcel/defineBasicThermoParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/SparseCore/SparseMatrix.h: In instantiation of ‘Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex>& Eigen::SparseMatrix<_Scalar, _Flags, _StorageIndex>::operator=(const Eigen::SparseMatrixBase<OtherDerived>&) [with OtherDerived = Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >; _Scalar = double; int _Options = 0; _StorageIndex = int]’:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/SparseCore/SparseMatrix.h:684:15:   required from ‘Eigen::SparseMatrix<_Scalar, _Flags, _StorageIndex>::SparseMatrix(const Eigen::SparseMatrixBase<OtherDerived>&) [with OtherDerived = Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >; _Scalar = double; int _Options = 0; _StorageIndex = int]’
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/StoichManager.h:626:68:   required from here
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/SparseCore/SparseMatrix.h:1079:15: warning: implicitly-declared ‘constexpr Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >::Transpose(const Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >&)’ is deprecated [-Wdeprecated-copy]
+ 1079 |     OtherCopy otherCopy(other.derived());
+      |               ^~~~~~~~~
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/Core:88,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/SparseCore:11,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/Sparse:26,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/numerics/eigen_sparse.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/StoichManager.h:11,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Kinetics.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:12,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicThermoParcel/basicThermoParcel.H:44,
+                 from parcels/derived/basicThermoParcel/defineBasicThermoParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/Core/util/Macros.h:830:52: note: because ‘Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >’ has user-provided ‘Eigen::Transpose<MatrixType>& Eigen::Transpose<MatrixType>::operator=(const Eigen::Transpose<MatrixType>&) [with MatrixType = Eigen::SparseMatrix<double, 0, int>]’
+  830 |     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& operator=(const Derived& other) \
+      |                                                    ^~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/Core/util/Macros.h:830:52: note: in definition of macro ‘EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR’
+  830 |     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& operator=(const Derived& other) \
+      |                                                    ^~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/Core/Transpose.h:66:5: note: in expansion of macro ‘EIGEN_INHERIT_ASSIGNMENT_OPERATORS’
+   66 |     EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Transpose)
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/SparseCore:42,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/Sparse:26,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/numerics/eigen_sparse.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/StoichManager.h:11,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Kinetics.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:12,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicReactingMultiphaseParcel/basicReactingMultiphaseParcel.H:45,
+                 from parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/SparseCore/SparseMatrix.h: In instantiation of ‘Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex>& Eigen::SparseMatrix<_Scalar, _Flags, _StorageIndex>::operator=(const Eigen::SparseMatrixBase<OtherDerived>&) [with OtherDerived = Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >; _Scalar = double; int _Options = 0; _StorageIndex = int]’:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/SparseCore/SparseMatrix.h:684:15:   required from ‘Eigen::SparseMatrix<_Scalar, _Flags, _StorageIndex>::SparseMatrix(const Eigen::SparseMatrixBase<OtherDerived>&) [with OtherDerived = Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >; _Scalar = double; int _Options = 0; _StorageIndex = int]’
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/StoichManager.h:626:68:   required from here
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/SparseCore/SparseMatrix.h:1079:15: warning: implicitly-declared ‘constexpr Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >::Transpose(const Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >&)’ is deprecated [-Wdeprecated-copy]
+ 1079 |     OtherCopy otherCopy(other.derived());
+      |               ^~~~~~~~~
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/Core:88,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/SparseCore:11,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/Sparse:26,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/numerics/eigen_sparse.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/StoichManager.h:11,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Kinetics.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:12,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoParcel.H:49,
+                 from parcels/derived/basicReactingMultiphaseParcel/basicReactingMultiphaseParcel.H:45,
+                 from parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.C:28:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/Core/util/Macros.h:830:52: note: because ‘Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >’ has user-provided ‘Eigen::Transpose<MatrixType>& Eigen::Transpose<MatrixType>::operator=(const Eigen::Transpose<MatrixType>&) [with MatrixType = Eigen::SparseMatrix<double, 0, int>]’
+  830 |     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& operator=(const Derived& other) \
+      |                                                    ^~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/Core/util/Macros.h:830:52: note: in definition of macro ‘EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR’
+  830 |     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& operator=(const Derived& other) \
+      |                                                    ^~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/Core/Transpose.h:66:5: note: in expansion of macro ‘EIGEN_INHERIT_ASSIGNMENT_OPERATORS’
+   66 |     EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Transpose)
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/SparseCore:42,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/Sparse:26,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/numerics/eigen_sparse.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/StoichManager.h:11,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Kinetics.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:12,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicReactingMultiphaseCloud.H:37,
+                 from parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/SparseCore/SparseMatrix.h: In instantiation of ‘Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex>& Eigen::SparseMatrix<_Scalar, _Flags, _StorageIndex>::operator=(const Eigen::SparseMatrixBase<OtherDerived>&) [with OtherDerived = Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >; _Scalar = double; int _Options = 0; _StorageIndex = int]’:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/SparseCore/SparseMatrix.h:684:15:   required from ‘Eigen::SparseMatrix<_Scalar, _Flags, _StorageIndex>::SparseMatrix(const Eigen::SparseMatrixBase<OtherDerived>&) [with OtherDerived = Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >; _Scalar = double; int _Options = 0; _StorageIndex = int]’
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/StoichManager.h:626:68:   required from here
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/SparseCore/SparseMatrix.h:1079:15: warning: implicitly-declared ‘constexpr Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >::Transpose(const Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >&)’ is deprecated [-Wdeprecated-copy]
+ 1079 |     OtherCopy otherCopy(other.derived());
+      |               ^~~~~~~~~
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/Core:88,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/SparseCore:11,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/Sparse:26,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/numerics/eigen_sparse.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/StoichManager.h:11,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Kinetics.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:12,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicReactingMultiphaseCloud.H:37,
+                 from parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/Core/util/Macros.h:830:52: note: because ‘Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >’ has user-provided ‘Eigen::Transpose<MatrixType>& Eigen::Transpose<MatrixType>::operator=(const Eigen::Transpose<MatrixType>&) [with MatrixType = Eigen::SparseMatrix<double, 0, int>]’
+  830 |     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& operator=(const Derived& other) \
+      |                                                    ^~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/Core/util/Macros.h:842:53: note: in expansion of macro ‘EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR’
+  842 | #define EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Derived) EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Derived)
+      |                                                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/Core/Transpose.h:66:5: note: in expansion of macro ‘EIGEN_INHERIT_ASSIGNMENT_OPERATORS’
+   66 |     EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Transpose)
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/SparseCore:42,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/Sparse:26,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/numerics/eigen_sparse.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/StoichManager.h:11,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Kinetics.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:12,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicThermoCloud.H:37,
+                 from parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/SparseCore/SparseMatrix.h: In instantiation of ‘Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex>& Eigen::SparseMatrix<_Scalar, _Flags, _StorageIndex>::operator=(const Eigen::SparseMatrixBase<OtherDerived>&) [with OtherDerived = Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >; _Scalar = double; int _Options = 0; _StorageIndex = int]’:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/SparseCore/SparseMatrix.h:684:15:   required from ‘Eigen::SparseMatrix<_Scalar, _Flags, _StorageIndex>::SparseMatrix(const Eigen::SparseMatrixBase<OtherDerived>&) [with OtherDerived = Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >; _Scalar = double; int _Options = 0; _StorageIndex = int]’
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/StoichManager.h:626:68:   required from here
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/SparseCore/SparseMatrix.h:1079:15: warning: implicitly-declared ‘constexpr Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >::Transpose(const Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >&)’ is deprecated [-Wdeprecated-copy]
+ 1079 |     OtherCopy otherCopy(other.derived());
+      |               ^~~~~~~~~
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/Core:88,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/SparseCore:11,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/Sparse:26,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/numerics/eigen_sparse.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/StoichManager.h:11,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Kinetics.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:12,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicThermoCloud.H:37,
+                 from parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/Core/util/Macros.h:830:52: note: because ‘Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >’ has user-provided ‘Eigen::Transpose<MatrixType>& Eigen::Transpose<MatrixType>::operator=(const Eigen::Transpose<MatrixType>&) [with MatrixType = Eigen::SparseMatrix<double, 0, int>]’
+  830 |     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& operator=(const Derived& other) \
+      |                                                    ^~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/Core/util/Macros.h:842:53: note: in expansion of macro ‘EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR’
+  842 | #define EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Derived) EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Derived)
+      |                                                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/Core/Transpose.h:66:5: note: in expansion of macro ‘EIGEN_INHERIT_ASSIGNMENT_OPERATORS’
+   66 |     EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Transpose)
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/SparseCore:42,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/Sparse:26,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/numerics/eigen_sparse.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/StoichManager.h:11,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Kinetics.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:12,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicReactingCloud.H:37,
+                 from parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/SparseCore/SparseMatrix.h: In instantiation of ‘Eigen::SparseMatrix<_Scalar, _Options, _StorageIndex>& Eigen::SparseMatrix<_Scalar, _Flags, _StorageIndex>::operator=(const Eigen::SparseMatrixBase<OtherDerived>&) [with OtherDerived = Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >; _Scalar = double; int _Options = 0; _StorageIndex = int]’:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/SparseCore/SparseMatrix.h:684:15:   required from ‘Eigen::SparseMatrix<_Scalar, _Flags, _StorageIndex>::SparseMatrix(const Eigen::SparseMatrixBase<OtherDerived>&) [with OtherDerived = Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >; _Scalar = double; int _Options = 0; _StorageIndex = int]’
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/StoichManager.h:626:68:   required from here
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/SparseCore/SparseMatrix.h:1079:15: warning: implicitly-declared ‘constexpr Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >::Transpose(const Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >&)’ is deprecated [-Wdeprecated-copy]
+ 1079 |     OtherCopy otherCopy(other.derived());
+      |               ^~~~~~~~~
+In file included from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/Core:88,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/SparseCore:11,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/Sparse:26,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/numerics/eigen_sparse.h:15,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/StoichManager.h:11,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics/Kinetics.h:14,
+                 from /home/zy/software/anaconda3/envs/libcantera2/include/cantera/kinetics.h:12,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude/CanteraMixture.H:42,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude/SLGThermo.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/ThermoCloud.H:48,
+                 from /home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude/basicReactingCloud.H:37,
+                 from parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.C:29:
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/Core/util/Macros.h:830:52: note: because ‘Eigen::Transpose<Eigen::SparseMatrix<double, 0, int> >’ has user-provided ‘Eigen::Transpose<MatrixType>& Eigen::Transpose<MatrixType>::operator=(const Eigen::Transpose<MatrixType>&) [with MatrixType = Eigen::SparseMatrix<double, 0, int>]’
+  830 |     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived& operator=(const Derived& other) \
+      |                                                    ^~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/Core/util/Macros.h:842:53: note: in expansion of macro ‘EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR’
+  842 | #define EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Derived) EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Derived)
+      |                                                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/zy/software/anaconda3/envs/libcantera2/include/cantera/ext/Eigen/src/Core/Transpose.h:66:5: note: in expansion of macro ‘EIGEN_INHERIT_ASSIGNMENT_OPERATORS’
+   66 |     EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Transpose)
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+g++ -std=c++11 -m64 -pthread -DOPENFOAM=2212 -DWM_DP -DWM_LABEL_SIZE=32 -Wall -Wextra -Wold-style-cast -Wnon-virtual-dtor -Wno-unused-parameter -Wno-invalid-offsetof -Wno-attributes -Wno-unknown-pragmas -O3  -DNoRepository -ftemplate-depth-100  -Wno-old-style-cast -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/basic/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/distributionModels/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/lagrangian/intermediate/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/lagrangian/intermediate/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/transportModels/compressible/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/thermophysicalModels/basic/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/thermophysicalProperties/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/thermophysicalModels/thermophysicalProperties/lnInclude -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/thermophysicalModels/SLGThermo/lnInclude -I/home/zy/software/anaconda3/envs/libcantera2/include -I/home/zy/OpenFOAM/zy-v2212/deepflame-dev/src/dfCanteraMixture/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/transportModels -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionModels/regionModel/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionModels/surfaceFilmModels/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/regionFaModels/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/finiteArea/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/faOptions/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/surfMesh/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/dynamicFvMesh/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/sampling/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/finiteVolume/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/meshTools/lnInclude -iquote. -IlnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/OpenFOAM/lnInclude -I/home/zy/OpenFOAM/OpenFOAM-v2212/src/OSspecific/POSIX/lnInclude   -fPIC -shared -Xlinker --add-needed -Xlinker --no-as-needed  Make/linux64GccDPInt32Opt/clouds/baseClasses/kinematicCloud/kinematicCloud.o Make/linux64GccDPInt32Opt/clouds/baseClasses/thermoCloud/thermoCloud.o Make/linux64GccDPInt32Opt/clouds/baseClasses/reactingCloud/reactingCloud.o Make/linux64GccDPInt32Opt/clouds/baseClasses/reactingMultiphaseCloud/reactingMultiphaseCloud.o Make/linux64GccDPInt32Opt/parcels/derived/basicKinematicParcel/defineBasicKinematicParcel.o Make/linux64GccDPInt32Opt/parcels/derived/basicKinematicParcel/makeBasicKinematicParcelSubmodels.o Make/linux64GccDPInt32Opt/parcels/derived/basicKinematicCollidingParcel/defineBasicKinematicCollidingParcel.o Make/linux64GccDPInt32Opt/parcels/derived/basicKinematicCollidingParcel/makeBasicKinematicCollidingParcelSubmodels.o Make/linux64GccDPInt32Opt/parcels/derived/basicThermoParcel/defineBasicThermoParcel.o Make/linux64GccDPInt32Opt/parcels/derived/basicThermoParcel/makeBasicThermoParcelSubmodels.o Make/linux64GccDPInt32Opt/parcels/derived/basicReactingParcel/defineBasicReactingParcel.o Make/linux64GccDPInt32Opt/parcels/derived/basicReactingParcel/makeBasicReactingParcelSubmodels.o Make/linux64GccDPInt32Opt/parcels/derived/basicReactingMultiphaseParcel/defineBasicReactingMultiphaseParcel.o Make/linux64GccDPInt32Opt/parcels/derived/basicReactingMultiphaseParcel/makeBasicReactingMultiphaseParcelSubmodels.o Make/linux64GccDPInt32Opt/parcels/derived/basicKinematicMPPICParcel/defineBasicKinematicMPPICParcel.o Make/linux64GccDPInt32Opt/parcels/derived/basicKinematicMPPICParcel/makeBasicKinematicMPPICParcelSubmodels.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/Kinematic/PatchInteractionModel/LocalInteraction/patchInteractionData.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/Kinematic/PatchInteractionModel/LocalInteraction/patchInteractionDataList.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/Kinematic/InjectionModel/KinematicLookupTableInjection/kinematicParcelInjectionData.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/Kinematic/InjectionModel/KinematicLookupTableInjection/kinematicParcelInjectionDataIO.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/Kinematic/InjectionModel/KinematicLookupTableInjection/kinematicParcelInjectionDataIOList.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/Kinematic/InjectionModel/PatchInjection/patchInjectionBase.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/Thermodynamic/InjectionModel/ThermoLookupTableInjection/thermoParcelInjectionData.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/Thermodynamic/InjectionModel/ThermoLookupTableInjection/thermoParcelInjectionDataIO.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/Thermodynamic/InjectionModel/ThermoLookupTableInjection/thermoParcelInjectionDataIOList.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/Reacting/InjectionModel/ReactingLookupTableInjection/reactingParcelInjectionData.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/Reacting/InjectionModel/ReactingLookupTableInjection/reactingParcelInjectionDataIO.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/Reacting/InjectionModel/ReactingLookupTableInjection/reactingParcelInjectionDataIOList.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/ReactingMultiphase/InjectionModel/ReactingMultiphaseLookupTableInjection/reactingMultiphaseParcelInjectionData.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/ReactingMultiphase/InjectionModel/ReactingMultiphaseLookupTableInjection/reactingMultiphaseParcelInjectionDataIO.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/ReactingMultiphase/InjectionModel/ReactingMultiphaseLookupTableInjection/reactingMultiphaseParcelInjectionDataIOList.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/MPPIC/ParticleStressModels/ParticleStressModel/ParticleStressModel.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/MPPIC/ParticleStressModels/HarrisCrighton/HarrisCrighton.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/MPPIC/ParticleStressModels/Lun/Lun.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/MPPIC/ParticleStressModels/exponential/exponential.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/MPPIC/CorrectionLimitingMethods/CorrectionLimitingMethod/CorrectionLimitingMethod.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/MPPIC/CorrectionLimitingMethods/noCorrectionLimiting/noCorrectionLimiting.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/MPPIC/CorrectionLimitingMethods/absolute/absolute.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/MPPIC/CorrectionLimitingMethods/relative/relative.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/MPPIC/TimeScaleModels/TimeScaleModel/TimeScaleModel.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/MPPIC/TimeScaleModels/equilibrium/equilibrium.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/MPPIC/TimeScaleModels/nonEquilibrium/nonEquilibrium.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/MPPIC/TimeScaleModels/isotropic/isotropic.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/integrationScheme/integrationScheme/integrationScheme.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/integrationScheme/integrationScheme/integrationSchemeNew.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/integrationScheme/Euler/Euler.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/integrationScheme/analytical/analytical.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/phaseProperties/phaseProperties/phaseProperties.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/phaseProperties/phaseProperties/phasePropertiesIO.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/phaseProperties/phasePropertiesList/phasePropertiesList.o Make/linux64GccDPInt32Opt/clouds/Templates/KinematicCloud/cloudSolution/cloudSolution.o Make/linux64GccDPInt32Opt//home/zy/OpenFOAM/zy-v2212/deepflame-dev/src_orig/lagrangian/intermediate/submodels/MPPIC/AveragingMethods/makeAveragingMethods.o -L/home/zy/OpenFOAM/OpenFOAM-v2212/platforms/linux64GccDPInt32Opt/lib \
+    /home/zy/software/anaconda3/envs/libcantera2/lib/libcantera.so -L/home/zy/OpenFOAM/zy-v2212/deepflame-dev/platforms/linux64GccDPInt32Opt/lib -ldfCanteraMixture -llagrangian -ldistributionModels -lcompressibleTransportModels -ldfFluidThermophysicalModels -ldfThermophysicalProperties -ldfSLGThermo -lincompressibleTransportModels -lregionModels -lregionFaModels -lfiniteArea -lsurfMesh -ldfSurfaceFilmModels -ldynamicFvMesh -lsampling -lfiniteVolume -lmeshTools  -o /home/zy/OpenFOAM/zy-v2212/deepflame-dev/platforms/linux64GccDPInt32Opt/lib/libdfLagrangianIntermediate.so

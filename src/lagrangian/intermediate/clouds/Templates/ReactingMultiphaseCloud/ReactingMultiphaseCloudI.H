@@ -1,9 +1,11 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2013 OpenFOAM Foundation
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -29,7 +31,7 @@ template<class CloudType>
 inline const Foam::ReactingMultiphaseCloud<CloudType>&
 Foam::ReactingMultiphaseCloud<CloudType>::cloudCopy() const
 {
-    return cloudCopyPtr_();
+    return *cloudCopyPtr_;
 }
 
 
@@ -67,7 +69,7 @@ inline Foam::DevolatilisationModel
 >&
 Foam::ReactingMultiphaseCloud<CloudType>::devolatilisation()
 {
-    return devolatilisationModel_();
+    return *devolatilisationModel_;
 }
 
 
@@ -89,7 +91,7 @@ inline Foam::SurfaceReactionModel
 >&
 Foam::ReactingMultiphaseCloud<CloudType>::surfaceReaction()
 {
-    return surfaceReactionModel_();
+    return *surfaceReactionModel_;
 }
 
 

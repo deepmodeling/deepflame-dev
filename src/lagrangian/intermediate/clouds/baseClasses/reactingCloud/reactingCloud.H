@@ -1,9 +1,11 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011 OpenFOAM Foundation
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -53,23 +55,15 @@ public:
     //- Runtime type information
     TypeName("reactingCloud");
 
+
     // Constructors
 
         //- Null constructor
-        reactingCloud();
-
-        //- Disallow default bitwise copy construction
-        reactingCloud(const reactingCloud&) = delete;
+        reactingCloud() = default;
 
 
     //- Destructor
-    virtual ~reactingCloud();
-
-
-    // Member Operators
-
-        //- Disallow default bitwise assignment
-        void operator=(const reactingCloud&) = delete;
+    virtual ~reactingCloud() = default;
 };
 
 

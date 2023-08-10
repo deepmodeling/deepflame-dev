@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2019 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -29,7 +32,7 @@ template<class CloudType>
 inline const Foam::CollidingCloud<CloudType>&
 Foam::CollidingCloud<CloudType>::cloudCopy() const
 {
-    return cloudCopyPtr_();
+    return *cloudCopyPtr_;
 }
 
 
@@ -45,7 +48,7 @@ template<class CloudType>
 inline const Foam::CollisionModel<Foam::CollidingCloud<CloudType>>&
 Foam::CollidingCloud<CloudType>::collision() const
 {
-    return collisionModel_();
+    return *collisionModel_;
 }
 
 
@@ -53,7 +56,7 @@ template<class CloudType>
 inline Foam::CollisionModel<Foam::CollidingCloud<CloudType>>&
 Foam::CollidingCloud<CloudType>::collision()
 {
-    return collisionModel_();
+    return *collisionModel_;
 }
 
 
@@ -63,10 +66,8 @@ Foam::CollidingCloud<CloudType>::rotationalKineticEnergyOfSystem() const
 {
     scalar rotationalKineticEnergy = 0.0;
 
-    forAllConstIter(typename CollidingCloud<CloudType>, *this, iter)
+    for (const parcelType& p : *this)
     {
-        const parcelType& p = iter();
-
         rotationalKineticEnergy +=
             p.nParticle()*0.5*p.momentOfInertia()*(p.omega() & p.omega());
     }

@@ -38,13 +38,13 @@ if (!inviscid)
 {
     if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
     {
-        rhoE_rhs =   
+        rhoE_rhs =
             (
                 turbName == "laminar"
                 ?
                 (
                     fvc::laplacian(turbulence->alphaEff()*thermo.gamma(), ea)
-                  - diffAlphaD 
+                  - diffAlphaD
                   + fvc::div(hDiffCorrFlux)
                 )
                 :
@@ -52,8 +52,8 @@ if (!inviscid)
                     fvc::laplacian(turbulence->alphaEff()*thermo.gamma(), ea)
                 )
             );
-                  
-        
+
+
         rhoE +=  rkcoe3[nrk]*rhoE_rhs*runTime.deltaT();
 
         ea = rhoE/rho - 0.5*magSqr(U);
@@ -84,13 +84,13 @@ if (!inviscid)
                 )
         );
 
-        eEqn.solve("ea");
+        eEqn.solve(mesh.solver("ea"));
 
         ha = ea + p/rho;
         chemistry->correctThermo();
         rhoE = rho*(ea + 0.5*magSqr(U));
     }
-    
+
 }
 
 Info<< "min/max(T) = "

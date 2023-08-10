@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2019 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -29,25 +32,12 @@ License
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 template<class PairType, class WallType>
-Foam::CollisionRecordList<PairType, WallType>::CollisionRecordList()
-:
-    pairRecords_(),
-    wallRecords_()
-{}
-
-
-template<class PairType, class WallType>
 Foam::CollisionRecordList<PairType, WallType>::CollisionRecordList(Istream& is)
 :
     pairRecords_(is),
     wallRecords_(is)
 {
-    // Check state of Istream
-    is.check
-    (
-        "Foam::CollisionRecordList<PairType, WallType>::"
-        "CollisionRecordList(Foam::Istream&)"
-    );
+    is.check(FUNCTION_NAME);
 }
 
 
@@ -123,13 +113,6 @@ Foam::CollisionRecordList<PairType, WallType>::CollisionRecordList
         );
     }
 }
-
-
-// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * /
-
-template<class PairType, class WallType>
-Foam::CollisionRecordList<PairType, WallType>::~CollisionRecordList()
-{}
 
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
@@ -427,13 +410,7 @@ Foam::Istream& Foam::operator>>
 {
     is  >> cRL.pairRecords_ >> cRL.wallRecords_;
 
-    // Check state of Istream
-    is.check
-    (
-        "Foam::Istream& Foam::operator>>"
-        "(Foam::Istream&, Foam::CollisionRecordList<PairType, WallType>&)"
-    );
-
+    is.check(FUNCTION_NAME);
     return is;
 }
 
@@ -447,13 +424,7 @@ Foam::Ostream& Foam::operator<<
 {
     os  << cRL.pairRecords_ << cRL.wallRecords_;
 
-    // Check state of Ostream
-    os.check
-    (
-        "Foam::Ostream& Foam::operator<<(Foam::Ostream&, "
-        "const Foam::CollisionRecordList<PairType, WallType>&)"
-    );
-
+    os.check(FUNCTION_NAME);
     return os;
 }
 

@@ -1,4 +1,5 @@
 -include $(GENERAL_RULES)/mplibType
+include $(GENERAL_RULES)/mpi-rules
 
 EXE_INC = -std=c++14 \
     -g \

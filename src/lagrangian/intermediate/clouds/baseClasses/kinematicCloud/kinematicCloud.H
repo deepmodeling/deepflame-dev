@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2019 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -54,24 +57,22 @@ public:
     //- Runtime type information
     TypeName("kinematicCloud");
 
+
     // Constructors
 
         //- Null constructor
-        kinematicCloud();
-
-        //- Disallow default bitwise copy construction
-        kinematicCloud(const kinematicCloud&) = delete;
+        kinematicCloud() = default;
 
 
     //- Destructor
-    virtual ~kinematicCloud();
+    virtual ~kinematicCloud() = default;
 
 
     // Member Functions
 
         // Check
 
-            //-  Number of parcels
+            //- Number of parcels
             virtual label nParcels() const = 0;
 
             //- Total mass in system
@@ -90,28 +91,22 @@ public:
             virtual scalar Dmax() const = 0;
 
 
-            // Fields
+        // Fields
 
-                //- Volume swept rate of parcels per cell
-                virtual const tmp<volScalarField> vDotSweep() const = 0;
+            //- Volume swept rate of parcels per cell
+            virtual const tmp<volScalarField> vDotSweep() const = 0;
 
-                //- Return the particle volume fraction field
-                //  Note: for particles belonging to this cloud only
-                virtual const tmp<volScalarField> theta() const = 0;
+            //- Return the particle volume fraction field
+            //  Note: for particles belonging to this cloud only
+            virtual const tmp<volScalarField> theta() const = 0;
 
-                //- Return the particle mass fraction field
-                //  Note: for particles belonging to this cloud only
-                virtual const tmp<volScalarField> alpha() const = 0;
+            //- Return the particle mass fraction field
+            //  Note: for particles belonging to this cloud only
+            virtual const tmp<volScalarField> alpha() const = 0;
 
-                //- Return the particle effective density field
-                //  Note: for particles belonging to this cloud only
-                virtual const tmp<volScalarField> rhoEff() const = 0;
-
-
-    // Member Operators
-
-        //- Disallow default bitwise assignment
-        void operator=(const kinematicCloud&) = delete;
+            //- Return the particle effective density field
+            //  Note: for particles belonging to this cloud only
+            virtual const tmp<volScalarField> rhoEff() const = 0;
 };
 
 

@@ -15,7 +15,7 @@ tmp<fv::convectionScheme<scalar>> mvConvection
         chemistry.solve(mesh.time().deltaTValue());
         label flag_mpi_init;
         MPI_Initialized(&flag_mpi_init);
-        if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
+        if(flag_mpi_init) MPI_Barrier(MPI_COMM_WORLD);
         std::chrono::steady_clock::time_point stop = std::chrono::steady_clock::now();
         std::chrono::duration<double> processingTime = std::chrono::duration_cast<std::chrono::duration<double>>(stop - start);
         time_monitor_chem += processingTime.count();
@@ -42,7 +42,7 @@ tmp<fv::convectionScheme<scalar>> mvConvection
 
             //fvOptions.constrain(YiEqn);
 
-            YiEqn.solve("Yi");
+            YiEqn.solve(mesh.solver("Yi"));
 
             //fvOptions.correct(Yi);
 

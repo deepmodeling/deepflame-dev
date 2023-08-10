@@ -9,7 +9,7 @@ SET(workDir ${SRC_ORIG}/regionModels/surfaceFilmModels)
 SET(KINEMATICMODELS ${workDir}/submodels/kinematic)
 SET(THERMOMODELS ${workDir}/submodels/thermo)
 SET(PATCHFIELDS ${workDir}/derivedFvPatchFields)
-SET(SOURCES 
+SET(SOURCES
 #* Surface film models */
 ${workDir}/surfaceFilmModel/surfaceFilmModel.C
 ${workDir}/surfaceFilmModel/surfaceFilmModelNew.C
@@ -19,7 +19,7 @@ ${workDir}/kinematicSingleLayer/kinematicSingleLayer.C
 ${workDir}/thermoSingleLayer/thermoSingleLayer.C
 
 
-#Sub-models 
+#Sub-models
 ${workDir}/submodels/filmSubModelBase.C
 
 ${KINEMATICMODELS}/force/force/force.C
@@ -91,45 +91,45 @@ ${PATCHFIELDS}/inclinedFilmNusseltInletVelocity/inclinedFilmNusseltInletVelocity
 add_library (dfSurfaceFilmModels SHARED ${SOURCES})
 
 # dynamic link
-target_link_libraries(${PROJECT_NAME} ${OpenFOAM_LIB_DIR}/libfiniteVolume.so 
-libmeshTools.so 
-libtriSurface.so libdynamicMesh.so libdynamicFvMesh.so
-libextrudeModel.so 
+target_link_libraries(${PROJECT_NAME} ${OpenFOAM_LIB_DIR}/libfiniteVolume.so
+libmeshTools.so
+libdynamicMesh.so libdynamicFvMesh.so
+libextrudeModel.so
 libdecompositionMethods.so
 )
 target_link_libraries(${PROJECT_NAME} newdynamicMesh)
-link_directories(${OpenFOAM_LIB_DIR}/dummy 
+link_directories(${OpenFOAM_LIB_DIR}/dummy
 )
 target_link_libraries(${PROJECT_NAME}
-    libcompressibleTransportModels.so 
+    libcompressibleTransportModels.so
     dfFluidThermophysicalModels
     dfThermophysicalProperties
     dfSLGThermo
-    libdistributionModels.so 
+    libdistributionModels.so
     libregionModels.so
-    libfiniteVolume.so 
+    libfiniteVolume.so
     libmeshTools.so
 )
 
 
 
 include_directories(
-    ${OpenFOAM_SRC}/transportModels/compressible/lnInclude 
-    ${OpenFOAM_SRC}/thermophysicalModels/basic/lnInclude 
+    ${OpenFOAM_SRC}/transportModels/compressible/lnInclude
+    ${OpenFOAM_SRC}/thermophysicalModels/basic/lnInclude
     ${dfthermophysicalprop_inc}
-    ${OpenFOAM_SRC}/thermophysicalModels/thermophysicalProperties/lnInclude 
+    ${OpenFOAM_SRC}/thermophysicalModels/thermophysicalProperties/lnInclude
     ${dfthermophysicalslg}
     ${DF_SRC}/thermophysicalModels/SLGThermo/SLGThermo/
-    ${CANTERA_ROOT}/include 
+    ${CANTERA_ROOT}/include
     ${dfcantera_inc}
-    ${OpenFOAM_SRC}/lagrangian/distributionModels/lnInclude 
-    ${OpenFOAM_SRC}/regionModels/regionModel/lnInclude 
-    ${OpenFOAM_SRC}/regionModels/surfaceFilmModels/lnInclude 
-    ${OpenFOAM_SRC}/finiteVolume/lnInclude 
+    ${OpenFOAM_SRC}/lagrangian/distributionModels/lnInclude
+    ${OpenFOAM_SRC}/regionModels/regionModel/lnInclude
+    ${OpenFOAM_SRC}/regionModels/surfaceFilmModels/lnInclude
+    ${OpenFOAM_SRC}/finiteVolume/lnInclude
     ${OpenFOAM_SRC}/meshTools/lnInclude
-    
+
     )
-    
+
 
 
 # install

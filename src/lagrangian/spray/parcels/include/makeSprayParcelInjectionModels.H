@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2016 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -30,7 +33,10 @@ License
 
 #include "CellZoneInjection.H"
 #include "ConeInjection.H"
+#include "ConeNozzleInjection.H"
 #include "FieldActivatedInjection.H"
+#include "InjectedParticleDistributionInjection.H"
+#include "InjectedParticleInjection.H"
 #include "InflationInjection.H"
 #include "ManualInjection.H"
 #include "NoInjection.H"
@@ -45,7 +51,10 @@ License
                                                                                \
     makeInjectionModelType(CellZoneInjection, CloudType);                      \
     makeInjectionModelType(ConeInjection, CloudType);                          \
+    makeInjectionModelType(ConeNozzleInjection, CloudType);                    \
     makeInjectionModelType(FieldActivatedInjection, CloudType);                \
+    makeInjectionModelType(InjectedParticleDistributionInjection, CloudType);  \
+    makeInjectionModelType(InjectedParticleInjection, CloudType);              \
     makeInjectionModelType(InflationInjection, CloudType);                     \
     makeInjectionModelType(ManualInjection, CloudType);                        \
     makeInjectionModelType(NoInjection, CloudType);                            \

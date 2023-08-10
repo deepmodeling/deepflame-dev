@@ -85,9 +85,9 @@ int main(int argc, char *argv[])
     // checkCudaErrors(cudaSetDeviceFlags(flags));
 
     // #include "setRootCaseLists.H"
-    #include "listOptions.H"
+    #include "setRootCaseListOptions.H"
     #include "setRootCase2.H"
-    #include "listOutput.H"
+    #include "setRootCaseListOutput.H"
 
     #include "createTime.H"
     #include "createMesh.H"
@@ -197,26 +197,22 @@ int main(int argc, char *argv[])
             {
                 #include "YEqn_RR.H"
             }
-            if (pimple.firstPimpleIter() || moveMeshOuterCorrectors)
+            if (pimple.firstIter() || moveMeshOuterCorrectors)
             {
                 // Store momentum to set rhoUf for introduced faces.
-                autoPtr<volVectorField> rhoU;
-                if (rhoUf.valid())
-                {
-                    rhoU = new volVectorField("rhoU", rho*U);
-                }
+                volVectorField rhoU("rhoU", rho*U);
             }
             end = std::clock();
             time_monitor_other += double(end - start) / double(CLOCKS_PER_SEC);
 
             start = std::clock();
-            if (pimple.firstPimpleIter() && !pimple.simpleRho())
+            if (pimple.firstIter() && !pimple.SIMPLErho())
             {
                 #include "rhoEqn.H"
             }
             end = std::clock();
             time_monitor_rho += double(end - start) / double(CLOCKS_PER_SEC);
-            
+
             start = std::clock();
             #ifdef GPUSolver_
             #include "UEqn_GPU.H"

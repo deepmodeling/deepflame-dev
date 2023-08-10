@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2015 OpenFOAM Foundation
+    Copyright (C) 2020-2021 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -25,10 +28,10 @@ License
 
 #include "basicSprayCloud.H"
 
-#include "makeParcelCloudFunctionObjects.H"
+#include "makeReactingParcelCloudFunctionObjects.H"
 
 // Kinematic
-#include "makeParcelForces.H"
+#include "makeThermoParcelForces.H" // thermo variant
 #include "makeThermoParcelTurbulenceForces.H" // add turbulence variant
 #include "makeParcelDispersionModels.H"
 #include "makeParcelTurbulenceDispersionModels.H" // add turbulence variant
@@ -49,12 +52,17 @@ License
 #include "makeSprayParcelAtomizationModels.H"
 #include "makeSprayParcelBreakupModels.H"
 
+// MPPIC sub-models
+#include "makeMPPICParcelDampingModels.H"
+#include "makeMPPICParcelIsotropyModels.H"
+#include "makeMPPICParcelPackingModels.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-makeParcelCloudFunctionObjects(basicSprayCloud);
+makeReactingParcelCloudFunctionObjects(basicSprayCloud);
 
 // Kinematic sub-models
-makeParcelForces(basicSprayCloud);
+makeThermoParcelForces(basicSprayCloud);
 makeThermoParcelTurbulenceForces(basicSprayCloud);
 makeParcelDispersionModels(basicSprayCloud);
 makeParcelTurbulenceDispersionModels(basicSprayCloud);
@@ -75,5 +83,9 @@ makeParticleForceModelType(DistortedSphereDragForce, basicSprayCloud);
 makeSprayParcelAtomizationModels(basicSprayCloud);
 makeSprayParcelBreakupModels(basicSprayCloud);
 
+// MPPIC sub-models
+makeMPPICParcelDampingModels(basicSprayCloud);
+makeMPPICParcelIsotropyModels(basicSprayCloud);
+makeMPPICParcelPackingModels(basicSprayCloud);
 
 // ************************************************************************* //

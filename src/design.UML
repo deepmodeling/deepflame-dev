@@ -144,7 +144,7 @@ class CanteraMixture{
     +scalar Hc(label i) const
     +scalar Hs(label i, scalar p, scalar T) const
     +scalar kappa(label i, scalar p, scalar T) const
-    +scalar Wi(label i) const
+    +scalar W(label i) const
 }
 
 

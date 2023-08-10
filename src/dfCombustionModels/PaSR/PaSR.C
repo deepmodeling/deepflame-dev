@@ -153,7 +153,7 @@ Foam::combustionModels::PaSR<ReactionThermo>::PaSR
         ),
         this->mesh(),
         dimensionedScalar(dimVelocity, 0.0)
-    ),        
+    ),
     kappa_
     (
         IOobject
@@ -205,7 +205,7 @@ template<class ReactionThermo>
 void Foam::combustionModels::PaSR<ReactionThermo>::correct()
 {
     laminar<ReactionThermo>::correct();
- 
+
     tmp<volScalarField> tk(this->turbulence().k());
     const volScalarField& k = tk();
 
@@ -216,12 +216,12 @@ void Foam::combustionModels::PaSR<ReactionThermo>::correct()
     tmp<volScalarField> trho(this->rho());
     const volScalarField& rho = trho();
 
-    dimensionedScalar smallEpsilon("smallEpsilon",dimensionSet(0, 2, -3, 0, 0, 0, 0), SMALL);	
+    dimensionedScalar smallEpsilon("smallEpsilon",dimensionSet(0, 2, -3, 0, 0, 0, 0), SMALL);
     dimensionedScalar chismall_("chismall", dimensionSet(0,0,-1,0,0,0,0), SMALL );
     dimensionedScalar tauMixsmall_("tauMixsmall", dimensionSet(0,0,1,0,0,0,0), this->mesh().time().deltaTValue() );
     dimensionedScalar tauMixlarge_("tauMixlarge", dimensionSet(0,0,1,0,0,0,0), 0.1 );
 
-    //-mixing time scale 
+    //-mixing time scale
     if(mixingScaleType_=="globalScale")
     {
        tmix_=Cmix_*k/(epsilon+smallEpsilon);
@@ -229,14 +229,14 @@ void Foam::combustionModels::PaSR<ReactionThermo>::correct()
 
     else if(mixingScaleType_=="kolmogorovScale")
     {
-       tmix_=sqrt(mag(mu_/rho/(epsilon+smallEpsilon)));  
+       tmix_=sqrt(mag(mu_/rho/(epsilon+smallEpsilon)));
     }
 
     else if(mixingScaleType_=="geometriMeanScale")
     {
        tmix_=sqrt((mag(k/(epsilon+smallEpsilon)))*sqrt(mag(mu_/rho/(epsilon+smallEpsilon))));
     }
-    
+
     else if(mixingScaleType_=="dynamicScale")
     {
         transport();
@@ -278,8 +278,8 @@ void Foam::combustionModels::PaSR<ReactionThermo>::correct()
      //- initialize fuel and oxidizer chemistry time scale
         volScalarField t_fuel=tc_;
 	volScalarField t_oxidizer=tc_;
-	volScalarField t_CO2=tc_;        
-	volScalarField t_H2=tc_;   
+	volScalarField t_CO2=tc_;
+	volScalarField t_H2=tc_;
 
 	forAll(rho,cellI)
 	{
@@ -289,31 +289,31 @@ void Foam::combustionModels::PaSR<ReactionThermo>::correct()
 	    scalar RR_CO2 = this->chemistryPtr_->RR(specieCO2)[cellI];
 	    scalar RR_H2 = this->chemistryPtr_->RR(specieH2)[cellI];
 
-	    if( (RR_oxidizer < 0.0)  &&  (Yoxidizer[cellI] > 1e-10) )							
-	    {			
-		t_oxidizer[cellI] =  -rho[cellI] * Yoxidizer[cellI]/(RR_oxidizer);   
+	    if( (RR_oxidizer < 0.0)  &&  (Yoxidizer[cellI] > 1e-10) )
+	    {
+		t_oxidizer[cellI] =  -rho[cellI] * Yoxidizer[cellI]/(RR_oxidizer);
 	    }
-	 
+
 	    if	( (RR_fuel < 0.0) && (Yfuel[cellI] > 1e-10))
-	    {								
-		t_fuel[cellI] =  -rho[cellI] * Yfuel[cellI]/(RR_fuel);   
+	    {
+		t_fuel[cellI] =  -rho[cellI] * Yfuel[cellI]/(RR_fuel);
 	    }
 
 	    if	( (RR_CO2 > 0.0) && (YCO2[cellI] > 1e-10))
-	    {								
-		t_CO2[cellI] =  rho[cellI] * YCO2[cellI]/(RR_CO2);   
-	    }        
+	    {
+		t_CO2[cellI] =  rho[cellI] * YCO2[cellI]/(RR_CO2);
+	    }
 
             if( (RR_H2 < 0.0) && (YH2[cellI] > 1e-10))
-	    {								
-		t_H2[cellI] =  -rho[cellI] * YH2[cellI]/(RR_H2);   
-	    }        
+	    {
+		t_H2[cellI] =  -rho[cellI] * YH2[cellI]/(RR_H2);
+	    }
 
-            tc_[cellI] = max(t_oxidizer[cellI],t_fuel[cellI]);     
+            tc_[cellI] = max(t_oxidizer[cellI],t_fuel[cellI]);
 
-            tc_[cellI] = max(t_CO2[cellI],tc_[cellI]);     
-	 	
-            tc_[cellI] = max(t_H2[cellI],tc_[cellI]);     
+            tc_[cellI] = max(t_CO2[cellI],tc_[cellI]);
+
+            tc_[cellI] = max(t_H2[cellI],tc_[cellI]);
 	  }
 
     }
@@ -325,10 +325,10 @@ void Foam::combustionModels::PaSR<ReactionThermo>::correct()
 
     else if(chemistryScaleType_=="reactionRate")
     {
-        PtrList<volScalarField>& Y = this->chemistryPtr_->Y();  
+        PtrList<volScalarField>& Y = this->chemistryPtr_->Y();
 
         doublereal fwdRate[mixture_.nReactions()];
-        doublereal revRate[mixture_.nReactions()];        
+        doublereal revRate[mixture_.nReactions()];
         doublereal X[mixture_.nSpecies()];
 
         forAll(rho, celli)
@@ -344,17 +344,17 @@ void Foam::combustionModels::PaSR<ReactionThermo>::correct()
                 X[i] = rhoi*Y[i][celli]/mixture_.CanteraGas()->molecularWeight(i);
                 cSum += X[i];
             }
-		
+
             mixture_.CanteraGas()->setState_TPX(Ti, pi, X);
             mixture_.CanteraKinetics()->getFwdRatesOfProgress(fwdRate);
             mixture_.CanteraKinetics()->getRevRatesOfProgress(revRate);
- 
+
             scalar sumW = 0, sumWRateByCTot = 0;
- 
+
             for (label i=0; i< mixture_.nReactions(); i++)
             {
 
-                std::shared_ptr<Cantera::Reaction> R(mixture_.CanteraKinetics()->reaction(i));               
+                std::shared_ptr<Cantera::Reaction> R(mixture_.CanteraKinetics()->reaction(i));
 
                 scalar wf = 0;
                 for (const auto& sp : R->products)
@@ -370,14 +370,14 @@ void Foam::combustionModels::PaSR<ReactionThermo>::correct()
                     wr += sp.second*revRate[i];
                 }
                 sumW += wr;
-                sumWRateByCTot += sqr(wr);                        
+                sumWRateByCTot += sqr(wr);
             }
 
-            tc_[celli] = sumWRateByCTot == 0 ? vGreat : sumW/sumWRateByCTot*cSum;
-         } 
+            tc_[celli] = sumWRateByCTot == 0 ? VGREAT : sumW/sumWRateByCTot*cSum;
+         }
 
          tc_.correctBoundaryConditions();
-    }   
+    }
 
     else
     {
@@ -385,13 +385,13 @@ void Foam::combustionModels::PaSR<ReactionThermo>::correct()
             << "Unknown chemicalScaleType type "
             << chemistryScaleType_
             << ", not in table" << nl << nl
-            << exit(FatalError);        
+            << exit(FatalError);
     }
 
     forAll(kappa_, cellI)
     {
 		kappa_[cellI] = (tmix_[cellI] > SMALL && tc_[cellI] > SMALL) ?  tc_[cellI]/(tc_[cellI] + tmix_[cellI]) : 1.0;
-        
+
     }
 }
 
@@ -430,7 +430,7 @@ Foam::combustionModels::PaSR<ReactionThermo>::Qdot() const
 }
 
 template<class ReactionThermo>
-void Foam::combustionModels::PaSR<ReactionThermo>::transport() 
+void Foam::combustionModels::PaSR<ReactionThermo>::transport()
 {
 
     tmp<volScalarField> tmuEff(this->turbulence().muEff());
@@ -457,7 +457,7 @@ void Foam::combustionModels::PaSR<ReactionThermo>::transport()
   dimensionedScalar smallK_("smallK",dimVelocity*dimVelocity,SMALL);
 
 
-  //- mixture fraction  equation 
+  //- mixture fraction  equation
   fvScalarMatrix ZEqn
   (
      fvm::ddt(this->rho(), this->Z_)
@@ -466,13 +466,13 @@ void Foam::combustionModels::PaSR<ReactionThermo>::transport()
     - fvm::laplacian(muEff, this->Z_)
   );
   ZEqn.relax();
-  ZEqn.solve("Z");
+  ZEqn.solve(mesh.solver("Z"));
   this->Z_.max(0.0);
 
    Info<< "min/max(Z_) = " << min(Z_).value() << ", " << max(Z_).value() << endl;
 
   //- mixtrue fraction variance equation
-  
+
     fvScalarMatrix ZvarEqn
     (
         fvm::ddt(this->rho(), this->Zvar_)
@@ -484,34 +484,34 @@ void Foam::combustionModels::PaSR<ReactionThermo>::transport()
     );
 
     ZvarEqn.relax();
-    ZvarEqn.solve("Zvar");
+    ZvarEqn.solve(mesh.solver("Zvar"));
     this->Zvar_.max(0.0);
     this->Zvar_.min(0.25);
 
      Info<< "min/max(Zvar_) = " << min(Zvar_).value() << ", " << max(Zvar_).value() << endl;
 
 
-  //- scalar dissipation rate equation 
+  //- scalar dissipation rate equation
   if(ChiType_=="constAlgebraic")
   {
        Chi_ = 1*this->turbulence().epsilon()/(this->turbulence().k()+smallK_)*Zvar_; //-default is 2
 
-       Info<< "min/max(Chi_) = " << min(Chi_).value() << ", " << max(Chi_).value() << endl; 
+       Info<< "min/max(Chi_) = " << min(Chi_).value() << ", " << max(Chi_).value() << endl;
   }
 
-  if(ChiType_=="dynAlgebraic")  
+  if(ChiType_=="dynAlgebraic")
   {
       forAll(eqR_, cellI)
       {
         eqR_[cellI] = (Z_[cellI]/((1.0-Z_[cellI])+SMALL))*((1-Zst_)/Zst_);
       }
-      eqR_.max(0);  
+      eqR_.max(0);
 
-      //laminar speed calculation 
+      //laminar speed calculation
       volScalarField SuRef=0*U_.component(0);
-      
+
       static const scalar Tref = 300.0;
-      static const scalar pRef = 1.013e5;    
+      static const scalar pRef = 1.013e5;
 
       forAll(SuRef, cellI)
       {
@@ -519,17 +519,17 @@ void Foam::combustionModels::PaSR<ReactionThermo>::transport()
 
         Su_[cellI]=SuRef[cellI]*pow((T_[cellI]/Tref), alpha_)*pow((p_[cellI]/pRef), beta_);
       }
-  
-      Chi_ = 0.21*this->turbulence().epsilon()/(this->turbulence().k()+smallK_)*Zvar_ 
+
+      Chi_ = 0.21*this->turbulence().epsilon()/(this->turbulence().k()+smallK_)*Zvar_
              +2/3*(0.1*Su_/(sqrt(this->turbulence().k())))*0.21*this->turbulence().epsilon()/(this->turbulence().k()+smallK_)*Zvar_;
 
 
       Chi_.min(maxChi_);
 
-       Info<< "min/max(Chi_) = " << min(Chi_).value() << ", " << max(Chi_).value() << endl; 
+       Info<< "min/max(Chi_) = " << min(Chi_).value() << ", " << max(Chi_).value() << endl;
 
   }
-  if(ChiType_=="transport") 
+  if(ChiType_=="transport")
   {
         scalar Sct=0.7;
     	volScalarField D1 = Cd1_*this->rho()*sqr(Chi_)/(Zvar_+SMALL);
@@ -537,7 +537,7 @@ void Foam::combustionModels::PaSR<ReactionThermo>::transport()
         volScalarField P1 = 2.00*Cp1_*this->turbulence().epsilon()/(this->turbulence().k()+smallK_)*this->turbulence().mut()/Sct*magSqr(fvc::grad(Z_));
         volScalarField P2 = Cp2_*this->turbulence().mut()*Chi_/(this->turbulence().k()+smallK_)*(fvc::grad(U_) && dev(twoSymm(fvc::grad(U_))));
 
-        volScalarField S_chi = P1 + P2 - D1 - D2;	
+        volScalarField S_chi = P1 + P2 - D1 - D2;
 
         fvScalarMatrix ChiEqn
         (
@@ -555,7 +555,7 @@ void Foam::combustionModels::PaSR<ReactionThermo>::transport()
         Chi_.max(0.00000001);
         Chi_.min(maxChi_);
 
-         Info<< "min/max(Chi_) = " << min(Chi_).value() << ", " << max(Chi_).value() << endl; 
+         Info<< "min/max(Chi_) = " << min(Chi_).value() << ", " << max(Chi_).value() << endl;
 
   }
 

@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -51,10 +54,7 @@ void Foam::ThermoCloud<CloudType>::setModels()
         ).ptr()
     );
 
-    if (this->solution().coupled())
-    {
-        this->subModelProperties().lookup("radiation") >> radiation_;
-    }
+    this->subModelProperties().readEntry("radiation", radiation_);
 
     if (radiation_)
     {
@@ -71,7 +71,7 @@ void Foam::ThermoCloud<CloudType>::setModels()
                     IOobject::AUTO_WRITE
                 ),
                 this->mesh(),
-                dimensionedScalar(dimArea, 0)
+                dimensionedScalar(dimArea, Zero)
             )
         );
 
@@ -88,7 +88,7 @@ void Foam::ThermoCloud<CloudType>::setModels()
                     IOobject::AUTO_WRITE
                 ),
                 this->mesh(),
-                dimensionedScalar(pow4(dimTemperature), 0)
+                dimensionedScalar(pow4(dimTemperature), Zero)
             )
         );
 
@@ -105,7 +105,7 @@ void Foam::ThermoCloud<CloudType>::setModels()
                     IOobject::AUTO_WRITE
                 ),
                 this->mesh(),
-                dimensionedScalar(sqr(dimLength)*pow4(dimTemperature), 0)
+                dimensionedScalar(sqr(dimLength)*pow4(dimTemperature), Zero)
             )
         );
     }
@@ -171,7 +171,7 @@ Foam::ThermoCloud<CloudType>::ThermoCloud
                 IOobject::AUTO_WRITE
             ),
             this->mesh(),
-            dimensionedScalar(dimEnergy, 0)
+            dimensionedScalar(dimEnergy, Zero)
         )
     ),
     hsCoeff_
@@ -187,7 +187,7 @@ Foam::ThermoCloud<CloudType>::ThermoCloud
                 IOobject::AUTO_WRITE
             ),
             this->mesh(),
-            dimensionedScalar(dimEnergy/dimTemperature, 0)
+            dimensionedScalar(dimEnergy/dimTemperature, Zero)
         )
     )
 {
@@ -344,13 +344,6 @@ Foam::ThermoCloud<CloudType>::ThermoCloud
 {}
 
 
-// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
-
-template<class CloudType>
-Foam::ThermoCloud<CloudType>::~ThermoCloud()
-{}
-
-
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class CloudType>
@@ -454,9 +447,12 @@ void Foam::ThermoCloud<CloudType>::scaleSources()
 
 
 template<class CloudType>
-void Foam::ThermoCloud<CloudType>::preEvolve()
+void Foam::ThermoCloud<CloudType>::preEvolve
+(
+    const typename parcelType::trackingData& td
+)
 {
-    CloudType::preEvolve();
+    CloudType::preEvolve(td);
 
     this->pAmbient() = thermo_.thermo().p().average().value();
 }
@@ -488,7 +484,7 @@ void Foam::ThermoCloud<CloudType>::info()
 {
     CloudType::info();
 
-    Info<< "    Temperature min/max             = " << Tmin() << ", " << Tmax()
+    Log_<< "    Temperature min/max             = " << Tmin() << ", " << Tmax()
         << endl;
 }
 

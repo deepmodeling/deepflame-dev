@@ -50,8 +50,8 @@ namespace decompositionConstraints
 
 Foam::decompositionConstraints::dfRefinementHistoryConstraint::dfRefinementHistoryConstraint
 (
-    const dictionary& dict,
-    const word& modelType
+    const dictionary& dict//,
+    //const word& modelType
 )
 :
     decompositionConstraint(dict, typeName)

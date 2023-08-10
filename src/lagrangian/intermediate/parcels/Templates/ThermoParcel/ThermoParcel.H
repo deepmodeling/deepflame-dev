@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2016-2019 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -23,6 +26,9 @@ License
 
 Class
     Foam::ThermoParcel
+
+Group
+    grpLagrangianIntermediateParcels
 
 Description
     Thermodynamic parcel class with one/two-way coupling with the continuous
@@ -67,13 +73,11 @@ class ThermoParcel
 :
     public ParcelType
 {
-    // Private Data
-
-        //- Size in bytes of the fields
-        static const std::size_t sizeofFields_;
-
-
 public:
+
+    //- Size in bytes of the fields
+    static const std::size_t sizeofFields;
+
 
     //- Class to hold thermo particle constant properties
     class constantProperties
@@ -81,7 +85,7 @@ public:
         public ParcelType::constantProperties
     {
 
-        // Private Data
+        // Private data
 
             //- Particle initial temperature [K]
             demandDrivenEntry<scalar> T0_;
@@ -92,7 +96,7 @@ public:
             //- Maximum temperature [K]
             demandDrivenEntry<scalar> TMax_;
 
-            //- Particle specific heat capacity [J/kg/K]
+            //- Particle specific heat capacity [J/(kg.K)]
             demandDrivenEntry<scalar> Cp0_;
 
             //- Particle emissivity [] (radiation)
@@ -116,7 +120,7 @@ public:
             constantProperties(const dictionary& parentDict);
 
 
-        // Member Functions
+        // Member functions
 
             // Access
 
@@ -133,7 +137,7 @@ public:
                 inline void setTMax(const scalar TMax);
 
                 //- Return const access to the particle specific heat capacity
-                //  [J/kg/K]
+                //  [J/(kg.K)]
                 inline scalar Cp0() const;
 
                 //- Return const access to the particle emissivity []
@@ -152,7 +156,7 @@ public:
     {
     private:
 
-        // Private Data
+        // Private data
 
             //- Local copy of carrier specific heat field
             //  Cp not stored on carrier thermo, but returned as tmp<...>
@@ -183,7 +187,7 @@ public:
                 //- Temperature [K]
                 scalar Tc_;
 
-                //- Specific heat capacity [J/kg/K]
+                //- Specific heat capacity [J/(kg.K)]
                 scalar Cpc_;
 
 
@@ -202,7 +206,7 @@ public:
             );
 
 
-        // Member Functions
+        // Member functions
 
             //- Return access to the locally stored carrier Cp field
             inline const volScalarField& Cp() const;
@@ -249,7 +253,7 @@ protected:
             //- Temperature [K]
             scalar T_;
 
-            //- Specific heat capacity [J/kg/K]
+            //- Specific heat capacity [J/(kg.K)]
             scalar Cp_;
 
 
@@ -274,7 +278,7 @@ protected:
 
 public:
 
-    // Static Data Members
+    // Static data members
 
         //- Runtime type information
         TypeName("ThermoParcel");
@@ -334,7 +338,8 @@ public:
         (
             const polyMesh& mesh,
             Istream& is,
-            bool readFields = true
+            bool readFields = true,
+            bool newFormat = true
         );
 
         //- Construct as a copy
@@ -449,6 +454,23 @@ public:
             //- Write
             template<class CloudType>
             static void writeFields(const CloudType& c);
+
+            //- Write individual parcel properties to stream
+            void writeProperties
+            (
+                Ostream& os,
+                const wordRes& filters,
+                const word& delim,
+                const bool namesOnly = false
+            ) const;
+
+            //- Read particle fields as objects from the obr registry
+            template<class CloudType>
+            static void readObjects(CloudType& c, const objectRegistry& obr);
+
+            //- Write particle fields as objects into the obr registry
+            template<class CloudType>
+            static void writeObjects(const CloudType& c, objectRegistry& obr);
 
 
     // Ostream Operator

@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2013-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2013-2016 OpenFOAM Foundation
+    Copyright (C) 2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -40,6 +43,13 @@ License
     makeIsotropyModelType(NoIsotropy, CloudType);                              \
     makeIsotropyModelType(Stochastic, CloudType);
 
+
+#define makeMPPICCloudParcelIsotropyModels(CloudType)                          \
+                                                                               \
+    makeIsotropyModelMPPIC(CloudType);                                         \
+                                                                               \
+    makeIsotropyModelTypeMPPIC(NoIsotropy, CloudType);                         \
+    makeIsotropyModelTypeMPPIC(Stochastic, CloudType);
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

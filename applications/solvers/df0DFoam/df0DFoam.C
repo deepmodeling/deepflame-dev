@@ -64,9 +64,9 @@ int main(int argc, char *argv[])
     #include "postProcess.H"
 
     // #include "setRootCaseLists.H"
-    #include "listOptions.H"
+    #include "setRootCaseListOptions.H"
     #include "setRootCase2.H"
-    #include "listOutput.H"
+    #include "setRootCaseListOutput.H"
 
     #include "createTime.H"
     #include "createDynamicFvMesh.H"

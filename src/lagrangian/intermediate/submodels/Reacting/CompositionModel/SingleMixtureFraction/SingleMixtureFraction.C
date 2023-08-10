@@ -1,9 +1,11 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2015 OpenFOAM Foundation
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -100,16 +102,16 @@ Foam::SingleMixtureFraction<CloudType>::SingleMixtureFraction
     if (this->phaseProps().size() != 3)
     {
         FatalErrorInFunction
-            << "Incorrect number of phases: " << nl
+            << "Incorrect number of phases:" << nl
             << "    Please specify 1 gas, 1 liquid and 1 solid"
             << exit(FatalError);
     }
 
-    this->coeffDict().lookup("YGasTot0") >> YMixture0_[idGas_];
-    this->coeffDict().lookup("YLiquidTot0") >> YMixture0_[idLiquid_];
-    this->coeffDict().lookup("YSolidTot0") >> YMixture0_[idSolid_];
+    this->coeffDict().readEntry("YGasTot0", YMixture0_[idGas_]);
+    this->coeffDict().readEntry("YLiquidTot0", YMixture0_[idLiquid_]);
+    this->coeffDict().readEntry("YSolidTot0", YMixture0_[idSolid_]);
 
-    if (mag(sum(YMixture0_) - 1.0) > small)
+    if (mag(sum(YMixture0_) - 1.0) > SMALL)
     {
         FatalErrorInFunction
             << "Sum of phases should be 1. Phase fractions:" << nl

@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2016-2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -23,6 +26,9 @@ License
 
 Class
     Foam::KinematicCloud
+
+Group
+    grpLagrangianIntermediateClouds
 
 Description
     Templated base class for kinematic cloud
@@ -89,6 +95,15 @@ class SurfaceFilmModel;
 template<class CloudType>
 class StochasticCollisionModel;
 
+template<class CloudType>
+class PackingModel;
+
+template<class CloudType>
+class DampingModel;
+
+template<class CloudType>
+class IsotropyModel;
+
 
 /*---------------------------------------------------------------------------*\
                        Class KinematicCloud Declaration
@@ -102,7 +117,7 @@ class KinematicCloud
 {
 public:
 
-    // Public Typedefs
+    // Public typedefs
 
         //- Type of cloud this cloud was instantiated for
         typedef CloudType cloudType;
@@ -129,9 +144,18 @@ private:
         autoPtr<KinematicCloud<CloudType>> cloudCopyPtr_;
 
 
+    // Private Member Functions
+
+        //- No copy construct
+        KinematicCloud(const KinematicCloud&) = delete;
+
+        //- No copy assignment
+        void operator=(const KinematicCloud&) = delete;
+
+
 protected:
 
-    // Protected data
+    // Protected Data
 
         //- References to the mesh and time databases
         const fvMesh& mesh_;
@@ -163,7 +187,7 @@ protected:
 
         // References to the carrier gas fields
 
-            //- Density [kg/m^3]
+            //- Density [kg/m3]
             const volScalarField& rho_;
 
             //- Velocity [m/s]
@@ -209,6 +233,18 @@ protected:
             //- Surface film model
             autoPtr<SurfaceFilmModel<KinematicCloud<CloudType>>>
                 surfaceFilmModel_;
+
+            //- Packing model
+            autoPtr<PackingModel<KinematicCloud<CloudType>>>
+                packingModel_;
+
+            //- Damping model
+            autoPtr<DampingModel<KinematicCloud<CloudType>>>
+                dampingModel_;
+
+            //- Exchange model
+            autoPtr<IsotropyModel<KinematicCloud<CloudType>>>
+                isotropyModel_;
 
 
         // Reference to the particle integration schemes
@@ -258,13 +294,19 @@ protected:
             );
 
             //- Post-evolve
-            void postEvolve();
+            void postEvolve(const typename parcelType::trackingData& td);
 
             //- Reset state of cloud
             void cloudReset(KinematicCloud<CloudType>& c);
 
 
 public:
+
+    // Public Data
+
+        //- Flag to write log into Info
+        bool log;
+
 
     // Constructors
 
@@ -294,9 +336,6 @@ public:
             const KinematicCloud<CloudType>& c
         );
 
-        //- Disallow default bitwise copy construction
-        KinematicCloud(const KinematicCloud&) = delete;
-
         //- Construct and return clone based on (this) with new name
         virtual autoPtr<Cloud<parcelType>> clone(const word& name)
         {
@@ -317,7 +356,7 @@ public:
 
 
     //- Destructor
-    virtual ~KinematicCloud();
+    virtual ~KinematicCloud() = default;
 
 
     // Member Functions
@@ -355,7 +394,7 @@ public:
                 //- Return access to the constant properties
                 inline typename parcelType::constantProperties& constProps();
 
-                    //- Return reference to the sub-models dictionary
+                //- Return reference to the sub-models dictionary
                 inline const dictionary& subModelProperties() const;
 
 
@@ -452,6 +491,31 @@ public:
                     surfaceFilm();
 
 
+                //- Return const access to the packing model
+                inline const PackingModel<KinematicCloud<CloudType>>&
+                    packingModel() const;
+
+                //- Return a reference to the packing model
+                inline PackingModel<KinematicCloud<CloudType>>&
+                    packingModel();
+
+                //- Return const access to the damping model
+                inline const DampingModel<KinematicCloud<CloudType>>&
+                    dampingModel() const;
+
+                //- Return a reference to the damping model
+                inline DampingModel<KinematicCloud<CloudType>>&
+                    dampingModel();
+
+                //- Return const access to the isotropy model
+                inline const IsotropyModel<KinematicCloud<CloudType>>&
+                    isotropyModel() const;
+
+                //- Return a reference to the isotropy model
+                inline IsotropyModel<KinematicCloud<CloudType>>&
+                    isotropyModel();
+
+
             // Integration schemes
 
                 //-Return reference to velocity integration
@@ -476,20 +540,30 @@ public:
                     inline const volScalarField::Internal&
                         UCoeff() const;
 
-                    //- Return tmp momentum source term
-                    inline tmp<fvVectorMatrix> SU(volVectorField& U) const;
+                    //- Return tmp momentum source term (compressible)
+                    inline tmp<fvVectorMatrix> SU
+                    (
+                        volVectorField& U,
+                        bool incompressible = false
+                    ) const;
 
 
         // Check
 
             //- Total number of parcels
-            inline label nParcels() const;
+            virtual label nParcels() const
+            {
+                return CloudType::nParcels();
+            }
 
             //- Total mass in system
             inline scalar massInSystem() const;
 
             //- Total linear momentum of the system
             inline vector linearMomentumOfSystem() const;
+
+            //- Average particle per parcel
+            inline scalar totalParticlePerParcel() const;
 
             //- Total linear kinetic energy in the system
             inline scalar linearKineticEnergyOfSystem() const;
@@ -572,7 +646,10 @@ public:
             void scaleSources();
 
             //- Pre-evolve
-            void preEvolve();
+            void preEvolve
+            (
+                const typename parcelType::trackingData& td
+            );
 
             //- Evolve the cloud
             void evolve();
@@ -611,11 +688,11 @@ public:
             //- Print cloud information
             void info();
 
+            //- Read particle fields from objects in the obr registry
+            virtual void readObjects(const objectRegistry& obr);
 
-    // Member Operators
-
-        //- Disallow default bitwise assignment
-        void operator=(const KinematicCloud&) = delete;
+            //- Write particle fields as objects into the obr registry
+            virtual void writeObjects(objectRegistry& obr) const;
 };
 
 

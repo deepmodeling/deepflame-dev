@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2018 OpenFOAM Foundation
+    Copyright (C) 2020-2022 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -28,15 +31,21 @@ License
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#include "FaceInteraction.H"
 #include "FacePostProcessing.H"
 #include "ParticleCollector.H"
 #include "ParticleErosion.H"
 #include "ParticleTracks.H"
 #include "ParticleTrap.H"
+#include "ParticleZoneInfo.H"
 #include "PatchCollisionDensity.H"
+#include "PatchInteractionFields.H"
 #include "PatchPostProcessing.H"
-#include "RelativeVelocity.H"
+#include "PatchParticleHistogram.H"
+#include "RemoveParcels.H"
 #include "VoidFraction.H"
+#include "KinematicReynoldsNumber.H"
+#include "ParticleDose.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -44,15 +53,21 @@ License
                                                                                \
     makeCloudFunctionObject(CloudType);                                        \
                                                                                \
+    makeCloudFunctionObjectType(FaceInteraction, CloudType);                   \
     makeCloudFunctionObjectType(FacePostProcessing, CloudType);                \
     makeCloudFunctionObjectType(ParticleCollector, CloudType);                 \
     makeCloudFunctionObjectType(ParticleErosion, CloudType);                   \
     makeCloudFunctionObjectType(ParticleTracks, CloudType);                    \
     makeCloudFunctionObjectType(ParticleTrap, CloudType);                      \
+    makeCloudFunctionObjectType(ParticleZoneInfo, CloudType);                  \
     makeCloudFunctionObjectType(PatchCollisionDensity, CloudType);             \
+    makeCloudFunctionObjectType(PatchInteractionFields, CloudType);            \
     makeCloudFunctionObjectType(PatchPostProcessing, CloudType);               \
-    makeCloudFunctionObjectType(RelativeVelocity, CloudType);                  \
-    makeCloudFunctionObjectType(VoidFraction, CloudType);
+    makeCloudFunctionObjectType(PatchParticleHistogram, CloudType);            \
+    makeCloudFunctionObjectType(RemoveParcels, CloudType);                     \
+    makeCloudFunctionObjectType(VoidFraction, CloudType);                      \
+    makeCloudFunctionObjectType(KinematicReynoldsNumber, CloudType);           \
+    makeCloudFunctionObjectType(ParticleDose, CloudType);
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

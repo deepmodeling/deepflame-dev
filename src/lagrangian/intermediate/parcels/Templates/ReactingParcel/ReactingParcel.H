@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2016-2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -23,6 +26,9 @@ License
 
 Class
     Foam::ReactingParcel
+
+Group
+    grpLagrangianIntermediateParcels
 
 Description
     Reacting parcel class with one/two-way coupling with the continuous
@@ -67,26 +73,44 @@ class ReactingParcel
 :
     public ParcelType
 {
-    // Private Data
-
-        //- Size in bytes of the fields
-        static const std::size_t sizeofFields_;
-
-
 public:
+
+    //- Size in bytes of the fields
+    static const std::size_t sizeofFields;
+
+
 
     //- Class to hold reacting parcel constant properties
     class constantProperties
     :
         public ParcelType::constantProperties
     {
+    public:
+
+            //- Type of activity coefficient models
+            enum volumeUpdateType
+            {
+                mConstRho,
+                mConstVol,
+                mUpdateRhoAndVol,
+                mUndefined
+            };
+
+    private:
+
         // Private Data
 
             //- Minimum pressure [Pa]
             demandDrivenEntry<scalar> pMin_;
 
-            //- Constant volume flag - e.g. during mass transfer
+            //- Method to update particle rho and diameter
+            //- 0: constant rho
+            //- 1: constant volume
+            //- 2: recalculation of rho and volume based on the lost mass
             demandDrivenEntry<bool> constantVolume_;
+
+            //- Method to update vol and rho
+            demandDrivenEntry<label> volUpdateType_;
 
 
     public:
@@ -110,6 +134,9 @@ public:
 
             //- Return const access to the constant volume flag
             inline bool constantVolume() const;
+
+            //- Return const access to the constant volume flag
+            inline label volUpdateType() const;
     };
 
 
@@ -119,7 +146,7 @@ public:
     {
     private:
 
-        // Private Data
+        // Private data
 
             // Interpolators for continuous phase fields
 
@@ -148,7 +175,7 @@ public:
             );
 
 
-        // Member Functions
+        // Member functions
 
             //- Return const access to the interpolator for continuous phase
             //  pressure field
@@ -177,6 +204,17 @@ protected:
 
     // Protected Member Functions
 
+            //- Return change of volume due to mass exchange
+            template<class TrackCloudType>
+            scalar updatedDeltaVolume
+            (
+                TrackCloudType& cloud,
+                const scalarField& dMass,
+                const scalar p,
+                const scalar T
+            );
+
+
         //- Calculate Phase change
         template<class TrackCloudType>
         void calcPhaseChange
@@ -191,9 +229,11 @@ protected:
             const scalar d,            // diameter
             const scalar T,            // temperature
             const scalar mass,         // mass
+            const scalar rho,          // density
             const label idPhase,       // id of phase involved in phase change
             const scalar YPhase,       // total mass fraction
-            const scalarField& YComponents, // component mass fractions
+            const scalarField& YLiq,   // liquid component  mass fractions
+            const scalarField& YSol,   // solid component mass fractions
             scalarField& dMassPC,      // mass transfer - local to parcel
             scalar& Sh,                // explicit parcel enthalpy source
             scalar& N,                 // flux of species emitted from parcel
@@ -212,7 +252,7 @@ protected:
 
 public:
 
-    // Static Data Members
+    // Static data members
 
         //- Runtime type information
         TypeName("ReactingParcel");
@@ -273,7 +313,8 @@ public:
         (
             const polyMesh& mesh,
             Istream& is,
-            bool readFields = true
+            bool readFields = true,
+            bool newFormat = true
         );
 
         //- Construct as a copy
@@ -334,6 +375,18 @@ public:
             //- Return const access to mass fractions of mixture []
             inline const scalarField& Y() const;
 
+            //- Return const access to mass fractions of gases
+            //  Note: for compatibilty only - returns Y()
+            inline const scalarField& YGas() const;
+
+            //- Return const access to mass fractions of liquids
+            //  Note: for compatibilty only - returns Y()
+            inline const scalarField& YLiquid() const;
+
+            //- Return const access to mass fractions of solids
+            //  Note: for compatibilty only - returns Y()
+            inline const scalarField& YSolid() const;
+
 
         // Edit
 
@@ -385,7 +438,7 @@ public:
 
         // I-O
 
-            //- Read
+            //- Read - composition supplied
             template<class CloudType, class CompositionType>
             static void readFields
             (
@@ -397,7 +450,7 @@ public:
             template<class CloudType>
             static void readFields(CloudType& c);
 
-            //- Write
+            //- Write - composition supplied
             template<class CloudType, class CompositionType>
             static void writeFields
             (
@@ -405,9 +458,54 @@ public:
                 const CompositionType& compModel
             );
 
-            //- Write - composition supplied
+            //- Write - no composition
             template<class CloudType>
             static void writeFields(const CloudType& c);
+
+            //- Write individual parcel properties to stream
+            void writeProperties
+            (
+                Ostream& os,
+                const wordRes& filters,
+                const word& delim,
+                const bool namesOnly = false
+            ) const;
+
+            //- Read particle fields as objects from the obr registry
+            //  - no composition
+            template<class CloudType>
+            static void readObjects
+            (
+                CloudType& c,
+                const objectRegistry& obr
+            );
+
+            //- Read particle fields as objects from the obr registry
+            template<class CloudType, class CompositionType>
+            static void readObjects
+            (
+                CloudType& c,
+                const CompositionType& compModel,
+                const objectRegistry& obr
+            );
+
+            //- Write particle fields as objects into the obr registry
+            //  - no composition
+            template<class CloudType>
+            static void writeObjects
+            (
+                const CloudType& c,
+                objectRegistry& obr
+            );
+
+            //- Write particle fields as objects into the obr registry
+            template<class CloudType, class CompositionType>
+            static void writeObjects
+            (
+                const CloudType& c,
+                const CompositionType& compModel,
+                objectRegistry& obr
+            );
 
 
     // Ostream Operator

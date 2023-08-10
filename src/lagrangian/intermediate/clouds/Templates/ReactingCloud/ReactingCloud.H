@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2016 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -23,6 +26,9 @@ License
 
 Class
     Foam::ReactingCloud
+
+Group
+    grpLagrangianIntermediateClouds
 
 Description
     Templated base class for reacting cloud
@@ -67,7 +73,7 @@ class ReactingCloud
 {
 public:
 
-    // Public Typedefs
+    // Public typedefs
 
         //- Type of cloud this cloud was instantiated for
         typedef CloudType cloudType;
@@ -81,11 +87,19 @@ public:
 
 private:
 
-    // Private Data
+    // Private data
 
         //- Cloud copy pointer
         autoPtr<ReactingCloud<CloudType>> cloudCopyPtr_;
 
+
+    // Private member functions
+
+        //- No copy construct
+        ReactingCloud(const ReactingCloud&) = delete;
+
+        //- No copy assignment
+        void operator=(const ReactingCloud&) = delete;
 
 
 protected:
@@ -164,9 +178,6 @@ public:
             const ReactingCloud<CloudType>& c
         );
 
-        //- Disallow default bitwise copy construction
-        ReactingCloud(const ReactingCloud&) = delete;
-
         //- Construct and return clone based on (this) with new name
         virtual autoPtr<Cloud<parcelType>> clone(const word& name)
         {
@@ -187,7 +198,7 @@ public:
 
 
     //- Destructor
-    virtual ~ReactingCloud();
+    virtual ~ReactingCloud() = default;
 
 
     // Member Functions
@@ -251,7 +262,7 @@ public:
                     //  - fully explicit
                     inline tmp<volScalarField::Internal> Srho() const;
 
-                    //- Return total mass source term [kg/m^3/s]
+                    //- Return total mass source term [kg/m3/s]
                     inline tmp<fvScalarMatrix> Srho(volScalarField& rho) const;
 
 
@@ -306,11 +317,8 @@ public:
             //- Write the field data for the cloud
             virtual void writeFields() const;
 
-
-    // Member Operators
-
-        //- Disallow default bitwise assignment
-        void operator=(const ReactingCloud&) = delete;
+            //- Write particle fields as objects into the obr registry
+            virtual void writeObjects(objectRegistry& obr) const;
 };
 
 

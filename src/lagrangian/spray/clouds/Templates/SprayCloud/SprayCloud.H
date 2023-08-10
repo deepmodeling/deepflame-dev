@@ -1,9 +1,11 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2016 OpenFOAM Foundation
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -33,22 +35,22 @@ Description
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef SprayCloud_H
-#define SprayCloud_H
+#ifndef Foam_SprayCloud_H
+#define Foam_SprayCloud_H
 
 #include "sprayCloud.H"
+#include "SortList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
-// Forward declaration of classes
-template<class CloudType>
-class AtomizationModel;
+// Forward Declarations
+template<class CloudType> class AtomizationModel;
+template<class CloudType> class BreakupModel;
+template<class CloudType> class SprayCloud;
 
-template<class CloudType>
-class BreakupModel;
 
 /*---------------------------------------------------------------------------*\
                       Class SprayCloud Declaration
@@ -62,7 +64,7 @@ class SprayCloud
 {
 public:
 
-    // Public Typedefs
+    // Public typedefs
 
         //- Type of cloud this cloud was instantiated for
         typedef CloudType cloudType;
@@ -76,13 +78,22 @@ public:
 
 private:
 
-    // Private Data
+    // Private data
 
         //- Cloud copy pointer
         autoPtr<SprayCloud<CloudType>> cloudCopyPtr_;
 
         //- Average parcel mass
         scalar averageParcelMass_;
+
+
+    // Private Member Functions
+
+        //- No copy construct
+        SprayCloud(const SprayCloud&) = delete;
+
+        //- No copy assignment
+        void operator=(const SprayCloud&) = delete;
 
 
 protected:
@@ -139,8 +150,6 @@ public:
             const SprayCloud<CloudType>& c
         );
 
-        //- Disallow default bitwise copy construction
-        SprayCloud(const SprayCloud&) = delete;
 
         //- Construct and return clone based on (this) with new name
         virtual autoPtr<Cloud<parcelType>> clone(const word& name)
@@ -230,12 +239,6 @@ public:
 
             //- Print cloud information
             void info();
-
-
-    // Member Operators
-
-        //- Disallow default bitwise assignment
-        void operator=(const SprayCloud&) = delete;
 };
 
 

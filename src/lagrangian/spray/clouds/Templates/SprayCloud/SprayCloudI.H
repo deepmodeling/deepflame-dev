@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2019-2022 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -29,7 +32,7 @@ template<class CloudType>
 inline const Foam::SprayCloud<CloudType>&
 Foam::SprayCloud<CloudType>::cloudCopy() const
 {
-    return cloudCopyPtr_();
+    return *cloudCopyPtr_;
 }
 
 
@@ -45,7 +48,7 @@ template<class CloudType>
 inline Foam::AtomizationModel<Foam::SprayCloud<CloudType>>&
 Foam::SprayCloud<CloudType>::atomization()
 {
-    return atomizationModel_();
+    return *atomizationModel_;
 }
 
 
@@ -61,7 +64,7 @@ template<class CloudType>
 inline Foam::BreakupModel<Foam::SprayCloud<CloudType>>&
 Foam::SprayCloud<CloudType>::breakup()
 {
-    return breakupModel_();
+    return *breakupModel_;
 }
 
 
@@ -85,96 +88,73 @@ inline Foam::scalar Foam::SprayCloud<CloudType>::penetration
             << exit(FatalError);
     }
 
-    scalar distance = 0.0;
-
     const label nParcel = this->size();
-    globalIndex globalParcels(nParcel);
-    const label nParcelSum = globalParcels.size();
+    const globalIndex globalParcels(nParcel);
+    const label nTotParcel = globalParcels.totalSize();
 
-    if (nParcelSum == 0)
+    if (nTotParcel == 0)
     {
-        return distance;
+        return 0;
     }
 
     // lists of parcels mass and distance from initial injection point
-    List<List<scalar>> procMass(Pstream::nProcs());
-    List<List<scalar>> procDist(Pstream::nProcs());
+    List<scalar> mass(nParcel);
+    List<scalar> dist(nParcel);
 
-    List<scalar>& mass = procMass[Pstream::myProcNo()];
-    List<scalar>& dist = procDist[Pstream::myProcNo()];
-
-    mass.setSize(nParcel);
-    dist.setSize(nParcel);
-
-    label i = 0;
-    scalar mSum = 0.0;
-    forAllConstIter(typename SprayCloud<CloudType>, *this, iter)
+    scalar mTotal = 0;
     {
-        const parcelType& p = iter();
-        scalar m = p.nParticle()*p.mass();
-        scalar d = mag(p.position() - p.position0());
-        mSum += m;
+        label i = 0;
+        for (const parcelType& p : *this)
+        {
+            scalar m = p.nParticle()*p.mass();
+            scalar d = mag(p.position() - p.position0());
+            mTotal += m;
 
-        mass[i] = m;
-        dist[i] = d;
-
-        i++;
+            mass[i] = m;
+            dist[i] = d;
+            ++i;
+        }
     }
+    // Total mass across all processors
+    reduce(mTotal, sumOp<scalar>());
 
-    // calculate total mass across all processors
-    reduce(mSum, sumOp<scalar>());
-    Pstream::gatherList(procMass);
-    Pstream::gatherList(procDist);
+    scalar distance = 0;
+    globalParcels.gatherInplace(mass);
+    globalParcels.gatherInplace(dist);
 
     if (Pstream::master())
     {
-        // flatten the mass lists
-        List<scalar> allMass(nParcelSum, 0.0);
-        SortableList<scalar> allDist(nParcelSum, 0.0);
-        for (label proci = 0; proci < Pstream::nProcs(); proci++)
+        if (nTotParcel == 1)
         {
-            SubList<scalar>
-            (
-                allMass,
-                globalParcels.localSize(proci),
-                globalParcels.offset(proci)
-            ) = procMass[proci];
-
-            // flatten the distance list
-            SubList<scalar>
-            (
-                allDist,
-                globalParcels.localSize(proci),
-                globalParcels.offset(proci)
-            ) = procDist[proci];
+            distance = dist[0];
         }
-
-        // sort allDist distances into ascending order
-        // note: allMass masses are left unsorted
-        allDist.sort();
-
-        if (nParcelSum > 1)
+        else
         {
-            const scalar mLimit = fraction*mSum;
-            const labelList& indices = allDist.indices();
+            // Distances - sored into ascending order
+            // Masses - leave unsorted
 
-            if (mLimit > (mSum - allMass[indices.last()]))
+            const SortList<scalar> sortedDist(dist);
+
+            const scalar mLimit = fraction*mTotal;
+            const labelList& indices = sortedDist.indices();
+
+            if (mLimit > (mTotal - mass[indices.last()]))
             {
-                distance = allDist.last();
+                distance = sortedDist.last();
             }
             else
             {
                 // assuming that 'fraction' is generally closer to 1 than 0,
                 // loop through in reverse distance order
-                const scalar mThreshold = (1.0 - fraction)*mSum;
-                scalar mCurrent = 0.0;
+                const scalar mThreshold = (1.0 - fraction)*mTotal;
+                scalar mCurrent = 0;
                 label i0 = 0;
 
                 forAllReverse(indices, i)
                 {
                     label indI = indices[i];
 
-                    mCurrent += allMass[indI];
+                    mCurrent += mass[indI];
 
                     if (mCurrent > mThreshold)
                     {
@@ -185,24 +165,23 @@ inline Foam::scalar Foam::SprayCloud<CloudType>::penetration
 
                 if (i0 == indices.size() - 1)
                 {
-                    distance = allDist.last();
+                    distance = sortedDist.last();
                 }
                 else
                 {
                     // linearly interpolate to determine distance
-                    scalar alpha = (mCurrent - mThreshold)/allMass[indices[i0]];
+                    scalar alpha = (mCurrent - mThreshold)/mass[indices[i0]];
                     distance =
-                        allDist[i0] + alpha*(allDist[i0+1] - allDist[i0]);
+                    (
+                        sortedDist[i0]
+                      + alpha*(sortedDist[i0+1] - sortedDist[i0])
+                    );
                 }
             }
         }
-        else
-        {
-            distance = allDist.first();
-        }
     }
 
-    Pstream::scatter(distance);
+    Pstream::broadcast(distance);
 
     return distance;
 }

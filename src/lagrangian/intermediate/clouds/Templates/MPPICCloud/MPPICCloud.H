@@ -1,9 +1,11 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2013-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2013-2017 OpenFOAM Foundation
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -23,6 +25,9 @@ License
 
 Class
     Foam::MPPICCloud
+
+Group
+    grpLagrangianIntermediateClouds
 
 Description
     Adds MPPIC modelling to kinematic clouds
@@ -70,7 +75,7 @@ class MPPICCloud
 {
 public:
 
-    // Public Typedefs
+    // Public typedefs
 
         //- Type of cloud this cloud was instantiated for
         typedef CloudType cloudType;
@@ -84,10 +89,19 @@ public:
 
 private:
 
-    // Private Data
+    // Private data
 
         //- Cloud copy pointer
         autoPtr<MPPICCloud<CloudType>> cloudCopyPtr_;
+
+
+    // Private Member Functions
+
+        //- No copy construct
+        MPPICCloud(const MPPICCloud&) = delete;
+
+        //- No copy assignment
+        void operator=(const MPPICCloud&) = delete;
 
 
 protected:
@@ -144,9 +158,6 @@ public:
             const MPPICCloud<CloudType>& c
         );
 
-        //- Disallow default bitwise copy construction
-        MPPICCloud(const MPPICCloud&) = delete;
-
         //- Construct and return clone based on (this) with new name
         virtual autoPtr<Cloud<parcelType>> clone(const word& name)
         {
@@ -184,14 +195,14 @@ public:
             //- Return a reference to the packing model
             inline PackingModel<MPPICCloud<CloudType>>& packingModel();
 
-            //- Return condt access to the damping model
+            //- Return const access to the damping model
             inline const DampingModel<MPPICCloud<CloudType>>&
                 dampingModel() const;
 
             //- Return a reference to the damping model
             inline DampingModel<MPPICCloud<CloudType>>& dampingModel();
 
-            //- Return condt access to the isotropy model
+            //- Return const access to the isotropy model
             inline const IsotropyModel<MPPICCloud<CloudType>>&
                 isotropyModel() const;
 
@@ -223,12 +234,6 @@ public:
 
             //- Print cloud information
             void info();
-
-
-    // Member Operators
-
-        //- Disallow default bitwise assignment
-        void operator=(const MPPICCloud&) = delete;
 };
 
 

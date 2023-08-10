@@ -1,9 +1,11 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -206,7 +208,7 @@ void  Foam::CollidingCloud<CloudType>::motion
 
     if (nSubCycles > 1)
     {
-        Info<< "    " << nSubCycles << " move-collide subCycles" << endl;
+        Log_<< "    " << nSubCycles << " move-collide subCycles" << endl;
 
         subCycleTime moveCollideSubCycle
         (
@@ -236,7 +238,7 @@ void Foam::CollidingCloud<CloudType>::info()
     scalar rotationalKineticEnergy = rotationalKineticEnergyOfSystem();
     reduce(rotationalKineticEnergy, sumOp<scalar>());
 
-    Info<< "    Rotational kinetic energy       = "
+    Log_<< "    Rotational kinetic energy       = "
         << rotationalKineticEnergy << nl;
 }
 

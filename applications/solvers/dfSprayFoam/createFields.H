@@ -49,7 +49,7 @@ dimensionedScalar rhoMax
         "rhoMax",
         pimple.dict(),
         dimDensity,
-        great
+        GREAT
     )
 );
 

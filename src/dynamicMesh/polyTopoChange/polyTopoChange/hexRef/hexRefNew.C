@@ -72,10 +72,9 @@ Foam::autoPtr<Foam::hexRef> Foam::hexRef::New
         hexRefTypeName = "hexRef2";
     }
 
-    meshConstructorTable::iterator hexRefIter =
-        meshConstructorTablePtr_->find(hexRefTypeName);
+    auto* ctorPtr = meshConstructorTable(hexRefTypeName);
 
-    if (hexRefIter == meshConstructorTablePtr_->end())
+    if (!ctorPtr)
     {
         FatalErrorInFunction
             << "Unsupported mesh number of dimensions for hex refinement" << nl
@@ -86,7 +85,7 @@ Foam::autoPtr<Foam::hexRef> Foam::hexRef::New
 
     return autoPtr<hexRef>
     (
-        hexRefIter()(mesh, readHistory)
+        ctorPtr(mesh, readHistory)
     );
 }
 
@@ -128,10 +127,9 @@ Foam::autoPtr<Foam::hexRef> Foam::hexRef::New
         hexRefTypeName = "hexRef2";
     }
 
-    levelsHistConstructorTable::iterator hexRefIter =
-        levelsHistConstructorTablePtr_->find(hexRefTypeName);
+    auto* ctorPtr = levelsHistConstructorTable(hexRefTypeName);
 
-    if (hexRefIter == levelsHistConstructorTablePtr_->end())
+    if (!ctorPtr)
     {
         FatalErrorInFunction
             << "Unsupported mesh number of dimensions for hex refinement" << nl
@@ -142,7 +140,7 @@ Foam::autoPtr<Foam::hexRef> Foam::hexRef::New
 
     return autoPtr<hexRef>
     (
-        hexRefIter()(mesh, cellLevel, pointLevel, history, level0Edge)
+        ctorPtr(mesh, cellLevel, pointLevel, history, level0Edge)
     );
 }
 
@@ -183,10 +181,9 @@ Foam::autoPtr<Foam::hexRef> Foam::hexRef::New
         hexRefTypeName = "hexRef2";
     }
 
-    levelsConstructorTable::iterator hexRefIter =
-        levelsConstructorTablePtr_->find(hexRefTypeName);
+    auto* ctorPtr = levelsConstructorTable(hexRefTypeName);
 
-    if (hexRefIter == levelsConstructorTablePtr_->end())
+    if (!ctorPtr)
     {
         FatalErrorInFunction
             << "Unsupported mesh number of dimensions for hex refinement" << nl
@@ -197,7 +194,7 @@ Foam::autoPtr<Foam::hexRef> Foam::hexRef::New
 
     return autoPtr<hexRef>
     (
-        hexRefIter()(mesh, cellLevel, pointLevel, level0Edge)
+        ctorPtr(mesh, cellLevel, pointLevel, level0Edge)
     );
 }
 

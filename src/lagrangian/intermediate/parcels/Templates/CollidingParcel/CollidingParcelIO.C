@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2019-2022 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -34,7 +37,7 @@ Foam::string Foam::CollidingParcel<ParcelType>::propertyList_ =
     Foam::CollidingParcel<ParcelType>::propertyList();
 
 template<class ParcelType>
-const std::size_t Foam::CollidingParcel<ParcelType>::sizeofFields_
+const std::size_t Foam::CollidingParcel<ParcelType>::sizeofFields
 (
     offsetof(CollidingParcel<ParcelType>, collisionRecords_)
   - offsetof(CollidingParcel<ParcelType>, f_)
@@ -48,10 +51,11 @@ Foam::CollidingParcel<ParcelType>::CollidingParcel
 (
     const polyMesh& mesh,
     Istream& is,
-    bool readFields
+    bool readFields,
+    bool newFormat
 )
 :
-    ParcelType(mesh, is, readFields),
+    ParcelType(mesh, is, readFields, newFormat),
     f_(Zero),
     angularMomentum_(Zero),
     torque_(Zero),
@@ -59,26 +63,33 @@ Foam::CollidingParcel<ParcelType>::CollidingParcel
 {
     if (readFields)
     {
-        if (is.format() == IOstream::ASCII)
+        if (is.format() == IOstreamOption::ASCII)
         {
             is >> f_;
             is >> angularMomentum_;
             is >> torque_;
         }
+        else if (!is.checkLabelSize<>() || !is.checkScalarSize<>())
+        {
+            // Non-native label or scalar size
+
+            is.beginRawRead();
+
+            readRawScalar(is, f_.data(), vector::nComponents);
+            readRawScalar(is, angularMomentum_.data(), vector::nComponents);
+            readRawScalar(is, torque_.data(), vector::nComponents);
+
+            is.endRawRead();
+        }
         else
         {
-            is.read(reinterpret_cast<char*>(&f_), sizeofFields_);
+            is.read(reinterpret_cast<char*>(&f_), sizeofFields);
         }
 
         is >> collisionRecords_;
     }
 
-    // Check state of Istream
-    is.check
-    (
-        "CollidingParcel<ParcelType>::Collisions"
-        "(const polyMesh&, Istream&, bool)"
-    );
+    is.check(FUNCTION_NAME);
 }
 
 
@@ -86,31 +97,31 @@ template<class ParcelType>
 template<class CloudType>
 void Foam::CollidingParcel<ParcelType>::readFields(CloudType& c)
 {
-    bool write = c.size();
+    const bool valid = c.size();
 
     ParcelType::readFields(c);
 
-    IOField<vector> f(c.fieldIOobject("f", IOobject::MUST_READ), write);
+    IOField<vector> f(c.fieldIOobject("f", IOobject::MUST_READ), valid);
     c.checkFieldIOobject(c, f);
 
     IOField<vector> angularMomentum
     (
         c.fieldIOobject("angularMomentum", IOobject::MUST_READ),
-        write
+        valid
     );
     c.checkFieldIOobject(c, angularMomentum);
 
     IOField<vector> torque
     (
         c.fieldIOobject("torque", IOobject::MUST_READ),
-        write
+        valid
     );
     c.checkFieldIOobject(c, torque);
 
     labelFieldCompactIOField collisionRecordsPairAccessed
     (
         c.fieldIOobject("collisionRecordsPairAccessed", IOobject::MUST_READ),
-        write
+        valid
     );
     c.checkFieldFieldIOobject(c, collisionRecordsPairAccessed);
 
@@ -121,7 +132,7 @@ void Foam::CollidingParcel<ParcelType>::readFields(CloudType& c)
             "collisionRecordsPairOrigProcOfOther",
             IOobject::MUST_READ
         ),
-        write
+        valid
     );
     c.checkFieldFieldIOobject(c, collisionRecordsPairOrigProcOfOther);
 
@@ -132,44 +143,42 @@ void Foam::CollidingParcel<ParcelType>::readFields(CloudType& c)
             "collisionRecordsPairOrigIdOfOther",
             IOobject::MUST_READ
         ),
-        write
+        valid
     );
     c.checkFieldFieldIOobject(c, collisionRecordsPairOrigProcOfOther);
 
     pairDataFieldCompactIOField collisionRecordsPairData
     (
         c.fieldIOobject("collisionRecordsPairData", IOobject::MUST_READ),
-        write
+        valid
     );
     c.checkFieldFieldIOobject(c, collisionRecordsPairData);
 
     labelFieldCompactIOField collisionRecordsWallAccessed
     (
         c.fieldIOobject("collisionRecordsWallAccessed", IOobject::MUST_READ),
-        write
+        valid
     );
     c.checkFieldFieldIOobject(c, collisionRecordsWallAccessed);
 
     vectorFieldCompactIOField collisionRecordsWallPRel
     (
         c.fieldIOobject("collisionRecordsWallPRel", IOobject::MUST_READ),
-        write
+        valid
     );
     c.checkFieldFieldIOobject(c, collisionRecordsWallPRel);
 
     wallDataFieldCompactIOField collisionRecordsWallData
     (
         c.fieldIOobject("collisionRecordsWallData", IOobject::MUST_READ),
-        write
+        valid
     );
     c.checkFieldFieldIOobject(c, collisionRecordsWallData);
 
     label i = 0;
 
-    forAllIter(typename CloudType, c, iter)
+    for (CollidingParcel<ParcelType>& p : c)
     {
-        CollidingParcel<ParcelType>& p = iter();
-
         p.f_ = f[i];
         p.angularMomentum_ = angularMomentum[i];
         p.torque_ = torque[i];
@@ -185,7 +194,7 @@ void Foam::CollidingParcel<ParcelType>::readFields(CloudType& c)
             collisionRecordsWallData[i]
         );
 
-        i++;
+        ++i;
     }
 }
 
@@ -196,10 +205,12 @@ void Foam::CollidingParcel<ParcelType>::writeFields(const CloudType& c)
 {
     ParcelType::writeFields(c);
 
-    label np = c.size();
+    const label np = c.size();
+    const bool valid = np;
+
 
     IOField<vector> f(c.fieldIOobject("f", IOobject::NO_READ), np);
-    IOField<vector> angularMomentum
+    IOField<vector> angMom
     (
         c.fieldIOobject("angularMomentum", IOobject::NO_READ),
         np
@@ -247,13 +258,10 @@ void Foam::CollidingParcel<ParcelType>::writeFields(const CloudType& c)
     );
 
     label i = 0;
-
-    forAllConstIter(typename CloudType, c, iter)
+    for (const CollidingParcel<ParcelType>& p : c)
     {
-        const CollidingParcel<ParcelType>& p = iter();
-
         f[i] = p.f();
-        angularMomentum[i] = p.angularMomentum();
+        angMom[i] = p.angularMomentum();
         torque[i] = p.torque();
 
         collisionRecordsPairAccessed[i] = p.collisionRecords().pairAccessed();
@@ -266,22 +274,100 @@ void Foam::CollidingParcel<ParcelType>::writeFields(const CloudType& c)
         collisionRecordsWallPRel[i] = p.collisionRecords().wallPRel();
         collisionRecordsWallData[i] = p.collisionRecords().wallData();
 
-        i++;
+        ++i;
     }
 
-    const bool write = (np > 0);
+    f.write(valid);
+    angMom.write(valid);
+    torque.write(valid);
 
-    f.write(write);
-    angularMomentum.write(write);
-    torque.write(write);
+    collisionRecordsPairAccessed.write(valid);
+    collisionRecordsPairOrigProcOfOther.write(valid);
+    collisionRecordsPairOrigIdOfOther.write(valid);
+    collisionRecordsPairData.write(valid);
+    collisionRecordsWallAccessed.write(valid);
+    collisionRecordsWallPRel.write(valid);
+    collisionRecordsWallData.write(valid);
+}
 
-    collisionRecordsPairAccessed.write(write);
-    collisionRecordsPairOrigProcOfOther.write(write);
-    collisionRecordsPairOrigIdOfOther.write(write);
-    collisionRecordsPairData.write(write);
-    collisionRecordsWallAccessed.write(write);
-    collisionRecordsWallPRel.write(write);
-    collisionRecordsWallData.write(write);
+
+template<class ParcelType>
+void Foam::CollidingParcel<ParcelType>::writeProperties
+(
+    Ostream& os,
+    const wordRes& filters,
+    const word& delim,
+    const bool namesOnly
+) const
+{
+    ParcelType::writeProperties(os, filters, delim, namesOnly);
+
+    #undef  writeProp
+    #define writeProp(Name, Value)                                            \
+        ParcelType::writeProperty(os, Name, Value, namesOnly, delim, filters)
+
+    writeProp("f", f_);
+    writeProp("angularMomentum", angularMomentum_);
+    writeProp("torque", torque_);
+    //writeProp("collisionRecords", collisionRecords_);
+
+    #undef writeProp
+}
+
+
+template<class ParcelType>
+template<class CloudType>
+void Foam::CollidingParcel<ParcelType>::readObjects
+(
+    CloudType& c,
+    const objectRegistry& obr
+)
+{
+    ParcelType::readObjects(c, obr);
+
+    if (!c.size()) return;
+
+    const auto& f = cloud::lookupIOField<vector>("f", obr);
+    const auto& angMom = cloud::lookupIOField<vector>("angularMomentum", obr);
+    const auto& torque = cloud::lookupIOField<vector>("torque", obr);
+
+    label i = 0;
+    for (CollidingParcel<ParcelType>& p : c)
+    {
+        p.f_ = f[i];
+        p.angularMomentum_ = angMom[i];
+        p.torque_ = torque[i];
+
+        ++i;
+    }
+}
+
+
+template<class ParcelType>
+template<class CloudType>
+void Foam::CollidingParcel<ParcelType>::writeObjects
+(
+    const CloudType& c,
+    objectRegistry& obr
+)
+{
+    ParcelType::writeObjects(c, obr);
+
+    const label np = c.size();
+
+    auto& f = cloud::createIOField<vector>("f", np, obr);
+    auto& angMom = cloud::createIOField<vector>("angularMomentum", np, obr);
+    auto& torque = cloud::createIOField<vector>("torque", np, obr);
+
+    label i = 0;
+    for (const CollidingParcel<ParcelType>& p : c)
+    {
+        f[i] = p.f();
+        angMom[i] = p.angularMomentum();
+        torque[i] = p.torque();
+
+        ++i;
+    }
 }
 
 
@@ -294,7 +380,7 @@ Foam::Ostream& Foam::operator<<
     const CollidingParcel<ParcelType>& p
 )
 {
-    if (os.format() == IOstream::ASCII)
+    if (os.format() == IOstreamOption::ASCII)
     {
         os  << static_cast<const ParcelType&>(p)
             << token::SPACE << p.f_
@@ -308,17 +394,12 @@ Foam::Ostream& Foam::operator<<
         os.write
         (
             reinterpret_cast<const char*>(&p.f_),
-            CollidingParcel<ParcelType>::sizeofFields_
+            CollidingParcel<ParcelType>::sizeofFields
         );
         os  << p.collisionRecords();
     }
 
-    // Check state of Ostream
-    os.check
-    (
-        "Ostream& operator<<(Ostream&, const CollidingParcel<ParcelType>&)"
-    );
-
+    os.check(FUNCTION_NAME);
     return os;
 }
 

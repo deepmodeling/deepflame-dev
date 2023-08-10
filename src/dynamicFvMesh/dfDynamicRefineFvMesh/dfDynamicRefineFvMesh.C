@@ -35,6 +35,7 @@ License
 #include "cellSet.H"
 #include "wedgePolyPatch.H"
 #include "emptyPolyPatch.H"
+#include "dynamicMotionSolverListFvMesh.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -283,7 +284,7 @@ Foam::dfDynamicRefineFvMesh::refine
 
     // Update fields
     updateMesh(map);
-    
+
 
 
     // Move mesh
@@ -772,7 +773,7 @@ void Foam::dfDynamicRefineFvMesh::selectRefineCandidates
 {
 ////////////////////////////////////////////////////////////////////////
 // Batzdorf
-/* 
+/*
     //-
     // Get error per cell. Is -1 (not to be refined) to >0 (to be refined,
     // higher more desirable to be refined).
@@ -806,7 +807,7 @@ void Foam::dfDynamicRefineFvMesh::selectRefineCandidates
             candidateCell.set(cellI, 1);
         }
     }
-////////////////////////////////////////////////////////////////////////  
+////////////////////////////////////////////////////////////////////////
 }
 
 
@@ -1061,8 +1062,8 @@ void Foam::dfDynamicRefineFvMesh::mapNewInternalFaces
     typedef GeometricField<T, fvsPatchField, surfaceMesh> GeoField;
     HashTable< GeoField*> sFlds(this->objectRegistry::lookupClass<GeoField>());
 
-    const unallocLabelList& owner = this->owner();
-    const unallocLabelList& neighbour = this->neighbour();
+    const labelUList& owner = this->owner();
+    const labelUList& neighbour = this->neighbour();
     const dimensionedScalar deltaN = 1e-8 / pow(average(this->V()), 1.0 / 3.0);
 
     forAllIter(typename HashTable<GeoField*>, sFlds, iter)
@@ -1070,7 +1071,7 @@ void Foam::dfDynamicRefineFvMesh::mapNewInternalFaces
 
         GeoField& sFld = *iter();
         if (mapSurfaceFields_.found(iter.key()))
-        {   
+        {
             if (debug)
             {
                 Info << "dfDynamicRefineFvMesh::mapNewInternalFaces(): " <<iter.key()<< endl;
@@ -1113,7 +1114,7 @@ void Foam::dfDynamicRefineFvMesh::mapNewInternalFaces
                     {
                         //- faces on empty patches are not counted
                         label facePatchId = boundaryMesh().whichPatch(faceOwner[iFace]);
-                        bool isNonEmptyBoundFace = !( this->boundaryMesh()[0].start() < faceOwner[iFace]  
+                        bool isNonEmptyBoundFace = !( this->boundaryMesh()[0].start() < faceOwner[iFace]
                                                  && isA<emptyPolyPatch>(boundaryMesh()[facePatchId]));
 
                         //- is master face and not on empty boundary
@@ -1130,7 +1131,7 @@ void Foam::dfDynamicRefineFvMesh::mapNewInternalFaces
                     {
                         //- faces on empty patches are not counted
                         label facePatchId = boundaryMesh().whichPatch(faceNeighbour[iFace]);
-                        bool isNonEmptyBoundFace = !( this->boundaryMesh()[0].start() < faceNeighbour[iFace]  
+                        bool isNonEmptyBoundFace = !( this->boundaryMesh()[0].start() < faceNeighbour[iFace]
                                                  && isA<emptyPolyPatch>(boundaryMesh()[facePatchId]));
 
                         //- is master face and not on empty boundary
@@ -1145,17 +1146,17 @@ void Foam::dfDynamicRefineFvMesh::mapNewInternalFaces
 
                     if(counter > 0)
                     {
-                        if 
-                        (   
-                            GeometricField<T, fvsPatchField, surfaceMesh>::typeName 
+                        if
+                        (
+                            GeometricField<T, fvsPatchField, surfaceMesh>::typeName
                                 == "surfaceScalarField"
                         )
                         {
                             tmpValue /= counter;
-                        }                            
-                        else if 
-                        (    
-                            GeometricField<T, fvsPatchField, surfaceMesh>::typeName 
+                        }
+                        else if
+                        (
+                            GeometricField<T, fvsPatchField, surfaceMesh>::typeName
                                 == "surfaceVectorField"
                         )
                         {
@@ -1168,7 +1169,7 @@ void Foam::dfDynamicRefineFvMesh::mapNewInternalFaces
                                 << "mapping implementation only valid for"
                                 << " scalar and vector fields! \n Field "
                                 << sFld.name() << " is of type: "
-                                << GeometricField<T, fvsPatchField, surfaceMesh>::typeName 
+                                << GeometricField<T, fvsPatchField, surfaceMesh>::typeName
                                 << abort(FatalError);
                         }
                     }
@@ -1813,7 +1814,8 @@ bool Foam::dfDynamicRefineFvMesh::writeObject
 
     bool writeOk =
     (
-        dynamicFvMesh::writeObject(fmt, ver, cmp, write)
+        //dynamicFvMesh::writeObject(fmt, ver, cmp, write)
+        dynamicFvMesh::writeObject(IOstreamOption(fmt, ver, cmp), write)
      && meshCutter_->write(write)
     );
 

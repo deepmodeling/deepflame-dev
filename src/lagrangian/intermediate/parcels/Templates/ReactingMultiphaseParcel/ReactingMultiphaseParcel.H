@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2016-2019 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -23,6 +26,9 @@ License
 
 Class
     Foam::ReactingMultiphaseParcel
+
+Group
+    grpLagrangianIntermediateParcels
 
 Description
     Multiphase variant of the reacting parcel class with one/two-way coupling
@@ -47,18 +53,13 @@ SourceFiles
 namespace Foam
 {
 
-template<class ParcelType>
-class ReactingMultiphaseParcel;
+template<class ParcelType> class ReactingMultiphaseParcel;
 
 template<class ParcelType>
-Ostream& operator<<
-(
-    Ostream&,
-    const ReactingMultiphaseParcel<ParcelType>&
-);
+Ostream& operator<<(Ostream&, const ReactingMultiphaseParcel<ParcelType>&);
 
 /*---------------------------------------------------------------------------*\
-                 Class ReactingMultiphaseParcel Declaration
+                  Class ReactingMultiphaseParcel Declaration
 \*---------------------------------------------------------------------------*/
 
 template<class ParcelType>
@@ -66,15 +67,13 @@ class ReactingMultiphaseParcel
 :
     public ParcelType
 {
-    // Private Data
-
-        //- Size in bytes of the fields
-        static const std::size_t sizeofFields_;
-
-
 public:
 
-    // IDs of phases in ReacingParcel phase list (Y)
+    //- Size in bytes of the fields
+    static const std::size_t sizeofFields;
+
+
+    // IDs of phases in ReactingParcel phase list (Y)
 
         static const label GAS;
         static const label LIQ;
@@ -86,7 +85,7 @@ public:
     :
         public ParcelType::constantProperties
     {
-        // Private Data
+        // Private data
 
             //- Devolatilisation activation temperature [K]
             demandDrivenEntry<scalar> TDevol_;
@@ -210,6 +209,22 @@ protected:
 
     // Protected Member Functions
 
+
+        //- Return change of volume due to mass exchange
+        template<class TrackCloudType>
+        scalar updatedDeltaVolume
+        (
+            TrackCloudType& cloud,
+            const scalarField& dMassGas,
+            const scalarField& dMassLiquid,
+            const scalarField& dMassSolid,
+            const label idG,
+            const label idL,
+            const label idS,
+            const scalar p,
+            const scalar T
+        );
+
         //- Calculate Devolatilisation
         template<class TrackCloudType>
         void calcDevolatilisation
@@ -242,6 +257,8 @@ protected:
             trackingData& td,
             const scalar dt,           // timestep
             const scalar d,            // diameter
+            const scalar Re,           // Re
+            const scalar nu,           // nu
             const scalar T,            // temperature
             const scalar mass,         // mass
             const label canCombust,     // 'can combust' flag
@@ -261,7 +278,7 @@ protected:
 
 public:
 
-    // Static Data Members
+    // Static data members
 
         //- Runtime type information
         TypeName("ReactingMultiphaseParcel");
@@ -326,7 +343,8 @@ public:
         (
             const polyMesh& mesh,
             Istream& is,
-            bool readFields = true
+            bool readFields = true,
+            bool newFormat = true
         );
 
         //- Construct as a copy
@@ -436,7 +454,7 @@ public:
 
         // I-O
 
-            //- Read
+            //- Read - composition supplied
             template<class CloudType, class CompositionType>
             static void readFields
             (
@@ -448,7 +466,7 @@ public:
             template<class CloudType>
             static void readFields(CloudType& c);
 
-            //- Write
+            //- Write - composition supplied
             template<class CloudType, class CompositionType>
             static void writeFields
             (
@@ -456,9 +474,54 @@ public:
                 const CompositionType& compModel
             );
 
-            //- Read - composition supplied
+            //- Read - no composition
             template<class CloudType>
             static void writeFields(const CloudType& c);
+
+            //- Write individual parcel properties to stream
+            void writeProperties
+            (
+                Ostream& os,
+                const wordRes& filters,
+                const word& delim,
+                const bool namesOnly = false
+            ) const;
+
+            //- Read particle fields as objects from the obr registry
+            //  - no composition
+            template<class CloudType>
+            static void readObjects
+            (
+                CloudType& c,
+                const objectRegistry& obr
+            );
+
+            //- Read particle fields as objects from the obr registry
+            template<class CloudType, class CompositionType>
+            static void readObjects
+            (
+                CloudType& c,
+                const CompositionType& compModel,
+                const objectRegistry& obr
+            );
+
+            //- Write particle fields as objects into the obr registry
+            //  - no composition
+            template<class CloudType>
+            static void writeObjects
+            (
+                const CloudType& c,
+                objectRegistry& obr
+            );
+
+            //- Write particle fields as objects into the obr registry
+            template<class CloudType, class CompositionType>
+            static void writeObjects
+            (
+                const CloudType& c,
+                const CompositionType& compModel,
+                objectRegistry& obr
+            );
 
 
     // Ostream Operator

@@ -1,9 +1,11 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2013-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2013-2017 OpenFOAM Foundation
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -64,6 +66,8 @@ bool Foam::MPPICParcel<ParcelType>::move
     typename TrackCloudType::parcelType& p =
         static_cast<typename TrackCloudType::parcelType&>(*this);
 
+    td.switchProcessor = false;
+
     switch (td.part())
     {
         case trackingData::tpLinearTrack:
@@ -94,16 +98,17 @@ bool Foam::MPPICParcel<ParcelType>::move
         }
         case trackingData::tpCorrectTrack:
         {
-            const scalar f = p.stepFraction();
-            const scalar a = p.age();
+            vector U = p.U();
 
-            Swap(p.U(), p.UCorrect());
+            scalar f = p.stepFraction();
+
+            scalar a = p.age();
+
+            p.U() = (1.0 - f)*p.UCorrect();
 
             ParcelType::move(cloud, td, trackTime);
 
-            Swap(p.U(), p.UCorrect());
-
-            p.U() += (p.stepFraction() - f)*p.UCorrect();
+            p.U() = U + (p.stepFraction() - f)*p.UCorrect();
 
             p.age() = a;
 

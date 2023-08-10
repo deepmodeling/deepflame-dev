@@ -151,7 +151,7 @@ volVectorField sumYDiffError
         IOobject::NO_WRITE
     ),
     mesh,
-    dimensionedVector("sumYDiffError", dimDynamicViscosity/dimLength, Zero)
+    dimensionedVector(dimDynamicViscosity/dimLength, Zero)
 );
 
 IOdictionary CanteraTorchProperties

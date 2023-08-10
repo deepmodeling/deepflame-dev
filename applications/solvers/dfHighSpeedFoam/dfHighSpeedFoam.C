@@ -44,7 +44,7 @@ Description
 #ifdef USE_LIBTORCH
 #include <torch/script.h>
 #include "DNNInferencer.H"
-#endif 
+#endif
 
 #include "fvCFD.H"
 #include "dynamicFvMesh.H"
@@ -70,9 +70,9 @@ int main(int argc, char *argv[])
     #include "postProcess.H"
 
     // #include "setRootCaseLists.H"
-    #include "listOptions.H"
+    #include "setRootCaseListOptions.H"
     #include "setRootCase2.H"
-    #include "listOutput.H"
+    #include "setRootCaseListOutput.H"
     #include "createTime.H"
     #include "createDynamicFvMesh.H"
     #include "createFields.H"
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
             mesh.update();
             end = std::clock();
             time_monitor_AMR += double(end - start) / double(CLOCKS_PER_SEC);
-            
+
         }
 
         volScalarField rho_rhs("rho_rhs",rho_save/runTime.deltaT());
@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
                 }
 
             }
-            
+
         }
         else
         {

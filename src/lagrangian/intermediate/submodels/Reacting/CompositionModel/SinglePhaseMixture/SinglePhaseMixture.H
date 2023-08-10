@@ -1,9 +1,11 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2016 OpenFOAM Foundation
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -23,6 +25,9 @@ License
 
 Class
     Foam::SinglePhaseMixture
+
+Group
+    grpLagrangianIntermediateCompositionSubModels
 
 Description
     Templated parcel single phase, multi-component class
@@ -51,7 +56,7 @@ class SinglePhaseMixture
 :
     public CompositionModel<CloudType>
 {
-    // Private Data
+    // Private data
 
         // Indices of the phases - only 1 will be set
 

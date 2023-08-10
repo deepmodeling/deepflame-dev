@@ -1,6 +1,6 @@
-hDiffCorrFlux = Zero;
-diffAlphaD = Zero;
-sumYDiffError = Zero;
+hDiffCorrFlux = dimensionedVector(dimensionSet(1,0,-3,0,0,0,0), Zero);
+diffAlphaD = dimensionedScalar(dimEnergy/dimTime/dimVolume, 0);
+sumYDiffError = dimensionedVector("sumYDiffError", dimDynamicViscosity/dimLength, Zero);
 
 tmp<fv::convectionScheme<scalar>> mvConvection
 (
@@ -32,7 +32,7 @@ const surfaceScalarField phiUc = linearInterpolate(sumYDiffError) & mesh.Sf();
         if (i != inertIndex)
         {
             tmp<volScalarField> DEff = chemistry->rhoD(i) + turbulence->mut()/Sct;
-            
+
             fvScalarMatrix YEqn
             (
                 turbName == "laminar"
@@ -63,13 +63,13 @@ const surfaceScalarField phiUc = linearInterpolate(sumYDiffError) & mesh.Sf();
 
             //fvOptions.constrain(YEqn);
 
-            YEqn.solve("Yi");
+            YEqn.solve(mesh.solver("Yi"));
 
             //fvOptions.correct(Yi);
 
             Yi.max(0.0);
             Yt += Yi;
-            
+
         }
     }
 

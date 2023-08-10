@@ -1,9 +1,11 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2013-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2013-2017 OpenFOAM Foundation
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -80,15 +82,15 @@ Foam::MPPICCloud<CloudType>::MPPICCloud
     dampingModel_(nullptr),
     isotropyModel_(nullptr)
 {
-    if (this->solution().steadyState())
-    {
-        FatalErrorInFunction
-            << "MPPIC modelling not available for steady state calculations"
-            << exit(FatalError);
-    }
-
     if (this->solution().active())
     {
+        if (this->solution().steadyState())
+        {
+            FatalErrorInFunction
+                << "MPPIC modelling not available for steady state calculations"
+                << exit(FatalError);
+        }
+
         setModels();
 
         if (readFields)
@@ -284,15 +286,15 @@ void Foam::MPPICCloud<CloudType>::info()
     const scalar alphaMin = gMin(alpha().primitiveField());
     const scalar alphaMax = gMax(alpha().primitiveField());
 
-    Info<< "    Min cell volume fraction        = " << alphaMin << endl;
-    Info<< "    Max cell volume fraction        = " << alphaMax << endl;
+    Log_ << "    Min cell volume fraction        = " << alphaMin << nl
+         << "    Max cell volume fraction        = " << alphaMax << endl;
 
-    if (alphaMax < small)
+    if (alphaMax < SMALL)
     {
         return;
     }
 
-    scalar nMin = great;
+    scalar nMin = GREAT;
 
     forAll(this->mesh().cells(), celli)
     {
@@ -311,7 +313,7 @@ void Foam::MPPICCloud<CloudType>::info()
 
     reduce(nMin, minOp<scalar>());
 
-    Info<< "    Min dense number of parcels     = " << nMin << endl;
+    Log_<< "    Min dense number of parcels     = " << nMin << endl;
 }
 
 

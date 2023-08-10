@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -35,6 +38,29 @@ using namespace Foam::constant::mathematical;
 
 template<class ParcelType>
 template<class TrackCloudType>
+Foam::scalar Foam::ReactingParcel<ParcelType>::updatedDeltaVolume
+(
+    TrackCloudType& cloud,
+    const scalarField& dMass,
+    const scalar p,
+    const scalar T
+)
+{
+    const auto& composition = cloud.composition();
+
+    scalarField dVolLiquid(dMass.size(), Zero);
+    forAll(dVolLiquid, i)
+    {
+        dVolLiquid[i] =
+            dMass[i]/composition.liquids().properties()[i].rho(p, T);
+    }
+
+    return sum(dVolLiquid);
+}
+
+
+template<class ParcelType>
+template<class TrackCloudType>
 void Foam::ReactingParcel<ParcelType>::calcPhaseChange
 (
     TrackCloudType& cloud,
@@ -47,9 +73,11 @@ void Foam::ReactingParcel<ParcelType>::calcPhaseChange
     const scalar d,
     const scalar T,
     const scalar mass,
+    const scalar rho,
     const label idPhase,
     const scalar YPhase,
     const scalarField& Y,
+    const scalarField& Ysol,
     scalarField& dMassPC,
     scalar& Sh,
     scalar& N,
@@ -57,12 +85,11 @@ void Foam::ReactingParcel<ParcelType>::calcPhaseChange
     scalarField& Cs
 )
 {
-    typedef typename TrackCloudType::reactingCloudType reactingCloudType;
-    const CompositionModel<reactingCloudType>& composition =
-        cloud.composition();
-    PhaseChangeModel<reactingCloudType>& phaseChange = cloud.phaseChange();
+    const auto& composition = cloud.composition();
+    auto& phaseChange = cloud.phaseChange();
 
-    if (!phaseChange.active() || (YPhase < small))
+    // Some models allow evaporation and condensation
+    if (!phaseChange.active())
     {
         return;
     }
@@ -70,7 +97,6 @@ void Foam::ReactingParcel<ParcelType>::calcPhaseChange
     scalarField X(composition.liquids().X(Y));
 
     scalar Tvap = phaseChange.Tvap(X);
-
     if (T < Tvap)
     {
         return;
@@ -79,8 +105,6 @@ void Foam::ReactingParcel<ParcelType>::calcPhaseChange
     const scalar TMax = phaseChange.TMax(td.pc(), X);
     const scalar Tdash = min(T, TMax);
     const scalar Tsdash = min(Ts, TMax);
-
-    scalarField hmm(dMassPC);
 
     // Calculate mass transfer due to phase change
     phaseChange.calculate
@@ -91,16 +115,27 @@ void Foam::ReactingParcel<ParcelType>::calcPhaseChange
         Pr,
         d,
         nus,
+        rho,
         Tdash,
         Tsdash,
         td.pc(),
         td.Tc(),
-        X,
+        X,                // components molar fractions purely in the liquid
+        Ysol*mass,        // total solid mass
+        YPhase*Y*mass,    // total liquid mass
         dMassPC
     );
 
     // Limit phase change mass by availability of each specie
-    dMassPC = min(mass*YPhase*Y, dMassPC);
+    forAll(Y, i)
+    {
+        // evaporation
+        if (dMassPC[i] > 0)
+        {
+            dMassPC[i] = min(mass*YPhase*Y[i], dMassPC[i]);
+        }
+        // condensation Do something?
+    }
 
     const scalar dMassTot = sum(dMassPC);
 
@@ -119,8 +154,8 @@ void Foam::ReactingParcel<ParcelType>::calcPhaseChange
     // Update molar emissions
     if (cloud.heatTransfer().BirdCorrection())
     {
-        const scalar RR = 1000.0*constant::physicoChemical::R.value(); // J/(kmol·k)
         // Average molecular weight of carrier mix - assumes perfect gas
+        const scalar RR = 1000.0*constant::physicoChemical::R.value(); // J/(kmol·k)
         const scalar Wc = td.rhoc()*RR*td.Tc()/td.pc();
 
         composition.carrier().calcCp(Tsdash, td.pc());
@@ -129,7 +164,7 @@ void Foam::ReactingParcel<ParcelType>::calcPhaseChange
             const label cid = composition.localToCarrierId(idPhase, i);
 
             const scalar Cp = composition.carrier().Cp(cid, td.pc(), Tsdash);
-            const scalar W = composition.carrier().Wi(cid);
+            const scalar W = composition.carrier().W(cid);
             const scalar Ni = dMassPC[i]/(this->areaS(d)*dt*W);
 
             const scalar Dab =
@@ -159,7 +194,7 @@ Foam::scalar Foam::ReactingParcel<ParcelType>::updateMassFraction
     scalar mass1 = mass0 - sum(dMass);
 
     // only update the mass fractions if the new particle mass is finite
-    if (mass1 > rootVSmall)
+    if (mass1 > ROOTVSMALL)
     {
         forAll(Y, i)
         {
@@ -248,7 +283,7 @@ void Foam::ReactingParcel<ParcelType>::cellValueSourceCorrection
         addedMass += dm;
     }
 
-    if (maxMassI < rootVSmall)
+    if (maxMassI < ROOTVSMALL)
     {
         return;
     }
@@ -302,7 +337,7 @@ void Foam::ReactingParcel<ParcelType>::correctSurfaceValues
 )
 {
     // No correction if total concentration of emitted species is small
-    if (!cloud.heatTransfer().BirdCorrection() || (sum(Cs) < small))
+    if (!cloud.heatTransfer().BirdCorrection() || (sum(Cs) < SMALL))
     {
         return;
     }
@@ -314,7 +349,7 @@ void Foam::ReactingParcel<ParcelType>::correctSurfaceValues
 
     forAll(Xinf, i)
     {
-        Xinf[i] = thermo.carrier().Y(i)[this->cell()]/thermo.carrier().Wi(i);
+        Xinf[i] = thermo.carrier().Y(i)[this->cell()]/thermo.carrier().W(i);
     }
     Xinf /= sum(Xinf);
 
@@ -337,7 +372,7 @@ void Foam::ReactingParcel<ParcelType>::correctSurfaceValues
         const scalar Csi = Cs[i] + Xsff*Xinf[i]*CsTot;
 
         Xs[i] = (2.0*Csi + Xinf[i]*CsTot)/3.0;
-        Ys[i] = Xs[i]*thermo.carrier().Wi(i);
+        Ys[i] = Xs[i]*thermo.carrier().W(i);
     }
     Xs /= sum(Xs);
     Ys /= sum(Ys);
@@ -354,7 +389,7 @@ void Foam::ReactingParcel<ParcelType>::correctSurfaceValues
     thermo.carrier().calcCp(T, td.pc());
     forAll(Ys, i)
     {
-        const scalar W = thermo.carrier().Wi(i);
+        const scalar W = thermo.carrier().W(i);
         const scalar sqrtW = sqrt(W);
         const scalar cbrtW = cbrt(W);
 
@@ -367,16 +402,16 @@ void Foam::ReactingParcel<ParcelType>::correctSurfaceValues
         sumYiCbrtW += Ys[i]*cbrtW;
     }
 
-    Cps = max(Cps, rootVSmall);
+    Cps = max(Cps, ROOTVSMALL);
 
     rhos *= td.pc()/(RR*T);
-    rhos = max(rhos, rootVSmall);
+    rhos = max(rhos, ROOTVSMALL);
 
     mus /= sumYiSqrtW;
-    mus = max(mus, rootVSmall);
+    mus = max(mus, ROOTVSMALL);
 
     kappas /= sumYiCbrtW;
-    kappas = max(kappas, rootVSmall);
+    kappas = max(kappas, ROOTVSMALL);
 
     Prs = Cps*mus/kappas;
 }
@@ -391,9 +426,7 @@ void Foam::ReactingParcel<ParcelType>::calc
     const scalar dt
 )
 {
-    typedef typename TrackCloudType::reactingCloudType reactingCloudType;
-    const CompositionModel<reactingCloudType>& composition =
-        cloud.composition();
+    const auto& composition = cloud.composition();
 
 
     // Define local properties at beginning of time step
@@ -404,6 +437,7 @@ void Foam::ReactingParcel<ParcelType>::calc
     const vector& U0 = this->U_;
     const scalar T0 = this->T_;
     const scalar mass0 = this->mass();
+    const scalar rho0 = this->rho_;
 
 
     // Calc surface values
@@ -441,7 +475,7 @@ void Foam::ReactingParcel<ParcelType>::calc
     // ~~~~~~~~~~~~
 
     // Mass transfer due to phase change
-    scalarField dMassPC(Y_.size(), 0.0);
+    scalarField dMassPC(Y_.size(), Zero);
 
     // Molar flux of species emitted from the particle (kmol/m^2/s)
     scalar Ne = 0.0;
@@ -450,7 +484,7 @@ void Foam::ReactingParcel<ParcelType>::calc
     scalar NCpW = 0.0;
 
     // Surface concentrations of emitted species
-    scalarField Cs(composition.carrier().species().size(), 0.0);
+    scalarField Cs(composition.carrier().species().size(), Zero);
 
     // Calc mass and enthalpy transfer due to phase change
     calcPhaseChange
@@ -465,9 +499,11 @@ void Foam::ReactingParcel<ParcelType>::calc
         d0,
         T0,
         mass0,
+        rho0,
         0,
         1.0,
         Y_,
+        scalarField(),
         dMassPC,
         Sh,
         Ne,
@@ -484,14 +520,52 @@ void Foam::ReactingParcel<ParcelType>::calc
 
     this->Cp_ = composition.Cp(0, Y_, td.pc(), T0);
 
-    // Update particle density or diameter
-    if (cloud.constProps().constantVolume())
+    if
+    (
+        cloud.constProps().volUpdateType()
+     == constantProperties::volumeUpdateType::mUndefined
+    )
     {
-        this->rho_ = mass1/this->volume();
+        // Update particle density or diameter
+        if (cloud.constProps().constantVolume())
+        {
+            this->rho_ = mass1/this->volume();
+        }
+        else
+        {
+            this->d_ = cbrt(mass1/this->rho_*6/pi);
+        }
     }
     else
     {
-        this->d_ = cbrt(mass1/this->rho_*6.0/pi);
+        switch (cloud.constProps().volUpdateType())
+        {
+            case constantProperties::volumeUpdateType::mConstRho :
+            {
+                this->d_ = cbrt(mass1/this->rho_*6/pi);
+                break;
+            }
+            case constantProperties::volumeUpdateType::mConstVol :
+            {
+                this->rho_ = mass1/this->volume();
+                break;
+            }
+            case constantProperties::volumeUpdateType::mUpdateRhoAndVol :
+            {
+                scalar deltaVol =
+                    updatedDeltaVolume
+                    (
+                        cloud,
+                        dMass,
+                        td.pc(),
+                        T0
+                    );
+                this->rho_ = mass1/(this->volume() - deltaVol);
+                this->d_ = cbrt(mass1/this->rho_*6/pi);
+                break;
+            }
+
+        }
     }
 
     // Remove the particle when mass falls below minimum threshold

@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2016-2022 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -32,8 +35,9 @@ template<class ParcelType>
 Foam::string Foam::ThermoParcel<ParcelType>::propertyList_ =
     Foam::ThermoParcel<ParcelType>::propertyList();
 
+
 template<class ParcelType>
-const std::size_t Foam::ThermoParcel<ParcelType>::sizeofFields_
+const std::size_t Foam::ThermoParcel<ParcelType>::sizeofFields
 (
     sizeof(ThermoParcel<ParcelType>)
   - offsetof(ThermoParcel<ParcelType>, T_)
@@ -47,31 +51,38 @@ Foam::ThermoParcel<ParcelType>::ThermoParcel
 (
     const polyMesh& mesh,
     Istream& is,
-    bool readFields
+    bool readFields,
+    bool newFormat
 )
 :
-    ParcelType(mesh, is, readFields),
+    ParcelType(mesh, is, readFields, newFormat),
     T_(0.0),
     Cp_(0.0)
 {
     if (readFields)
     {
-        if (is.format() == IOstream::ASCII)
+        if (is.format() == IOstreamOption::ASCII)
         {
-            T_ = readScalar(is);
-            Cp_ = readScalar(is);
+            is  >> T_ >> Cp_;
+        }
+        else if (!is.checkLabelSize<>() || !is.checkScalarSize<>())
+        {
+            // Non-native label or scalar size
+
+            is.beginRawRead();
+
+            readRawScalar(is, &T_);
+            readRawScalar(is, &Cp_);
+
+            is.endRawRead();
         }
         else
         {
-            is.read(reinterpret_cast<char*>(&T_), sizeofFields_);
+            is.read(reinterpret_cast<char*>(&T_), sizeofFields);
         }
     }
 
-    // Check state of Istream
-    is.check
-    (
-        "ThermoParcel::ThermoParcel(const polyMesh&, Istream&, bool)"
-    );
+    is.check(FUNCTION_NAME);
 }
 
 
@@ -79,7 +90,7 @@ template<class ParcelType>
 template<class CloudType>
 void Foam::ThermoParcel<ParcelType>::readFields(CloudType& c)
 {
-    bool valid = c.size();
+    const bool valid = c.size();
 
     ParcelType::readFields(c);
 
@@ -91,13 +102,12 @@ void Foam::ThermoParcel<ParcelType>::readFields(CloudType& c)
 
 
     label i = 0;
-    forAllIter(typename Cloud<ThermoParcel<ParcelType>>, c, iter)
+    for (ThermoParcel<ParcelType>& p : c)
     {
-        ThermoParcel<ParcelType>& p = iter();
-
         p.T_ = T[i];
         p.Cp_ = Cp[i];
-        i++;
+
+        ++i;
     }
 }
 
@@ -108,23 +118,97 @@ void Foam::ThermoParcel<ParcelType>::writeFields(const CloudType& c)
 {
     ParcelType::writeFields(c);
 
-    label np = c.size();
+    const label np = c.size();
+    const bool valid = np;
 
     IOField<scalar> T(c.fieldIOobject("T", IOobject::NO_READ), np);
     IOField<scalar> Cp(c.fieldIOobject("Cp", IOobject::NO_READ), np);
 
     label i = 0;
-    forAllConstIter(typename Cloud<ThermoParcel<ParcelType>>, c, iter)
+    for (const ThermoParcel<ParcelType>& p : c)
     {
-        const ThermoParcel<ParcelType>& p = iter();
-
         T[i] = p.T_;
         Cp[i] = p.Cp_;
-        i++;
+
+        ++i;
     }
 
-    T.write(np > 0);
-    Cp.write(np > 0);
+    T.write(valid);
+    Cp.write(valid);
+}
+
+
+template<class ParcelType>
+void Foam::ThermoParcel<ParcelType>::writeProperties
+(
+    Ostream& os,
+    const wordRes& filters,
+    const word& delim,
+    const bool namesOnly
+) const
+{
+    ParcelType::writeProperties(os, filters, delim, namesOnly);
+
+    #undef  writeProp
+    #define writeProp(Name, Value)                                            \
+        ParcelType::writeProperty(os, Name, Value, namesOnly, delim, filters)
+
+    writeProp("T", T_);
+    writeProp("Cp", Cp_);
+
+    #undef writeProp
+}
+
+
+template<class ParcelType>
+template<class CloudType>
+void Foam::ThermoParcel<ParcelType>::readObjects
+(
+    CloudType& c,
+    const objectRegistry& obr
+)
+{
+    ParcelType::readFields(c);
+
+    if (!c.size()) return;
+
+    auto& T = cloud::lookupIOField<scalar>("T", obr);
+    auto& Cp = cloud::lookupIOField<scalar>("Cp", obr);
+
+    label i = 0;
+    for (ThermoParcel<ParcelType>& p : c)
+    {
+        p.T_ = T[i];
+        p.Cp_ = Cp[i];
+
+        ++i;
+    }
+}
+
+
+template<class ParcelType>
+template<class CloudType>
+void Foam::ThermoParcel<ParcelType>::writeObjects
+(
+    const CloudType& c,
+    objectRegistry& obr
+)
+{
+    ParcelType::writeObjects(c, obr);
+
+    const label np = c.size();
+
+    auto& T = cloud::createIOField<scalar>("T", np, obr);
+    auto& Cp = cloud::createIOField<scalar>("Cp", np, obr);
+
+    label i = 0;
+    for (const ThermoParcel<ParcelType>& p : c)
+    {
+        T[i] = p.T_;
+        Cp[i] = p.Cp_;
+
+        ++i;
+    }
 }
 
 
@@ -137,7 +221,7 @@ Foam::Ostream& Foam::operator<<
     const ThermoParcel<ParcelType>& p
 )
 {
-    if (os.format() == IOstream::ASCII)
+    if (os.format() == IOstreamOption::ASCII)
     {
         os  << static_cast<const ParcelType&>(p)
             << token::SPACE << p.T()
@@ -149,16 +233,11 @@ Foam::Ostream& Foam::operator<<
         os.write
         (
             reinterpret_cast<const char*>(&p.T_),
-            ThermoParcel<ParcelType>::sizeofFields_
+            ThermoParcel<ParcelType>::sizeofFields
         );
     }
 
-    // Check state of Ostream
-    os.check
-    (
-        "Ostream& operator<<(Ostream&, const ThermoParcel<ParcelType>&)"
-    );
-
+    os.check(FUNCTION_NAME);
     return os;
 }
 

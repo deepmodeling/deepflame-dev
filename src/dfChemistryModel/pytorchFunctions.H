@@ -2,7 +2,7 @@ template <class ThermoType>
 template <class DeltaTType>
 Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &deltaT)
 {
-    scalar deltaTMin = great;
+    scalar deltaTMin = GREAT;
     // set the cores slaved by a DCU
     if (!this->chemistry_)
     {
@@ -28,7 +28,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
     getGPUProblems(deltaT, GPUproblemList, CPUproblemList);
     label flag_mpi_init;
     MPI_Initialized(&flag_mpi_init);
-    if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
+    if(flag_mpi_init) MPI_Barrier(MPI_COMM_WORLD);
     std::chrono::steady_clock::time_point stop10 = std::chrono::steady_clock::now();
     std::chrono::duration<double> processingTime10 = std::chrono::duration_cast<std::chrono::duration<double>>(stop10 - start10);
     time_getProblems_ += processingTime10.count();

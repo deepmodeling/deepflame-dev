@@ -18,7 +18,6 @@ ${workDir}/fieldMinMax/fieldMinMax.C
 
 ${workDir}/fieldValues/fieldValue/fieldValue.C
 ${workDir}/fieldValues/fieldValue/fieldValueNew.C
-${workDir}/fieldValues/fieldValueDelta/fieldValueDelta.C
 ${workDir}/fieldValues/volFieldValue/volFieldValue.C
 ${workDir}/fieldValues/surfaceFieldValue/surfaceFieldValue.C
 
@@ -79,14 +78,14 @@ ${workDir}/age/age.C
 add_library(dfFieldFunctionObjects SHARED ${SOURCES})
 
 # dynamic link
-target_link_libraries(${PROJECT_NAME} ${OpenFOAM_LIB_DIR}/libfiniteVolume.so 
-libmeshTools.so 
-libincompressibleTransportModels.so 
-libturbulenceModels.so 
+target_link_libraries(${PROJECT_NAME} ${OpenFOAM_LIB_DIR}/libfiniteVolume.so
+libmeshTools.so
+libincompressibleTransportModels.so
+libturbulenceModels.so
 libcompressibleTransportModels.so
-libsurfMesh.so 
-liblagrangian.so 
-libfileFormats.so 
+libsurfMesh.so
+liblagrangian.so
+libfileFormats.so
 libsampling.so
 libsurfMesh.so
 )
@@ -97,18 +96,18 @@ target_link_libraries(${PROJECT_NAME} dfFluidThermophysicalModels)
 
 include_directories(
     ${SRC_ORIG}/functionObjects/field/lnInclude
-    ${OpenFOAM_SRC}/meshTools/lnInclude 
+    ${OpenFOAM_SRC}/meshTools/lnInclude
     ${OpenFOAM_SRC}/lagrangian/basic/lnInclude
-    ${OpenFOAM_SRC}/fileFormats/lnInclude 
-    ${OpenFOAM_SRC}/surfMesh/lnInclude 
-    ${OpenFOAM_SRC}/sampling/lnInclude 
+    ${OpenFOAM_SRC}/fileFormats/lnInclude
+    ${OpenFOAM_SRC}/surfMesh/lnInclude
+    ${OpenFOAM_SRC}/sampling/lnInclude
     ${OpenFOAM_SRC}/thermophysicalModels/basic/lnInclude
-    ${OpenFOAM_SRC}/transportModels/compressible/lnInclude 
+    ${OpenFOAM_SRC}/transportModels/compressible/lnInclude
     ${OpenFOAM_SRC}/transportModels
     ${OpenFOAM_SRC}/TurbulenceModels/turbulenceModels/lnInclude
-    
+
     )
-    
+
 
 
 # install

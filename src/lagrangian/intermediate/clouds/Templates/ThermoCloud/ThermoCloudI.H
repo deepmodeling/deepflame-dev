@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2019-2022 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -33,7 +36,7 @@ template<class CloudType>
 inline const Foam::ThermoCloud<CloudType>&
 Foam::ThermoCloud<CloudType>::cloudCopy() const
 {
-    return cloudCopyPtr_();
+    return *cloudCopyPtr_;
 }
 
 
@@ -78,7 +81,7 @@ template<class CloudType>
 inline const Foam::HeatTransferModel<Foam::ThermoCloud<CloudType>>&
 Foam::ThermoCloud<CloudType>::heatTransfer() const
 {
-    return heatTransferModel_;
+    return *heatTransferModel_;
 }
 
 
@@ -86,7 +89,7 @@ template<class CloudType>
 inline const Foam::integrationScheme&
 Foam::ThermoCloud<CloudType>::TIntegrator() const
 {
-    return TIntegrator_;
+    return *TIntegrator_;
 }
 
 
@@ -108,7 +111,7 @@ Foam::ThermoCloud<CloudType>::radAreaP()
             << abort(FatalError);
     }
 
-    return radAreaP_();
+    return *radAreaP_;
 }
 
 
@@ -123,7 +126,7 @@ Foam::ThermoCloud<CloudType>::radAreaP() const
             << abort(FatalError);
     }
 
-    return radAreaP_();
+    return *radAreaP_;
 }
 
 
@@ -138,7 +141,7 @@ Foam::ThermoCloud<CloudType>::radT4()
             << abort(FatalError);
     }
 
-    return radT4_();
+    return *radT4_;
 }
 
 
@@ -153,7 +156,7 @@ Foam::ThermoCloud<CloudType>::radT4() const
             << abort(FatalError);
     }
 
-    return radT4_();
+    return *radT4_;
 }
 
 
@@ -168,7 +171,7 @@ Foam::ThermoCloud<CloudType>::radAreaPT4()
             << abort(FatalError);
     }
 
-    return radAreaPT4_();
+    return *radAreaPT4_;
 }
 
 
@@ -183,7 +186,7 @@ Foam::ThermoCloud<CloudType>::radAreaPT4() const
             << abort(FatalError);
     }
 
-    return radAreaPT4_();
+    return *radAreaPT4_;
 }
 
 
@@ -191,7 +194,7 @@ template<class CloudType>
 inline Foam::DimensionedField<Foam::scalar, Foam::volMesh>&
 Foam::ThermoCloud<CloudType>::hsTrans()
 {
-    return hsTrans_();
+    return *hsTrans_;
 }
 
 
@@ -199,7 +202,7 @@ template<class CloudType>
 inline const Foam::DimensionedField<Foam::scalar, Foam::volMesh>&
 Foam::ThermoCloud<CloudType>::hsTrans() const
 {
-    return hsTrans_();
+    return *hsTrans_;
 }
 
 
@@ -207,7 +210,7 @@ template<class CloudType>
 inline Foam::DimensionedField<Foam::scalar, Foam::volMesh>&
 Foam::ThermoCloud<CloudType>::hsCoeff()
 {
-    return hsCoeff_();
+    return *hsCoeff_;
 }
 
 
@@ -215,7 +218,7 @@ template<class CloudType>
 inline const Foam::DimensionedField<Foam::scalar, Foam::volMesh>&
 Foam::ThermoCloud<CloudType>::hsCoeff() const
 {
-    return hsCoeff_();
+    return *hsCoeff_;
 }
 
 
@@ -223,13 +226,11 @@ template<class CloudType>
 inline Foam::tmp<Foam::fvScalarMatrix>
 Foam::ThermoCloud<CloudType>::Sh(volScalarField& hs) const
 {
-    if (debug)
-    {
-        Info<< "hsTrans min/max = " << min(hsTrans()).value() << ", "
-            << max(hsTrans()).value() << nl
-            << "hsCoeff min/max = " << min(hsCoeff()).value() << ", "
-            << max(hsCoeff()).value() << endl;
-    }
+    DebugInfo
+        << "hsTrans min/max = " << min(hsTrans()).value() << ", "
+        << max(hsTrans()).value() << nl
+        << "hsCoeff min/max = " << min(hsCoeff()).value() << ", "
+        << max(hsCoeff()).value() << endl;
 
     if (this->solution().coupled())
     {
@@ -255,7 +256,7 @@ Foam::ThermoCloud<CloudType>::Sh(volScalarField& hs) const
         }
     }
 
-    return tmp<fvScalarMatrix>(new fvScalarMatrix(hs, dimEnergy/dimTime));
+    return tmp<fvScalarMatrix>::New(hs, dimEnergy/dimTime);
 }
 
 
@@ -264,11 +265,19 @@ inline Foam::tmp<Foam::volScalarField> Foam::ThermoCloud<CloudType>::Ep() const
 {
     tmp<volScalarField> tEp
     (
-        volScalarField::New
+        new volScalarField
         (
-            this->name() + ":radiation:Ep",
+            IOobject
+            (
+                this->name() + ":radiation:Ep",
+                this->db().time().timeName(),
+                this->db(),
+                IOobject::NO_READ,
+                IOobject::NO_WRITE,
+                false
+            ),
             this->mesh(),
-            dimensionedScalar(dimMass/dimLength/pow3(dimTime), 0)
+            dimensionedScalar(dimMass/dimLength/pow3(dimTime), Zero)
         )
     );
 
@@ -292,11 +301,19 @@ inline Foam::tmp<Foam::volScalarField> Foam::ThermoCloud<CloudType>::ap() const
 {
     tmp<volScalarField> tap
     (
-        volScalarField::New
+        new volScalarField
         (
-            this->name() + ":radiation:ap",
+            IOobject
+            (
+                this->name() + ":radiation:ap",
+                this->db().time().timeName(),
+                this->db(),
+                IOobject::NO_READ,
+                IOobject::NO_WRITE,
+                false
+            ),
             this->mesh(),
-            dimensionedScalar(dimless/dimLength, 0)
+            dimensionedScalar(dimless/dimLength, Zero)
         )
     );
 
@@ -321,11 +338,19 @@ Foam::ThermoCloud<CloudType>::sigmap() const
 {
     tmp<volScalarField> tsigmap
     (
-        volScalarField::New
+        new volScalarField
         (
-            this->name() + ":radiation:sigmap",
+            IOobject
+            (
+                this->name() + ":radiation:sigmap",
+                this->db().time().timeName(),
+                this->db(),
+                IOobject::NO_READ,
+                IOobject::NO_WRITE,
+                false
+            ),
             this->mesh(),
-            dimensionedScalar(dimless/dimLength, 0)
+            dimensionedScalar(dimless/dimLength, Zero)
         )
     );
 
@@ -338,7 +363,7 @@ Foam::ThermoCloud<CloudType>::sigmap() const
         const scalar f = constProps_.f0();
         const scalarField& sumAreaP = radAreaP_->field();
 
-        sigmap *= sumAreaP*(1.0 - f)*(1.0 - epsilon)/V/dt;
+        sigmap = sumAreaP*(1.0 - f)*(1.0 - epsilon)/V/dt;
     }
 
     return tsigmap;
@@ -348,52 +373,42 @@ Foam::ThermoCloud<CloudType>::sigmap() const
 template<class CloudType>
 inline Foam::scalar Foam::ThermoCloud<CloudType>::Tmax() const
 {
-    scalar T = -great;
-    label n = 0;
-    forAllConstIter(typename ThermoCloud<CloudType>, *this, iter)
+    scalar val = -GREAT;
+    bool nonEmpty = false;
+
+    for (const parcelType& p : *this)
     {
-        const parcelType& p = iter();
-        T = max(T, p.T());
-        n++;
+        val = max(val, p.T());
+        nonEmpty = true;
     }
 
-    reduce(T, maxOp<scalar>());
-    reduce(n, sumOp<label>());
+    if (returnReduceOr(nonEmpty))
+    {
+        return returnReduce(val, maxOp<scalar>());
+    }
 
-    if (n > 0)
-    {
-        return T;
-    }
-    else
-    {
-        return 0.0;
-    }
+    return 0;
 }
 
 
 template<class CloudType>
 inline Foam::scalar Foam::ThermoCloud<CloudType>::Tmin() const
 {
-    scalar T = great;
-    label n = 0;
-    forAllConstIter(typename ThermoCloud<CloudType>, *this, iter)
+    scalar val = GREAT;
+    bool nonEmpty = false;
+
+    for (const parcelType& p : *this)
     {
-        const parcelType& p = iter();
-        T = min(T, p.T());
-        n++;
+        val = min(val, p.T());
+        nonEmpty = true;
     }
 
-    reduce(T, minOp<scalar>());
-    reduce(n, sumOp<label>());
+    if (returnReduceOr(nonEmpty))
+    {
+        return returnReduce(val, minOp<scalar>());
+    }
 
-    if (n > 0)
-    {
-        return T;
-    }
-    else
-    {
-        return 0.0;
-    }
+    return 0;
 }
 
 

@@ -8,7 +8,6 @@ $(workDir)/fieldMinMax/fieldMinMax.C
 
 $(workDir)/fieldValues/fieldValue/fieldValue.C
 $(workDir)/fieldValues/fieldValue/fieldValueNew.C
-$(workDir)/fieldValues/fieldValueDelta/fieldValueDelta.C
 $(workDir)/fieldValues/volFieldValue/volFieldValue.C
 $(workDir)/fieldValues/surfaceFieldValue/surfaceFieldValue.C
 
@@ -36,7 +35,6 @@ $(workDir)/grad/grad.C
 $(workDir)/ddt/ddt.C
 $(workDir)/mag/mag.C
 $(workDir)/magSqr/magSqr.C
-$(workDir)/scale/scale.C
 $(workDir)/log/log.C
 $(workDir)/vorticity/vorticity.C
 $(workDir)/enstrophy/enstrophy.C
@@ -45,13 +43,13 @@ $(workDir)/Lambda2/Lambda2.C
 $(workDir)/flowType/flowType.C
 $(workDir)/CourantNo/CourantNo.C
 /*$(workDir)/PecletNo/PecletNo.C*/
-$(workDir)/blendingFactor/blendingFactor.C
+/*$(workDir)/blendingFactor/blendingFactor.C*/
 $(workDir)/pressure/pressure.C
-$(workDir)/MachNo/MachNo.C
+/*$(workDir)/MachNo/MachNo.C*/
 
 /*$(workDir)/turbulenceFields/turbulenceFields.C*/
 $(workDir)/yPlus/yPlus.C
-$(workDir)/turbulenceIntensity/turbulenceIntensity.C
+/*$(workDir)/turbulenceIntensity/turbulenceIntensity.C*/
 /*$(workDir)/wallShearStress/wallShearStress.C*/
 /*wallHeatFlux/wallHeatFlux.C*/
 /*$(workDir)/wallHeatTransferCoeff/wallHeatTransferCoeff.C*/
@@ -64,10 +62,10 @@ $(workDir)/streamFunction/streamFunction.C
 
 $(workDir)/fieldsExpression/fieldsExpression.C
 $(workDir)/add/add.C
-$(workDir)/subtract/subtract.C
+/*$(workDir)/subtract/subtract.C*/
 
 $(workDir)/interfaceHeight/interfaceHeight.C
 
-$(workDir)/age/age.C
+/*$(workDir)/age/age.C*/
 
 LIB = $(DF_LIBBIN)/libdfFieldFunctionObjects

@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2018-2019 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -53,13 +56,13 @@ class solidProperties
 {
     // Private Data
 
-        //- Density [kg/m^3]
+        //- Density [kg/m3]
         scalar rho_;
 
-        //- Specific heat capacity [J/kg/K]
+        //- Specific heat capacity [J/(kg.K)]
         scalar Cp_;
 
-        //- Thermal conductivity [W/m/K]
+        //- Thermal conductivity [W/(m.K)]
         scalar kappa_;
 
         //- Heat of formation [J/kg]
@@ -67,6 +70,15 @@ class solidProperties
 
         //- Emissivity
         scalar emissivity_;
+
+        //- Molar weight [Kg/Kmol]
+        scalar W_;
+
+        //- Poisson ration
+        scalar nu_;
+
+        //- Young Modulus [N/m2]
+        scalar E_;
 
 
 public:
@@ -105,7 +117,10 @@ public:
             scalar Cp,
             scalar kappa,
             scalar Hf,
-            scalar emissivity
+            scalar emissivity,
+            scalar W,
+            scalar nu,
+            scalar E
         );
 
         //- Construct from dictionary
@@ -114,7 +129,7 @@ public:
         //- Construct and return clone
         virtual autoPtr<solidProperties> clone() const
         {
-            return autoPtr<solidProperties>(new solidProperties(*this));
+            return autoPtr<solidProperties>::New(*this);
         }
 
 
@@ -128,21 +143,20 @@ public:
 
 
     //- Destructor
-    virtual ~solidProperties()
-    {}
+    virtual ~solidProperties() = default;
 
 
     // Member Functions
 
         // Physical constants which define the solidProperties
 
-            //- Density [kg/m^3]
+            //- Density [kg/m3]
             inline scalar rho() const;
 
-            //- Specific heat capacity [J/kg/K]
+            //- Specific heat capacity [J/(kg.K)]
             inline scalar Cp() const;
 
-            //- Thermal conductivity [W/m/K]
+            //- Thermal conductivity [W/(m.K)]
             inline scalar kappa() const;
 
             //- Heat of formation [J/kg]
@@ -154,10 +168,19 @@ public:
             //- Emissivity []
             inline scalar emissivity() const;
 
+            //- Molar weight [Kg/Kmol]
+            inline scalar W() const;
+
+            //- Poissons
+            inline scalar nu() const;
+
+            //- Young modulus [N/m2]
+            inline scalar E() const;
+
 
     // I-O
 
-        //- Read and set the properties present it the given dictionary
+        //- Read and set the properties if present in the given dictionary
         void readIfPresent(const dictionary& dict);
 
         //- Write the solidProperties properties

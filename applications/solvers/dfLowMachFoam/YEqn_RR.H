@@ -10,7 +10,7 @@ if (!(timeIndex % 2))
 
     label flag_mpi_init;
     MPI_Initialized(&flag_mpi_init);
-    if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
+    if(flag_mpi_init) MPI_Barrier(MPI_COMM_WORLD);
     end = std::clock();
     time_monitor_chem += double(end - start) / double(CLOCKS_PER_SEC);
 
@@ -30,7 +30,7 @@ if (!(timeIndex % 2))
 
             YiEqn.relax();
 
-            YiEqn.solve("Yi");
+            YiEqn.solve(mesh.solver("Yi"));
 
             Yi.max(0.0);
             Yt += Yi;
@@ -47,10 +47,10 @@ if (!(timeIndex % 2))
         {
             tYi[celli] = Y[i][celli];
         }
-        volScalarField::Boundary& Bf = tYi.boundaryFieldRef(); 
+        volScalarField::Boundary& Bf = tYi.boundaryFieldRef();
         forAll(Bf, patchi)
         {
-            forAll(Bf[patchi], facei)   
+            forAll(Bf[patchi], facei)
             {
                 Bf[patchi][facei] = Y[i].boundaryField()[patchi][facei];
             }

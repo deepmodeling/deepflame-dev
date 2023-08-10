@@ -1,4 +1,4 @@
-if (!pimple.simpleRho())
+if (!pimple.SIMPLErho())
 {
     rho = thermo.rho();
 }
@@ -11,7 +11,7 @@ volScalarField rAU(1.0/UEqn.A());
 volScalarField rAtU(1.0/(1.0/rAU - UEqn.H1()));
 volVectorField HbyA(constrainHbyA(rAU*UEqn.H(), U, p));
 
-if (pimple.nCorrPiso() <= 1)
+if (pimple.nCorrPISO() <= 1)
 {
     tUEqn.clear();
 }
@@ -120,7 +120,7 @@ U.correctBoundaryConditions();
 //fvOptions.correct(U);
 K = 0.5*magSqr(U);
 
-if (pimple.simpleRho())
+if (pimple.SIMPLErho())
 {
     rho = thermo.rho();
 }

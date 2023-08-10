@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -75,7 +78,7 @@ inline Foam::SprayParcel<ParcelType>::constantProperties::constantProperties
     const scalar f0,
     const scalar Pr,
     const scalar pMin,
-    const Switch& constantVolume,
+    const bool constantVolume,
     const scalar sigma0,
     const scalar mu0
 )
@@ -125,7 +128,7 @@ inline Foam::SprayParcel<ParcelType>::SprayParcel
     tc_(0.0),
     ms_(0.0),
     injector_(1.0),
-    tMom_(great),
+    tMom_(GREAT),
     user_(0.0)
 {}
 
@@ -150,7 +153,7 @@ inline Foam::SprayParcel<ParcelType>::SprayParcel
     tc_(0.0),
     ms_(0.0),
     injector_(1.0),
-    tMom_(great),
+    tMom_(GREAT),
     user_(0.0)
 {}
 

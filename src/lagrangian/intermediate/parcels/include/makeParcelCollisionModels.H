@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2022 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -31,6 +34,7 @@ License
 #include "NoCollision.H"
 #include "PairCollision.H"
 
+#include "NoPair.H"
 #include "PairSpringSliderDashpot.H"
 
 #include "WallSpringSliderDashpot.H"
@@ -45,6 +49,7 @@ License
     makeCollisionModelType(PairCollision, CloudType);                          \
                                                                                \
     makePairModel(CloudType);                                                  \
+    makePairModelType(NoPair, CloudType);                                      \
     makePairModelType(PairSpringSliderDashpot, CloudType);                     \
                                                                                \
     makeWallModel(CloudType);                                                  \

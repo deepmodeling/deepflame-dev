@@ -15,15 +15,15 @@ ${workDir}/dfRefinementHistoryConstraint/dfRefinementHistoryConstraint.C
 add_library(dfDynamicFvMesh SHARED ${SOURCES})
 
 # dynamic link
-target_link_libraries(${PROJECT_NAME} ${OpenFOAM_LIB_DIR}/libfiniteVolume.so libmeshTools.so libtriSurface.so 
-libdynamicMesh.so 
+target_link_libraries(${PROJECT_NAME} ${OpenFOAM_LIB_DIR}/libfiniteVolume.so libmeshTools.so
+libdynamicMesh.so
 libdynamicFvMesh.so
-libextrudeModel.so 
+libextrudeModel.so
 libdecompositionMethods.so
 newdynamicMesh
 )
 
-link_directories(${OpenFOAM_LIB_DIR}/dummy 
+link_directories(${OpenFOAM_LIB_DIR}/dummy
 )
 target_link_libraries(${PROJECT_NAME}
                       ${OpenFOAM_LIB_DIR}/dummy/libscotchDecomp.so
@@ -37,13 +37,12 @@ include_directories(
     ${dffvdynamic_inc}
     ${dfnewdynamic_inc}
     ${OpenFOAM_SRC}/meshTools/lnInclude
-    ${OpenFOAM_SRC}/triSurface/lnInclude
     ${OpenFOAM_SRC}/dynamicFvMesh/lnInclude
     ${OpenFOAM_SRC}/dynamicMesh/lnInclude
     ${OpenFOAM_SRC}/parallel/decompose/decompositionMethods/lnInclude
-    
+
     )
-    
+
 
 
 # install

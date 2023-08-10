@@ -1,6 +1,6 @@
-hDiffCorrFlux = Zero;
-diffAlphaD = Zero;
-sumYDiffError = Zero;
+hDiffCorrFlux = dimensionedVector(dimensionSet(1,0,-3,0,0,0,0), Zero);
+diffAlphaD = dimensionedScalar(dimEnergy/dimTime/dimVolume, 0);
+sumYDiffError  = dimensionedVector(dimDynamicViscosity/dimLength, Zero);
 
 tmp<fv::convectionScheme<scalar>> mvConvection
 (
@@ -21,12 +21,12 @@ forAll(Y, i)
 const surfaceScalarField phiUc = linearInterpolate(sumYDiffError) & mesh.Sf();
 start1 = std::clock();
 time_monitor_YEqn += double(end1 - start1) / double(CLOCKS_PER_SEC);
-time_monitor_YEqn_solve += double(end1 - start1) / double(CLOCKS_PER_SEC);  
+time_monitor_YEqn_solve += double(end1 - start1) / double(CLOCKS_PER_SEC);
 
-//MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
+//MPI_Barrier(MPI_COMM_WORLD);
 label flag_mpi_init;
 MPI_Initialized(&flag_mpi_init);
-if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
+if(flag_mpi_init) MPI_Barrier(MPI_COMM_WORLD);
 
 {
     if (!splitting)
@@ -35,7 +35,7 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
         combustion->correct();
         //label flag_mpi_init;
         //MPI_Initialized(&flag_mpi_init);
-        if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
+        if(flag_mpi_init) MPI_Barrier(MPI_COMM_WORLD);
         std::chrono::steady_clock::time_point stop = std::chrono::steady_clock::now();
         std::chrono::duration<double> processingTime = std::chrono::duration_cast<std::chrono::duration<double>>(stop - start);
         time_monitor_chem += processingTime.count();
@@ -69,13 +69,13 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
                     :  (fvm::laplacian(DEff(), Yi) + combustion->R(Yi))
                     )
             );
-            
+
             end1 = std::clock();
             time_monitor_YEqn_mtxAssembly += double(end1 - start1) / double(CLOCKS_PER_SEC);
             YiEqn.relax();
 
             start1 = std::clock();
-            YiEqn.solve("Yi");
+            YiEqn.solve(mesh.solver("Yi"));
             end1 = std::clock();
             time_monitor_YEqn_solve += double(end1 - start1) / double(CLOCKS_PER_SEC);
 

@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2018-2019 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -61,6 +64,24 @@ inline Foam::scalar Foam::solidProperties::Hs(const scalar T) const
 inline Foam::scalar Foam::solidProperties::emissivity() const
 {
     return emissivity_;
+}
+
+
+inline Foam::scalar Foam::solidProperties::W() const
+{
+    return W_;
+}
+
+
+inline Foam::scalar Foam::solidProperties::nu() const
+{
+    return nu_;
+}
+
+
+inline Foam::scalar Foam::solidProperties::E() const
+{
+    return E_;
 }
 
 

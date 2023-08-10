@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2013-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2013-2017 OpenFOAM Foundation
+    Copyright (C) 2016-2022 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -33,8 +36,9 @@ template<class ParcelType>
 Foam::string Foam::MPPICParcel<ParcelType>::propertyList_ =
     Foam::MPPICParcel<ParcelType>::propertyList();
 
+
 template<class ParcelType>
-const std::size_t Foam::MPPICParcel<ParcelType>::sizeofFields_
+const std::size_t Foam::MPPICParcel<ParcelType>::sizeofFields
 (
     sizeof(MPPICParcel<ParcelType>) - sizeof(ParcelType)
 );
@@ -47,29 +51,36 @@ Foam::MPPICParcel<ParcelType>::MPPICParcel
 (
     const polyMesh& mesh,
     Istream& is,
-    bool readFields
+    bool readFields,
+    bool newFormat
 )
 :
-    ParcelType(mesh, is, readFields),
+    ParcelType(mesh, is, readFields, newFormat),
     UCorrect_(Zero)
 {
     if (readFields)
     {
-        if (is.format() == IOstream::ASCII)
+        if (is.format() == IOstreamOption::ASCII)
         {
             is >> UCorrect_;
         }
+        else if (!is.checkLabelSize<>() || !is.checkScalarSize<>())
+        {
+            // Non-native label or scalar size
+
+            is.beginRawRead();
+
+            readRawScalar(is, UCorrect_.data(), vector::nComponents);
+
+            is.endRawRead();
+        }
         else
         {
-            is.read(reinterpret_cast<char*>(&UCorrect_), sizeofFields_);
+            is.read(reinterpret_cast<char*>(&UCorrect_), sizeofFields);
         }
     }
 
-    is.check
-    (
-        "MPPICParcel<ParcelType>::Collisions"
-        "(const polyMesh&, Istream&, bool)"
-    );
+    is.check(FUNCTION_NAME);
 }
 
 
@@ -89,14 +100,11 @@ void Foam::MPPICParcel<ParcelType>::readFields(CloudType& c)
     c.checkFieldIOobject(c, UCorrect);
 
     label i = 0;
-
-    forAllIter(typename CloudType, c, iter)
+    for (MPPICParcel<ParcelType>& p : c)
     {
-        MPPICParcel<ParcelType>& p = iter();
-
         p.UCorrect_ = UCorrect[i];
 
-        i++;
+        ++i;
     }
 }
 
@@ -107,23 +115,90 @@ void Foam::MPPICParcel<ParcelType>::writeFields(const CloudType& c)
 {
     ParcelType::writeFields(c);
 
-    label np = c.size();
+    const label np = c.size();
 
     IOField<vector>
         UCorrect(c.fieldIOobject("UCorrect", IOobject::NO_READ), np);
 
     label i = 0;
 
-    forAllConstIter(typename CloudType, c, iter)
+    for (const MPPICParcel<ParcelType>& p : c)
     {
-        const MPPICParcel<ParcelType>& p = iter();
-
         UCorrect[i] = p.UCorrect();
 
-        i++;
+        ++i;
     }
 
     UCorrect.write(np > 0);
+}
+
+
+template<class ParcelType>
+void Foam::MPPICParcel<ParcelType>::writeProperties
+(
+    Ostream& os,
+    const wordRes& filters,
+    const word& delim,
+    const bool namesOnly
+) const
+{
+    ParcelType::writeProperties(os, filters, delim, namesOnly);
+
+    #undef  writeProp
+    #define writeProp(Name, Value)                                            \
+        ParcelType::writeProperty(os, Name, Value, namesOnly, delim, filters)
+
+    writeProp("UCorrect", UCorrect_);
+
+    #undef writeProp
+}
+
+
+template<class ParcelType>
+template<class CloudType>
+void Foam::MPPICParcel<ParcelType>::readObjects
+(
+    CloudType& c,
+    const objectRegistry& obr
+)
+{
+    ParcelType::readObjects(c, obr);
+
+    if (!c.size()) return;
+
+    const auto& UCorrect = cloud::lookupIOField<vector>("UCorrect", obr);
+
+    label i = 0;
+    for (MPPICParcel<ParcelType>& p : c)
+    {
+        p.UCorrect() = UCorrect[i];
+
+        ++i;
+    }
+}
+
+
+template<class ParcelType>
+template<class CloudType>
+void Foam::MPPICParcel<ParcelType>::writeObjects
+(
+    const CloudType& c,
+    objectRegistry& obr
+)
+{
+    ParcelType::writeObjects(c, obr);
+
+    const label np = c.size();
+
+    auto& UCorrect = cloud::createIOField<vector>("UCorrect", np, obr);
+
+    label i = 0;
+    for (const MPPICParcel<ParcelType>& p : c)
+    {
+        UCorrect[i] = p.UCorrect();
+
+        ++i;
+    }
 }
 
 
@@ -136,7 +211,7 @@ Foam::Ostream& Foam::operator<<
     const MPPICParcel<ParcelType>& p
 )
 {
-    if (os.format() == IOstream::ASCII)
+    if (os.format() == IOstreamOption::ASCII)
     {
         os  << static_cast<const ParcelType&>(p)
             << token::SPACE << p.UCorrect();
@@ -147,15 +222,11 @@ Foam::Ostream& Foam::operator<<
         os.write
         (
             reinterpret_cast<const char*>(&p.UCorrect_),
-            MPPICParcel<ParcelType>::sizeofFields_
+            MPPICParcel<ParcelType>::sizeofFields
         );
     }
 
-    os.check
-    (
-        "Ostream& operator<<(Ostream&, const MPPICParcel<ParcelType>&)"
-    );
-
+    os.check(FUNCTION_NAME);
     return os;
 }
 

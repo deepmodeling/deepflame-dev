@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2016 OpenFOAM Foundation
+    Copyright (C) 2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -23,6 +26,9 @@ License
 
 Class
     Foam::LiquidEvaporation
+
+Group
+    grpLagrangianIntermediatePhaseChangeSubModels
 
 Description
     Liquid evaporation model
@@ -114,11 +120,14 @@ public:
             const scalar Pr,
             const scalar d,
             const scalar nu,
+            const scalar rho,
             const scalar T,
             const scalar Ts,
             const scalar pc,
             const scalar Tc,
             const scalarField& X,
+            const scalarField& solMass,
+            const scalarField& liqMass,
             scalarField& dMassPC
         ) const;
 

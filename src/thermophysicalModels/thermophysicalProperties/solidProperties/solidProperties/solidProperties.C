@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2018-2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -34,6 +37,7 @@ namespace Foam
     defineRunTimeSelectionTable(solidProperties, dictionary);
 }
 
+
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::solidProperties::solidProperties
@@ -42,29 +46,33 @@ Foam::solidProperties::solidProperties
     scalar Cp,
     scalar kappa,
     scalar Hf,
-    scalar emissivity
+    scalar emissivity,
+    scalar W,
+    scalar nu,
+    scalar E
 )
 :
     rho_(rho),
     Cp_(Cp),
     kappa_(kappa),
     Hf_(Hf),
-    emissivity_(emissivity)
+    emissivity_(emissivity),
+    W_(W),
+    nu_(nu),
+    E_(E)
 {}
 
 
 Foam::solidProperties::solidProperties(const dictionary& dict)
 :
-    rho_(readScalar(dict.lookup("rho"))),
-    Cp_(readScalar(dict.lookup("Cp"))),
-    kappa_
-    (
-        dict.found("K")
-      ? readScalar(dict.lookup("K"))
-      : readScalar(dict.lookup("kappa"))
-    ),
-    Hf_(readScalar(dict.lookup("Hf"))),
-    emissivity_(readScalar(dict.lookup("emissivity")))
+    rho_(dict.get<scalar>("rho")),
+    Cp_(dict.get<scalar>("Cp")),
+    kappa_(dict.getCompat<scalar>("kappa", {{"K", 1612}})),
+    Hf_(dict.get<scalar>("Hf")),
+    emissivity_(dict.get<scalar>("emissivity")),
+    W_(dict.get<scalar>("W")),
+    nu_(dict.getOrDefault<scalar>("nu", 0.0)),
+    E_(dict.getOrDefault<scalar>("E", 0.0))
 {}
 
 
@@ -74,10 +82,12 @@ void Foam::solidProperties::readIfPresent(const dictionary& dict)
 {
     dict.readIfPresent("rho", rho_);
     dict.readIfPresent("Cp", Cp_);
-    dict.readIfPresent("K", kappa_);
-    dict.readIfPresent("kappa", kappa_);
-    dict.readIfPresent("Hf_", Hf_);
+    dict.readIfPresentCompat("kappa", {{"K", 1612}}, kappa_);
+    dict.readIfPresent("Hf", Hf_);
     dict.readIfPresent("emissivity", emissivity_);
+    dict.readIfPresent("W", W_);
+    dict.readIfPresent("nu", nu_);
+    dict.readIfPresent("E", E_);
 }
 
 
@@ -87,7 +97,10 @@ void Foam::solidProperties::writeData(Ostream& os) const
         << Cp_ << token::SPACE
         << kappa_ << token::SPACE
         << Hf_ << token::SPACE
-        << emissivity_;
+        << emissivity_ << token::SPACE
+        << W_ << token::SPACE
+        << nu_ << token::SPACE
+        << E_;
 }
 
 

@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2016-2019 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -25,7 +28,7 @@ Class
     Foam::SprayParcel
 
 Description
-    Reaching spray parcel, with added functionality for atomization and breakup
+    Reacting spray parcel, with added functionality for atomization and breakup
 
 \*---------------------------------------------------------------------------*/
 
@@ -59,12 +62,6 @@ class SprayParcel
 :
     public ParcelType
 {
-    // Private Data
-
-        //- Size in bytes of the fields
-        static const std::size_t sizeofFields_;
-
-
 public:
 
     //- Class to hold reacting particle constant properties
@@ -72,7 +69,7 @@ public:
     :
         public ParcelType::constantProperties
     {
-        // Private Data
+        // Private data
 
             //- Particle initial surface tension [N/m]
             demandDrivenEntry<scalar> sigma0_;
@@ -111,7 +108,7 @@ public:
                 const scalar f0,
                 const scalar Pr,
                 const scalar pMin,
-                const Switch& constantVolume,
+                const bool constantVolume,
                 const scalar sigma0,
                 const scalar mu0
             );
@@ -180,10 +177,32 @@ protected:
 
 public:
 
-    // Static Data Members
+    // Static data members
+
+        //- Size in bytes of the fields
+        static const std::size_t sizeofFields;
 
         //- Runtime type information
         TypeName("SprayParcel");
+
+        //- String representation of properties
+        AddToPropertyList
+        (
+            ParcelType,
+            " d0"
+          + " position0"
+          + " sigma"
+          + " mu"
+          + " liquidCore"
+          + " KHindex"
+          + " y"
+          + " yDot"
+          + " tc"
+          + " ms"
+          + " injector"
+          + " tMom"
+          + " user"
+        );
 
 
     // Constructors
@@ -242,7 +261,8 @@ public:
         (
             const polyMesh& mesh,
             Istream& is,
-            bool readFields = true
+            bool readFields = true,
+            bool newFormat = true
         );
 
         //- Construct as a copy
@@ -480,6 +500,51 @@ public:
             //- Write - composition supplied
             template<class CloudType>
             static void writeFields(const CloudType& c);
+
+            //- Write individual parcel properties to stream
+            void writeProperties
+            (
+                Ostream& os,
+                const wordRes& filters,
+                const word& delim,
+                const bool namesOnly
+            ) const;
+
+            //- Read particle fields as objects from the obr registry
+            //  - no composition
+            template<class CloudType>
+            static void readObjects
+            (
+                CloudType& c,
+                const objectRegistry& obr
+            );
+
+            //- Read particle fields as objects from the obr registry
+            template<class CloudType, class CompositionType>
+            static void readObjects
+            (
+                CloudType& c,
+                const CompositionType& compModel,
+                const objectRegistry& obr
+            );
+
+            //- Write particle fields as objects into the obr registry
+            //  - no composition
+            template<class CloudType>
+            static void writeObjects
+            (
+                const CloudType& c,
+                objectRegistry& obr
+            );
+
+            //- Write particle fields as objects into the obr registry
+            template<class CloudType, class CompositionType>
+            static void writeObjects
+            (
+                const CloudType& c,
+                const CompositionType& compModel,
+                objectRegistry& obr
+            );
 
 
     // Ostream Operator

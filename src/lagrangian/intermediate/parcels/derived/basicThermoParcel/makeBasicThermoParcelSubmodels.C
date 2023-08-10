@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2019 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2015 OpenFOAM Foundation
+    Copyright (C) 2020-2021 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -25,10 +28,10 @@ License
 
 #include "basicThermoCloud.H"
 
-#include "makeParcelCloudFunctionObjects.H"
+#include "makeThermoParcelCloudFunctionObjects.H"
 
 // Kinematic
-#include "makeParcelForces.H"
+#include "makeThermoParcelForces.H" // thermo variant
 #include "makeParcelDispersionModels.H"
 #include "makeParcelInjectionModels.H"
 #include "makeParcelPatchInteractionModels.H"
@@ -38,12 +41,17 @@ License
 // Thermodynamic
 #include "makeParcelHeatTransferModels.H"
 
+// MPPIC sub-models
+#include "makeMPPICParcelDampingModels.H"
+#include "makeMPPICParcelIsotropyModels.H"
+#include "makeMPPICParcelPackingModels.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-makeParcelCloudFunctionObjects(basicThermoCloud);
+makeThermoParcelCloudFunctionObjects(basicThermoCloud);
 
 // Kinematic sub-models
-makeParcelForces(basicThermoCloud);
+makeThermoParcelForces(basicThermoCloud);
 makeParcelDispersionModels(basicThermoCloud);
 makeParcelInjectionModels(basicThermoCloud);
 makeParcelPatchInteractionModels(basicThermoCloud);
@@ -52,6 +60,12 @@ makeParcelSurfaceFilmModels(basicThermoCloud);
 
 // Thermo sub-models
 makeParcelHeatTransferModels(basicThermoCloud);
+
+
+// MPPIC sub-models
+makeMPPICParcelDampingModels(basicThermoCloud);
+makeMPPICParcelIsotropyModels(basicThermoCloud);
+makeMPPICParcelPackingModels(basicThermoCloud);
 
 
 // ************************************************************************* //

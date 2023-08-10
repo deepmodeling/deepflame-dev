@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -31,7 +34,8 @@ Foam::ReactingParcel<ParcelType>::constantProperties::constantProperties()
 :
     ParcelType::constantProperties(),
     pMin_(this->dict_, 0.0),
-    constantVolume_(this->dict_, false)
+    constantVolume_(this->dict_, false),
+    volUpdateType_(this->dict_, mUndefined)
 {}
 
 
@@ -43,7 +47,8 @@ inline Foam::ReactingParcel<ParcelType>::constantProperties::constantProperties
 :
     ParcelType::constantProperties(cp),
     pMin_(cp.pMin_),
-    constantVolume_(cp.constantVolume_)
+    constantVolume_(cp.constantVolume_),
+    volUpdateType_(cp.volUpdateType_)
 {}
 
 
@@ -55,8 +60,47 @@ inline Foam::ReactingParcel<ParcelType>::constantProperties::constantProperties
 :
     ParcelType::constantProperties(parentDict),
     pMin_(this->dict_, "pMin", 1000.0),
-    constantVolume_(this->dict_, word("constantVolume"))
-{}
+    constantVolume_(this->dict_, "constantVolume", false),
+    volUpdateType_(this->dict_, "volumeUpdateMethod")
+{
+    word updateName;
+
+    // If constantVolume found use it
+    if (this->dict_.found("constantVolume"))
+    {
+        volUpdateType_.setValue(mUndefined);
+    }
+    else if (this->dict_.readIfPresent("volumeUpdateMethod", updateName))
+    {
+        // Manual version of Enum<volumeUpdateType>
+        if (updateName == "constantRho")
+        {
+            volUpdateType_.setValue(mConstRho);
+        }
+        else if (updateName == "constantVolume")
+        {
+            volUpdateType_.setValue(mConstVol);
+        }
+        else if (updateName == "updateRhoAndVol")
+        {
+            volUpdateType_.setValue(mUpdateRhoAndVol);
+        }
+        else
+        {
+            // FatalIOErrorInLookup
+
+            FatalIOErrorInFunction(this->dict_)
+                << "Unknown volumeUpdateMethod type " << updateName
+                << "\n\nValid volumeUpdateMethod types :\n"
+                << "(constantRho constantVolume updateRhoAndVol)" << nl
+                << exit(FatalIOError);
+        }
+    }
+    else
+    {
+        constantVolume_.setValue(false);
+    }
+}
 
 
 template<class ParcelType>
@@ -152,6 +196,14 @@ Foam::ReactingParcel<ParcelType>::constantProperties::constantVolume() const
 }
 
 
+template<class ParcelType>
+inline Foam::label
+Foam::ReactingParcel<ParcelType>::constantProperties::volUpdateType() const
+{
+    return volUpdateType_.value();
+}
+
+
 // * * * * * * * * * * ThermoParcel Member Functions * * * * * * * * * * * * //
 
 template<class ParcelType>
@@ -163,6 +215,29 @@ inline Foam::scalar Foam::ReactingParcel<ParcelType>::mass0() const
 
 template<class ParcelType>
 inline const Foam::scalarField& Foam::ReactingParcel<ParcelType>::Y() const
+{
+    return Y_;
+}
+
+
+template<class ParcelType>
+inline const Foam::scalarField& Foam::ReactingParcel<ParcelType>::YGas() const
+{
+    return Y_;
+}
+
+
+template<class ParcelType>
+inline const Foam::scalarField&
+Foam::ReactingParcel<ParcelType>::YLiquid() const
+{
+    return Y_;
+}
+
+
+template<class ParcelType>
+inline const Foam::scalarField&
+Foam::ReactingParcel<ParcelType>::YSolid() const
 {
     return Y_;
 }

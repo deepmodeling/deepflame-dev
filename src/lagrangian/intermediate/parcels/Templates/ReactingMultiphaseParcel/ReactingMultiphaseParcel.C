@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2019-2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -120,13 +123,61 @@ Foam::scalar Foam::ReactingMultiphaseParcel<ParcelType>::updateMassFractions
     scalar massSolid =
         this->updateMassFraction(mass0*YMix[SLD], dMassSolid, YSolid_);
 
-    scalar massNew = max(massGas + massLiquid + massSolid, rootVSmall);
+    scalar massNew = max(massGas + massLiquid + massSolid, ROOTVSMALL);
 
     YMix[GAS] = massGas/massNew;
     YMix[LIQ] = massLiquid/massNew;
-    YMix[SLD] = 1.0 - YMix[GAS] - YMix[LIQ];
+    YMix[SLD] = massSolid/massNew;
+
+    scalar Ytotal = sum(YMix);
+
+    YMix[GAS] /= Ytotal;
+    YMix[LIQ] /= Ytotal;
+    YMix[SLD] /= Ytotal;
 
     return massNew;
+}
+
+
+template<class ParcelType>
+template<class TrackCloudType>
+Foam::scalar Foam::ReactingMultiphaseParcel<ParcelType>::updatedDeltaVolume
+(
+    TrackCloudType& cloud,
+    const scalarField& dMassGas,
+    const scalarField& dMassLiquid,
+    const scalarField& dMassSolid,
+    const label idG,
+    const label idL,
+    const label idS,
+    const scalar p,
+    const scalar T
+)
+{
+    const auto& props = cloud.composition().phaseProps()[idG];
+    const auto& thermo = cloud.composition().thermo();
+
+    scalarField dVolGas(dMassGas.size(), Zero);
+    forAll(dMassGas, i)
+    {
+        label cid = props.carrierIds()[i];
+        dVolGas[i] = -dMassGas[i]/thermo.carrier().rho(cid, p, T);
+    }
+
+    scalarField dVolLiquid(dMassLiquid.size(), Zero);
+    forAll(dMassLiquid, i)
+    {
+        dVolLiquid[i] =
+            -dMassLiquid[i]/thermo.liquids().properties()[i].rho(p, T);
+    }
+
+    scalarField dVolSolid(dMassSolid.size(), Zero);
+    forAll(dMassSolid, i)
+    {
+        dVolSolid[i] = -dMassSolid[i]/thermo.solids().properties()[i].rho();
+    }
+
+    return (sum(dVolGas) + sum(dVolLiquid) + sum(dMassSolid));
 }
 
 
@@ -171,7 +222,6 @@ void Foam::ReactingMultiphaseParcel<ParcelType>::calc
     const CompositionModel<reactingCloudType>& composition =
         cloud.composition();
 
-
     // Define local properties at beginning of timestep
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -180,6 +230,8 @@ void Foam::ReactingMultiphaseParcel<ParcelType>::calc
     const vector& U0 = this->U_;
     const scalar T0 = this->T_;
     const scalar mass0 = this->mass();
+    const scalar rho0 = this->rho_;
+
 
     const scalar pc = td.pc();
 
@@ -224,7 +276,7 @@ void Foam::ReactingMultiphaseParcel<ParcelType>::calc
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     // Mass transfer due to phase change
-    scalarField dMassPC(YLiquid_.size(), 0.0);
+    scalarField dMassPC(YLiquid_.size(), Zero);
 
     // Molar flux of species emitted from the particle (kmol/m^2/s)
     scalar Ne = 0.0;
@@ -233,7 +285,7 @@ void Foam::ReactingMultiphaseParcel<ParcelType>::calc
     scalar NCpW = 0.0;
 
     // Surface concentrations of emitted species
-    scalarField Cs(composition.carrier().species().size(), 0.0);
+    scalarField Cs(composition.carrier().species().size(), Zero);
 
     // Calc mass and enthalpy transfer due to phase change
     this->calcPhaseChange
@@ -248,9 +300,11 @@ void Foam::ReactingMultiphaseParcel<ParcelType>::calc
         d0,
         T0,
         mass0,
+        rho0,
         idL,
         YMix[LIQ],
         YLiquid_,
+        YMix[SLD]*YSolid_,
         dMassPC,
         Sh,
         Ne,
@@ -263,7 +317,7 @@ void Foam::ReactingMultiphaseParcel<ParcelType>::calc
     // ~~~~~~~~~~~~~~~~
 
     // Mass transfer due to devolatilisation
-    scalarField dMassDV(YGas_.size(), 0.0);
+    scalarField dMassDV(YGas_.size(), Zero);
 
     // Calc mass and enthalpy transfer due to devolatilisation
     calcDevolatilisation
@@ -288,15 +342,14 @@ void Foam::ReactingMultiphaseParcel<ParcelType>::calc
         Cs
     );
 
-
     // Surface reactions
     // ~~~~~~~~~~~~~~~~~
 
     // Change in carrier phase composition due to surface reactions
-    scalarField dMassSRGas(YGas_.size(), 0.0);
-    scalarField dMassSRLiquid(YLiquid_.size(), 0.0);
-    scalarField dMassSRSolid(YSolid_.size(), 0.0);
-    scalarField dMassSRCarrier(composition.carrier().species().size(), 0.0);
+    scalarField dMassSRGas(YGas_.size(), Zero);
+    scalarField dMassSRLiquid(YLiquid_.size(), Zero);
+    scalarField dMassSRSolid(YSolid_.size(), Zero);
+    scalarField dMassSRCarrier(composition.carrier().species().size(), Zero);
 
     // Calc mass and enthalpy transfer due to surface reactions
     calcSurfaceReactions
@@ -305,6 +358,8 @@ void Foam::ReactingMultiphaseParcel<ParcelType>::calc
         td,
         dt,
         d0,
+        Res,
+        mus/rhos,
         T0,
         mass0,
         canCombust_,
@@ -321,27 +376,14 @@ void Foam::ReactingMultiphaseParcel<ParcelType>::calc
         dhsTrans
     );
 
-
     // 2. Update the parcel properties due to change in mass
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     scalarField dMassGas(dMassDV + dMassSRGas);
     scalarField dMassLiquid(dMassPC + dMassSRLiquid);
     scalarField dMassSolid(dMassSRSolid);
-    scalar mass1 =
-        updateMassFractions(mass0, dMassGas, dMassLiquid, dMassSolid);
 
-    this->Cp_ = CpEff(cloud, td, pc, T0, idG, idL, idS);
-
-    // Update particle density or diameter
-    if (cloud.constProps().constantVolume())
-    {
-        this->rho_ = mass1/this->volume();
-    }
-    else
-    {
-        this->d_ = cbrt(mass1/this->rho_*6.0/pi);
-    }
+    scalar mass1 = mass0 - sum(dMassGas) - sum(dMassLiquid) - sum(dMassSolid);
 
     // Remove the particle when mass falls below minimum threshold
     if (np0*mass1 < cloud.constProps().minParcelMass())
@@ -384,6 +426,59 @@ void Foam::ReactingMultiphaseParcel<ParcelType>::calc
         return;
     }
 
+    (void)updateMassFractions(mass0, dMassGas, dMassLiquid, dMassSolid);
+
+    if
+    (
+        cloud.constProps().volUpdateType()
+     == constantProperties::volumeUpdateType::mUndefined
+    )
+    {
+        if (cloud.constProps().constantVolume())
+        {
+            this->rho_ = mass1/this->volume();
+        }
+        else
+        {
+            this->d_ = cbrt(mass1/this->rho_*6/pi);
+        }
+    }
+    else
+    {
+        switch (cloud.constProps().volUpdateType())
+        {
+            case constantProperties::volumeUpdateType::mConstRho :
+            {
+                this->d_ = cbrt(mass1/this->rho_*6/pi);
+                break;
+            }
+            case constantProperties::volumeUpdateType::mConstVol :
+            {
+                this->rho_ = mass1/this->volume();
+                break;
+            }
+            case constantProperties::volumeUpdateType::mUpdateRhoAndVol :
+            {
+                scalar deltaVol =
+                    updatedDeltaVolume
+                    (
+                        cloud,
+                        dMassGas,
+                        dMassLiquid,
+                        dMassSolid,
+                        idG,
+                        idL,
+                        idS,
+                        pc,
+                        T0
+                    );
+
+                this->rho_ = mass1/(this->volume() + deltaVol);
+                this->d_ = cbrt(mass1/this->rho_*6/pi);
+                break;
+            }
+        }
+    }
     // Correct surface values due to emitted species
     this->correctSurfaceValues(cloud, td, Ts, Cs, rhos, mus, Prs, kappas);
     Res = this->Re(rhos, U0, td.Uc(), this->d_, mus);
@@ -521,10 +616,6 @@ void Foam::ReactingMultiphaseParcel<ParcelType>::calcDevolatilisation
     // Check that model is active
     if (!cloud.devolatilisation().active())
     {
-        if (canCombust != -1)
-        {
-            canCombust = 1;
-        }
         return;
     }
 
@@ -573,7 +664,7 @@ void Foam::ReactingMultiphaseParcel<ParcelType>::calcDevolatilisation
     {
         // Molar average molecular weight of carrier mix
         const scalar RR = 1000.0*constant::physicoChemical::R.value(); // J/(kmol·k)
-        const scalar Wc = max(small, td.rhoc()*RR*td.Tc()/td.pc());
+        const scalar Wc = max(SMALL, td.rhoc()*RR*td.Tc()/td.pc());
 
         // Note: hardcoded gaseous diffusivities for now
         // TODO: add to carrier thermo
@@ -584,7 +675,7 @@ void Foam::ReactingMultiphaseParcel<ParcelType>::calcDevolatilisation
         {
             const label id = composition.localToCarrierId(GAS, i);
             const scalar Cp = composition.carrier().Cp(id, td.pc(), Ts);
-            const scalar W = composition.carrier().Wi(id);
+            const scalar W = composition.carrier().W(id);
             const scalar Ni = dMassDV[i]/(this->areaS(d)*dt*W);
 
             // Dab calc'd using API vapour mass diffusivity function
@@ -609,6 +700,8 @@ void Foam::ReactingMultiphaseParcel<ParcelType>::calcSurfaceReactions
     trackingData& td,
     const scalar dt,
     const scalar d,
+    const scalar Re,
+    const scalar nu,
     const scalar T,
     const scalar mass,
     const label canCombust,
@@ -646,6 +739,8 @@ void Foam::ReactingMultiphaseParcel<ParcelType>::calcSurfaceReactions
     const scalar hReaction = cloud.surfaceReaction().calculate
     (
         dt,
+        Re,
+        nu,
         this->cell(),
         d,
         T,

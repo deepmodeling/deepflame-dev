@@ -4,7 +4,7 @@ combustion->correct();
 
 label flag_mpi_init;
 MPI_Initialized(&flag_mpi_init);
-if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
+if(flag_mpi_init) MPI_Barrier(MPI_COMM_WORLD);
 end = std::clock();
 time_monitor_chem += double(end - start) / double(CLOCKS_PER_SEC);
 
@@ -16,7 +16,7 @@ forAll(Y, i)
     volScalarField& Yi = Y[i];
 
     if (i != inertIndex)
-    {          
+    {
         rhoYi[i].ref() += chemistry->RR(i)*runTime.deltaT();
         Info <<"max reaction rate "<< Yi.name() << " is " << max(chemistry->RR(i)).value() << endl;
 

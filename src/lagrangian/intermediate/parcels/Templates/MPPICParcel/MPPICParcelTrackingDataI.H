@@ -1,9 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2013-2018 OpenFOAM Foundation
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2013-2017 OpenFOAM Foundation
+    Copyright (C) 2019 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -172,9 +175,8 @@ inline void Foam::MPPICParcel<ParcelType>::trackingData::updateAverages
     AveragingMethod<scalar>& weightAverage = weightAveragePtr();
 
     // averaging sums
-    forAllConstIter(typename TrackCloudType, cloud, iter)
+    for (const typename TrackCloudType::parcelType& p : cloud)
     {
-        const typename TrackCloudType::parcelType& p = iter();
         const tetIndices tetIs = p.currentTetIndices();
 
         const scalar m = p.nParticle()*p.mass();
@@ -186,13 +188,12 @@ inline void Foam::MPPICParcel<ParcelType>::trackingData::updateAverages
     }
     volumeAverage_->average();
     massAverage_->average();
-    rhoAverage_->average(massAverage_);
-    uAverage_->average(massAverage_);
+    rhoAverage_->average(*massAverage_);
+    uAverage_->average(*massAverage_);
 
     // squared velocity deviation
-    forAllConstIter(typename TrackCloudType, cloud, iter)
+    for (const typename TrackCloudType::parcelType& p : cloud)
     {
-        const typename TrackCloudType::parcelType& p = iter();
         const tetIndices tetIs = p.currentTetIndices();
 
         const vector u = uAverage_->interpolate(p.coordinates(), tetIs);
@@ -204,14 +205,13 @@ inline void Foam::MPPICParcel<ParcelType>::trackingData::updateAverages
             p.nParticle()*p.mass()*magSqr(p.U() - u)
         );
     }
-    uSqrAverage_->average(massAverage_);
+    uSqrAverage_->average(*massAverage_);
 
     // sauter mean radius
     radiusAverage_() = volumeAverage_();
     weightAverage = 0;
-    forAllConstIter(typename TrackCloudType, cloud, iter)
+    for (const typename TrackCloudType::parcelType& p : cloud)
     {
-        const typename TrackCloudType::parcelType& p = iter();
         const tetIndices tetIs = p.currentTetIndices();
 
         weightAverage.add
@@ -226,9 +226,8 @@ inline void Foam::MPPICParcel<ParcelType>::trackingData::updateAverages
 
     // collision frequency
     weightAverage = 0;
-    forAllConstIter(typename TrackCloudType, cloud, iter)
+    for (const typename TrackCloudType::parcelType& p : cloud)
     {
-        const typename TrackCloudType::parcelType& p = iter();
         const tetIndices tetIs = p.currentTetIndices();
 
         const scalar a = volumeAverage_->interpolate(p.coordinates(), tetIs);

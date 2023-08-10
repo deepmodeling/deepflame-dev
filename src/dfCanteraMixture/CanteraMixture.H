@@ -241,12 +241,12 @@ public:
 
         const hashedWordList& species() const {return species_;}
         int nSpecies() {return int(CanteraGas_->nSpecies());}
-        int nReactions() {return int(CanteraKinetics_->nReactions());} 
+        int nReactions() {return int(CanteraKinetics_->nReactions());}
 
         std::shared_ptr<Cantera::ThermoPhase> CanteraGas() {return CanteraGas_;}
 
         std::shared_ptr<Cantera::Solution> CanteraSolution() {return CanteraSolution_;}
-  
+
         std::shared_ptr<Cantera::Kinetics> CanteraKinetics() {return CanteraKinetics_;}
 
         Cantera::Transport* CanteraTransport() {return CanteraTransport_;}
@@ -340,7 +340,7 @@ public:
         return mu(i, p, T)*Cv_*(1.32 + 1.77*RR/CanteraGas_->molecularWeight(i)/Cv_);
     } // W/m/K
 
-    scalar Wi(label i) const {return CanteraGas_->molecularWeight(i);} // kg/kmol
+    scalar W(label i) const {return CanteraGas_->molecularWeight(i);} // kg/kmol
 
 
     //- Read dictionary

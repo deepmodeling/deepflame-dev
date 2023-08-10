@@ -1,4 +1,5 @@
 -include $(GENERAL_RULES)/mplibType
+include $(GENERAL_RULES)/mpi-rules
 
 EXE_INC = -std=c++14 \
     -Wno-unused-variable \
@@ -31,6 +32,10 @@ EXE_INC = -std=c++14 \
     -I$(DF_SRC)/dfCanteraMixture/lnInclude \
     -I$(DF_SRC)/dfChemistryModel/lnInclude \
     -I$(DF_SRC)/dfCombustionModels/lnInclude \
+    -I$(LIB_SRC)/regionFaModels/lnInclude \
+    -I$(LIB_SRC)/finiteArea/lnInclude \
+    -I$(LIB_SRC)/faOptions/lnInclude \
+    -I$(LIB_SRC)/surfMesh/lnInclude \
     -I$(LIB_SRC)/Pstream/mpi \
     -I$(CANTERA_ROOT)/include \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include,) \
