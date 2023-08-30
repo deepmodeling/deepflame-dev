@@ -31,7 +31,7 @@ jobs:
         . ~/miniconda3/etc/profile.d/conda.sh
         conda create -n libcantera python=3.8
         conda activate libcantera
-        conda install -c cantera libcantera-devel
+        conda install -c cantera libcantera=2.6
         conda install pytorch pybind11
         conda install --channel https://conda.anaconda.org/zhaofeng-shu33 easydict
         git clone https://github.com/deepmodeling/deepflame-dev.git
