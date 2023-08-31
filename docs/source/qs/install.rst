@@ -147,7 +147,7 @@ Then you can pass your own libtorch path to DeepFlame.
 
 .. code-block:: bash
 
-    conda create -n df-notorch
+    conda create -n df-notorch python=3.8
     conda activate df-notorch
     conda install -c cantera libcantera-devel
 
