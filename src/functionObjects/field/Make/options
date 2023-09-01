@@ -1,4 +1,4 @@
-EXE_INC = \
+EXE_INC = -std=c++17\
     -I$(SRC_ORIG)/functionObjects/field/lnInclude \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/meshTools/lnInclude \

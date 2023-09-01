@@ -1,6 +1,6 @@
 -include $(GENERAL_RULES)/mplibType
 
-EXE_INC = -std=c++14 \
+EXE_INC = -std=c++17 \
     -Wno-old-style-cast \
     $(PFLAGS) $(PINC) \
     $(if $(LIBTORCH_ROOT),-DUSE_LIBTORCH,) \

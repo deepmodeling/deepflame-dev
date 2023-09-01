@@ -1,4 +1,4 @@
-EXE_INC = \
+EXE_INC = -std=c++17\
     -Wno-unused-variable \
     -Wno-unused-but-set-variable \
     -Wno-old-style-cast \
