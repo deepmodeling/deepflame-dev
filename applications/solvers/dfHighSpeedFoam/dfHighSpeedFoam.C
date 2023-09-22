@@ -58,6 +58,11 @@ Description
 #include "PstreamGlobals.H"
 #include "CombustionModel.H"
 
+//-- Flux schemes
+#include "fluxSchemes/AUSMDVFlux.H"
+#include "fluxSchemes/KNPFlux.H"
+#include "fluxSchemes/RoeCFlux.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 int main(int argc, char *argv[])

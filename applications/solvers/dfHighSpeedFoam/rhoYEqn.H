@@ -64,7 +64,7 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
         {   
             if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
             {
-                rhoYi_rhs = -fvc::div(phiYi[i]);
+                rhoYi_rhs = -mvConvection->fvcDiv(phi, Yi);
 
                 if(chemScheme == "direct")
                 {
@@ -80,21 +80,21 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
             else
             {
                 // original convection term
-                // fvScalarMatrix YiEqn
-                // (
-                //      fvm::ddt(rho, Yi)
-                //    + mvConvection->fvmDiv(phi, Yi)
-                //   ==
-                //     combustion->R(Yi)
-                // );
-
-                solve
+                fvScalarMatrix YiEqn
                 (
-                    fvm::ddt(rhoYi[i])
-                    + fvc::div(phiYi[i])
-                == 
-                    chemistry->RR(i)
+                     fvm::ddt(rho, Yi)
+                   + mvConvection->fvmDiv(phi, Yi)
+                  ==
+                    combustion->R(Yi)
                 );
+
+                // solve
+                // (
+                //     fvm::ddt(rhoYi[i])
+                //     + fvc::div(phiYi[i])
+                // == 
+                //     chemistry->RR(i)
+                // );
             }      
 
             Yi=rhoYi[i]/rho;
