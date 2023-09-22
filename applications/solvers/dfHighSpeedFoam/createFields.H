@@ -153,7 +153,6 @@ autoPtr<compressible::turbulenceModel> turbulence
         thermo
     )
 );
-const word turbName(mesh.objectRegistry::lookupObject<IOdictionary>("turbulenceProperties").lookup("simulationType"));
 
 multivariateSurfaceInterpolationScheme<scalar>::fieldTable fields;
 

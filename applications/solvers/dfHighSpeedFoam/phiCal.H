@@ -1,4 +1,68 @@
-phi = aphiv_pos*rho_pos + aphiv_neg*rho_neg;
+
+
+surfaceVectorField  phiUp
+(
+    IOobject
+    (
+        "phiUp",
+        mesh.time().timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::NO_WRITE
+    ),
+    mesh,
+    dimensionedVector("0", sqr(dimVelocity)*dimDensity*dimArea, Zero)
+);
+
+surfaceScalarField  phiEp
+(
+    IOobject
+    (
+        "phiEp",
+        mesh.time().timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::NO_WRITE
+    ),
+    mesh,
+    dimensionedScalar("0", pow3(dimVelocity)*dimDensity*dimArea, 0)
+);
+
+
+surfaceScalarField  meshPhi
+(
+    IOobject
+    (
+        "meshPhi",
+        mesh.time().timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::NO_WRITE
+    ),
+    mesh,
+    dimensionedScalar("0", (dimVelocity)*dimArea, 0)
+);
+if(mesh.moving())
+{
+  meshPhi = meshPhi + mesh.phi();
+}
+
+//-- Computing flux
+fluxMap[fluxScheme](
+    meshPhi,
+    mesh.magSf(),
+    normal,
+    rho_pos,rho_neg,
+    U_pos,U_neg,
+    H_pos,H_neg,
+    p_pos,p_neg,
+    gamma_pos,gamma_neg,
+    a_pos,a_neg,
+    phi,
+    phiUp,
+    phiEp
+);
+
 
 PtrList<surfaceScalarField> phiYi(nspecies);
 forAll(phiYi,i)
@@ -16,29 +80,9 @@ forAll(phiYi,i)
         IOobject::NO_READ,
         IOobject::NO_WRITE
       ),
-      aphiv_pos*rhoYi_pos[i] + aphiv_neg*rhoYi_neg[i]
+      phi*fvc::interpolate(Y[i], "Yi").ref() 
     )
   );
-}
-
-surfaceVectorField phiUp
-(
-  (aphiv_pos*rhoU_pos + aphiv_neg*rhoU_neg)
-    + (a_pos*p_pos + a_neg*p_neg)*mesh.Sf()
-);
-
-surfaceScalarField phiEp
-(
-    "phiEp",
-    aphiv_pos*(rho_pos*(ea_pos + 0.5*magSqr(U_pos)) + p_pos)
-  + aphiv_neg*(rho_neg*(ea_neg + 0.5*magSqr(U_neg)) + p_neg)
-  + aSf*p_pos - aSf*p_neg
-);
-
-// Make flux for pressure-work absolute
-if (mesh.moving())
-{
-  phiEp += mesh.phi()*(a_pos*p_pos + a_neg*p_neg);
 }
 
 volScalarField muEff("muEff", turbulence->muEff());
