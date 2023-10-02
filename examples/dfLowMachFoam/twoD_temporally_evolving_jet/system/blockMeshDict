@@ -1,0 +1,126 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  7
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+convertToMeters 0.001;
+
+vertices #codeStream
+{
+    codeInclude
+    #{
+        #include "pointField.H"
+    #};
+
+    code
+    #{
+        pointField points(8);
+        points[0]  = point(0, 0, -0.5);
+        points[1]  = point(16, 0, -0.5);
+        points[2]  = point(16, 7.5, -0.5);
+        points[3]  = point(0, 7.5, -0.5);
+        points[4]  = point(0, 8.5, -0.5);
+        points[5]  = point(16, 8.5, -0.5);
+        points[6]  = point(16, 16, -0.5);
+        points[7]  = point(0, 16, -0.5);
+
+        // Duplicate z points
+        label sz = points.size();
+        points.setSize(2*sz);
+        for (label i = 0; i < sz; i++)
+        {
+            const point& pt = points[i];
+            points[i+sz] = point(pt.x(), pt.y(), -pt.z());
+        }
+
+        os  << points;
+    #};
+};
+
+blocks
+(
+    hex (0 1 2 3 8 9 10 11) (800 250 1) 
+	simpleGrading
+    (
+        1
+        (
+            (0.6 0.4 0.25)
+            (0.4 0.6 1)
+        )
+        1
+    )
+    hex (3 2 5 4 11 10 13 12) (800 50 1) simpleGrading (1 1 1)
+    hex (4 5 6 7 12 13 14 15) (800 250 1) 
+	simpleGrading
+    (
+        1
+        (
+            (0.4 0.6 1)
+            (0.6 0.4 4)
+        )
+        1
+    )
+);
+
+edges
+(
+);
+
+boundary
+(
+    left
+    {
+        type cyclic;
+        neighbourPatch right;
+        faces
+        (
+            (0 3 11 8)
+	    (3 4 12 11)
+	    (4 7 15 12)
+        );
+    }
+    right
+    {
+        type cyclic;
+        neighbourPatch left;
+        faces
+        (
+            (1 2 10 9)
+	    (2 5 13 10)
+	    (5 6 14 13)
+        );
+    }
+    top
+    {
+        type patch;
+        faces
+        (
+            (7 6 14 15)
+        );
+    }
+    down
+    {
+        type patch;
+        faces
+        (
+            (0 1 9 8)
+        );
+    }
+);
+
+// mergePatchPairs
+// (
+// );
+
+// ************************************************************************* //

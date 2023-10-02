@@ -137,7 +137,47 @@ The developed 2D HIT are displayed in the figures below.
 Vuorinen, Ville, and K. Keskinen. "DNSLab: A gateway to turbulent flow simulation in Matlab." Computer Physics Communications 203 (2016): 278-289.
 
 
+Two-Dimensional temporally evolving jet flame
+----------------------------------------------------------
+
+**Problem Description**
+
+2D planar temporally evolving jet flame is simulated here. Turbulent plane jets are prototypical free shear flows on which fundamental research can expand the overall understanding of turbulent flows. Here, we develope a two-dimensional temporally evolving turbulent jet, with considering transport and mixing processes of scalars in turbulent shear flows.
+
+The domain is initially filled with unburnt CH4/air mixture at the region where 7.5 mm < y < 8.5 mm and burnt gas CO2/H2O/N2 elsewhere. To initialize turbulent shear flow, the internal velocity field is generated from a jet flow simulation with turbulence generator.
+
+.. list-table:: Operating Conditions in Brief
+   :widths: 40 40
+   :header-rows: 0
+
+   * - Computational Domain size (x)
+     - 16 mm * 16 mm
+   * - Initial Gas Temperature
+     - 900 K (unburnt gas), 2500 K  (burnt gas)
+
+The figure below shows the computation domain and initial conditions.
+
+.. figure:: Computational_domain.png
+   :width: 500
+   :align: center
    
+   Computational domain and initial conditions
+
+**Output**
+
+The temporally evolving jet flame are displayed in the figures below.
+
+.. figure:: 2D_evolving_jet_0.1ms.png
+   :width: 500
+   :align: center
+
+   Contours of temperature and Qdot at t = 0.1 ms
+
+**Reference**
+
+M.Saito, J. Xing, J. Nagao, R. Kurose. "Data-driven simulation of ammonia combustion using neural ordinary differential equations (NODE)." Applications in Energy and Combustion Science (2023): 100196.
+
+
 Three-Dimensional Reactive Taylor-Green Vortex
 ---------------------------------------------------
 
