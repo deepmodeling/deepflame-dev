@@ -127,7 +127,7 @@ DeepFlame also provides users with LibTorch and CVODE (no DNN version) options.
     
 .. code-block:: bash
 
-    conda create -n df-libtorch
+    conda create -n df-libtorch python=3.8
     conda activate df-libtorch
     conda install -c cantera libcantera-devel
 
