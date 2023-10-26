@@ -143,10 +143,7 @@ if [ $USE_PYTORCH = true ]; then
     if [ -z "$PYTORCH_INC" ]; then
         return
     fi
-    PYTORCH_LIB=`python3 -c "from distutils import sysconfig; \
-    import os.path as op; v = sysconfig.get_config_vars(); \
-    fpaths = [op.join(v[pv], v['LDLIBRARY']) for pv in ('LIBDIR', 'LIBPL')]; \
-    print(list(filter(op.exists, fpaths))[0])" | xargs dirname`
+    PYTORCH_LIB=`pkg-config --libs python3-embed`
 fi
 
 
