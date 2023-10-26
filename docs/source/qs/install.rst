@@ -22,7 +22,7 @@ OpenFOAM-7 and ParaView-5.6.0 will be installed in the ``/opt`` directory.
 
 .. Note:: There is a commonly seen issue when installing OpenFOAM via ``apt-get install`` with an error message: ``could not find a distribution template for Ubuntu/focal``. To resolve this issue, you can refer to `issue#54 <https://github.com/deepmodeling/deepflame-dev/issues/54>`_.
 
-Alternatively, one can `compile OpenFOAM-7 from source code<https://openfoam.org/download/source/>`_.
+Alternatively, one can `compile OpenFOAM-7 from source code <https://openfoam.org/download/source/>`_.
 
 .. code-block:: bash
 
@@ -39,7 +39,7 @@ Alternatively, one can `compile OpenFOAM-7 from source code<https://openfoam.org
 
 **LibCantera** and **PyTorch** can be easily installed via `conda <https://docs.conda.io/en/latest/miniconda.html#linux-installers>`_. If your platform is compatible, run the following command to install the dependencies.
 
-.. Note:: Please go to `the official website of PyTorch<https://pytorch.org/>`_ to check your system compatibility and choose the installation command line that is suitable for your platform.
+.. Note:: Please go to `the official website of PyTorch <https://pytorch.org/>`_ to check your system compatibility and choose the installation command line that is suitable for your platform.
 
 .. code-block:: bash
 
