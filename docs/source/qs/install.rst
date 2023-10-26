@@ -42,7 +42,7 @@ Alternatively, one can `compile OpenFOAM-7 from source code<https://openfoam.org
 .. code-block:: bash
     # For CUDA-supported platforms
     conda create -n deepflame \
-	pytorch torchvision torchaudio libcantera-devel easydict pybind11 \
+	pytorch torchvision torchaudio libcantera-devel easydict pybind11 pkg-config \
 	-c pytorch -c nvidia -c cantera -c conda-forge
     conda activate deepflame
 
