@@ -11,6 +11,7 @@ First, install OpenFOAM-7.
 .. Note:: For `Ubuntu 20.04 <https://releases.ubuntu.com/focal/>`_, one can install by ``apt``. For latest versions, please compile OpenFOAM-7 from source code. Check operating system version by ``lsb_release -d``.
 
 .. code-block:: bash
+
     # Install OpenFOAM release by apt
     sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -"
     sudo add-apt-repository http://dl.openfoam.org/ubuntu
@@ -24,6 +25,7 @@ OpenFOAM-7 and ParaView-5.6.0 will be installed in the ``/opt`` directory.
 Alternatively, one can `compile OpenFOAM-7 from source code<https://openfoam.org/download/source/>`_.
 
 .. code-block:: bash
+
     gcc --version
     sudo apt-get install build-essential cmake git ca-certificates
     sudo apt-get install flex libfl-dev bison zlib1g-dev libboost-system-dev libboost-thread-dev libopenmpi-dev openmpi-bin gnuplot libreadline-dev libncurses-dev libxt-dev
@@ -40,6 +42,7 @@ Alternatively, one can `compile OpenFOAM-7 from source code<https://openfoam.org
 .. Note:: Please go to `the official website of PyTorch<https://pytorch.org/>`_ to check your system compatibility and choose the installation command line that is suitable for your platform.
 
 .. code-block:: bash
+
     # For CUDA-supported platforms
     conda create -n deepflame \
 	pytorch torchvision torchaudio libcantera-devel easydict pybind11 pkg-config \
