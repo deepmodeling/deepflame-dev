@@ -52,6 +52,8 @@ jobs:
         && cp -r flareFGM_Table_Download/SandiaD/flare.tbl examples/dfLowMachFoam/2DSandiaD_flareFGM/
         && git clone https://github.com/intelligent-algorithm-team/intelligent-combustion.git 
         && cp -r intelligent-combustion/DeePCK/Model/HE04_Hydrogen_ESH2_GMS_sub_20221101/ mechanisms/ && source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc 
+        && wget --content-disposition https://aisquare.oss-us-east-1.aliyuncs.com/data/models/e4161381-fdc9-4523-a709-19004e3f9b13
+        && cp Temporary_Chemical.pt ./test/pytorchIntegrator/ 
         && . configure.sh --use_pytorch && source ./bashrc && . install.sh 
         && cd test && ./Allrun && conda deactivate "
 
