@@ -6,6 +6,7 @@ cd ${0%/*} || exit 1    # Run from this directory
 
 application=df0DFoam
 
+wget --content-disposition https://aisquare.oss-us-east-1.aliyuncs.com/data/models/e4161381-fdc9-4523-a709-19004e3f9b13
 runApplication blockMesh
 runApplication decomposePar
 runApplication mpirun -np 4 --allow-run-as-root $application -parallel 
