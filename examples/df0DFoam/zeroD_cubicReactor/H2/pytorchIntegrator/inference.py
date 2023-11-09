@@ -119,7 +119,7 @@ try:
     model1= NN_MLP(layers) 
     model2= NN_MLP(layers) 
     if torch.cuda.is_available()==False:
-        state_dict = (torch.load('Temporary_Chemical.pt'),map_location='cpu')['state_dict']
+        state_dict = (torch.load('Temporary_Chemical.pt',map_location='cpu'))['state_dict']
     else:
         state_dict = (torch.load('Temporary_Chemical.pt'))['state_dict']
 
