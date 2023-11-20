@@ -39,6 +39,15 @@ Alternatively, one can `compile OpenFOAM-7 from source code <https://openfoam.or
 
 **LibCantera** and **PyTorch** can be easily installed via `conda <https://docs.conda.io/en/latest/miniconda.html#linux-installers>`_. If your platform is compatible, run the following command to install the dependencies.
 
+.. code-block:: bash
+
+    conda create -n deepflame python=3.8
+    conda activate deepflame
+    conda install -c conda-forge libcantera-devel 
+    conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+    conda install pybind11 
+    conda install -c conda-forge easydict
+
 .. Note:: Please go to `the official website of PyTorch <https://pytorch.org/>`_ to check your system compatibility and choose the installation command line that is suitable for your platform.
 
 .. code-block:: bash
@@ -123,8 +132,15 @@ Finally you can build and install DeepFlame:
 
     . install.sh
 
-.. Note:: You may come accross an error regarding shared library ``libmkl_rt.so.2`` when libcantera is installed through cantera channel. If so, go to your conda environment and check the existance of ``libmkl_rt.so.2`` and ``libmkl_rt.so.1``, and then link ``libmkl_rt.so.2`` to ``libmkl_rt.so.1``.
+.. Note:: You may see an error ``fmt`` or ``eigen`` files cannot be found. If so, go to your conda environment and install the packages as follows.
+    
+.. code-block:: bash
 
+    conda install fmt 
+    conda install eigen 
+
+.. Note:: You may also come accross an error regarding shared library ``libmkl_rt.so.2`` when libcantera is installed through cantera channel. If so, go to your conda environment and check the existance of ``libmkl_rt.so.2`` and ``libmkl_rt.so.1``, and then link ``libmkl_rt.so.2`` to ``libmkl_rt.so.1``.
+    
 .. code-block:: bash
 
     cd ~/miniconda3/envs/deepflame/lib
@@ -144,7 +160,7 @@ DeepFlame also provides users with LibTorch and CVODE (no DNN version) options.
 
     conda create -n df-libtorch python=3.8
     conda activate df-libtorch
-    conda install -c cantera libcantera-devel
+    conda install -c conda-forge libcantera-devel 
 
 Then you can pass your own libtorch path to DeepFlame.
 
@@ -164,7 +180,7 @@ Then you can pass your own libtorch path to DeepFlame.
 
     conda create -n df-notorch python=3.8
     conda activate df-notorch
-    conda install -c cantera libcantera-devel
+    conda install -c conda-forge libcantera-devel 
 
 If the conda env ``df-notorch`` is activated, install DeepFlame by running:
 

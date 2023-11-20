@@ -149,9 +149,9 @@ void Foam::dfChemistryModel<ThermoType>::getDNNinputs
 
     if (gpulog_)
     {
-        std::cout<<"inputsDNN0 = "<<inputsDNN0.size()/10 << "\n";
-        std::cout<<"inputsDNN1 = "<<inputsDNN1.size()/10 << "\n";
-        std::cout<<"inputsDNN2 = "<<inputsDNN2.size()/10 << "\n";
+        std::cout<<"inputsDNN0 = "<<inputsDNN0.size()/(mixture_.nSpecies()+3) << "\n";
+        std::cout<<"inputsDNN1 = "<<inputsDNN1.size()/(mixture_.nSpecies()+3) << "\n";
+        std::cout<<"inputsDNN2 = "<<inputsDNN2.size()/(mixture_.nSpecies()+3) << "\n";
     }
 
     return;
