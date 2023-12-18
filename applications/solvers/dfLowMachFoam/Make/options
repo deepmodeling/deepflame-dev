@@ -49,9 +49,7 @@ EXE_LIBS = \
     $(if $(LIBTORCH_ROOT),-rdynamic,) \
     $(if $(LIBTORCH_ROOT),-lpthread,) \
     $(if $(LIBTORCH_ROOT),$(DF_SRC)/dfChemistryModel/DNNInferencer/build/libDNNInferencer.so,) \
-    $(if $(PYTHON_LIB_DIR),-L$(PYTHON_LIB_DIR),) \
-    $(if $(PYTHON_LIB_DIR),-lpython3.8,) \
+    $(if $(PYTHON_LIB_DIR),$(PYTHON_LIB_DIR),) \
     $(if $(AMGX_DIR), /usr/local/cuda-11.6/lib64/libcudart.so,) \
     $(if $(AMGX_DIR), $(DF_ROOT)/src_gpu/build/libdfMatrix.so,) \
     $(if $(AMGX_DIR), $(AMGX_DIR)/build/libamgxsh.so,)
-

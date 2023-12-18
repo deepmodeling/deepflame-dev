@@ -7,21 +7,21 @@ EXE_INC = -std=c++17 \
     $(PFLAGS) $(PINC) \
     $(if $(LIBTORCH_ROOT),-DUSE_LIBTORCH,) \
     $(if $(PYTHON_INC_DIR),-DUSE_PYTORCH,) \
-    -I$(FOAM_APP)/solvers/compressible/rhoCentralFoam/BCs/lnInclude \
-    -I$(LIB_SRC)/finiteVolume/cfdTools \
-    -I$(LIB_SRC)/finiteVolume/lnInclude \
-    -I$(LIB_SRC)/transportModels/compressible/lnInclude \
-    -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
-    -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude \
-    -I$(LIB_SRC)/TurbulenceModels/compressible/lnInclude \
-    -I$(LIB_SRC)/sampling/lnInclude \
-    -I$(LIB_SRC)/dynamicFvMesh/lnInclude \
-    -I$(LIB_SRC)/Pstream/mpi \
-    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(CANTERA_ROOT)/include \
     -I$(DF_SRC)/dfCanteraMixture/lnInclude \
     -I$(DF_SRC)/dfChemistryModel/lnInclude \
     -I$(DF_SRC)/dfCombustionModels/lnInclude \
-    -I$(CANTERA_ROOT)/include \
+    -I$(FOAM_APP)/solvers/compressible/rhoCentralFoam/BCs/lnInclude \
+    -I$(LIB_SRC)/dynamicFvMesh/lnInclude \
+    -I$(LIB_SRC)/finiteVolume/cfdTools \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/Pstream/mpi \
+    -I$(LIB_SRC)/sampling/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
+    -I$(LIB_SRC)/transportModels/compressible/lnInclude \
+    -I$(LIB_SRC)/TurbulenceModels/compressible/lnInclude \
+    -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include,) \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include/torch/csrc/api/include,) \
     $(PYTHON_INC_DIR)
@@ -45,5 +45,4 @@ EXE_LIBS = \
     $(if $(LIBTORCH_ROOT),-rdynamic,) \
     $(if $(LIBTORCH_ROOT),-lpthread,) \
     $(if $(LIBTORCH_ROOT),$(DF_SRC)/dfChemistryModel/DNNInferencer/build/libDNNInferencer.so,) \
-    $(if $(PYTHON_LIB_DIR),-L$(PYTHON_LIB_DIR),) \
-    $(if $(PYTHON_LIB_DIR),-lpython3.8,)
+    $(if $(PYTHON_LIB_DIR),$(PYTHON_LIB_DIR),)

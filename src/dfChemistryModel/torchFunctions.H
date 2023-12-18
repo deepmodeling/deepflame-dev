@@ -1,5 +1,6 @@
 template <class ThermoType>
 template<class DeltaTType>
+
 void Foam::dfChemistryModel<ThermoType>::getGPUProblems
 (
     const DeltaTType &deltaT,
@@ -18,15 +19,15 @@ void Foam::dfChemistryModel<ThermoType>::getGPUProblems
         scalar rhoi = rho_[cellI];
 
         // if T < 700, set RR=0
-        // if (T_[cellI] < 700)
-        // {
-        //     Qdot_[cellI] = 0;
-        //     for (int i = 0; i < mixture_.nSpecies(); i++)
-        //     {
-        //         RR_[i][cellI] = 0.0;
-        //     }
-        //     continue;
-        // }
+        if (T_[cellI] < 700)
+        {
+            Qdot_[cellI] = 0;
+            for (int i = 0; i < mixture_.nSpecies(); i++)
+            {
+                RR_[i][cellI] = 0.0;
+            }
+            continue;
+        }
 
         // set problems
         GpuProblem problem(mixture_.nSpecies());
@@ -40,46 +41,10 @@ void Foam::dfChemistryModel<ThermoType>::getGPUProblems
         }
         problem.rhoi = rhoi;
 
-        // choose DNN module
-        if (((Qdot_[cellI] < 3e7) && (T_[cellI] < 2000) && ( T_[cellI] >= 700)) || (T_[cellI] < 700))//choose1
-        {
-            // if use CVODE
-            // ode_problem.Y = problem.Y;
-            // ode_problem.Ti = Ti;
-            // ode_problem.pi = pi;
-            // ode_problem.rhoi = rhoi;
-            // ode_problem.deltaT = deltaT[cellI];
-            // ode_problem.cpuTime = cpuTimes_[cellI];
-            // ode_problem.cellid = cellI;
-            // if (!(Pstream::myProcNo() % cores_)) // submaster
-            // {
-            //     ode_problem.local = false;
-            // }
-            // CPUproblemList.append(ode_problem);
-
-            // selectDNN_[cellI]=0;
-            // continue;
-
-            // if use DNN
-            problem.DNNid = 0;
-            GPUproblemList.append(problem);
-            continue;
-        }
-        if(((Qdot_[cellI] >= 3e7) && (T_[cellI] < 2000)&&(T_[cellI] >= 700))||((Qdot_[cellI] > 7e8) && T_[cellI] > 2000)) //choose2
-        {
-            problem.DNNid = 1;
-            GPUproblemList.append(problem);
-
-            selectDNN_[cellI]=1;
-            continue;
-        }
-        if  ((Qdot_[cellI] < 7e8) && (T_[cellI] >= 2000) && (Qdot_[cellI]!=0)) //choose3
-        {
-            problem.DNNid = 2;
-            GPUproblemList.append(problem);
-            selectDNN_[cellI]=2;
-            continue;
-        }
+        problem.DNNid = 0;
+        GPUproblemList.append(problem);
+        selectDNN_[cellI]=0;
+        continue;
 
     }
 
@@ -184,9 +149,9 @@ void Foam::dfChemistryModel<ThermoType>::getDNNinputs
 
     if (gpulog_)
     {
-        std::cout<<"inputsDNN0 = "<<inputsDNN0.size()/10 << "\n";
-        std::cout<<"inputsDNN1 = "<<inputsDNN1.size()/10 << "\n";
-        std::cout<<"inputsDNN2 = "<<inputsDNN2.size()/10 << "\n";
+        std::cout<<"inputsDNN0 = "<<inputsDNN0.size()/(mixture_.nSpecies()+3) << "\n";
+        std::cout<<"inputsDNN1 = "<<inputsDNN1.size()/(mixture_.nSpecies()+3) << "\n";
+        std::cout<<"inputsDNN2 = "<<inputsDNN2.size()/(mixture_.nSpecies()+3) << "\n";
     }
 
     return;
