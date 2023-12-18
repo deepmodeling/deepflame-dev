@@ -153,9 +153,17 @@ int main(int argc, char *argv[])
         while (pimple.loop())
         {
             #include "UEqn.H"
-            #include "YEqn.H"
-            #include "EEqn.H"
-            chemistry->correctThermo();
+
+            if(combModelName!="ESF" && combModelName!="flareFGM" )
+            {
+                #include "YEqn.H"
+                #include "EEqn.H"
+                chemistry->correctThermo();
+            }
+            else
+            {
+                combustion->correct();
+            }
             Info<< "T gas min/max   " << min(T).value() << ", "
                 << max(T).value() << endl;
 

@@ -78,24 +78,6 @@ autoPtr<compressible::turbulenceModel> turbulence
 
 const word turbName(mesh.objectRegistry::lookupObject<IOdictionary>("turbulenceProperties").lookup("simulationType"));
 
-Info<< "Creating reaction model\n" << endl;
-autoPtr<CombustionModel<basicThermo>> combustion
-(
-    CombustionModel<basicThermo>::New(thermo, turbulence())
-);
-Info<< "end Creating reaction model\n" << endl;
-dfChemistryModel<basicThermo>* chemistry = combustion->chemistry();
-PtrList<volScalarField>& Y = chemistry->Y();
-const word inertSpecie(chemistry->lookup("inertSpecie"));
-const label inertIndex(chemistry->species()[inertSpecie]);
-chemistry->setEnergyName("ha");
-chemistry->updateEnergy();
-
-
-chemistry->correctThermo();
-Info<< "At initial time, min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
-
-
 Info<< "Creating field dpdt\n" << endl;
 volScalarField dpdt
 (
@@ -108,6 +90,32 @@ volScalarField dpdt
     mesh,
     dimensionedScalar(p.dimensions()/dimTime, 0)
 );
+
+Info<< "Creating reaction model\n" << endl;
+autoPtr<CombustionModel<basicThermo>> combustion
+(
+    CombustionModel<basicThermo>::New(thermo, turbulence())
+);
+
+const word combModelName(mesh.objectRegistry::lookupObject<IOdictionary>
+("combustionProperties").lookup("combustionModel"));
+Info << "Combustion Model Name is confirmed as "<< combModelName << endl;
+
+
+Info<< "end Creating reaction model\n" << endl;
+dfChemistryModel<basicThermo>* chemistry = combustion->chemistry();
+PtrList<volScalarField>& Y = chemistry->Y();
+const word inertSpecie(chemistry->lookup("inertSpecie"));
+const label inertIndex(chemistry->species()[inertSpecie]);
+chemistry->setEnergyName("ha");
+chemistry->updateEnergy();
+
+if (combModelName != "flareFGM")
+{
+    chemistry->correctThermo();
+    Info<< "At initial time, min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
+}
+
 
 Info<< "Creating field kinetic energy K\n" << endl;
 volScalarField K("K", 0.5*magSqr(U));

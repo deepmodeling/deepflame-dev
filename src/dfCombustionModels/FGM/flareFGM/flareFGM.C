@@ -38,14 +38,23 @@ Foam::combustionModels::flareFGM<ReactionThermo>::flareFGM
 :
     baseFGM<ReactionThermo>(modelType, thermo, turb, combustionProperties),
     tableSolver(
-                 baseFGM<ReactionThermo>::speciesNames_,
-                 baseFGM<ReactionThermo>::scaledPV_,
-                 baseFGM<ReactionThermo>::flameletT_,
-                 baseFGM<ReactionThermo>::Ycmaxall_
+                baseFGM<ReactionThermo>::tablePath_
+                //  baseFGM<ReactionThermo>::speciesNames_,
+                //  baseFGM<ReactionThermo>::scaledPV_,
+                //  baseFGM<ReactionThermo>::flameletT_,
+                //  baseFGM<ReactionThermo>::Ycmaxall_
                )
 {
     //- retrieval data from table
     retrieval();
+
+    Info<< "At flareFGM, min/max(T) = " << min(this->T_).value() << ", " << max(this->T_).value() << endl;    
+
+    if (tableSolver::scaledPV_ != baseFGM<ReactionThermo>::scaledPV_)
+    {
+        Info << "Warning! -- scaledPV in FGM table: " << tableSolver::scaledPV_
+            << "are not equal to that in combustionProperties: " << baseFGM<ReactionThermo>::scaledPV_ << endl;
+    }
 }
 
 
@@ -64,10 +73,15 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::correct()
     //- solve transport equation
     baseFGM<ReactionThermo>::transport();
 
+    if (this->isLES_)
+    {
+        baseFGM<ReactionThermo>::magUPrime();
+    }
+
     //update enthalpy using lookup data
     if(!(this->solveEnthalpy_))
     {
-        this->He_ = this->Z_*(H_fuel-H_ox) + H_ox;
+        this->He_ = this->Z_*(this->H_fuel-this->H_ox) + this->H_ox;
     }
   
     //- retrieval data from table
@@ -91,177 +105,283 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
     volScalarField& mu = const_cast<volScalarField&>(tmu());
     scalarField& muCells = mu.primitiveFieldRef();     
 
+    tmp<volScalarField> tmut = this->turbulence().mut();  
+    volScalarField& mut = const_cast<volScalarField&>(tmut());
+    scalarField& mutCells = mut.primitiveFieldRef();   
 
     //- calculate reacting flow solution
-    const scalar Zl{z_Tb5[0]};  
-    const scalar Zr{z_Tb5[NZL-1]};  
+    // const scalar Zl{this->z_Tb5[0]};  
+    // const scalar Zr{this->z_Tb5[this->NZL-1]};  
+    int ih = 0;
+    scalar Zl, Zr;
 
-    dimensionedScalar TMin("TMin",dimensionSet(0,0,0,1,0,0,0),200.0);    
-    dimensionedScalar TMax("TMax",dimensionSet(0,0,0,1,0,0,0),3000.0);  
+    // dimensionedScalar TMin("TMin",dimensionSet(0,0,0,1,0,0,0),270.0);    
+    // dimensionedScalar TMax("TMax",dimensionSet(0,0,0,1,0,0,0),5000.0);  
+    const double TMin = 270.0;
+    const double TMax = 5000.0;
 
     forAll(this->rho_, celli)  
     {
+        if(this->isLES_)
+        {
+             this->chi_ZCells_[celli] = this->sdrLRXmodel(2.0,mutCells[celli]
+                                   /this->rho_[celli],this->deltaCells_[celli],this->ZvarCells_[celli]); 
+             this->chi_ZcCells_[celli] = this->sdrLRXmodel(2.0,mutCells[celli]
+                                  /this->rho_[celli],this->deltaCells_[celli],this->ZcvarCells_[celli]); 
+        }     
+        else
+        {
+            this->chi_ZCells_[celli] = 1.0*epsilonCells[celli]/kCells[celli] *this->ZvarCells_[celli]; 
 
-        this->chi_ZCells_[celli] = 1.0*epsilonCells[celli]/kCells[celli] *this->ZvarCells_[celli]; 
+            this->chi_ZcCells_[celli] = 1.0*epsilonCells[celli]/kCells[celli] *this->ZcvarCells_[celli];             
+        }
 
-        this->chi_ZcCells_[celli] = 1.0*epsilonCells[celli]/kCells[celli] *this->ZcvarCells_[celli]; 
+
+        double hLoss = ( this->ZCells_[celli]*(this->Hfu-this->Hox) + this->Hox ) - this->HCells_[celli];
+        // hLoss = (hLoss>0.0) ? hLoss : 0.0;
+        hLoss = max(hLoss, this->h_Tb3[0]);
+        hLoss = min(hLoss, this->h_Tb3[this->NH - 1]);
+
+        ih = this->locate_lower(this->NH,this->h_Tb3,hLoss);
+
+        Zl = this->z_Tb5[ih*this->NZL];  
+        Zr = this->z_Tb5[(ih+1)*this->NZL-1];
 
         if(this->ZCells_[celli] >= Zl && this->ZCells_[celli] <= Zr     
         && this->combustion_ && this->cCells_[celli] > this->small) 
         {
 
-            double kc_s = this->lookup1d(NZL,z_Tb5,this->ZCells_[celli],kctau_Tb5);      
-            double tau = this->lookup1d(NZL,z_Tb5,this->ZCells_[celli],tau_Tb5);    
-            double sl = this->lookup1d(NZL,z_Tb5,this->ZCells_[celli],sl_Tb5);     
-            double dl = this->lookup1d(NZL,z_Tb5,this->ZCells_[celli],th_Tb5);   
+            double kc_s = this->lookup2d(this->NH,this->h_Tb3,hLoss,this->NZL,this->z_Tb5,this->ZCells_[celli],this->kctau_Tb5);      
+            double tau = this->lookup2d(this->NH,this->h_Tb3,hLoss,this->NZL,this->z_Tb5,this->ZCells_[celli],this->tau_Tb5);    
+            double sl = this->lookup2d(this->NH,this->h_Tb3,hLoss,this->NZL,this->z_Tb5,this->ZCells_[celli],this->sl_Tb5);     
+            double dl = this->lookup2d(this->NH,this->h_Tb3,hLoss,this->NZL,this->z_Tb5,this->ZCells_[celli],this->th_Tb5);   
 
-            this->chi_cCells_[celli] =
-                this->RANSsdrFLRmodel(this->cvarCells_[celli],epsilonCells[celli],
-                    kCells[celli],muCells[celli]/this->rho_[celli],
-                    sl,dl,tau,kc_s,this->rho_[celli]);  
+            if(this->isLES_)
+            {
+                this->chi_cCells_[celli] = this->sdrFLRmodel(this->cvarCells_[celli],this->magUPrimeCells_[celli],
+                                            this->deltaCells_[celli],sl,dl,tau,kc_s,this->betacCells_[celli]);
+            } 
+            else
+            {
+                this->chi_cCells_[celli] =
+                    this->RANSsdrFLRmodel(this->cvarCells_[celli],epsilonCells[celli],
+                        kCells[celli],muCells[celli]/this->rho_[celli],
+                        sl,dl,tau,kc_s,this->rho_[celli]);  
+            }
 
         }
         else
         {
-            this->chi_cCells_[celli] = 1.0*epsilonCells[celli]/kCells[celli]*this->cvarCells_[celli]; 
+            if(this->isLES_)
+            {
+                this->chi_cCells_[celli] = this->sdrLRXmodel(2.0,mutCells[celli]
+                           /this->rho_[celli],this->deltaCells_[celli],this->cvarCells_[celli]);     
+            }
+            else
+            {
+                this->chi_cCells_[celli] = 1.0*epsilonCells[celli]/kCells[celli]*this->cvarCells_[celli]; 
+            }
         }
 
-    // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-    
-    double gz{cal_gvar(this->ZCells_[celli],this->ZvarCells_[celli])};   
-    double gcz{cal_gcor(this->ZCells_[celli],this->cCells_[celli],this->ZvarCells_[celli],this->cvarCells_[celli],this->ZcvarCells_[celli])},
-            Ycmax{-1.0},cNorm{},gc{};    
+        // if(this->chi_ZCells_[celli] > 1.0e-16 and this->chi_cCells_[celli]> 1.0e-16)
+        // {
+        //     if (this->ZcvarCells_[celli] > 1.0e-16)
+        //     {
+        //         this->chi_ZcCells_[celli] = max(this->chi_ZcCells_[celli], std::sqrt(this->chi_ZCells_[celli] * this->chi_cCells_[celli])); 
+        //     }
+        //     else if (this->ZcvarCells_[celli] < -1.0e-16)
+        //     {
+        //         this->chi_ZcCells_[celli] = min(this->chi_ZcCells_[celli], -std::sqrt(this->chi_ZCells_[celli] * this->chi_cCells_[celli]));
+        //     }
+        // }     
 
-    if(scaledPV_)    
-    {
-        cNorm = this->cCells_[celli];  
-    }
-    else
-    {
-        Ycmax = this->lookup5d(NZ,z_Tb3,this->ZCells_[celli],
-                              NC,c_Tb3,0.0,
-                              NGZ,gz_Tb3,gz,
-                              NGC,gc_Tb3,0.0,
-                              NZC,gzc_Tb3,0.0,
-                              Ycmax_Tb3);    
-        Ycmax = max(this->smaller,Ycmax);    
-        cNorm = this->cCells_[celli]/Ycmax; 
-    }
+        // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+        
+        double gz{this->cal_gvar(this->ZCells_[celli],this->ZvarCells_[celli])};   
+        double gcz{this->cal_gcor(this->ZCells_[celli],this->cCells_[celli],this->ZvarCells_[celli],this->cvarCells_[celli],this->ZcvarCells_[celli])},
+                Ycmax{-1.0},cNorm{},gc{};    
 
-    gc = cal_gvar(this->cCells_[celli],this->cvarCells_[celli],Ycmax);  
+        if(tableSolver::scaledPV_)    
+        {
+            cNorm = this->cCells_[celli];  
+        }
+        else
+        {
+            Ycmax = this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                this->NZ,this->z_Tb3,this->ZCells_[celli],
+                                this->NC,this->c_Tb3,0.0,
+                                this->NGZ,this->gz_Tb3,gz,
+                                this->NGC,this->gc_Tb3,0.0,
+                                this->NZC,this->gzc_Tb3,0.0,
+                                this->tableValues_[this->NS-1]);    
+            Ycmax = max(this->smaller,Ycmax);    
+            cNorm = this->cCells_[celli]/Ycmax; 
+        }
 
-    this->WtCells_[celli] = lookup5d(NZ,z_Tb3,this->ZCells_[celli],    
-                                   NC,c_Tb3,cNorm,
-                                   NGZ,gz_Tb3,gz,
-                                   NGC,gc_Tb3,gc,
-                                   NZC,gzc_Tb3,gcz,
-                                   mwt_Tb3);      
+        gc = this->cal_gvar(this->cCells_[celli],this->cvarCells_[celli],Ycmax);  
 
-    muCells[celli] = lookup5d(NZ,z_Tb3,this->ZCells_[celli],
-                                   NC,c_Tb3,cNorm,
-                                   NGZ,gz_Tb3,gz,
-                                   NGC,gc_Tb3,gc,
-                                   NZC,gzc_Tb3,gcz,
-                                   nu_Tb3)*this->rho_[celli];   
+        if(this->ZCells_[celli] >= Zl && this->ZCells_[celli] <= Zr
+        && this->combustion_ && this->cCells_[celli] > this->small)  
+        {
+            if (this->isLES_)
+            {
+                this->omega_cCells_[celli] =
+                    this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                this->NZ,this->z_Tb3,this->ZCells_[celli],
+                                this->NC,this->c_Tb3,cNorm,
+                                this->NGZ,this->gz_Tb3,gz,
+                                this->NGC,this->gc_Tb3,gc,
+                                this->NZC,this->gzc_Tb3,gcz,
+                                this->tableValues_[0])
+                    + (
+                        tableSolver::scaledPV_
+                        ? (this->chi_ZCells_[celli] + this->chi_ZfltdCells_[celli])*this->cCells_[celli]
+                            *this->lookup3d(this->NH,this->h_Tb3,hLoss,this->NZ,this->z_Tb3,this->ZCells_[celli],
+                                        this->NGZ,this->gz_Tb3,gz,this->d2Yeq_Tb2)
+                            + 2*this->chi_ZcCells_[celli]*this->lookup3d(this->NH,this->h_Tb3,hLoss,
+                                                    this->NZ,this->z_Tb3,this->ZCells_[celli],
+                                                    this->NGZ,this->gz_Tb3,gz,this->d1Yeq_Tb2)
+                        : 0.0
+                    );   
+            }
+            else
+            {
+                this->omega_cCells_[celli] =
+                    this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                this->NZ,this->z_Tb3,this->ZCells_[celli],
+                                this->NC,this->c_Tb3,cNorm,
+                                this->NGZ,this->gz_Tb3,gz,
+                                this->NGC,this->gc_Tb3,gc,
+                                this->NZC,this->gzc_Tb3,gcz,
+                                this->tableValues_[0])
+                    + (
+                        tableSolver::scaledPV_
+                        ? (  this->chi_ZCells_[celli]*this->cCells_[celli]
+                            *this->lookup3d(this->NH,this->h_Tb3,hLoss,this->NZ,this->z_Tb3,this->ZCells_[celli],
+                                        this->NGZ,this->gz_Tb3,gz,this->d2Yeq_Tb2)
+                            + 2*this->chi_ZcCells_[celli]*this->lookup3d(this->NH,this->h_Tb3,hLoss,
+                                                        this->NZ,this->z_Tb3,this->ZCells_[celli],
+                                                        this->NGZ,this->gz_Tb3,gz,this->d1Yeq_Tb2)  )
+                        : 0.0
+                    );   
+            }
 
-   // -------------------- Yis begin ------------------------------
-    if(NY > 0)
-    {
-        this->YH2OCells_[celli] = lookup5d(NZ,z_Tb3,this->ZCells_[celli],
-                                        NC,c_Tb3,cNorm,
-                                        NGZ,gz_Tb3,gz,
-                                        NGC,gc_Tb3,gc,
-                                        NZC,gzc_Tb3,gcz,
-                                        Yi01_Tb3);   
-        this->YCOCells_[celli] = lookup5d(NZ,z_Tb3,this->ZCells_[celli],
-                                       NC,c_Tb3,cNorm,
-                                       NGZ,gz_Tb3,gz,
-                                       NGC,gc_Tb3,gc,
-                                       NZC,gzc_Tb3,gcz,
-                                       Yi02_Tb3);   
-        this->YCO2Cells_[celli] = lookup5d(NZ,z_Tb3,this->ZCells_[celli],
-                                       NC,c_Tb3,cNorm,
-                                       NGZ,gz_Tb3,gz,
-                                       NGC,gc_Tb3,gc,
-                                       NZC,gzc_Tb3,gcz,
-                                       Yi03_Tb3);   
-    }
 
-    // -------------------- Yis end ------------------------------
+            this->cOmega_cCells_[celli] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                                this->NZ,this->z_Tb3,this->ZCells_[celli],
+                                                this->NC,this->c_Tb3,cNorm,
+                                                this->NGZ,this->gz_Tb3,gz,
+                                                this->NGC,this->gc_Tb3,gc,
+                                                this->NZC,this->gzc_Tb3,gcz,
+                                                this->tableValues_[1]);    
 
-    if(this->ZCells_[celli] >= Zl && this->ZCells_[celli] <= Zr
-       && this->combustion_ && this->cCells_[celli] > this->small)  
-    {
-        this->omega_cCells_[celli] =
-            lookup5d(NZ,z_Tb3,this->ZCells_[celli],
-                          NC,c_Tb3,cNorm,
-                          NGZ,gz_Tb3,gz,
-                          NGC,gc_Tb3,gc,
-                          NZC,gzc_Tb3,gcz,
-                          omgc_Tb3)
-            + (
-                  scaledPV_
-                  ? this->chi_ZCells_[celli]*this->cCells_[celli]
-                    *lookup2d(NZ,z_Tb3,this->ZCells_[celli],
-                                   NGZ,gz_Tb3,gz,d2Yeq_Tb2)
-                  : 0.0
-              );   
+            this->ZOmega_cCells_[celli] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                                this->NZ,this->z_Tb3,this->ZCells_[celli],
+                                                this->NC,this->c_Tb3,cNorm,
+                                                this->NGZ,this->gz_Tb3,gz,
+                                                this->NGC,this->gc_Tb3,gc,
+                                                this->NZC,this->gzc_Tb3,gcz,
+                                                this->tableValues_[2]);    
 
-         this->cOmega_cCells_[celli] = lookup5d(NZ,z_Tb3,this->ZCells_[celli],
-                                             NC,c_Tb3,cNorm,
-                                             NGZ,gz_Tb3,gz,
-                                             NGC,gc_Tb3,gc,
-                                             NZC,gzc_Tb3,gcz,
-                                             cOc_Tb3);    
+        }
+        else   
+        {
+            this->omega_cCells_[celli] = 0.0;
+            this->cOmega_cCells_[celli] = 0.0;  
+            this->ZOmega_cCells_[celli] = 0.0; 
+        }
+        this->omega_cCells_[celli] = this->omega_cCells_[celli]*this->rho_[celli];   
+        this->cOmega_cCells_[celli] = this->cOmega_cCells_[celli]*this->rho_[celli];
+        this->ZOmega_cCells_[celli] = this->ZOmega_cCells_[celli]*this->rho_[celli];
 
-         this->ZOmega_cCells_[celli] = lookup5d(NZ,z_Tb3,this->ZCells_[celli],
-                                             NC,c_Tb3,cNorm,
-                                             NGZ,gz_Tb3,gz,
-                                             NGC,gc_Tb3,gc,
-                                             NZC,gzc_Tb3,gcz,
-                                             ZOc_Tb3);    
+        this->He_s_[celli] = hLoss;
+        this->c_s_[celli] = cNorm;
+        this->Zvar_s_[celli] = gz;
+        this->cvar_s_[celli] = gc;
+        this->Zcvar_s_[celli] = gcz;
 
-    }
-    else   
-    {
-        this->omega_cCells_[celli] = 0.0;
-        this->cOmega_cCells_[celli] = 0.0;  
-        this->ZOmega_cCells_[celli] = 0.0; 
-    }
+        this->WtCells_[celli] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                    this->NZ,this->z_Tb3,this->ZCells_[celli],    
+                                    this->NC,this->c_Tb3,cNorm,
+                                    this->NGZ,this->gz_Tb3,gz,
+                                    this->NGC,this->gc_Tb3,gc,
+                                    this->NZC,this->gzc_Tb3,gcz,
+                                    this->tableValues_[4]);      
 
-    if(flameletT_)   
-    {
-        this->TCells_[celli] = lookup5d(NZ,z_Tb3,this->ZCells_[celli],
-                                      NC,c_Tb3,cNorm,
-                                      NGZ,gz_Tb3,gz,
-                                      NGC,gc_Tb3,gc,
-                                      NZC,gzc_Tb3,gcz,
-                                      Tf_Tb3);   
-    }
-    else
-    {
-        this->CpCells_[celli] = lookup5d(NZ,z_Tb3,this->ZCells_[celli],
-                                       NC,c_Tb3,cNorm,
-                                       NGZ,gz_Tb3,gz,
-                                       NGC,gc_Tb3,gc,
-                                       NZC,gzc_Tb3,gcz,
-                                       cp_Tb3);   
+        muCells[celli] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                    this->NZ,this->z_Tb3,this->ZCells_[celli],
+                                    this->NC,this->c_Tb3,cNorm,
+                                    this->NGZ,this->gz_Tb3,gz,
+                                    this->NGC,this->gc_Tb3,gc,
+                                    this->NZC,this->gzc_Tb3,gcz,
+                                    this->tableValues_[7])*this->rho_[celli];   
 
-         this->HfCells_[celli] = lookup5d(NZ,z_Tb3,this->ZCells_[celli],
-                                       NC,c_Tb3,cNorm,
-                                       NGZ,gz_Tb3,gz,
-                                       NGC,gc_Tb3,gc,
-                                       NZC,gzc_Tb3,gcz,
-                                       hiyi_Tb3);   
+        // // -------------------- Yis begin ------------------------------
+        for (int yi=0; yi<this->NY; yi++)
+        {
+            word specieName2Update = this->speciesNames_table_[yi];
+            const label& specieLabel2Update = this->chemistryPtr_->species()[specieName2Update];
+            // this->Y_[specieLabel2Update].primitiveFieldRef()[celli] = 0.1;
+            this->Y_[specieLabel2Update].primitiveFieldRef()[celli] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                        this->NZ,this->z_Tb3,this->ZCells_[celli],
+                                        this->NC,this->c_Tb3,cNorm,
+                                        this->NGZ,this->gz_Tb3,gz,
+                                        this->NGC,this->gc_Tb3,gc,
+                                        this->NZC,this->gzc_Tb3,gcz,
+                                        this->tableValues_[this->NS+yi]);  
+        }
 
-        this->TCells_[celli] = (this->HCells_[celli]-this->HfCells_[celli])/this->CpCells_[celli]
-                        + this->T0;   
-    }
+        // -------------------- Yis end ------------------------------
 
-    this->omega_cCells_[celli] = this->omega_cCells_[celli]*this->rho_[celli];   
-    this->cOmega_cCells_[celli] = this->cOmega_cCells_[celli]*this->rho_[celli];
-    this->ZOmega_cCells_[celli] = this->ZOmega_cCells_[celli]*this->rho_[celli];
+        if (this->combustion_)
+        {
+            for (int yi=0; yi<this->NYomega; yi++)
+            {
+                this->omega_Yis_[yi][celli] = this->rho_[celli] * 
+                            this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                            this->NZ,this->z_Tb3,this->ZCells_[celli],
+                                            this->NC,this->c_Tb3,cNorm,
+                                            this->NGZ,this->gz_Tb3,gz,
+                                            this->NGC,this->gc_Tb3,gc,
+                                            this->NZC,this->gzc_Tb3,gcz,
+                                            this->tableValues_[NS-1-this->NYomega+yi]);
+            }
+        }
 
+        if(baseFGM<ReactionThermo>::flameletT_)   
+        {
+            this->TCells_[celli] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                        this->NZ,this->z_Tb3,this->ZCells_[celli],
+                                        this->NC,this->c_Tb3,cNorm,
+                                        this->NGZ,this->gz_Tb3,gz,
+                                        this->NGC,this->gc_Tb3,gc,
+                                        this->NZC,this->gzc_Tb3,gcz,
+                                        this->tableValues_[6]);   
+        }
+        else
+        {
+            this->CpCells_[celli] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                        this->NZ,this->z_Tb3,this->ZCells_[celli],
+                                        this->NC,this->c_Tb3,cNorm,
+                                        this->NGZ,this->gz_Tb3,gz,
+                                        this->NGC,this->gc_Tb3,gc,
+                                        this->NZC,this->gzc_Tb3,gcz,
+                                        this->tableValues_[3]);   
+
+            this->HfCells_[celli] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                        this->NZ,this->z_Tb3,this->ZCells_[celli],
+                                        this->NC,this->c_Tb3,cNorm,
+                                        this->NGZ,this->gz_Tb3,gz,
+                                        this->NGC,this->gc_Tb3,gc,
+                                        this->NZC,this->gzc_Tb3,gcz,
+                                        this->tableValues_[5]);   
+
+            this->TCells_[celli] = (this->HCells_[celli]-this->HfCells_[celli])/this->CpCells_[celli]
+                            + this->T0;   
+        }
+
+        this->TCells_[celli] = max(this->TCells_[celli], TMin);
+        this->TCells_[celli] = min(this->TCells_[celli], TMax);
     }
 
 
@@ -290,104 +410,184 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
         tmp<scalarField> tmuw = this->turbulence().mu(patchi);
         scalarField& pmu = const_cast<scalarField&>(tmuw());    
 
+        const tmp<scalarField> tmutw = this->turbulence().mut(patchi);      
+        const scalarField& pmut = tmutw();  
+
+        fvPatchScalarField& pmagUPrime = this->magUPrime_.boundaryFieldRef()[patchi];    
+        fvPatchScalarField& pchi_Zfltd = this->chi_Zfltd_.boundaryFieldRef()[patchi];    
+
         fvPatchScalarField& pk = k.boundaryFieldRef()[patchi];
         fvPatchScalarField& pepsilon = epsilon.boundaryFieldRef()[patchi];
 
 
         forAll(prho_, facei)   
         {
+            label cellID = this->mesh().boundary()[patchi].faceCells()[facei];   //与facei紧邻网格的编号
 
-            pchi_Z[facei] = 1.0*pepsilon[facei]/pk[facei] *pZvar[facei]; 
+            double hLoss = ( pZ[facei]*(this->Hfu-this->Hox) + this->Hox ) - pH[facei];
+            // hLoss = (hLoss>0.0) ? hLoss : 0.0;
+            hLoss = max(hLoss, this->h_Tb3[0]);
+            hLoss = min(hLoss, this->h_Tb3[this->NH - 1]);
 
-            pchi_Zc[facei]= 1.0*pepsilon[facei]/pk[facei] *pZcvar[facei]; 
+            ih = this->locate_lower(this->NH,this->h_Tb3,hLoss);
+
+            Zl = this->z_Tb5[ih*this->NZL];  
+            Zr = this->z_Tb5[(ih+1)*this->NZL-1];
+
+            if(this->isLES_)
+            {
+
+                pchi_Z[facei] = sdrLRXmodel(2.0,pmut[facei]
+                    /this->rho_[facei],this->deltaCells_[cellID],pZvar[facei]); //求混合物分数z的标量耗散率
+                pchi_Zc[facei]= sdrLRXmodel(2.0,pmut[facei]
+                    /this->rho_[facei],this->deltaCells_[cellID],pZcvar[facei]); //求Z、c协方差的标量耗散率
+            }
+            else
+            {
+                pchi_Z[facei] = 1.0*pepsilon[facei]/pk[facei] *pZvar[facei]; 
+
+                pchi_Zc[facei]= 1.0*pepsilon[facei]/pk[facei] *pZcvar[facei]; 
+            }
+
 
             if(pZ[facei] >= Zl && pZ[facei] <= Zr
             && this->combustion_ && pc[facei] > this->small) 
             {
 
-                double kc_s = lookup1d(NZL,z_Tb5,pZ[facei],kctau_Tb5);     
-                double tau = lookup1d(NZL,z_Tb5,pZ[facei],tau_Tb5);    
-                double sl = lookup1d(NZL,z_Tb5,pZ[facei],sl_Tb5);      
-                double dl = lookup1d(NZL,z_Tb5,pZ[facei],th_Tb5);      
+                double kc_s = this->lookup2d(this->NH,this->h_Tb3,hLoss,this->NZL,this->z_Tb5,pZ[facei],this->kctau_Tb5);     
+                double tau = this->lookup2d(this->NH,this->h_Tb3,hLoss,this->NZL,this->z_Tb5,pZ[facei],this->tau_Tb5);    
+                double sl = this->lookup2d(this->NH,this->h_Tb3,hLoss,this->NZL,this->z_Tb5,pZ[facei],this->sl_Tb5);      
+                double dl = this->lookup2d(this->NH,this->h_Tb3,hLoss,this->NZL,this->z_Tb5,pZ[facei],this->th_Tb5);      
 
-                pchi_c[facei] =
-                    RANSsdrFLRmodel(pcvar[facei],pepsilon[facei],
-                        pk[facei],pmu[facei]/prho_[facei],
-                        sl,dl,tau,kc_s,prho_[facei]);
+                if(this->isLES_)
+                {
+                    pchi_c[facei] =   sdrFLRmodel(pcvar[facei],pmagUPrime[facei],
+                                      this->deltaCells_[cellID],sl,dl,tau,kc_s,this->betacCells_[cellID]);   
+                }
+                else
+                {
+                    pchi_c[facei] =
+                        this->RANSsdrFLRmodel(pcvar[facei],pepsilon[facei],
+                            pk[facei],pmu[facei]/prho_[facei],
+                            sl,dl,tau,kc_s,prho_[facei]);
+                }
             }
             else
             {      
-                pchi_c[facei] = 1.0*pepsilon[facei]/pk[facei] *pcvar[facei]; 
+                if(this->isLES_)
+                {
+                    pchi_c[facei] = sdrLRXmodel(2.0,pmut[facei]
+                        /this->rho_[facei],this->deltaCells_[cellID],pcvar[facei]);                    
+                }
+                else
+                {
+                    pchi_c[facei] = 1.0*pepsilon[facei]/(pk[facei]+SMALL)*pcvar[facei];    
+                }
 
             }
 
+            // if(pchi_Z[facei] > 1.0e-16 and pchi_c[facei]> 1.0e-16)
+            // {
+            //     if (pZcvar[facei] > 1.0e-16)
+            //     {
+            //         pchi_Zc[facei] = max(pchi_Zc[facei], std::sqrt(pchi_Z[facei] * pchi_c[facei])); 
+            //     }
+            //     else if (pZcvar[facei] < -1.0e-16)
+            //     {
+            //         pchi_Zc[facei] = min(pchi_Zc[facei], -std::sqrt(pchi_Z[facei] * pchi_c[facei])); 
+            //     }
+                
+            // }     
+
+
          // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
-            double gz{cal_gvar(pZ[facei],pZvar[facei])};  
-            double gcz{cal_gcor(pZ[facei],pc[facei],pZvar[facei],pcvar[facei],pZcvar[facei])},
+            double gz{this->cal_gvar(pZ[facei],pZvar[facei])};  
+            double gcz{this->cal_gcor(pZ[facei],pc[facei],pZvar[facei],pcvar[facei],pZcvar[facei])},
                     Ycmax{-1.0},cNorm{},gc{};     
 
-            if(scaledPV_)
+            if(tableSolver::scaledPV_)
             {
                 cNorm = pc[facei];   
             }
             else
             {
-                Ycmax = lookup5d(NZ,z_Tb3,pZ[facei],
-                                        NC,c_Tb3,0.0,
-                                        NGZ,gz_Tb3,gz,
-                                        NGC,gc_Tb3,0.0,
-                                        NZC,gzc_Tb3,0.0,
-                                        Ycmax_Tb3);    
+                Ycmax = this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                        this->NZ,this->z_Tb3,pZ[facei],
+                                        this->NC,this->c_Tb3,0.0,
+                                        this->NGZ,this->gz_Tb3,gz,
+                                        this->NGC,this->gc_Tb3,0.0,
+                                        this->NZC,this->gzc_Tb3,0.0,
+                                        this->tableValues_[this->NS-1]);    
                 Ycmax = max(this->smaller,Ycmax);  
                 cNorm = pc[facei]/Ycmax;   
             }
 
-            gc = cal_gvar(pc[facei],pcvar[facei],Ycmax);   
+            gc = this->cal_gvar(pc[facei],pcvar[facei],Ycmax);   
 
-            pWt[facei] = lookup5d(NZ,z_Tb3,pZ[facei],
-                                        NC,c_Tb3,cNorm,
-                                        NGZ,gz_Tb3,gz,
-                                        NGC,gc_Tb3,gc,
-                                        NZC,gzc_Tb3,gcz,
-                                        mwt_Tb3);    
-
-            pmu[facei] = lookup5d(NZ,z_Tb3,pZ[facei],
-                                        NC,c_Tb3,cNorm,
-                                        NGZ,gz_Tb3,gz,
-                                        NGC,gc_Tb3,gc,
-                                        NZC,gzc_Tb3,gcz,
-                                        nu_Tb3)*prho_[facei];  
+            this->He_s_.boundaryFieldRef()[patchi][facei] = hLoss;
+            this->c_s_.boundaryFieldRef()[patchi][facei] = cNorm;
+            this->Zvar_s_.boundaryFieldRef()[patchi][facei] = gz;
+            this->cvar_s_.boundaryFieldRef()[patchi][facei] = gc;
+            this->Zcvar_s_.boundaryFieldRef()[patchi][facei] = gcz;
 
             if(pZ[facei] >= Zl && pZ[facei] <= Zr
                 && this->combustion_ && pc[facei] > this->small) 
             {
-                pomega_c[facei] =
-                        lookup5d(NZ,z_Tb3,pZ[facei],
-                                    NC,c_Tb3,cNorm,
-                                    NGZ,gz_Tb3,gz,
-                                    NGC,gc_Tb3,gc,
-                                    NZC,gzc_Tb3,gcz,
-                                    omgc_Tb3)   
-                    + (
-                            scaledPV_
-                            ? pchi_Z[facei]*pc[facei]
-                            *lookup2d(NZ,z_Tb3,pZ[facei],
-                                            NGZ,gz_Tb3,gz,d2Yeq_Tb2)
-                            : 0.0
-                        );  
+                if (this->isLES_)
+                {
+                    pomega_c[facei] =
+                            this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                        this->NZ,this->z_Tb3,pZ[facei],
+                                        this->NC,this->c_Tb3,cNorm,
+                                        this->NGZ,this->gz_Tb3,gz,
+                                        this->NGC,this->gc_Tb3,gc,
+                                        this->NZC,this->gzc_Tb3,gcz,
+                                        this->tableValues_[0])    
+                        + (
+                                tableSolver::scaledPV_
+                                ? (pchi_Z[facei]+ pchi_Zfltd[facei])*pc[facei]
+                                    *this->lookup3d(this->NH,this->h_Tb3,hLoss,this->NZ,this->z_Tb3,pZ[facei],
+                                                    this->NGZ,this->gz_Tb3,gz,this->d2Yeq_Tb2)
+                                    + 2.0*pchi_Zc[facei]*this->lookup3d(this->NH,this->h_Tb3,hLoss,this->NZ,this->z_Tb3,pZ[facei],
+                                    this->NGZ,this->gz_Tb3,gz,this->d1Yeq_Tb2)
+                                : 0.0
+                            );  
+                }
+                else
+                {
+                    pomega_c[facei] =
+                            this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                        this->NZ,this->z_Tb3,pZ[facei],
+                                        this->NC,this->c_Tb3,cNorm,
+                                        this->NGZ,this->gz_Tb3,gz,
+                                        this->NGC,this->gc_Tb3,gc,
+                                        this->NZC,this->gzc_Tb3,gcz,
+                                        this->tableValues_[0])   
+                        + (
+                                tableSolver::scaledPV_
+                                ? ( pchi_Z[facei]*pc[facei]
+                                *this->lookup3d(this->NH,this->h_Tb3,hLoss,this->NZ,this->z_Tb3,pZ[facei],
+                                                this->NGZ,this->gz_Tb3,gz,this->d2Yeq_Tb2)
+                                + 2.0*pchi_Zc[facei]*this->lookup3d(this->NH,this->h_Tb3,hLoss,this->NZ,this->z_Tb3,pZ[facei],
+                                    this->NGZ,this->gz_Tb3,gz,this->d1Yeq_Tb2)  )
+                                : 0.0
+                            );  
+                }
 
-                pcOmega_c[facei] = lookup5d(NZ,z_Tb3,pZ[facei],
-                                                    NC,c_Tb3,cNorm,
-                                                    NGZ,gz_Tb3,gz,
-                                                    NGC,gc_Tb3,gc,
-                                                    NZC,gzc_Tb3,gcz,cOc_Tb3);
+                pcOmega_c[facei] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                                    this->NZ,this->z_Tb3,pZ[facei],
+                                                    this->NC,this->c_Tb3,cNorm,
+                                                    this->NGZ,this->gz_Tb3,gz,
+                                                    this->NGC,this->gc_Tb3,gc,
+                                                    this->NZC,this->gzc_Tb3,gcz,this->tableValues_[1]);
 
-                pZOmega_c[facei] = lookup5d(NZ,z_Tb3,pZ[facei],
-                                            NC,c_Tb3,cNorm,
-                                            NGZ,gz_Tb3,gz,
-                                            NGC,gc_Tb3,gc,
-                                            NZC,gzc_Tb3,gcz,ZOc_Tb3);
+                pZOmega_c[facei] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                            this->NZ,this->z_Tb3,pZ[facei],
+                                            this->NC,this->c_Tb3,cNorm,
+                                            this->NGZ,this->gz_Tb3,gz,
+                                            this->NGC,this->gc_Tb3,gc,
+                                            this->NZC,this->gzc_Tb3,gcz,this->tableValues_[2]);
             }    
             else
             {
@@ -395,46 +595,125 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
                 pcOmega_c[facei] = 0.0;
                 pZOmega_c[facei] = 0.0;
             }
+            pomega_c[facei] = pomega_c[facei]*prho_[facei];    
+            pcOmega_c[facei] = pcOmega_c[facei]*prho_[facei];
+            pZOmega_c[facei] = pZOmega_c[facei]*prho_[facei];
 
-            if(flameletT_)  
+            pWt[facei] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                        this->NZ,this->z_Tb3,pZ[facei],
+                                        this->NC,this->c_Tb3,cNorm,
+                                        this->NGZ,this->gz_Tb3,gz,
+                                        this->NGC,this->gc_Tb3,gc,
+                                        this->NZC,this->gzc_Tb3,gcz,
+                                        this->tableValues_[4]);    
+
+            pmu[facei] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                        this->NZ,this->z_Tb3,pZ[facei],
+                                        this->NC,this->c_Tb3,cNorm,
+                                        this->NGZ,this->gz_Tb3,gz,
+                                        this->NGC,this->gc_Tb3,gc,
+                                        this->NZC,this->gzc_Tb3,gcz,
+                                        this->tableValues_[7])*prho_[facei];  
+
+            if(this->combustion_)
             {
-                pT[facei] = lookup5d(NZ,z_Tb3,pZ[facei],
-                                        NC,c_Tb3,cNorm,
-                                        NGZ,gz_Tb3,gz,
-                                        NGC,gc_Tb3,gc,
-                                        NZC,gzc_Tb3,gcz,
-                                        Tf_Tb3);   
+                for (int yi=0; yi<this->NYomega; yi++)
+                {
+                    this->omega_Yis_[yi].boundaryFieldRef()[patchi][facei] = prho_[facei] * 
+                            this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                            this->NZ,this->z_Tb3,pZ[facei],
+                                            this->NC,this->c_Tb3,cNorm,
+                                            this->NGZ,this->gz_Tb3,gz,
+                                            this->NGC,this->gc_Tb3,gc,
+                                            this->NZC,this->gzc_Tb3,gcz,
+                                            this->tableValues_[NS-1+yi-this->NYomega]);
+                }
+            }
+
+            if(baseFGM<ReactionThermo>::flameletT_)  
+            {
+                pT[facei] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                        this->NZ,this->z_Tb3,pZ[facei],
+                                        this->NC,this->c_Tb3,cNorm,
+                                        this->NGZ,this->gz_Tb3,gz,
+                                        this->NGC,this->gc_Tb3,gc,
+                                        this->NZC,this->gzc_Tb3,gcz,
+                                        this->tableValues_[6]);   
             }
             else
             {
-                pCp[facei] = lookup5d(NZ,z_Tb3,pZ[facei],
-                                        NC,c_Tb3,cNorm,
-                                        NGZ,gz_Tb3,gz,
-                                        NGC,gc_Tb3,gc,
-                                        NZC,gzc_Tb3,gcz,
-                                        cp_Tb3);   
+                pCp[facei] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                        this->NZ,this->z_Tb3,pZ[facei],
+                                        this->NC,this->c_Tb3,cNorm,
+                                        this->NGZ,this->gz_Tb3,gz,
+                                        this->NGC,this->gc_Tb3,gc,
+                                        this->NZC,this->gzc_Tb3,gcz,
+                                        this->tableValues_[3]);   
 
-                pHf[facei] = lookup5d(NZ,z_Tb3,pZ[facei],
-                                        NC,c_Tb3,cNorm,
-                                        NGZ,gz_Tb3,gz,
-                                        NGC,gc_Tb3,gc,
-                                        NZC,gzc_Tb3,gcz,
-                                        hiyi_Tb3);  
+                pHf[facei] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                        this->NZ,this->z_Tb3,pZ[facei],
+                                        this->NC,this->c_Tb3,cNorm,
+                                        this->NGZ,this->gz_Tb3,gz,
+                                        this->NGC,this->gc_Tb3,gc,
+                                        this->NZC,this->gzc_Tb3,gcz,
+                                        this->tableValues_[5]);  
 
                 pT[facei] = (pH[facei]-pHf[facei])/pCp[facei]
                             + this->T0;  
             }
 
-            pomega_c[facei] = pomega_c[facei]*prho_[facei];    
-            pcOmega_c[facei] = pcOmega_c[facei]*prho_[facei];
-            pZOmega_c[facei] = pZOmega_c[facei]*prho_[facei];
+            pT[facei] = max(pT[facei], TMin);
+            pT[facei] = min(pT[facei], TMax);
 
+
+            // // -------------------- Yis begin ------------------------------
+
+            for (int yi=0; yi<this->NY; yi++)
+            {
+                word specieName2Update = this->speciesNames_table_[yi];
+                const label& specieLabel2Update = this->chemistryPtr_->species()[specieName2Update];
+                // this->Y_[specieLabel2Update].primitiveFieldRef()[celli] = 0.1;
+                this->Y_[specieLabel2Update].boundaryFieldRef()[patchi][facei]  = this->lookup6d(this->NH,this->h_Tb3,hLoss,
+                                            this->NZ,this->z_Tb3,pZ[facei],
+                                            this->NC,this->c_Tb3,cNorm,
+                                            this->NGZ,this->gz_Tb3,gz,
+                                            this->NGC,this->gc_Tb3,gc,
+                                            this->NZC,this->gzc_Tb3,gcz,
+                                            this->tableValues_[this->NS+yi]);  
+            }
+
+            // -------------------- Yis end ------------------------------
         } 
-
     }
 
-    this->T_.max(TMin);  
-    this->T_.min(TMax);  
+    // this->T_.max(TMin);  
+    // this->T_.min(TMax);  
+
+    double R_uniGas_ = 8.314e3;
+    double p_operateDim_ = this->coeffs().lookupOrDefault("p_operateDim", this->incompPref_);
+
+    forAll(this->rho_.boundaryFieldRef(), patchi)   
+    {
+        fvPatchScalarField& ppsi_ = this->psi_.boundaryFieldRef()[patchi];
+        fvPatchScalarField& prho_ = this->rho_.boundaryFieldRef()[patchi];
+        fvPatchScalarField& pWt = this->Wt_.boundaryFieldRef()[patchi];
+        fvPatchScalarField& pT = this->T_.boundaryFieldRef()[patchi];
+        fvPatchScalarField pp_ = this->p_.boundaryField()[patchi];
+
+        forAll(prho_, facei)   
+        {
+            ppsi_[facei] = pWt[facei] / (R_uniGas_*pT[facei]);
+
+            if(this->incompPref_ > 0.0) 
+            {  
+                prho_[facei] = p_operateDim_*ppsi_[facei]; 
+            }
+            else 
+            {
+                prho_[facei] = pp_[facei]*ppsi_[facei];
+            }
+        }
+    }
 
     dimensionedScalar R_uniGas("R_uniGas",dimensionSet(1,2,-2,-1,-1,0,0),8.314e3);
     this->psi_ = this->Wt_/(R_uniGas*this->T_);

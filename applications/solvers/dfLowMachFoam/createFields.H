@@ -93,8 +93,11 @@ chemistry->setEnergyName("ha");
 chemistry->updateEnergy();
 
 
-chemistry->correctThermo();
-Info<< "At initial time, min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
+if (combModelName != "flareFGM")
+{
+    chemistry->correctThermo();
+    Info<< "At initial time, min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
+}
 
 //for dpdt
 

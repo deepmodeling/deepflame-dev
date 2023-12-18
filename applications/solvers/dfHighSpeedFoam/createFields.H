@@ -186,8 +186,15 @@ volScalarField rhoE
     rho*(ea + 0.5*magSqr(U))
 );
 
-chemistry->correctThermo();
-Info<< "At initial time, min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
+const word combModelName(mesh.objectRegistry::lookupObject<IOdictionary>("combustionProperties").lookup("combustionModel"));
+Info << "Combustion Model Name is confirmed as "<< combModelName << endl;
+
+
+if (combModelName != "flareFGM")
+{
+    chemistry->correctThermo();
+    Info<< "At initial time, min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
+}
 
 forAll(Y, i)
 {

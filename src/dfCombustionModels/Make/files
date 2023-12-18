@@ -1,6 +1,8 @@
 combustionModel/combustionModel.C
 CombustionModel/CombustionModel/CombustionModels.C
 
+FGM/FGMLiquidEvaporationBoil/FGMLiquidEvaporationBoils.C
+
 /*diffusion/diffusions.C*/
 /*infinitelyFastChemistry/infinitelyFastChemistrys.C*/
 
@@ -10,9 +12,11 @@ EDC/EDCs.C
 FGM/flameletTableSolver/tableSolver.C
 FGM/baseFGM/baseFGMs.C
 FGM/flareFGM/flareFGMs.C
+
 #if defined USE_PYTORCH
 FGM/DeePFGM/DeePFGMs.C
 #endif
+
 laminar/laminars.C
 
 noCombustion/noCombustions.C

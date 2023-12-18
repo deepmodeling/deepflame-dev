@@ -11,8 +11,20 @@ EXE_INC = -std=c++17 \
     -I$(LIB_SRC)/TurbulenceModels/compressible/lnInclude \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/lagrangian/basic/lnInclude \
+    -I$(DF_SRC)/lagrangian/intermediate/lnInclude \
+    -I$(LIB_SRC)/lagrangian/intermediate/lnInclude \
+    -I$(DF_SRC)/lagrangian/spray/lnInclude \
+    -I$(LIB_SRC)/lagrangian/spray/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
+    -I$(DF_SRC)/thermophysicalModels/thermophysicalProperties/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/thermophysicalProperties/lnInclude \
+    -I$(DF_SRC)/thermophysicalModels/SLGThermo/lnInclude \
+    -I$(LIB_SRC)/regionModels/regionModel/lnInclude \
+    -I$(LIB_SRC)/regionModels/surfaceFilmModels/lnInclude \
     -I$(DF_SRC)/dfCanteraMixture/lnInclude \
     -I$(DF_SRC)/dfChemistryModel/lnInclude \
+    -I$(LIB_SRC)/functionObjects/field/lnInclude \
     -I$(LIB_SRC)/Pstream/mpi \
     -I$(CANTERA_ROOT)/include \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include,) \
@@ -22,11 +34,19 @@ EXE_INC = -std=c++17 \
 LIB_LIBS = \
     -lcompressibleTransportModels \
     -lturbulenceModels \
-    -llagrangian \    
+    -llagrangian \
     -lfiniteVolume \
+    -lfvOptions \
     -lmeshTools \
     -L$(DF_LIBBIN) \
     -ldfCompressibleTurbulenceModels \
+    -ldfLagrangianIntermediate \
+    -ldfLagrangianTurbulence \
+    -ldfLagrangianSpray \
+    -ldfFluidThermophysicalModels \
+    -ldfThermophysicalProperties \
+    -ldfSLGThermo \
+    -lregionModels \
     -ldfCanteraMixture \
     -ldfChemistryModel \
     $(CANTERA_ROOT)/lib/libcantera.so \
