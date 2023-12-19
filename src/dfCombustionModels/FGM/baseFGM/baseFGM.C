@@ -47,7 +47,6 @@ Foam::combustionModels::baseFGM<ReactionThermo>::baseFGM
     solveEnthalpy_(this->coeffs().lookupOrDefault("solveEnthalpy", false)),
     flameletT_(this->coeffs().lookupOrDefault("flameletT", false)),
     tablePath_(this->coeffs().lookup("tablePath")),
-    // psi_(const_cast<volScalarField&>(dynamic_cast<psiThermo&>(thermo).psi())),
     psi_(const_cast<volScalarField&>(dynamic_cast<rhoThermo&>(thermo).psi())),
     Wt_ 
     (
@@ -342,7 +341,6 @@ Foam::combustionModels::baseFGM<ReactionThermo>::baseFGM
     p_(this->thermo().p()),
     T_(this->thermo().T()),
     Y_(this->chemistryPtr_->Y()),
-    omega_Yis_(this->coeffs().lookupOrDefault("nOmega_Yis", 1)),
     U_(this->mesh().objectRegistry::lookupObject<volVectorField>("U")),
     dpdt_(this->mesh().objectRegistry::lookupObject<volScalarField>("dpdt")),        
     phi_(this->mesh().objectRegistry::lookupObject<surfaceScalarField>("phi")),
@@ -369,38 +367,6 @@ Foam::combustionModels::baseFGM<ReactionThermo>::baseFGM
       Info<< "Equation of State: constant pressure used: "
         << incompPref_ << " Pa" << nl << endl;
     }
-
-    // this->omega_YiNames_base_ = wordList({"C2H5OH", "O2"});
-    this->omega_YiNames_base_ = wordList({"C2H5OH"});
-    Info << "omega_YiNames_base_ is : " << omega_YiNames_base_ <<endl;
-
-    forAll(omega_YiNames_base_, speciesI)
-    {
-        word specieName2Update = this->omega_YiNames_base_[speciesI];
-        const label& specieLabel2Update = this->chemistryPtr_->species()[specieName2Update];
-        omega_Yi_index_.append(specieLabel2Update);
-
-        omega_Yis_.set
-        (
-            speciesI,
-            new volScalarField
-            (
-                IOobject
-                (
-                    "omega_" + this->omega_YiNames_base_[speciesI],
-                    this->mesh().time().timeName(),
-                    this->mesh(),
-                    IOobject::NO_READ,
-                    IOobject::AUTO_WRITE
-                ),
-                this->mesh(),
-                dimensionedScalar("omega_" + this->omega_YiNames_base_[speciesI],dimensionSet(1,-3,-1,0,0,0,0),0.0)
-            )
-        );
-    }
-
-    Info << "end initialize omega_Yi"<<endl;
-
 
     //- LES
     // this->isLES_ = this->mesh().objectRegistry::foundObject<compressible::LESModel>(turbulenceModel::propertiesName);
@@ -557,38 +523,6 @@ void Foam::combustionModels::baseFGM<ReactionThermo>::transport()
 
         if (combustion_)
         {
-            forAll(omega_Yi_index_, i)
-            {
-                volScalarField& Yi = Y_[omega_Yi_index_[i]];
-
-                Info << "Solve Spray Y_" << omega_YiNames_base_[i] << endl;
-
-                fvScalarMatrix YiEqn
-                (
-                    fvm::ddt(rho_, Yi)
-                    + (
-                        buffer_
-                        ? scalarUWConvection->fvmDiv(phi_, Yi)
-                        : mvConvection->fvmDiv(phi_, Yi)
-                    )
-                    -fvm::laplacian( mut/Sct_ + mu/Sc_, Yi)
-                    - omega_Yis_[i]
-                    + fvOptions(rho_, Yi)
-                    ==
-                    spray.SYi(omega_Yi_index_[i], Yi)  
-                );  
-                fvOptions.correct(Yi);
-                
-                if(relaxation_)
-                {
-                    YiEqn.relax();
-                }
-                YiEqn.solve("Yi");
-
-                Yi.min(1.0);
-                Yi.max(0.0); 
-            }
-
 
             tmp<fvScalarMatrix> tcSource(new fvScalarMatrix(this->c_, dimMass/dimTime));
             fvScalarMatrix& S_c = tcSource.ref();
@@ -671,35 +605,6 @@ void Foam::combustionModels::baseFGM<ReactionThermo>::transport()
 
         if (combustion_)
         {
-            forAll(omega_Yi_index_, i)
-            {
-                volScalarField& Yi = Y_[omega_Yi_index_[i]];
-
-                fvScalarMatrix YiEqn
-                (
-                    fvm::ddt(rho_, Yi)
-                    + (
-                        buffer_
-                        ? scalarUWConvection->fvmDiv(phi_, Yi)
-                        : mvConvection->fvmDiv(phi_, Yi)
-                    )
-                    -fvm::laplacian( mut/Sct_ + mu/Sc_, Yi)
-                    - omega_Yis_[i]
-                    + fvOptions(rho_, Yi)
-                );  
-                fvOptions.correct(Yi);
-                
-                if(relaxation_)
-                {
-                    YiEqn.relax();
-                }
-                YiEqn.solve("Yi");
-
-                Yi.min(1.0);
-                Yi.max(0.0); 
-            }
-
-
 
             // At initial time, cMax is set as Ycmaxall when unscaled PV employed
             if(this->mesh().time().timeIndex() == 1 && !scaledPV_) cMax_ = Ycmaxall_;  
@@ -836,31 +741,6 @@ void Foam::combustionModels::baseFGM<ReactionThermo>::transport()
 
     if(combustion_ && reactFlowTime_ > 0.0)
     {
-        // // At initial time, cMax is set as Ycmaxall when unscaled PV employed
-        // if(this->mesh().time().timeIndex() == 1 && !scaledPV_) cMax_ = Ycmaxall_;  
-
-        // // Solve the progress variable transport equation
-        // fvScalarMatrix cEqn
-        // (
-        //     fvm::ddt(rho_, c_)
-        //     +(
-        //         buffer_
-        //         ? scalarUWConvection->fvmDiv(phi_, c_)
-        //         : fvm::div(phi_, c_)
-        //     )
-        //     -fvm::laplacian( mut/Sct_ + mu/Sc_, c_)
-        //     -omega_c_
-        //     + fvOptions(rho_, c_)
-        // );  
-        // fvOptions.correct(c_);
-        
-        // if(relaxation_)
-        // {
-        //     cEqn.relax();
-        // }
-        // cEqn.solve();
-        // c_.min(cMax_);
-        // c_.max(cMin_); 
 
         // Solve the progress variable variance transport equation
         fvScalarMatrix cvarEqn

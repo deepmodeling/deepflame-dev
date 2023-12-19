@@ -37,13 +37,7 @@ Foam::combustionModels::flareFGM<ReactionThermo>::flareFGM
 )
 :
     baseFGM<ReactionThermo>(modelType, thermo, turb, combustionProperties),
-    tableSolver(
-                baseFGM<ReactionThermo>::tablePath_
-                //  baseFGM<ReactionThermo>::speciesNames_,
-                //  baseFGM<ReactionThermo>::scaledPV_,
-                //  baseFGM<ReactionThermo>::flameletT_,
-                //  baseFGM<ReactionThermo>::Ycmaxall_
-               )
+    tableSolver(baseFGM<ReactionThermo>::tablePath_)
 {
     //- retrieval data from table
     retrieval();
@@ -109,9 +103,6 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
     volScalarField& mut = const_cast<volScalarField&>(tmut());
     scalarField& mutCells = mut.primitiveFieldRef();   
 
-    //- calculate reacting flow solution
-    // const scalar Zl{this->z_Tb5[0]};  
-    // const scalar Zr{this->z_Tb5[this->NZL-1]};  
     int ih = 0;
     scalar Zl, Zr;
 
@@ -138,7 +129,6 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
 
 
         double hLoss = ( this->ZCells_[celli]*(this->Hfu-this->Hox) + this->Hox ) - this->HCells_[celli];
-        // hLoss = (hLoss>0.0) ? hLoss : 0.0;
         hLoss = max(hLoss, this->h_Tb3[0]);
         hLoss = min(hLoss, this->h_Tb3[this->NH - 1]);
 
@@ -182,18 +172,7 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
                 this->chi_cCells_[celli] = 1.0*epsilonCells[celli]/kCells[celli]*this->cvarCells_[celli]; 
             }
         }
-
-        // if(this->chi_ZCells_[celli] > 1.0e-16 and this->chi_cCells_[celli]> 1.0e-16)
-        // {
-        //     if (this->ZcvarCells_[celli] > 1.0e-16)
-        //     {
-        //         this->chi_ZcCells_[celli] = max(this->chi_ZcCells_[celli], std::sqrt(this->chi_ZCells_[celli] * this->chi_cCells_[celli])); 
-        //     }
-        //     else if (this->ZcvarCells_[celli] < -1.0e-16)
-        //     {
-        //         this->chi_ZcCells_[celli] = min(this->chi_ZcCells_[celli], -std::sqrt(this->chi_ZCells_[celli] * this->chi_cCells_[celli]));
-        //     }
-        // }     
+  
 
         // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
         
@@ -321,7 +300,6 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
         {
             word specieName2Update = this->speciesNames_table_[yi];
             const label& specieLabel2Update = this->chemistryPtr_->species()[specieName2Update];
-            // this->Y_[specieLabel2Update].primitiveFieldRef()[celli] = 0.1;
             this->Y_[specieLabel2Update].primitiveFieldRef()[celli] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
                                         this->NZ,this->z_Tb3,this->ZCells_[celli],
                                         this->NC,this->c_Tb3,cNorm,
@@ -332,21 +310,6 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
         }
 
         // -------------------- Yis end ------------------------------
-
-        if (this->combustion_)
-        {
-            for (int yi=0; yi<this->NYomega; yi++)
-            {
-                this->omega_Yis_[yi][celli] = this->rho_[celli] * 
-                            this->lookup6d(this->NH,this->h_Tb3,hLoss,
-                                            this->NZ,this->z_Tb3,this->ZCells_[celli],
-                                            this->NC,this->c_Tb3,cNorm,
-                                            this->NGZ,this->gz_Tb3,gz,
-                                            this->NGC,this->gc_Tb3,gc,
-                                            this->NZC,this->gzc_Tb3,gcz,
-                                            this->tableValues_[NS-1-this->NYomega+yi]);
-            }
-        }
 
         if(baseFGM<ReactionThermo>::flameletT_)   
         {
@@ -486,19 +449,6 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
 
             }
 
-            // if(pchi_Z[facei] > 1.0e-16 and pchi_c[facei]> 1.0e-16)
-            // {
-            //     if (pZcvar[facei] > 1.0e-16)
-            //     {
-            //         pchi_Zc[facei] = max(pchi_Zc[facei], std::sqrt(pchi_Z[facei] * pchi_c[facei])); 
-            //     }
-            //     else if (pZcvar[facei] < -1.0e-16)
-            //     {
-            //         pchi_Zc[facei] = min(pchi_Zc[facei], -std::sqrt(pchi_Z[facei] * pchi_c[facei])); 
-            //     }
-                
-            // }     
-
 
          // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
@@ -615,21 +565,6 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
                                         this->NZC,this->gzc_Tb3,gcz,
                                         this->tableValues_[7])*prho_[facei];  
 
-            if(this->combustion_)
-            {
-                for (int yi=0; yi<this->NYomega; yi++)
-                {
-                    this->omega_Yis_[yi].boundaryFieldRef()[patchi][facei] = prho_[facei] * 
-                            this->lookup6d(this->NH,this->h_Tb3,hLoss,
-                                            this->NZ,this->z_Tb3,pZ[facei],
-                                            this->NC,this->c_Tb3,cNorm,
-                                            this->NGZ,this->gz_Tb3,gz,
-                                            this->NGC,this->gc_Tb3,gc,
-                                            this->NZC,this->gzc_Tb3,gcz,
-                                            this->tableValues_[NS-1+yi-this->NYomega]);
-                }
-            }
-
             if(baseFGM<ReactionThermo>::flameletT_)  
             {
                 pT[facei] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
@@ -672,7 +607,6 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
             {
                 word specieName2Update = this->speciesNames_table_[yi];
                 const label& specieLabel2Update = this->chemistryPtr_->species()[specieName2Update];
-                // this->Y_[specieLabel2Update].primitiveFieldRef()[celli] = 0.1;
                 this->Y_[specieLabel2Update].boundaryFieldRef()[patchi][facei]  = this->lookup6d(this->NH,this->h_Tb3,hLoss,
                                             this->NZ,this->z_Tb3,pZ[facei],
                                             this->NC,this->c_Tb3,cNorm,

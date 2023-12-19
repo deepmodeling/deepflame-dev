@@ -86,14 +86,6 @@ class baseFGM
     Switch flameletT_;
 
     word tablePath_;
-
-    //- index for omega speices
-    labelList omega_Yi_index_;
-
-    wordList omega_YiNames_base_;
-
-    // //- reaction rate for fuel species
-    PtrList<volScalarField> omega_Yis_;
  
     //- psi=\rho/p
     volScalarField& psi_;
