@@ -5,34 +5,58 @@ Prerequisites
 ------------------------
 The installation of DeepFlame is simple and requires **OpenFOAM-7**, **LibCantera**, and **PyTorch**.
 
-.. Note:: If Ubuntu is used as the subsystem, please use `Ubuntu:20.04 <https://releases.ubuntu.com/focal/>`_ instead of the latest version. OpenFOAM-7 accompanied by ParaView 5.6.0 is not available for `Ubuntu-latest <https://releases.ubuntu.com/jammy/>`_.  
 
-First install OpenFOAM-7 if it is not already installed. 
+First, install OpenFOAM-7.
+
+.. Note:: For `Ubuntu 20.04 <https://releases.ubuntu.com/focal/>`_, one can install by ``apt``. For latest versions, please compile OpenFOAM-7 from source code. Check operating system version by ``lsb_release -d``.
 
 .. code-block:: bash
 
+    # Install OpenFOAM release by apt
     sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -"
     sudo add-apt-repository http://dl.openfoam.org/ubuntu
     sudo apt-get update
     sudo apt-get -y install openfoam7
 
-OpenFOAM-7 and ParaView-5.6.0 will be installed in the ``/opt`` directory. 
+OpenFOAM-7 and ParaView-5.6.0 will be installed in the ``/opt`` directory.
 
 .. Note:: There is a commonly seen issue when installing OpenFOAM via ``apt-get install`` with an error message: ``could not find a distribution template for Ubuntu/focal``. To resolve this issue, you can refer to `issue#54 <https://github.com/deepmodeling/deepflame-dev/issues/54>`_.
 
-**LibCantera** and **PyTorch** can be easily installed via `conda <https://docs.conda.io/en/latest/miniconda.html#linux-installers>`_. If you have compatible platform, run the following command to install DeepFlame.
+Alternatively, one can `compile OpenFOAM-7 from source code <https://openfoam.org/download/source/>`_.
+
+.. code-block:: bash
+
+    gcc --version
+    sudo apt-get install build-essential cmake git ca-certificates
+    sudo apt-get install flex libfl-dev bison zlib1g-dev libboost-system-dev libboost-thread-dev libopenmpi-dev openmpi-bin gnuplot libreadline-dev libncurses-dev libxt-dev
+    cd $HOME # the path OpenFOAM will be installed
+    wget -O - http://dl.openfoam.org/source/7 | tar xz
+    wget -O - http://dl.openfoam.org/third-party/7 | tar xz
+    mv OpenFOAM-7-version-7 OpenFOAM-7
+    mv ThirdParty-7-version-7 ThirdParty-7
+    source OpenFOAM-7/etc/bashrc
+    ./OpenFOAM-7/Allwmake -j
+
+**LibCantera** and **PyTorch** can be easily installed via `conda <https://docs.conda.io/en/latest/miniconda.html#linux-installers>`_. If your platform is compatible, run the following command to install the dependencies.
 
 .. code-block:: bash
 
     conda create -n deepflame python=3.8
     conda activate deepflame
-    conda install -c cantera libcantera-devel
+    conda install -c conda-forge libcantera-devel 
     conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
     conda install pybind11 
     conda install -c conda-forge easydict
 
+.. Note:: Please go to `the official website of PyTorch <https://pytorch.org/>`_ to check your system compatibility and choose the installation command line that is suitable for your platform.
 
-.. Note:: Please go to PyTorch's official website to check your system compatability and choose the installation command line that is suitable for your platform.  
+.. code-block:: bash
+
+    # For CUDA-supported platforms
+    conda create -n deepflame \
+	pytorch torchvision torchaudio libcantera-devel easydict pybind11 pkg-config \
+	-c pytorch -c nvidia -c cantera -c conda-forge
+    conda activate deepflame
 
 .. Note:: Check your ``Miniconda3/envs/deepflame`` directory and make sure the install was successful (lib/ include/ etc. exist).
 
@@ -41,13 +65,13 @@ Configure
 -------------------------
 **1. Source your OpenFOAM-7 bashrc to configure the $FOAM environment.**
 
-.. Note:: This depends on your own path for OpenFOAM-7 bashrc.  
+.. Note:: This depends on your own path for OpenFOAM-7 bashrc.
 
 If you have installed using ``apt-get install``, then:
 
 .. code-block:: bash
 
-    source /opt/openfoam7/etc/bashrc 
+    source /opt/openfoam7/etc/bashrc
 
 If you compiled from source following the `official guide <https://openfoam.org/download/7-source/>`_, then:
 
@@ -66,7 +90,7 @@ or
 .. code-block:: bash
 
      echo "source $HOME/OpenFOAM/OpenFOAM-7/etc/bashrc" >> ~/.bashrc
-    
+
 Then source the bashrc file by:
 
 .. code-block:: bash
@@ -87,13 +111,13 @@ If you want to use the submodules included in DeepFlame: the `WENO scheme <https
 
     git clone --recursive https://github.com/deepmodeling/deepflame-dev.git
 
-Detailed instructions for compiling these two submodules can be found in their original repositories. 
+Detailed instructions for compiling these two submodules can be found in their original repositories.
 
 
 **3. Configure the DeepFlame environment:**
 
 .. code-block:: bash
-    
+
     cd deepflame-dev
     . configure.sh --use_pytorch
     source ./bashrc
@@ -102,13 +126,20 @@ Detailed instructions for compiling these two submodules can be found in their o
 
 Build and Install
 -------------------------------
-Finally you can build and install DeepFlame: 
+Finally you can build and install DeepFlame:
 
 .. code-block:: bash
 
-    . install.sh  
+    . install.sh
 
-.. Note:: You may come accross an error regarding shared library ``libmkl_rt.so.2`` when libcantera is installed through cantera channel. If so, go to your conda environment and check the existance of ``libmkl_rt.so.2`` and ``libmkl_rt.so.1``, and then link ``libmkl_rt.so.2`` to ``libmkl_rt.so.1``.
+.. Note:: You may see an error ``fmt`` or ``eigen`` files cannot be found. If so, go to your conda environment and install the packages as follows.
+    
+.. code-block:: bash
+
+    conda install fmt 
+    conda install eigen 
+
+.. Note:: You may also come accross an error regarding shared library ``libmkl_rt.so.2`` when libcantera is installed through cantera channel. If so, go to your conda environment and check the existance of ``libmkl_rt.so.2`` and ``libmkl_rt.so.1``, and then link ``libmkl_rt.so.2`` to ``libmkl_rt.so.1``.
     
 .. code-block:: bash
 
@@ -121,15 +152,15 @@ Finally you can build and install DeepFlame:
 
 Other Options
 -------------------------------
-DeepFlame also provides users with LibTorch and CVODE (no DNN version) options. 
+DeepFlame also provides users with LibTorch and CVODE (no DNN version) options.
 
 **1. If you choose to use LibTorch (C++ API for Torch), first create the conda env and install** `LibCantera <https://anaconda.org/conda-forge/libcantera-devel>`_:
-    
+
 .. code-block:: bash
 
     conda create -n df-libtorch python=3.8
     conda activate df-libtorch
-    conda install -c cantera libcantera-devel
+    conda install -c conda-forge libcantera-devel 
 
 Then you can pass your own libtorch path to DeepFlame.
 
@@ -149,18 +180,18 @@ Then you can pass your own libtorch path to DeepFlame.
 
     conda create -n df-notorch python=3.8
     conda activate df-notorch
-    conda install -c cantera libcantera-devel
+    conda install -c conda-forge libcantera-devel 
 
 If the conda env ``df-notorch`` is activated, install DeepFlame by running:
 
 .. code-block:: bash
 
     cd deepflame-dev
-    . configure.sh 
+    . configure.sh
     source ./bashrc
     . install.sh
 
-If ``df-notorch`` not activated (or you have a self-complied libcantera), specify the path to your libcantera:
+If ``df-notorch`` not activated (or you have a self-compiled libcantera), specify the path to your libcantera:
 
 .. code-block:: bash
 
@@ -182,7 +213,7 @@ To begin, you will need to install AMGX. You can find the instructions for insta
     source ./bashrc
     . install.sh
 
-Also, you will need to add configuration files for AMGX for each euqation under ``system`` folder and name them in the pattern of ``amgxpOptions``, ``amgxUOptions`` . Please refer to the AMGX official website to find out detailed instructions. 
+Also, you will need to add configuration files for AMGX for each euqation under ``system`` folder and name them in the pattern of ``amgxpOptions``, ``amgxUOptions`` . Please refer to the AMGX official website to find out detailed instructions.
 
 **If you have compiled DeepFlame with GPU solver successfully, you should see the print message in your terminal:**
 
@@ -201,7 +232,7 @@ Also, you will need to add configuration files for AMGX for each euqation under 
 You will need to follow the same procedures to install prerequisites and configure DeepFlame.
 
 .. code-block:: bash
-    
+
     cd deepflame-dev
     . configure.sh --use_pytorch
     source ./bashrc
@@ -216,7 +247,7 @@ After this, first install libraries:
     cd build
     make install
 
-Now if go to ``$DF_ROOT/lib``, libraries should be ready. 
+Now if go to ``$DF_ROOT/lib``, libraries should be ready.
 Compilition of solvers are separated. Choose the solver you want to use and then go to the directory and build it. For example,
 
 
@@ -226,4 +257,3 @@ Compilition of solvers are separated. Choose the solver you want to use and then
     cmake -B build
     cd build
     make install
-

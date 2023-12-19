@@ -67,5 +67,4 @@ EXE_LIBS = \
     $(if $(LIBTORCH_ROOT),-rdynamic,) \
     $(if $(LIBTORCH_ROOT),-lpthread,) \
     $(if $(LIBTORCH_ROOT),$(DF_SRC)/dfChemistryModel/DNNInferencer/build/libDNNInferencer.so,) \
-    $(if $(PYTHON_LIB_DIR),-L$(PYTHON_LIB_DIR),) \
-    $(if $(PYTHON_LIB_DIR),-lpython3.8,)
+    $(if $(PYTHON_LIB_DIR),$(PYTHON_LIB_DIR),)
