@@ -31,6 +31,11 @@ float T3 = readSandia(3,"2DSandia/data_T.xy");
 float T4 = readSandia(4,"2DSandia/data_T.xy");
 float T5 = readSandia(5,"2DSandia/data_T.xy");
 float T6 = readSandia(6,"2DSandia/data_T.xy");
+float T7 = readSandia(7,"2DSandia/data_T.xy");
+float T8 = readSandia(8,"2DSandia/data_T.xy");
+float T9 = readSandia(9,"2DSandia/data_T.xy");
+float T10 = readSandia(10,"2DSandia/data_T.xy");
+float T11 = readSandia(11,"2DSandia/data_T.xy");
 
 // TEST(corrtest,df0DFoam_H2){
 //     EXPECT_FLOAT_EQ(H2maxT,2588.48);   // compare the maximum temperature of H2 case 
@@ -64,13 +69,17 @@ TEST(corrtest,dfLowMachFoam_TGV){
 }
 
 TEST(corrtest,2DSandia){
-    EXPECT_FLOAT_EQ(T1,802.1133601);   
-    EXPECT_FLOAT_EQ(T2,1146.975511);  
-    EXPECT_FLOAT_EQ(T3,1569.239903);
-    EXPECT_FLOAT_EQ(T4,1376.352674);
-    EXPECT_FLOAT_EQ(T5,720.0857963);
-    EXPECT_FLOAT_EQ(T6,474.650212);
-    
+    EXPECT_FLOAT_EQ(T1,307.93593);   
+    EXPECT_FLOAT_EQ(T2,311.36824);  
+    EXPECT_FLOAT_EQ(T3,378.9158);
+    EXPECT_FLOAT_EQ(T4,661.57222);
+    EXPECT_FLOAT_EQ(T5,1109.6588);
+    EXPECT_FLOAT_EQ(T6,1521.5545);
+    EXPECT_FLOAT_EQ(T7,1865.9998);
+    EXPECT_FLOAT_EQ(T8,1963.6765);
+    EXPECT_FLOAT_EQ(T9,1783.7844);
+    EXPECT_FLOAT_EQ(T10,1474.4433);
+    EXPECT_FLOAT_EQ(T11,1069.4404);
 }
 
 float readmaxTH2(){
