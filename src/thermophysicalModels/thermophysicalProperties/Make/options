@@ -1,3 +1,3 @@
-EXE_INC = -std=c++17\
+EXE_INC = -std=c++14\
     -I./lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/thermophysicalProperties/lnInclude

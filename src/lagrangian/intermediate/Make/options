@@ -1,4 +1,4 @@
-EXE_INC = -std=c++17\
+EXE_INC = -std=c++14\
     -Wno-old-style-cast \
     -I$(LIB_SRC)/lagrangian/basic/lnInclude \
     -I$(LIB_SRC)/lagrangian/distributionModels/lnInclude \

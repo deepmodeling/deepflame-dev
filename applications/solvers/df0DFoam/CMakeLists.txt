@@ -14,7 +14,7 @@ if(DEFINED ENV{CANTERA_ROOT})
   SET(CANTERA_ROOT $ENV{CANTERA_ROOT})
 else()
 	message(FATAL_ERROR "libcantera directory is not specified")
-endif(DEFINED ENV{CANTERA_ROOT}) 
+endif(DEFINED ENV{CANTERA_ROOT})
 
 # define variables
 SET(OpenFOAM_LIB_DIR $ENV{FOAM_LIBBIN})
@@ -29,11 +29,11 @@ SET(CMAKE_EXE_LINKER_FLAGS "-fuse-ld=bfd -Xlinker --add-needed -Xlinker --no-as-
 
 SET(CMAKE_C_COMPILER g++)
 SET(PATH_LIB_OPENMPI "openmpi-system")  # Foundation version
-SET(EXE_COMPILE_OPTION "-std=c++11 -m64 -Dlinux64 -DWM_ARCH_OPTION=64 
--DWM_DP -DWM_LABEL_SIZE=32 -Wall -Wextra -Wold-style-cast -Wnon-virtual-dtor 
--Wno-unused-parameter -Wno-invalid-offsetof -Wno-attributes -O3  
--DNoRepository -ftemplate-depth-100 -std=c++14 
--Wno-unused-variable -Wno-unused-but-set-variable -Wno-old-style-cast -DOMPI_SKIP_MPICXX  
+SET(EXE_COMPILE_OPTION "-std=c++14 -m64 -Dlinux64 -DWM_ARCH_OPTION=64
+-DWM_DP -DWM_LABEL_SIZE=32 -Wall -Wextra -Wold-style-cast -Wnon-virtual-dtor
+-Wno-unused-parameter -Wno-invalid-offsetof -Wno-attributes -O3
+-DNoRepository -ftemplate-depth-100
+-Wno-unused-variable -Wno-unused-but-set-variable -Wno-old-style-cast -DOMPI_SKIP_MPICXX
 -pthread -fPIC")
 add_definitions("${EXE_COMPILE_OPTION}")
 
@@ -47,7 +47,7 @@ FUNCTION(R_SEARCH search_path return_list)
     ENDFOREACH()
     LIST(REMOVE_DUPLICATES dir_list)
     SET(${return_list} ${dir_list} PARENT_SCOPE)
-ENDFUNCTION(R_SEARCH)  
+ENDFUNCTION(R_SEARCH)
 
 R_SEARCH(${DF_SRC}/dfCombustionModels dfcombustion_inc)
 R_SEARCH(${DF_SRC}/dfCanteraMixture dfcantera_inc)
@@ -67,31 +67,30 @@ include_directories(
     ${OpenFOAM_SRC}/finiteVolume/lnInclude
     ${OpenFOAM_SRC}/OSspecific/POSIX/lnInclude
     ${OpenFOAM_SRC}/OpenFOAM/lnInclude
-    ${OpenFOAM_SRC}/transportModels/compressible/lnInclude 
-    ${OpenFOAM_SRC}/thermophysicalModels/basic/lnInclude 
-    ${OpenFOAM_SRC}/TurbulenceModels/turbulenceModels/lnInclude 
-    ${OpenFOAM_SRC}/TurbulenceModels/compressible/lnInclude 
-    ${OpenFOAM_SRC}/finiteVolume/cfdTools 
-    ${OpenFOAM_SRC}/finiteVolume/lnInclude 
-    ${OpenFOAM_SRC}/meshTools/lnInclude 
-    ${OpenFOAM_SRC}/sampling/lnInclude 
-    ${OpenFOAM_SRC}/dynamicFvMesh/lnInclude 
-    ${OpenFOAM_SRC}/Pstream/mpi 
+    ${OpenFOAM_SRC}/transportModels/compressible/lnInclude
+    ${OpenFOAM_SRC}/thermophysicalModels/basic/lnInclude
+    ${OpenFOAM_SRC}/TurbulenceModels/turbulenceModels/lnInclude
+    ${OpenFOAM_SRC}/TurbulenceModels/compressible/lnInclude
+    ${OpenFOAM_SRC}/finiteVolume/cfdTools
+    ${OpenFOAM_SRC}/finiteVolume/lnInclude
+    ${OpenFOAM_SRC}/meshTools/lnInclude
+    ${OpenFOAM_SRC}/sampling/lnInclude
+    ${OpenFOAM_SRC}/dynamicFvMesh/lnInclude
+    ${OpenFOAM_SRC}/Pstream/mpi
     ${dfcantera_inc}
     ${dfchemistry_inc}
     ${dfcombustion_inc}
-    ${CANTERA_ROOT}/include 
+    ${CANTERA_ROOT}/include
     ${MPI_INCLUDE_PATH}
     ${PROJECT_SOURCE_DIR}
 )
 
 # add execution
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/df0DFoam.C)
-
-target_link_libraries(${PROJECT_NAME} 
-    $ENV{FOAM_LIBBIN}/libfiniteVolume.so libmeshTools.so libcompressibleTransportModels.so 
+target_link_libraries(${PROJECT_NAME}
+    $ENV{FOAM_LIBBIN}/libfiniteVolume.so libmeshTools.so libcompressibleTransportModels.so
     libturbulenceModels.so libsampling.so libOpenFOAM.so libdynamicFvMesh.so
-    ${CANTERA_ROOT}/lib/libcantera.so.2
+    ${CANTERA_ROOT}/lib/libcantera.so
     ${DF_ROOT}/lib/libdfChemistryModel.so
     ${DF_ROOT}/lib/libdfCanteraMixture.so
     ${DF_ROOT}/lib/libdfFluidThermophysicalModels.so
@@ -102,14 +101,9 @@ target_link_libraries(${PROJECT_NAME}
 
 if(DEFINED ENV{PYTHON_INC_DIR})
   add_definitions(-DUSE_PYTORCH)
-  find_package (Python REQUIRED COMPONENTS Interpreter Development)
+  # https://pybind11.readthedocs.io/en/stable/advanced/embedding.html
   find_package(pybind11)
-  include_directories(
-  ${Python_INCLUDE_DIRS}
-  ${pybind11_INCLUDE_DIR}/pybind11
-  )
-  target_link_libraries(${PROJECT_NAME} ${Python_LIBRARIES})
-  message(STATUS "pybind libraries" ${Python_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} pybind11::embed)
 endif()
 
 # install

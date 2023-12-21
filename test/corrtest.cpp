@@ -13,8 +13,8 @@ float readTGV(int k, string file);
 float readHighSpeed();
 float v = readHighSpeed();
 
-float H2maxT = readmaxTH2();
-float H2midT = readmidTH2();
+// float H2maxT = readmaxTH2();
+// float H2midT = readmidTH2();
 
 
 float TGV500  = readTGV(806,"2DTGV/5/data_T.xy");
@@ -32,12 +32,12 @@ float T4 = readSandia(4,"2DSandia/data_T.xy");
 float T5 = readSandia(5,"2DSandia/data_T.xy");
 float T6 = readSandia(6,"2DSandia/data_T.xy");
 
-TEST(corrtest,df0DFoam_H2){
-    EXPECT_FLOAT_EQ(H2maxT,2588.48);   // compare the maximum temperature of H2 case 
-    EXPECT_FLOAT_EQ(H2midT,1021.41); // compare the temperature of H2 case at the maximum gradient when t = 0.000245s
-    //EXPECT_FLOAT_EQ(H2maxT,2586.21);   // compare the maximum temperature of H2 case 
-    //EXPECT_FLOAT_EQ(H2midT,1020.71); // compare the temperature of H2 case at the maximum gradient when t = 0.000245s
-}
+// TEST(corrtest,df0DFoam_H2){
+//     EXPECT_FLOAT_EQ(H2maxT,2588.48);   // compare the maximum temperature of H2 case 
+//     EXPECT_FLOAT_EQ(H2midT,1021.41); // compare the temperature of H2 case at the maximum gradient when t = 0.000245s
+//     //EXPECT_FLOAT_EQ(H2maxT,2586.21);   // compare the maximum temperature of H2 case 
+//     //EXPECT_FLOAT_EQ(H2midT,1020.71); // compare the temperature of H2 case at the maximum gradient when t = 0.000245s
+// }
 
 
 

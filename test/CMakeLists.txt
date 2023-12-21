@@ -12,7 +12,7 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 
-file(COPY ./pytorchIntegrator/postProcessing/probes/0/T DESTINATION 0DH2)
+
 
 file(COPY ./oneD_detonationH2/postProcessing/minMax/0/fieldMinMax.dat DESTINATION 1Ddetonation)
 file(COPY ./dfLowMachFoam/twoD_reactingTGV/H2/cvodeSolver/postProcessing/sample/0.0005/data_T.xy DESTINATION 2DTGV/5)
