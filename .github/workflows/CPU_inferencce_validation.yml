@@ -45,11 +45,10 @@ jobs:
         OMPI_MCA_btl_vader_single_copy_mechanism: none
        run: 
         /bin/bash -c " echo $PWD && ls $PWD
-        && wget https://github.com/JX278/DeepFlame-flareFGM-table/raw/main/flareFGM_Table_Download.zip
-        && unzip flareFGM_Table_Download.zip
+        && wget --content-disposition https://aisquare.oss-us-east-1.aliyuncs.com/data/datasets/14b50df5-dbe9-4f1c-bf58-032b8bc40a20
+        && unzip flare_CH4_SandiaD_4D.zip
         && ls $PWD
-        && ls flareFGM_Table_Download
-        && cp -r flareFGM_Table_Download/SandiaD/flare.tbl examples/dfLowMachFoam/2DSandiaD_flareFGM/
+        && cp -r flare_CH4_SandiaD_4D.tbl examples/dfLowMachFoam/2DSandiaD_flareFGM/
         && git clone https://github.com/intelligent-algorithm-team/intelligent-combustion.git 
         && cp -r intelligent-combustion/DeePCK/Model/HE04_Hydrogen_ESH2_GMS_sub_20221101/ mechanisms/ && source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc 
         && . configure.sh && source ./bashrc && . install.sh 
