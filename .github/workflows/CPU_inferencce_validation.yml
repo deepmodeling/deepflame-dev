@@ -31,7 +31,7 @@ jobs:
         . ~/miniconda3/etc/profile.d/conda.sh
         conda create -n libcantera python=3.8
         conda activate libcantera
-        conda install -c cantera libcantera-devel
+        conda install -c cantera libcantera-devel=2.6
         conda install pytorch pybind11
         conda install --channel https://conda.anaconda.org/zhaofeng-shu33 easydict
         git clone https://github.com/deepmodeling/deepflame-dev.git
@@ -52,7 +52,7 @@ jobs:
         && cp -r flareFGM_Table_Download/SandiaD/flare.tbl examples/dfLowMachFoam/2DSandiaD_flareFGM/
         && git clone https://github.com/intelligent-algorithm-team/intelligent-combustion.git 
         && cp -r intelligent-combustion/DeePCK/Model/HE04_Hydrogen_ESH2_GMS_sub_20221101/ mechanisms/ && source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc 
-        && . configure.sh --use_pytorch && source ./bashrc && . install.sh 
+        && . configure.sh && source ./bashrc && . install.sh 
         && cd test && ./Allrun && conda deactivate "
 
      - name: test 

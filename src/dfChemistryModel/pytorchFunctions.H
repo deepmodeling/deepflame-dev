@@ -145,9 +145,9 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
 
             /*=============================construct solutions=============================*/
             std::chrono::steady_clock::time_point start6 = std::chrono::steady_clock::now();
-            std::vector<double> outputsVec0(star, star+outputLength[0] * 7); //the float number is sample_length*sample_number
-            std::vector<double> outputsVec1(star+outputLength[0] * 7, star+outputLength[1] * 7);
-            std::vector<double> outputsVec2(star+outputLength[1] * 7, star+outputLength[2] * 7);
+            std::vector<double> outputsVec0(star, star+outputLength[0] * mixture_.nSpecies()); //the float number is sample_length*sample_number
+            std::vector<double> outputsVec1(star+outputLength[0] * mixture_.nSpecies(), star+outputLength[1] * mixture_.nSpecies());
+            std::vector<double> outputsVec2(star+outputLength[1] * mixture_.nSpecies(), star+outputLength[2] * mixture_.nSpecies());
             std::vector<std::vector<double>> results = {outputsVec0, outputsVec1, outputsVec2};
             updateSolutionBuffer(solutionBuffer, results, cellIDBuffer, problemCounter);
             std::chrono::steady_clock::time_point stop6 = std::chrono::steady_clock::now();
