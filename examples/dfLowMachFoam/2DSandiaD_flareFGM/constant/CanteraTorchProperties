@@ -19,7 +19,7 @@ chemistry       off;
 
 CanteraMechanismFile "gri30.yaml";
 
-transportModel       "Mix";
+transportModel       "mixture-averaged";
 
 odeCoeffs
 {

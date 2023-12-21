@@ -86,7 +86,7 @@ class baseFGM
     Switch flameletT_;
 
     word tablePath_;
- 
+
     //- psi=\rho/p
     volScalarField& psi_;
 
@@ -129,15 +129,21 @@ class baseFGM
     //-covariance Z-c dissipation rate (s^{-1})
     volScalarField chi_Zc_;
 
-    //- copy of omega_c_
-    volScalarField cOmega_c_;
-    volScalarField ZOmega_c_;
+    //- filtered SDR of mixture fraction
+    volScalarField chi_Zfltd_; 
+
+    //- betac for LES
+    volScalarField betac_;
 
     volScalarField He_s_;
     volScalarField Zvar_s_; 
     volScalarField c_s_;
     volScalarField cvar_s_;
     volScalarField Zcvar_s_;
+
+    //- copy of omega_c_
+    volScalarField cOmega_c_;
+    volScalarField ZOmega_c_;
 
 
     //- internal fields
@@ -157,6 +163,12 @@ class baseFGM
     scalarField& chi_ZCells_;
     scalarField& chi_ZcCells_;
 
+    //- filter size
+    scalarField deltaCells_; 
+
+    scalarField& chi_ZfltdCells_;
+
+    scalarField& betacCells_; 
 
     //- max and min Z
     scalar ZMax_;
@@ -179,7 +191,6 @@ class baseFGM
     scalar ZcvarMax_;
     scalar ZcvarMin_;   
 
-    // scalar nOmega_Yis;
 
     //- fluid density
      volScalarField& rho_;
@@ -242,17 +253,6 @@ class baseFGM
     //- if in LES mode
     Switch isLES_;
 
-    //- filter size
-    scalarField deltaCells_; 
-
-    //- filtered SDR of mixture fraction
-    volScalarField chi_Zfltd_; 
-    scalarField& chi_ZfltdCells_;
-
-    //- betac for LES
-    volScalarField betac_;
-    scalarField& betacCells_; 
-
     //SGS
     volScalarField magUPrime_;
     scalarField& magUPrimeCells_; 
@@ -287,12 +287,6 @@ class baseFGM
 
         //- return mag SGS
         virtual void magUPrime();
-
-        //- Fuel consumption rate matrix.
-        virtual tmp<fvScalarMatrix> R(volScalarField& Y) const;
-
-        //- Heat release rate [kg/m/s^3]
-        virtual tmp<volScalarField> Qdot() const;
 
         //- reaturn buffer_
         virtual bool buffer();

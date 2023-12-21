@@ -19,10 +19,12 @@ simulationType   RAS;
 
 RAS
 {
-    RASModel        kEpsilon;
+    RASModel        RNGkEpsilon;
 
     turbulence      on;
     printCoeffs     on;
+
+    C1                1.52;
 }
 
 // ************************************************************************* //

@@ -39,7 +39,6 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-//tableSolver::tableSolver(const wordList& tableNames, string suffix_)
 tableSolver::tableSolver(word tablePath)
 :
 small(1.0e-4),
@@ -84,28 +83,30 @@ H_ox("H_ox",dimensionSet(0,2,-2,0,0,0,0),Hox)
                                 << "\n" << endl;
         }
 
-        for (int ii=0; ii<NYomega; ++ii)
+
+        if (std::getline(table, line))
         {
-            if (std::getline(table, line))
+            std::istringstream iss(line);
+            std::string spc_name;
+            for (int ii=0; ii<NYomega; ++ii)
             {
-                std::istringstream iss(line);
-                std::string spc_name;
                 iss >> spc_name;
                 spc_omegaNames_table_.append(spc_name);
             }
         }
 
-        for (int ii=0; ii<NY; ++ii)
+        if (std::getline(table, line))
         {
-            if (std::getline(table, line))
+            std::istringstream iss(line);
+            std::string spc_name;
+            for (int ii=0; ii<NY; ++ii)
             {
-                std::istringstream iss(line);
-                std::string spc_name;
                 iss >> spc_name;
                 speciesNames_table_.append(spc_name);
                 tableNames_.append(spc_name);
             }
         }
+
 
         Info << "Load omega of species: " << spc_omegaNames_table_ << endl;
         Info << "Load species: " << speciesNames_table_ << endl;
@@ -223,11 +224,7 @@ H_ox("H_ox",dimensionSet(0,2,-2,0,0,0,0),Hox)
 
             if (noderank == 0)
             {
-                // value_temp = std::vector<std::vector<double>> ((NY+NS),std::vector<double>(singleTableSize_));
                 #include "readThermChemTables.H"
-
-                // #include "readThermChemTables.binary.H"
-                // for (int ii=0;ii<singleTableSize_; ++ii) std::getline(table, line);
             }
             else
             {
@@ -494,6 +491,7 @@ double Foam::tableSolver::intfac
 
         if(xx <= low) fac = 0.0;
         else if(xx >= high) fac = 1.0;
+        else if((high-low) < 1e-30) fac = 0.0;
         else fac = (xx-low)/(high-low);
 
         return fac;    

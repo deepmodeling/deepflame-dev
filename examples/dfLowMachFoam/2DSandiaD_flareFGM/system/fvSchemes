@@ -33,7 +33,7 @@ divSchemes
 //    div(phi,U)       Gauss linearUpwind grad(U);
     div(phi,Ulinear)    Gauss linearUpwind grad(U);
     div(phi,scalarUW)   Gauss limitedLinear 1;
-    div(phi,H)      Gauss limitedLinear 1;
+    div(phi,Ha)      Gauss limitedLinear 1;
     div(phi,Zvar)   Gauss limitedLinear 1;
     div(phi,Z)      Gauss limitedLinear01 1;
     div((muEff*dev2(T(grad(U))))) Gauss linear;

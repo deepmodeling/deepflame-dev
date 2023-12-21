@@ -68,7 +68,6 @@ solvers
         relTol          0.001;
     }
 
-/*
     "(k|epsilon)"
     {
         solver          PBiCG;
@@ -76,7 +75,6 @@ solvers
         tolerance       1e-09;
         relTol          0.001;
     }
-*/
 
     "(k|epsilon)Final"
     {
@@ -86,7 +84,7 @@ solvers
         // minIter         1;
     }
 
-    "(Z|H|Zvar|c|cvar|Zcvar).*"
+    "(Z|Ha|Zvar|c|cvar|Zcvar).*"
     {
         solver          PBiCG;
         preconditioner  DILU;
@@ -103,15 +101,6 @@ PIMPLE
     nCorrectors     2;
     nNonOrthogonalCorrectors 0;
     momentumPredictor yes;
-
-    // outerCorrectorResidualControl
-    // {
-    //     "(U)"
-    //     {
-    //         tolerance       1e-04;
-    //         relTol          0;
-    //     }
-    // }
 }
 
 /*
@@ -124,7 +113,7 @@ relaxationFactors
     equations
     {
        U               0.8;
-//       phiFilt         0.5;
+       phiFilt         0.5;
     }
 }
 */

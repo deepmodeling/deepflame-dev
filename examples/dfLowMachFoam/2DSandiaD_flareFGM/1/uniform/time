@@ -9,13 +9,21 @@ FoamFile
 {
     version     2.0;
     format      ascii;
-    class       uniformDimensionedVectorField;
-    location    "constant";
-    object      g;
+    class       dictionary;
+    location    "1/uniform";
+    object      time;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-dimensions      [0 1 -2 0 0 0 0];
-value           (0 0 -9.81);
+value           1;
+
+name            "1";
+
+index           17469;
+
+deltaT          5.7162129e-05;
+
+deltaT0         5.7162129e-05;
+
 
 // ************************************************************************* //

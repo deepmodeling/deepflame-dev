@@ -1,6 +1,6 @@
 #!/bin/sh
 cd ${0%/*} || exit 1    # Run from this directory
 
-reconstructPar -time 0.2
-postProcess -func sample -time 0.2
+reconstructPar -time 1.1
+postProcess -func sample -time 1.1
 

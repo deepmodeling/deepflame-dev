@@ -1,5 +1,5 @@
             value_temp = std::vector<std::vector<double>> ((NY+NS),std::vector<double>(singleTableSize_));
-            count = 0;    //计数器
+            count = 0;    //counter
             for (int hh=0; hh<NH; ++hh)
             {
                 for(int ii = 0; ii < NZ; ++ii)
@@ -30,14 +30,14 @@
                         }
                     }
 
-                    if(ii%10 == 0 && NH == 1)  //每过10个混合物分数z，打印输出一下进度
+                    if(ii%10 == 0 && NH == 1) 
                     {
                         prog = 100.0*ii / ((NZ-1));
                         Info << " Progress -- " << prog << "%" << endl;
                     }
                 }
 
-                if(NH != 1)  //每过10个混合物分数z，打印输出一下进度
+                if(NH != 1) 
                 {
                     prog = 100.0*hh / ((NH-1));
                     Info << " Progress -- " << prog << "%" << endl;

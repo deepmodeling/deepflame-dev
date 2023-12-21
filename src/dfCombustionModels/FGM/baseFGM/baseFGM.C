@@ -322,9 +322,6 @@ Foam::combustionModels::baseFGM<ReactionThermo>::baseFGM
     chi_ZcCells_(chi_Zc_.primitiveFieldRef()),     
     chi_ZfltdCells_(chi_Zfltd_.primitiveFieldRef()),  
     betacCells_(betac_.primitiveFieldRef()),     
-    magUPrime_(U_.component(vector::X)),
-    magUPrimeCells_(magUPrime_.primitiveFieldRef()),
-    isLES_(this->coeffs().lookupOrDefault("isLES", false)),  
     ZMax_(1.0),
     ZMin_(0.0),
     ZvarMax_(0.25),
@@ -356,7 +353,10 @@ Foam::combustionModels::baseFGM<ReactionThermo>::baseFGM
     Sc_(this->coeffs().lookupOrDefault("Sc", 1.0)),   
     bufferTime_(this->coeffs().lookupOrDefault("bufferTime", 0.0)),
     relaxation_(this->coeffs().lookupOrDefault("relaxation", false)),
-    DpDt_(this->coeffs().lookupOrDefault("DpDt", false))
+    DpDt_(this->coeffs().lookupOrDefault("DpDt", false)),
+    magUPrime_(U_.component(vector::X)),
+    magUPrimeCells_(magUPrime_.primitiveFieldRef())
+    // isLES_(this->coeffs().lookupOrDefault("isLES", false)),  
 {
     if(incompPref_ < 0.0)  //local pressure used to calculate EOS
     {
@@ -369,7 +369,7 @@ Foam::combustionModels::baseFGM<ReactionThermo>::baseFGM
     }
 
     //- LES
-    // this->isLES_ = this->mesh().objectRegistry::foundObject<compressible::LESModel>(turbulenceModel::propertiesName);
+    this->isLES_ = this->mesh().objectRegistry::foundObject<compressible::LESModel>(turbulenceModel::propertiesName);
 
     if (this->isLES_)
     {
@@ -380,7 +380,6 @@ Foam::combustionModels::baseFGM<ReactionThermo>::baseFGM
         this->deltaCells_ = LESdeltaCells;
 
     }
-    Info << "isLES in FGM is:" << this->isLES_<<endl;
 
 
 //     //initialize species fields
@@ -450,16 +449,6 @@ void Foam::combustionModels::baseFGM<ReactionThermo>::transport()
         )
     );
 
-    tmp<fv::convectionScheme<scalar>> mvConvection
-    (
-        fv::convectionScheme<scalar>::New
-        (
-            this->mesh(),
-            fields_,
-            phi_,
-            this->mesh().divScheme("div(phi,Yi_h)")
-        )
-    );
 
     if (this->mesh().objectRegistry::foundObject<sprayCloud>(Foam::sprayCloud::typeName))
 
@@ -776,8 +765,7 @@ void Foam::combustionModels::baseFGM<ReactionThermo>::transport()
                 :  fvm::div(phi_, Zcvar_)
             )
             -fvm::laplacian( mut/Sct_+mu/Sc_, Zcvar_)
-            -(1.0*mut/Sct_*(fvc::grad(c_) & fvc::grad(Z_)))
-            -(1.0*mut/Sct_*(fvc::grad(Z_) & fvc::grad(c_)))
+            -(2.0*mut/Sct_*(fvc::grad(c_) & fvc::grad(Z_)))
             +(2.0*rho_*chi_Zc_)  
             -1.0*(ZOmega_c_-omega_c_*Z_)  
         );
@@ -835,24 +823,6 @@ void Foam::combustionModels::baseFGM<ReactionThermo>::magUPrime()
     magUPrime_=mag(U_-filter_(U_));
 
    // return magUPrime_;
-}
-
-template<class ReactionThermo>
-Foam::tmp<Foam::fvScalarMatrix>
-Foam::combustionModels::baseFGM<ReactionThermo>::R(volScalarField& Y) const
-{
-    return laminar<ReactionThermo>::R(Y);
-}
-
-template<class ReactionThermo>
-Foam::tmp<Foam::volScalarField>
-Foam::combustionModels::baseFGM<ReactionThermo>::Qdot() const
-{
-    return volScalarField::New
-    (
-        this->thermo().phasePropertyName("Qdot"),
-        laminar<ReactionThermo>::Qdot()
-    );
 }
 
 

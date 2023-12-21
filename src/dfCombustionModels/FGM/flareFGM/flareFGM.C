@@ -385,10 +385,9 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
 
         forAll(prho_, facei)   
         {
-            label cellID = this->mesh().boundary()[patchi].faceCells()[facei];   //与facei紧邻网格的编号
+            label cellID = this->mesh().boundary()[patchi].faceCells()[facei]; 
 
             double hLoss = ( pZ[facei]*(this->Hfu-this->Hox) + this->Hox ) - pH[facei];
-            // hLoss = (hLoss>0.0) ? hLoss : 0.0;
             hLoss = max(hLoss, this->h_Tb3[0]);
             hLoss = min(hLoss, this->h_Tb3[this->NH - 1]);
 
@@ -401,9 +400,9 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
             {
 
                 pchi_Z[facei] = sdrLRXmodel(2.0,pmut[facei]
-                    /this->rho_[facei],this->deltaCells_[cellID],pZvar[facei]); //求混合物分数z的标量耗散率
+                    /this->rho_[facei],this->deltaCells_[cellID],pZvar[facei]);
                 pchi_Zc[facei]= sdrLRXmodel(2.0,pmut[facei]
-                    /this->rho_[facei],this->deltaCells_[cellID],pZcvar[facei]); //求Z、c协方差的标量耗散率
+                    /this->rho_[facei],this->deltaCells_[cellID],pZcvar[facei]); 
             }
             else
             {
@@ -424,7 +423,7 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
 
                 if(this->isLES_)
                 {
-                    pchi_c[facei] =   sdrFLRmodel(pcvar[facei],pmagUPrime[facei],
+                    pchi_c[facei] =  sdrFLRmodel(pcvar[facei],pmagUPrime[facei],
                                       this->deltaCells_[cellID],sl,dl,tau,kc_s,this->betacCells_[cellID]);   
                 }
                 else

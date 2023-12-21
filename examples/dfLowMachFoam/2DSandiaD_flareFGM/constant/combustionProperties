@@ -66,7 +66,24 @@ PaSRCoeffs
 
 flareFGMCoeffs
 {
-  speciesName ("CO");
-  combustion on;
+  scaledPV         true;
+  combustion       true;
+  solveEnthalpy    true;
+  flameletT        false;
+  relaxation       false;
+  DpDt             false;
+  buffer           false;
+  bufferTime       0.0;
+  ignition         false;
+  /*
+  ignBeginTime     0.0;
+  ignDurationTime  0.0;
+  x0               0.0;
+  y0               0.0;
+  z0               0.0;
+  R0               0.0;
+  */
+  Sct              0.7;
+  tablePath    flare_CH4_SandiaD_4D.tbl;
 }
 // ************************************************************************* //

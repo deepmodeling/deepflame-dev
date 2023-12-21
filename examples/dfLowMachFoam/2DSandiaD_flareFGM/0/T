@@ -26,39 +26,36 @@ boundaryField
         type            fixedValue;
         value           uniform 294;
     }
-
     wallOutside
     {
         type            zeroGradient;
     }
-
     wallTube
     {
         type            zeroGradient;
     }
-
     inletPilot
     {
         type            fixedValue;
         value           uniform 1880;
     }
-
     inletAir
     {
         type            fixedValue;
         value           uniform 291;
     }
-
     outlet
     {
         type            zeroGradient;
     }
-
+    axis
+    {
+        type            empty;
+    }
     frontAndBack_pos
     {
         type            wedge;
     }
-
     frontAndBack_neg
     {
         type            wedge;
