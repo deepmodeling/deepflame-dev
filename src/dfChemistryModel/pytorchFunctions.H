@@ -118,8 +118,6 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
             std::chrono::steady_clock::time_point start8 = std::chrono::steady_clock::now();
 
             pybind11::array_t<double> vec0 = pybind11::array_t<double>({DNNinputs[0].size()}, {8}, &DNNinputs[0][0]); // cast vector to np.array
-            pybind11::array_t<double> vec1 = pybind11::array_t<double>({DNNinputs[1].size()}, {8}, &DNNinputs[1][0]);
-            pybind11::array_t<double> vec2 = pybind11::array_t<double>({DNNinputs[2].size()}, {8}, &DNNinputs[2][0]);
 
             std::chrono::steady_clock::time_point stop8 = std::chrono::steady_clock::now();
             std::chrono::duration<double> processingTime8 = std::chrono::duration_cast<std::chrono::duration<double>>(stop8 - start8);
@@ -130,7 +128,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
 
             std::chrono::steady_clock::time_point start9 = std::chrono::steady_clock::now();
 
-            pybind11::object result = call_torch.attr("inference")(vec0, vec1, vec2); // call python function
+            pybind11::object result = call_torch.attr("inference")(vec0); // call python function
             const double* star = result.cast<pybind11::array_t<double>>().data();
 
             std::chrono::steady_clock::time_point stop9 = std::chrono::steady_clock::now();
@@ -146,9 +144,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
             /*=============================construct solutions=============================*/
             std::chrono::steady_clock::time_point start6 = std::chrono::steady_clock::now();
             std::vector<double> outputsVec0(star, star+outputLength[0] * mixture_.nSpecies()); //the float number is sample_length*sample_number
-            std::vector<double> outputsVec1(star+outputLength[0] * mixture_.nSpecies(), star+outputLength[1] * mixture_.nSpecies());
-            std::vector<double> outputsVec2(star+outputLength[1] * mixture_.nSpecies(), star+outputLength[2] * mixture_.nSpecies());
-            std::vector<std::vector<double>> results = {outputsVec0, outputsVec1, outputsVec2};
+            std::vector<std::vector<double>> results = {outputsVec0};
             updateSolutionBuffer(solutionBuffer, results, cellIDBuffer, problemCounter);
             std::chrono::steady_clock::time_point stop6 = std::chrono::steady_clock::now();
             std::chrono::duration<double> processingTime6 = std::chrono::duration_cast<std::chrono::duration<double>>(stop6 - start6);
@@ -270,15 +266,11 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
         problemBuffer.append(GPUproblemList);
         getDNNinputs(problemBuffer, outputLength, DNNinputs, cellIDBuffer, problemCounter);
         pybind11::array_t<double> vec0 = pybind11::array_t<double>({DNNinputs[0].size()}, {8}, &DNNinputs[0][0]); // cast vector to np.array
-        pybind11::array_t<double> vec1 = pybind11::array_t<double>({DNNinputs[1].size()}, {8}, &DNNinputs[1][0]);
-        pybind11::array_t<double> vec2 = pybind11::array_t<double>({DNNinputs[2].size()}, {8}, &DNNinputs[2][0]);
         pybind11::module_ call_torch = pybind11::module_::import("inference"); // import python file
-        pybind11::object result = call_torch.attr("inference")(vec0, vec1, vec2); // call python function
+        pybind11::object result = call_torch.attr("inference")(vec0); // call python function
         const double* star = result.cast<pybind11::array_t<double>>().data();
         std::vector<double> outputsVec0(star, star+outputLength[0] * mixture_.nSpecies()); //the float number is sample_length*sample_number
-        std::vector<double> outputsVec1(star+outputLength[0] * mixture_.nSpecies(), star+outputLength[1] * mixture_.nSpecies());
-        std::vector<double> outputsVec2(star+outputLength[1] * mixture_.nSpecies(), star+outputLength[2] * mixture_.nSpecies());
-        std::vector<std::vector<double>> results = {outputsVec0, outputsVec1, outputsVec2};
+        std::vector<std::vector<double>> results = {outputsVec0};
         updateSolutionBuffer(solutionBuffer, results, cellIDBuffer, problemCounter);
         DynamicList<GpuSolution> finalList;
         finalList = solutionBuffer[0];
