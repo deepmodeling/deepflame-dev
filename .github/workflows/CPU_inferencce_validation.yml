@@ -10,13 +10,9 @@ jobs:
   build_validation:
     runs-on: self-hosted
     if: github.repository_owner == 'deepmodeling'     
-    volumes:
-      - name: dshm
-        emptyDir:
-          medium: Memory
-          sizeLimit: "1Gi"
     container: 
       image: ubuntu:20.04
+      options: --shm-size=5g  # shared memory size = 5GB
     steps:
      - name: Checkout
        uses: actions/checkout@v3
