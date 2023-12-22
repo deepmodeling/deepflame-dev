@@ -126,12 +126,14 @@ public IOdictionary
         volScalarField& T_;
         const volScalarField& p_;
         volScalarField& rho_;
+        volScalarField mixfrac_;
         volScalarField& mu_;
         volScalarField& psi_;
         // heat release rate, [J/m^3/s]
         volScalarField Qdot_;
         // DNN selection fields
         volScalarField selectDNN_;
+        bool useThermoTranNN;
 
 #if defined USE_LIBTORCH || defined USE_PYTORCH
         bool useDNN;
@@ -169,6 +171,7 @@ public IOdictionary
         // profiling
         double time_vec2ndarray_;
         double time_python_;
+        pybind11::module_ call_ThermoTranNN; // to import inference file
 #endif
 
         // Load balancing object

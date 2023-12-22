@@ -33,7 +33,7 @@ SET (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS})
 
 SET(CMAKE_C_COMPILER g++)
 SET(PATH_LIB_OPENMPI "openmpi-system")  # Foundation version
-SET(EXE_COMPILE_OPTION "-std=c++17 -m64 -Dlinux64 -DWM_ARCH_OPTION=64
+SET(EXE_COMPILE_OPTION "-std=c++14 -m64 -Dlinux64 -DWM_ARCH_OPTION=64
 -DWM_DP -DWM_LABEL_SIZE=32 -Wall -Wextra -Wold-style-cast -Wnon-virtual-dtor
 -Wno-unused-parameter -Wno-invalid-offsetof -Wno-attributes -O3
 -DNoRepository -ftemplate-depth-100

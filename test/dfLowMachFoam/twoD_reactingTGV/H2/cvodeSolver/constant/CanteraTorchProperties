@@ -34,7 +34,7 @@ TorchSettings
 {
     torch off;
     GPU   off;
-    log  on;
+    log  off;
     torchModel1 "ESH2-sub1.pt"; 
     torchModel2 "ESH2-sub2.pt"; 
     torchModel3 "ESH2-sub3.pt"; 
