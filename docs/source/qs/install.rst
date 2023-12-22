@@ -43,12 +43,12 @@ Alternatively, one can `compile OpenFOAM-7 from source code <https://openfoam.or
 
     conda create -n deepflame python=3.8
     conda activate deepflame
-    conda install -c conda-forge libcantera-devel 
-    conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+    conda install -c cantera libcantera-devel
+    pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
     conda install pybind11 
     conda install -c conda-forge easydict
 
-.. Note:: Please go to `the official website of PyTorch <https://pytorch.org/>`_ to check your system compatibility and choose the installation command line that is suitable for your platform.
+.. Note:: Please go to PyTorch's official website to check your system compatability and choose the installation command line that is suitable for your platform. After installing torch, do check if torch.cuda.is_available() returns true to use GPU for DNN inference!
 
 .. code-block:: bash
 

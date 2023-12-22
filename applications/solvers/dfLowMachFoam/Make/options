@@ -1,6 +1,6 @@
 -include $(GENERAL_RULES)/mplibType
 
-EXE_INC = -std=c++17 \
+EXE_INC = -std=c++14 \
     -g \
     -fopenmp \
     -Wno-unused-variable \
