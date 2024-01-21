@@ -1075,7 +1075,7 @@ GenMatrix_U(
     
     offset = 0;
     for (label patchi = 0; patchi < nPatch; ++patchi){
-        for (label s = 0; s < patchSize[s]; ++s){
+        for (label s = 0; s < patchSize[patchi]; ++s){
             label start_index = offset + s;
             fvm.internalCoeffs()[patchi][s][0] = internalCoeffsPtr[start_index * 3];
             fvm.internalCoeffs()[patchi][s][1] = internalCoeffsPtr[start_index * 3 + 1];
@@ -1087,7 +1087,7 @@ GenMatrix_U(
         if(patchTypePtr[patchi] == boundaryConditions::processor || patchTypePtr[patchi] == boundaryConditions::processorCyclic){
             offset += 2 * patchSize[patchi];
         }else {
-        offset += patchSize[patchi];
+            offset += patchSize[patchi];
         }
     }
 
