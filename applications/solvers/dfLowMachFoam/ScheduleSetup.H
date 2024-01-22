@@ -1,2 +1,4 @@
 
-structureMeshSchedule.Setup(mesh);
+StructuredMeshSchedule::buildStructuredMeshSchedule(mesh);
+
+MeshSchedule::getMeshSchedule().show();

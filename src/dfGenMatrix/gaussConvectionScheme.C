@@ -262,30 +262,10 @@ fvcSurfaceIntegrate
 
     const Field<Type>& issf = ssf;
 
-    // forAll(owner, facei)
-    // {
-    //     ivf[owner[facei]] += issf[facei];
-    //     ivf[neighbour[facei]] -= issf[facei];
-    // }
-
-    const labelList& face_scheduling = structureMeshSchedule.face_scheduling();
-    #pragma omp parallel for
-    for(label face_scheduling_i = 0; face_scheduling_i < face_scheduling.size()-1; face_scheduling_i += 2){
-        label face_start = face_scheduling[face_scheduling_i]; 
-        label face_end = face_scheduling[face_scheduling_i+1];
-        for(label facei = face_start; facei < face_end; ++facei){
-            ivf[owner[facei]] += issf[facei];
-            ivf[neighbour[facei]] -= issf[facei];
-        }
-    }
-    #pragma omp parallel for
-    for(label face_scheduling_i = 1; face_scheduling_i < face_scheduling.size(); face_scheduling_i += 2){
-        label face_start = face_scheduling[face_scheduling_i]; 
-        label face_end = face_scheduling[face_scheduling_i+1];
-        for(label facei = face_start; facei < face_end; ++facei){
-            ivf[owner[facei]] += issf[facei];
-            ivf[neighbour[facei]] -= issf[facei];
-        }
+    forAll(owner, facei)
+    {
+        ivf[owner[facei]] += issf[facei];
+        ivf[neighbour[facei]] -= issf[facei];
     }
 
     forAll(mesh.boundary(), patchi)
@@ -363,6 +343,13 @@ gaussDivFvcdiv
 template
 tmp<GeometricField<scalar, fvPatchField, volMesh>>
 gaussConvectionSchemeFvcDiv
+(
+    const tmp<GeometricField<scalar, fvsPatchField, surfaceMesh>>& tssf
+);
+
+template
+tmp<GeometricField<scalar, fvPatchField, volMesh>>
+fvcSurfaceIntegrate
 (
     const tmp<GeometricField<scalar, fvsPatchField, surfaceMesh>>& tssf
 );

@@ -33,7 +33,12 @@ int row_block_bit = env_get_int("ROW_BLOCK_BIT", 5);
 
 void env_show(){
     int mpirank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
+    int flag_mpi_init;
+    MPI_Initialized(&flag_mpi_init);
+    if (flag_mpi_init) {
+        MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
+    }
+    
     if(mpirank != 0) return;
     
     std::cout << std::endl;

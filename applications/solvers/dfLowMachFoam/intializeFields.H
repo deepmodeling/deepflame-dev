@@ -8,8 +8,12 @@ label col = girdSize;
 double* filedata = new double[row * col];
 
 int mpirank, mpisize;
-MPI_Comm_rank(PstreamGlobals::MPI_COMM_FOAM, &mpirank);
-MPI_Comm_size(PstreamGlobals::MPI_COMM_FOAM, &mpisize);
+MPI_Initialized(&flag_mpi_init);
+
+if(flag_mpi_init){
+    MPI_Comm_rank(PstreamGlobals::MPI_COMM_FOAM, &mpirank);
+    MPI_Comm_size(PstreamGlobals::MPI_COMM_FOAM, &mpisize);
+}
 
 if(mpirank == 0){
     std::ifstream infile;
@@ -27,7 +31,9 @@ if(mpirank == 0){
     }
 }
 
-MPI_Bcast(filedata, row * col, MPI_DOUBLE, 0, PstreamGlobals::MPI_COMM_FOAM);
+if(flag_mpi_init){
+    MPI_Bcast(filedata, row * col, MPI_DOUBLE, 0, PstreamGlobals::MPI_COMM_FOAM);
+}
 
 const double* filedata_x = filedata;
 const double* filedata_T = filedata + col;

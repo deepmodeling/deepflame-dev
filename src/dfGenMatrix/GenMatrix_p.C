@@ -92,31 +92,10 @@ UEqn_H
     const scalar* __restrict__ upperPtr = UEqn.upper().begin();
     TICK(UEqn_H, 3, 4);
 
-    // for (label face=0; face<nFaces; face++)
-    // {
-    //     HpsiPtr[uPtr[face]] -= lowerPtr[face]*psiPtr[lPtr[face]];
-    //     HpsiPtr[lPtr[face]] -= upperPtr[face]*psiPtr[uPtr[face]];
-    // }
-
-    const labelList& face_scheduling = structureMeshSchedule.face_scheduling();
-
-    #pragma omp parallel for
-    for(label face_scheduling_i = 0; face_scheduling_i < face_scheduling.size()-1; face_scheduling_i += 2){
-        label face_start = face_scheduling[face_scheduling_i]; 
-        label face_end = face_scheduling[face_scheduling_i+1];
-        for(label facei = face_start; facei < face_end; ++facei){
-            HpsiPtr[uPtr[facei]] -= lowerPtr[facei]*psiPtr[lPtr[facei]];
-            HpsiPtr[lPtr[facei]] -= upperPtr[facei]*psiPtr[uPtr[facei]];
-        }
-    }
-    #pragma omp parallel for
-    for(label face_scheduling_i = 1; face_scheduling_i < face_scheduling.size(); face_scheduling_i += 2){
-        label face_start = face_scheduling[face_scheduling_i]; 
-        label face_end = face_scheduling[face_scheduling_i+1];
-        for(label facei = face_start; facei < face_end; ++facei){
-            HpsiPtr[uPtr[facei]] -= lowerPtr[facei]*psiPtr[lPtr[facei]];
-            HpsiPtr[lPtr[facei]] -= upperPtr[facei]*psiPtr[uPtr[facei]];
-        }
+    for (label face=0; face<nFaces; face++)
+    {
+        HpsiPtr[uPtr[face]] -= lowerPtr[face]*psiPtr[lPtr[face]];
+        HpsiPtr[lPtr[face]] -= upperPtr[face]*psiPtr[uPtr[face]];
     }
 
     TICK(UEqn_H, 4, 5);
@@ -503,46 +482,15 @@ GenMatrix_p(
     // merge
     double *fvcDivPtr = new double[nCells]{0.};
     
-    // for(label f = 0; f < nFaces; ++f){
-    //     scalar var1 = deltaCoeffsPtr[f] * gammaMagSfPtr[f];
-    //     // lowerPtr[f] = var1;
-    //     upperPtr[f] = var1;
-    //     diagPtr[l[f]] -= var1;
-    //     diagPtr[u[f]] -= var1;
-    //     fvcDivPtr[l[f]] += phiHbyAPtr[f];
-    //     fvcDivPtr[u[f]] -= phiHbyAPtr[f];
-    // }
-    const labelList& face_scheduling = structureMeshSchedule.face_scheduling();
-
-    #pragma omp parallel for
-    for(label face_scheduling_i = 0; face_scheduling_i < face_scheduling.size()-1; face_scheduling_i += 2){
-        label face_start = face_scheduling[face_scheduling_i]; 
-        label face_end = face_scheduling[face_scheduling_i+1];
-        for(label facei = face_start; facei < face_end; ++facei){
-            scalar var1 = deltaCoeffsPtr[facei] * gammaMagSfPtr[facei];
-            // lowerPtr[f] = var1;
-            upperPtr[facei] = var1;
-            diagPtr[l[facei]] -= var1;
-            diagPtr[u[facei]] -= var1;
-            fvcDivPtr[l[facei]] += phiHbyAPtr[facei];
-            fvcDivPtr[u[facei]] -= phiHbyAPtr[facei];
-        }
+    for(label f = 0; f < nFaces; ++f){
+        scalar var1 = deltaCoeffsPtr[f] * gammaMagSfPtr[f];
+        // lowerPtr[f] = var1;
+        upperPtr[f] = var1;
+        diagPtr[l[f]] -= var1;
+        diagPtr[u[f]] -= var1;
+        fvcDivPtr[l[f]] += phiHbyAPtr[f];
+        fvcDivPtr[u[f]] -= phiHbyAPtr[f];
     }
-    #pragma omp parallel for
-    for(label face_scheduling_i = 1; face_scheduling_i < face_scheduling.size(); face_scheduling_i += 2){
-        label face_start = face_scheduling[face_scheduling_i]; 
-        label face_end = face_scheduling[face_scheduling_i+1];
-        for(label facei = face_start; facei < face_end; ++facei){
-            scalar var1 = deltaCoeffsPtr[facei] * gammaMagSfPtr[facei];
-            // lowerPtr[f] = var1;
-            upperPtr[facei] = var1;
-            diagPtr[l[facei]] -= var1;
-            diagPtr[u[facei]] -= var1;
-            fvcDivPtr[l[facei]] += phiHbyAPtr[facei];
-            fvcDivPtr[u[facei]] -= phiHbyAPtr[facei];
-        }
-    }
-
 
     TICK(GenMatrix_p, 2, 3);
     // - boundary loop

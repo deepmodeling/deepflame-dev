@@ -13,7 +13,7 @@
 #include <mpi.h>
 // #include <algorithm>
 // #include "PstreamGlobals.H"
-#include "StructureMeshSchedule.H"
+#include "StructuredMeshSchedule.H"
 #include "processorFvPatchField.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -325,14 +325,14 @@ void correctThermo
     dfChemistryModel<basicThermo>* chemistry
 );
 
-void check_fvmatrix_equal(const fvScalarMatrix& a,const fvScalarMatrix& b);
-void check_fvmatrix_equal(const fvVectorMatrix& a,const fvVectorMatrix& b);
+void check_fvmatrix_equal(const fvScalarMatrix& answer,const fvScalarMatrix& check, const word& name);
+void check_fvmatrix_equal(const fvVectorMatrix& answer,const fvVectorMatrix& check, const word& name);
 
-void check_field_equal(const Field<scalar>& a, const Field<scalar>& b);
-void check_field_boundary_equal(const volScalarField& a, const volScalarField& b);
-void check_field_boundary_equal(const volVectorField& a, const volVectorField& b);
-void check_field_boundary_equal(const surfaceScalarField& a, const surfaceScalarField& b);
-void check_field_error(const Field<scalar>& a, const Field<scalar>& b, const word& name);
+void check_field_equal(const Field<scalar>& answer, const Field<scalar>& check, const word& name);
+void check_field_boundary_equal(const volScalarField& answer, const volScalarField& check, const word& name);
+void check_field_boundary_equal(const volVectorField& answer, const volVectorField& check, const word& name);
+void check_field_boundary_equal(const surfaceScalarField& answer, const surfaceScalarField& check, const word& name);
+void check_field_error(const Field<scalar>& answer, const Field<scalar>& check, const word& name);
 
 } // End namespace Foam
 

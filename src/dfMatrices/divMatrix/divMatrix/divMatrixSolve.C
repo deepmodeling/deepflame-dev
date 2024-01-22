@@ -26,7 +26,7 @@ SolverPerformance<Type> divMatrix::solve(
     double solve_time = 0.;
     double psi_correctBoundaryConditions_time = 0.;
 
-    syncClockTime clock;
+    clockTime clock;
 
     SolverPerformance<Type> solverPerfVec
     (
@@ -173,7 +173,7 @@ solverPerformance divMatrix::solve
     double psi_correctBoundaryConditions_time = 0.;
     double total_solve_time = 0.;
 
-    syncClockTime clock;
+    clockTime clock;
 
     scalarField saveDiag(diag());
     addBoundaryDiag(diag(), internalCoeffs, 0);

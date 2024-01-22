@@ -213,86 +213,25 @@ GenMatrix_E(
     double *fvcDiv2Ptr = new double[nCells]{0.};
     double *diagLaplacPtr = new double[nCells]{0.};
     
-    // for(label f = 0; f < nFaces; ++f){
-    //     scalar var1 = - weights_he_Ptr[f] * phiPtr[f];
-    //     scalar var2 = - weights_he_Ptr[f] * phiPtr[f] + phiPtr[f];
-    //     lowerPtr[f] += var1;
-    //     upperPtr[f] += var2;
-    //     diagPtr[l[f]] -= var1;
-    //     diagPtr[u[f]] -= var2;
-    //     fvcDivPtr[l[f]] += phiPtr[f] * KfPtr[f];
-    //     fvcDivPtr[u[f]] -= phiPtr[f] * KfPtr[f];
-    //     fvcDiv2Ptr[l[f]] += hDiffCorrFluxf[f];
-    //     fvcDiv2Ptr[u[f]] -= hDiffCorrFluxf[f];
-    // }
-    const labelList& face_scheduling = structureMeshSchedule.face_scheduling();
-
-    #pragma omp parallel for
-    for(label face_scheduling_i = 0; face_scheduling_i < face_scheduling.size()-1; face_scheduling_i += 2){
-        label face_start = face_scheduling[face_scheduling_i]; 
-        label face_end = face_scheduling[face_scheduling_i+1];
-        for(label f = face_start; f < face_end; ++f){
-            scalar var1 = - weights_he_Ptr[f] * phiPtr[f];
-            scalar var2 = - weights_he_Ptr[f] * phiPtr[f] + phiPtr[f];
-            lowerPtr[f] += var1;
-            upperPtr[f] += var2;
-            diagPtr[l[f]] -= var1;
-            diagPtr[u[f]] -= var2;
-            fvcDivPtr[l[f]] += phiPtr[f] * KfPtr[f];
-            fvcDivPtr[u[f]] -= phiPtr[f] * KfPtr[f];
-            fvcDiv2Ptr[l[f]] += hDiffCorrFluxf[f];
-            fvcDiv2Ptr[u[f]] -= hDiffCorrFluxf[f];
-        }
-    }
-    #pragma omp parallel for
-    for(label face_scheduling_i = 1; face_scheduling_i < face_scheduling.size(); face_scheduling_i += 2){
-        label face_start = face_scheduling[face_scheduling_i]; 
-        label face_end = face_scheduling[face_scheduling_i+1];
-        for(label f = face_start; f < face_end; ++f){
-            scalar var1 = - weights_he_Ptr[f] * phiPtr[f];
-            scalar var2 = - weights_he_Ptr[f] * phiPtr[f] + phiPtr[f];
-            lowerPtr[f] += var1;
-            upperPtr[f] += var2;
-            diagPtr[l[f]] -= var1;
-            diagPtr[u[f]] -= var2;
-            fvcDivPtr[l[f]] += phiPtr[f] * KfPtr[f];
-            fvcDivPtr[u[f]] -= phiPtr[f] * KfPtr[f];
-            fvcDiv2Ptr[l[f]] += hDiffCorrFluxf[f];
-            fvcDiv2Ptr[u[f]] -= hDiffCorrFluxf[f];
-        }
+    for(label f = 0; f < nFaces; ++f){
+        scalar var1 = - weights_he_Ptr[f] * phiPtr[f];
+        scalar var2 = - weights_he_Ptr[f] * phiPtr[f] + phiPtr[f];
+        lowerPtr[f] += var1;
+        upperPtr[f] += var2;
+        diagPtr[l[f]] -= var1;
+        diagPtr[u[f]] -= var2;
+        fvcDivPtr[l[f]] += phiPtr[f] * KfPtr[f];
+        fvcDivPtr[u[f]] -= phiPtr[f] * KfPtr[f];
+        fvcDiv2Ptr[l[f]] += hDiffCorrFluxf[f];
+        fvcDiv2Ptr[u[f]] -= hDiffCorrFluxf[f];
     }
 
-    // for(label f = 0; f < nFaces; ++f){
-    //     scalar var1 = deltaCoeffsPtr[f] * gammaMagSfPtr[f];
-    //     lowerPtr[f] -= var1;
-    //     upperPtr[f] -= var1;
-    //     diagLaplacPtr[l[f]] += var1; //negSumDiag
-    //     diagLaplacPtr[u[f]] += var1;
-    // }
-
-    #pragma omp parallel for
-    for(label face_scheduling_i = 0; face_scheduling_i < face_scheduling.size()-1; face_scheduling_i += 2){
-        label face_start = face_scheduling[face_scheduling_i]; 
-        label face_end = face_scheduling[face_scheduling_i+1];
-        for(label f = face_start; f < face_end; ++f){
-            scalar var1 = deltaCoeffsPtr[f] * gammaMagSfPtr[f];
-            lowerPtr[f] -= var1;
-            upperPtr[f] -= var1;
-            diagLaplacPtr[l[f]] += var1; //negSumDiag
-            diagLaplacPtr[u[f]] += var1;
-        }
-    }
-    #pragma omp parallel for
-    for(label face_scheduling_i = 1; face_scheduling_i < face_scheduling.size(); face_scheduling_i += 2){
-        label face_start = face_scheduling[face_scheduling_i]; 
-        label face_end = face_scheduling[face_scheduling_i+1];
-        for(label f = face_start; f < face_end; ++f){
-            scalar var1 = deltaCoeffsPtr[f] * gammaMagSfPtr[f];
-            lowerPtr[f] -= var1;
-            upperPtr[f] -= var1;
-            diagLaplacPtr[l[f]] += var1; //negSumDiag
-            diagLaplacPtr[u[f]] += var1;
-        }
+    for(label f = 0; f < nFaces; ++f){
+        scalar var1 = deltaCoeffsPtr[f] * gammaMagSfPtr[f];
+        lowerPtr[f] -= var1;
+        upperPtr[f] -= var1;
+        diagLaplacPtr[l[f]] += var1; //negSumDiag
+        diagLaplacPtr[u[f]] += var1;
     }
 
     forAll(he.boundaryField(), patchi)

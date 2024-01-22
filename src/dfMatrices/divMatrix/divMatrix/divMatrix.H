@@ -16,6 +16,7 @@
 #include "className.H"
 
 #include "lduMatrix.H"
+#include "clockTime.H"
 
 
 #define DIV_BLOCK_MASK ((1 << (row_block_bit_)) - 1)

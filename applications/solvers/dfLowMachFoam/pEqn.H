@@ -8,7 +8,7 @@ double p_convert_time = 0.;
 double p_solve_time = 0.;
 double p_pimple_time = 0.;
 
-syncClockTime clock;
+clockTime clock;
 
 if (!pimple.simpleRho())
 {

@@ -47,8 +47,13 @@ int main(int argc, char *argv[])
     
     int mpirank = 0;
     int mpisize = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD,&mpirank);
-    MPI_Comm_rank(MPI_COMM_WORLD,&mpisize);
+    int flag_mpi_init;
+    MPI_Initialized(&flag_mpi_init);
+
+    if(flag_mpi_init){
+        MPI_Comm_rank(MPI_COMM_WORLD,&mpirank);
+        MPI_Comm_size(MPI_COMM_WORLD,&mpisize);
+    }
 
     double total_start = MPI_Wtime();
 

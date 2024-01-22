@@ -1,7 +1,7 @@
 Info << "refine\n" << endl;
 Info << "before refine cell number = " << U.size() << endl;
 
-syncClockTime clock;
+clockTime clock;
 
 // Store divrhoU from the previous mesh so that it can be mapped
 // and used in correctPhi to ensure the corrected phi has the

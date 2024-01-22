@@ -302,10 +302,10 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
 #ifdef USE_BLASDNN
     torchSwitch_ = this->subDict("TorchSettings").lookupOrDefault("torch", false);
     useDNN = true;
-    if (!Qdot_.typeHeaderOk<volScalarField>())
-    {
-        useDNN = false;
-    }
+    // if (!Qdot_.typeHeaderOk<volScalarField>())
+    // {
+    //     useDNN = false;
+    // }
     if(torchSwitch_){
         BLASDNNModelPath_ = this->subDict("TorchSettings").lookupOrDefault("BLASDNNModelPath", string(""));
         DNNInferencer_blas_.load_models(BLASDNNModelPath_);

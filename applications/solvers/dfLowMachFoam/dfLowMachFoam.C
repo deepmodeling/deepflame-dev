@@ -61,7 +61,7 @@ Description
 #include "CombustionModel.H"
 #include "CorrectPhi.H"
 
-#include "StructureMeshSchedule.H"
+#include "StructuredMeshSchedule.H"
 #include <typeinfo>
 #include "env.H"
 #include "GenFvMatrix.H"
@@ -71,12 +71,12 @@ Description
 // #define _ELL_
 #define _DIV_
 // #define _LDU_
-#define OPT_GenMatrix_Y
+// #define OPT_GenMatrix_Y
 // #define OPT_GenMatrix_E
-// #define OPT_GenMatrix_U
+#define OPT_GenMatrix_U
 // #define OPT_GenMatrix_p
-#define OPT_thermo
-// #define OPT_GenMatrix_U_check
+// #define OPT_thermo
+#define OPT_GenMatrix_U_check
 // #define OPT_GenMatrix_Y_check
 // #define OPT_GenMatrix_E_check
 // #define OPT_GenMatrix_p_check
@@ -145,7 +145,7 @@ void benchmark(){
     scalar s = 1;
     label l = 1;
     int i = 1;
-    syncClockTime clock;
+    clockTime clock;
     char buffer_1K[1024];
     char buffer_1M[1024 * 1024];
     string str_buffer_1K(1024, 'a');
@@ -167,15 +167,23 @@ void benchmark(){
     Info << "reduce label max : " << clock.timeIncrement() << endl;
     reduce(l, minOp<label>());
     Info << "reduce label min : " << clock.timeIncrement() << endl;
-    MPI_Bcast(&i, 1, MPI_INT, 0,  PstreamGlobals::MPI_COMM_FOAM);
+    int flag_mpi_init;
+    MPI_Initialized(&flag_mpi_init);
+    if(flag_mpi_init){
+        MPI_Bcast(&i, 1, MPI_INT, 0,  PstreamGlobals::MPI_COMM_FOAM);
+    }
     Info << "MPI_Bcast int : " << clock.timeIncrement() << endl;
     Pstream::scatter(i);
     Info << "Pstream::scatter int : " << clock.timeIncrement() << endl;
-    MPI_Bcast(buffer_1K, 1024, MPI_CHAR, 0,  PstreamGlobals::MPI_COMM_FOAM);
+    if(flag_mpi_init){
+        MPI_Bcast(buffer_1K, 1024, MPI_CHAR, 0,  PstreamGlobals::MPI_COMM_FOAM);
+    }
     Info << "MPI_Bcast char 1K : " << clock.timeIncrement() << endl;
     Pstream::scatter(str_buffer_1K);
     Info << "Pstream::scatter char 1K : " << clock.timeIncrement() << endl;
-    MPI_Bcast(buffer_1M, 1024 * 1024, MPI_CHAR, 0,  PstreamGlobals::MPI_COMM_FOAM);
+    if(flag_mpi_init){
+        MPI_Bcast(buffer_1M, 1024 * 1024, MPI_CHAR, 0,  PstreamGlobals::MPI_COMM_FOAM);
+    }
     Info << "MPI_Bcast char 1M : " << clock.timeIncrement() << endl;
     Pstream::scatter(str_buffer_1M);
     Info << "Pstream::scatter char 1M : " << clock.timeIncrement() << endl;
@@ -186,7 +194,9 @@ void benchmark(){
     Info << "reduce point max : " << clock.timeIncrement() << endl;
     reduce(p, minOp<point>());
     Info << "reduce point min : " << clock.timeIncrement() << endl;
-    Pstream::barrier();
+    if(flag_mpi_init){
+        MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
+    }
     Info << "Pstream::barrier : " << clock.timeIncrement() << endl;
     Info << "benchmark end" << endl;
 }
@@ -213,7 +223,7 @@ int main(int argc, char *argv[])
     Info << "typeid(unsigned).name() : " << typeid(unsigned).name() << endl;
     Info << "sizeof(unsigned) : " << sizeof(unsigned) << endl;
  
-    syncClockTime initClock;
+    clockTime initClock;
 
     #include "listOutput.H"
     double listOutput_time = initClock.timeIncrement();
@@ -255,7 +265,11 @@ int main(int argc, char *argv[])
         #include "compressibleCourantNo.H"
         #include "setInitialDeltaT.H"
     }
-    Pstream::barrier();
+    int flag_mpi_init;
+    MPI_Initialized(&flag_mpi_init);
+    if(flag_mpi_init){
+        MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
+    }
     double setInitialDeltaT_time = initClock.timeIncrement();
     Info << "setInitialDeltaT time : " << setInitialDeltaT_time << endl;
 
@@ -284,6 +298,34 @@ int main(int argc, char *argv[])
 
     init_const_coeff_ptr(fileName(CanteraTorchProperties.lookup("CanteraMechanismFile")).expand(), Y);
 
+    surfaceScalarField upwindWeights
+    (
+        IOobject
+        (
+            "upwindWeights",
+            runTime.timeName(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh,
+        dimensionedScalar(dimensionSet(0,0,0,0,0,0,0), 0)
+    );
+
+    surfaceScalarField phiUc
+    (
+        IOobject
+        (
+            "phiUc",
+            runTime.timeName(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh,
+        dimensionedScalar(dimensionSet(1,0,-1,0,0,0,0), 0)
+    );
+
     #include "ScheduleSetup.H"
     double ScheduleSetup_time = initClock.timeIncrement();
     Info << "ScheduleSetup time : " << ScheduleSetup_time << endl; 
@@ -300,7 +342,7 @@ int main(int argc, char *argv[])
 
     std::vector<double> step_timer;
 
-    syncClockTime computeClock;
+    clockTime computeClock;
 
     Info<< "\nStarting time loop\n" << endl;
 

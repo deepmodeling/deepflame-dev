@@ -3,6 +3,7 @@
 #include <string>
 #include <PstreamGlobals.H>
 #include "csrPattern.H"
+#include <tuple>
 
 namespace Foam{
 
@@ -331,8 +332,13 @@ csrPattern operator+(const csrPattern& a, const csrPattern& b){
 
 void csrPattern::write_mtx(const std::string& filename) const {
     int mpisize, mpirank;
-    MPI_Comm_rank(PstreamGlobals::MPI_COMM_FOAM, &mpirank);
-    MPI_Comm_size(PstreamGlobals::MPI_COMM_FOAM, &mpisize);
+    int flag_mpi_init;
+    MPI_Initialized(&flag_mpi_init);
+
+    if(flag_mpi_init || !flag_mpi_init){
+        MPI_Comm_rank(PstreamGlobals::MPI_COMM_FOAM, &mpirank);
+        MPI_Comm_size(PstreamGlobals::MPI_COMM_FOAM, &mpisize);
+    }
     if(mpirank == 0){
         std::stringstream ss;
         ss << filename << "_" << mpirank << ".mtx";

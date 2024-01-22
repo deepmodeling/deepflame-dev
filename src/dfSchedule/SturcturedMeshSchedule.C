@@ -1,14 +1,23 @@
-#include "StructureMeshSchedule.H"
+#include "StructuredMeshSchedule.H"
 #include "csrPattern.H"
 #include <cassert>
 
 namespace Foam{
+
+void StructuredMeshSchedule::buildStructuredMeshSchedule(const fvMesh& mesh){
+    if(meshSchedulePtr_ == nullptr){
+        meshSchedulePtr_ = new StructuredMeshSchedule(mesh);
+    }else{
+        Info << "meshSchedule has been constructed !!!" << endl;
+        MPI_Abort(MPI_COMM_WORLD, -1);
+    }
+}
     
-label StructureMeshSchedule::index(label x, label y, label z){
+label StructuredMeshSchedule::index(label x, label y, label z) const {
     return z * x_dim_ * y_dim_ + y * x_dim_ + x;
 }
 
-void StructureMeshSchedule::xyz(label index, label& x, label& y, label& z){
+void StructuredMeshSchedule::xyz(label index, label& x, label& y, label& z) const {
     x = index % x_dim_;
     index = index / x_dim_;
     y = index % y_dim_;
@@ -16,22 +25,22 @@ void StructureMeshSchedule::xyz(label index, label& x, label& y, label& z){
     z = index;
 }
 
-void StructureMeshSchedule::Setup(const fvMesh& mesh){
-    nCells_ = mesh.nCells();
-    
+StructuredMeshSchedule::StructuredMeshSchedule(const fvMesh& mesh):MeshSchedule(mesh){
     const labelUList& face_ptr = mesh.lduAddr().ownerStartAddr();
     const labelUList& l = mesh.lduAddr().lowerAddr();
     const labelUList& u = mesh.lduAddr().upperAddr();
 
+    std::vector<std::tuple<label,label,label>> points;
+
     const auto& cellCentres = mesh.cellCentres();
     forAll(cellCentres, i){
-        points_.push_back(std::make_tuple(static_cast<label>(cellCentres[i][0] * 1e6), static_cast<label>(cellCentres[i][1] * 1e6), static_cast<label>(cellCentres[i][2] * 1e6)));
+        points.push_back(std::make_tuple(static_cast<label>(cellCentres[i][0] * 1e6), static_cast<label>(cellCentres[i][1] * 1e6), static_cast<label>(cellCentres[i][2] * 1e6)));
     }
 
     // compute x y z dim
     x_dim_ = 1;
-    for(size_t i = 1; i < points_.size(); ++i){
-        if(std::get<1>(points_[i]) == std::get<1>(points_[i-1])){
+    for(size_t i = 1; i < points.size(); ++i){
+        if(std::get<1>(points[i]) == std::get<1>(points[i-1])){
             x_dim_ += 1;
         }else{
             break;
@@ -39,8 +48,8 @@ void StructureMeshSchedule::Setup(const fvMesh& mesh){
     }
 
     y_dim_ = 1;
-    for(size_t i = 1; i < points_.size(); ++i){
-        if(std::get<2>(points_[i]) == std::get<2>(points_[i-1])){
+    for(size_t i = 1; i < points.size(); ++i){
+        if(std::get<2>(points[i]) == std::get<2>(points[i-1])){
             y_dim_ += 1;
         }else{
             break;
@@ -49,10 +58,6 @@ void StructureMeshSchedule::Setup(const fvMesh& mesh){
     
     y_dim_ /= x_dim_;
     z_dim_ = nCells_ / y_dim_ / x_dim_;
-
-    Info << "x_dim : " << x_dim_ << endl;
-    Info << "y_dim : " << y_dim_ << endl;
-    Info << "z_dim : " << z_dim_ << endl;
 
     // simple layer scheduling
     cell_scheduling_.resize(z_dim_ + 1);
@@ -92,7 +97,5 @@ void StructureMeshSchedule::Setup(const fvMesh& mesh){
     // csrPattern zdim_graph = meshPattern.blocking(x_dim_ * y_dim_);
     // zdim_graph.write_mtx("sparse_pattern_block_xydim_" + std::to_string(x_dim_ * y_dim_));
 }
-
-StructureMeshSchedule structureMeshSchedule(0);
 
 }

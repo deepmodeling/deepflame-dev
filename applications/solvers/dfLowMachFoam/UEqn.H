@@ -45,7 +45,7 @@ tmp<fvVectorMatrix> tUEqn_answer
     -fvc::grad(p)
 );
 fvVectorMatrix& UEqn_answer = tUEqn_answer.ref();
-check_fvmatrix_equal(UEqn, UEqn_answer);
+check_fvmatrix_equal(UEqn_answer, UEqn, "UEqn");
 #endif
 
 U_build_start = MPI_Wtime();

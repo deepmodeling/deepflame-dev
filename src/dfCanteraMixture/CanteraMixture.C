@@ -73,7 +73,7 @@ Foam::CanteraMixture::CanteraMixture
     CvTemp_(nSpecies()),
     muTemp_(nSpecies())
 {
-    syncClockTime clock;
+    clockTime clock;
 
     // buildCanteraSolution();
 
@@ -204,7 +204,7 @@ Foam::CanteraMixture::CanteraMixture
 void Foam::CanteraMixture::buildCanteraSolution(){
     // assert(CanteraMechanismFile_ end with .yaml);
     Info << "Foam::CanteraMixture::buildCanteraSolution start" << endl;
-    syncClockTime clock;
+    clockTime clock;
 
     int32_t count;
     char* buffer;    
@@ -236,15 +236,18 @@ void Foam::CanteraMixture::buildCanteraSolution(){
 
     Info << "Foam::CanteraMixture::buildCanteraSolution time 0 : " << clock.timeIncrement() << endl;
 
-    MPI_Bcast(&count, 1, MPI_INT, 0, PstreamGlobals::MPI_COMM_FOAM);
+    if(flag_mpi_init){
+        MPI_Bcast(&count, 1, MPI_INT, 0, PstreamGlobals::MPI_COMM_FOAM);
+    }
 
     Info << "Foam::CanteraMixture::buildCanteraSolution time 1 : " << clock.timeIncrement() << endl;
 
     if(mpirank != 0){
         buffer = new char[count];
     }
-
-    MPI_Bcast(buffer, count, MPI_CHAR, 0, PstreamGlobals::MPI_COMM_FOAM);
+    if(flag_mpi_init){
+        MPI_Bcast(buffer, count, MPI_CHAR, 0, PstreamGlobals::MPI_COMM_FOAM);
+    }
 
     Info << "Foam::CanteraMixture::buildCanteraSolution time 2 : " << clock.timeIncrement() << endl;
 

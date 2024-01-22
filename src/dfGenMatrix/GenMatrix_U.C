@@ -182,7 +182,6 @@ GenMatrix_U(
     label offset = 0;
 
     label *patchTypePtr = new label[nPatch];
-    MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     for(label patchi = 0 ; patchi < nPatch ; ++patchi)
     {
         std::string patchTypeStr = U.boundaryField()[patchi].type();

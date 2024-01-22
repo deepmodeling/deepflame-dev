@@ -1,16 +1,11 @@
 double Y_total_start, Y_total_end, Y_total_time = 0.; 
-double Y_init_start, Y_init_end, Y_init_time = 0.; 
 double Y_build_start, Y_build_end, Y_build_time = 0.; 
-double Y_build_grad_start, Y_build_grad_end, Y_build_grad_time = 0.;  
-double Y_build_laplacian_start, Y_build_laplacian_end, Y_build_laplacian_time = 0.;  
 double Y_convert_start, Y_convert_end, Y_convert_time = 0.; 
 double Y_update_start, Y_update_end, Y_update_time = 0.; 
 double Y_solve_start, Y_solve_end, Y_solve_time = 0.;
 
 double Y_build_old_start, Y_build_old_end, Y_build_old_time = 0.; 
 double Y_build_new_start, Y_build_new_end, Y_build_new_time = 0.; 
-double Y_phiUc_start, Y_phiUc_end, Y_phiUc_time = 0.; 
-double Y_field_multi_time = 0.0;
 
 hDiffCorrFlux = Zero;
 diffAlphaD = Zero;
@@ -20,53 +15,26 @@ start = MPI_Wtime();
 Y_total_start = MPI_Wtime();
 Y_build_start = MPI_Wtime();
 
-std::vector<volVectorField> gradResult; 
-#ifndef OPT_GenMatrix_Y_check
-forAll(Y, i){
-    gradResult.push_back(U);
-}
-#endif
-
-#ifdef OPT_GenMatrix_Y_check
-gradResult.clear();
-// test
-std::vector<volVectorField> gradResultRef; 
-forAll(Y, i){
-    tmp<volVectorField> tfvcGradY = fvc::grad(Y[i]);
-    volVectorField& fvcGradY = const_cast<volVectorField&>(tfvcGradY());
-    gradResult.push_back(fvcGradY);
-    gradResultRef.push_back(fvcGradY);
-}
-volVectorField sumYDiffErrorRef = sumYDiffError;
-#endif
-
-// preProcess_Y(Y, phiUc, sumYDiffError, gradResultRef, chemistry, upwindWeights, thermo.alpha(), phi);
+#ifdef OPT_GenMatrix_Y
 preProcess_Y(Y, phiUc, sumYDiffError, chemistry, upwindWeights, thermo.alpha(), phi);
-
-#ifdef OPT_GenMatrix_Y_check
-forAll(Y, i){
-    check_field_boundary_equal(gradResult[i], gradResultRef[i]);
-}
-gradResult.clear();
-Info << "gradResult pass " << endl;
-Y_phiUc_start = MPI_Wtime();
+#else
 forAll(Y, i)
 {
-    tmp<volVectorField> tfvcGradY = chemistry->rhoD(i) * fvc::grad(Y[i]);
-    const volVectorField& fvcGradY = tfvcGradY();
-    sumYDiffErrorRef += fvcGradY;
-    gradResult.push_back(fvcGradY);
+    sumYDiffError += chemistry->rhoD(i) * fvc::grad(Y[i]);;
 }
-check_field_boundary_equal(sumYDiffError, sumYDiffErrorRef);
-Info << "sumYDiffError pass " << endl;
+phiUc = (linearInterpolate(sumYDiffError) & mesh.Sf()).ref();
+#endif
 
-TICK(Y_phiUc, 0, 1);
-const surfaceScalarField phiUcRef = (linearInterpolate(sumYDiffError) & mesh.Sf()).ref();
-check_field_boundary_equal(phiUc, phiUcRef);
-Info << "phiUc pass " << endl;
-TICK(Y_phiUc, 1, 2);
-Y_phiUc_end = MPI_Wtime();
-Y_phiUc_time += Y_phiUc_end - Y_phiUc_start;
+#ifdef OPT_GenMatrix_Y_check
+volVectorField sumYDiffErrorRef = sumYDiffError;
+sumYDiffErrorRef = Zero;
+forAll(Y, i)
+{
+    sumYDiffErrorRef += chemistry->rhoD(i) * fvc::grad(Y[i]);;
+}
+check_field_boundary_equal(sumYDiffErrorRef, sumYDiffError, "sumYDiffError");
+const surfaceScalarField phiUcRef = (linearInterpolate(sumYDiffErrorRef) & mesh.Sf()).ref();
+check_field_boundary_equal(phiUcRef, phiUc, "phiUc");
 #endif
 
 Y_build_end = MPI_Wtime();
@@ -76,21 +44,14 @@ Y_total_time += Y_total_end - Y_total_start;
 end = MPI_Wtime();
 time_monitor_Y += end - start;
 
-start = MPI_Wtime();
-//MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
-//label flag_mpi_init;
 int flag_mpi_init;
 MPI_Initialized(&flag_mpi_init);
 if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
-end = MPI_Wtime();
-time_monitor_corrDiff += end - start;
 
 if (!splitting)
 {
     start = MPI_Wtime();
     combustion->correct();
-    //label flag_mpi_init;
-    //MPI_Initialized(&flag_mpi_init);
     if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     end = MPI_Wtime();
     time_monitor_chem += end - start;
@@ -98,16 +59,11 @@ if (!splitting)
 
 start = MPI_Wtime();
 Y_total_start = MPI_Wtime();
-Y_init_start = MPI_Wtime();
 
 volScalarField Yt(0.0*Y[0]);
 
-Y_init_end = MPI_Wtime();
-Y_init_time += Y_init_end - Y_init_start;
 forAll(Y, i)
 {
-    Y_build_start = MPI_Wtime();
-    
     volScalarField& Yi = Y[i];
 
     if (i != inertIndex)
@@ -115,6 +71,7 @@ forAll(Y, i)
 
         Y_build_start = MPI_Wtime();
 #ifndef OPT_GenMatrix_Y
+        Y_build_old_start = MPI_Wtime();
         tmp<fv::convectionScheme<scalar>> mvConvection
         (
             fv::convectionScheme<scalar>::New
@@ -126,7 +83,6 @@ forAll(Y, i)
             )
         );
 
-        Y_build_old_start = MPI_Wtime();
         tmp<volScalarField> DEff = chemistry->rhoD(i) + turbulence->mut()/Sct;
         fvScalarMatrix YiEqn
         (
@@ -180,7 +136,7 @@ forAll(Y, i)
         );
         Y_build_old_end = MPI_Wtime();
         Y_build_old_time += Y_build_old_end - Y_build_old_start;
-        check_fvmatrix_equal(YiEqn, YiEqn_answer);
+        check_fvmatrix_equal(YiEqn_answer, YiEqn, "YiEqn");
 #endif
 #ifdef _DIV_
             Y_convert_start = MPI_Wtime();
@@ -210,25 +166,23 @@ forAll(Y, i)
     }
 }
 
+Y_update_start = MPI_Wtime();
+Y[inertIndex] = scalar(1) - Yt;
+Y[inertIndex].max(0.0);
+Y_update_end = MPI_Wtime();
+Y_update_time += Y_update_end - Y_update_start;
+
 Y_total_end = MPI_Wtime();
 Y_total_time += Y_total_end - Y_total_start;
 
+end = MPI_Wtime();
+time_monitor_Y += end - start;
+
 Info << "Y total Time : " << Y_total_time << endl;
-Info << "Y init Time : " << Y_init_time << endl;
-Info << "Y phiUc time : " << Y_phiUc_time << endl;
 Info << "Y build Time : " << Y_build_time << endl;
 Info << "Y build new Time : " << Y_build_new_time << endl;
 Info << "Y build old Time : " << Y_build_old_time << endl;
-Info << "Y build grad Time : " << Y_build_grad_time << endl;
-Info << "Y build laplacian Time : " << Y_build_laplacian_time << endl;
-Info << "Y build fieldMulti Time : " << Y_field_multi_time << endl;
 Info << "Y convert Time : " << Y_convert_time << endl;
 Info << "Y update Time : " << Y_update_time << endl;
 Info << "Y solve Time : " << Y_solve_time << endl;
 Info << "Y other Time : " << Y_total_time - Y_build_time - Y_convert_time - Y_solve_time - Y_update_time << endl;
-
-Y[inertIndex] = scalar(1) - Yt;
-Y[inertIndex].max(0.0);
-
-end = MPI_Wtime();
-time_monitor_Y += end - start;
