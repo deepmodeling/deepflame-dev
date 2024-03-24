@@ -177,8 +177,8 @@ public IOdictionary
 
 #ifdef USE_BLASDNN
 
-#define USE_BLASDNN_HALF
-// #define USE_BLASDNN_FLOAT
+// #define USE_BLASDNN_HALF
+#define USE_BLASDNN_FLOAT
 // #define USE_BLASDNN_DOUBLE
 
 #if defined(USE_BLASDNN_HALF)
