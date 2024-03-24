@@ -257,38 +257,38 @@ Foam::solverPerformance Foam::DIVPBiCGStab::solve
 
             PBiCGStab_axpy_time += clock.timeIncrement();
 
-            // --- Test sA for convergence
-            scalar gSASumMag = 0.;
-#ifdef _OPENMP
-#pragma omp parallel for reduction(+:gSASumMag)
-#endif
-            for(label c = 0; c < nCells; ++c){
-                gSASumMag += std::abs(sAPtr[c]);
-            }
+//             // --- Test sA for convergence
+//             scalar gSASumMag = 0.;
+// #ifdef _OPENMP
+// #pragma omp parallel for reduction(+:gSASumMag)
+// #endif
+//             for(label c = 0; c < nCells; ++c){
+//                 gSASumMag += std::abs(sAPtr[c]);
+//             }
 
-            PBiCGStab_reduce_local_time += clock.timeIncrement();
+//             PBiCGStab_reduce_local_time += clock.timeIncrement();
 
-            reduce(gSASumMag, sumOp<scalar>());
+//             reduce(gSASumMag, sumOp<scalar>());
 
-            PBiCGStab_allreduce_time += clock.timeIncrement();
+//             PBiCGStab_allreduce_time += clock.timeIncrement();
 
-            solverPerf.finalResidual() = gSASumMag;
+//             solverPerf.finalResidual() = gSASumMag;
 
-            if (solverPerf.checkConvergence(tolerance_, relTol_))
-            {
-                PBiCGStab_misc_time += clock.timeIncrement();
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-                for (label cell=0; cell<nCells; cell++)
-                {
-                    psiPtr[cell] += alpha * yAPtr[cell];
-                }
-                solverPerf.nIterations()++;
+//             if (solverPerf.checkConvergence(tolerance_, relTol_))
+//             {
+//                 PBiCGStab_misc_time += clock.timeIncrement();
+// #ifdef _OPENMP
+// #pragma omp parallel for
+// #endif
+//                 for (label cell=0; cell<nCells; cell++)
+//                 {
+//                     psiPtr[cell] += alpha * yAPtr[cell];
+//                 }
+//                 solverPerf.nIterations()++;
 
-                PBiCGStab_axpy_time += clock.timeIncrement();
-                break;
-            }
+//                 PBiCGStab_axpy_time += clock.timeIncrement();
+//                 break;
+//             }
 
             // --- Precondition sA
             preconPtr_->precondition(zA, sA, cmpt);
@@ -314,8 +314,6 @@ Foam::solverPerformance Foam::DIVPBiCGStab::solve
 
             // --- Calculate omega from tA and sA
             //     (cheaper than using zA with preconditioned tA)
-            // omega = gSumProd(tA, sA, matrix().mesh().comm()) / tAtA;
-
             omega = 0.;
 #ifdef _OPENMP
 #pragma omp parallel for reduction(+:omega)

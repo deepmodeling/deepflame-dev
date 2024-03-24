@@ -8,6 +8,11 @@
 // template<typename T> // Todo
 // static T fast_floor(T x);
 
+
+#define df_max(x, y) ((x) < (y) ? (y) : (x))
+#define df_min(x, y) ((x) < (y) ? (x) : (y))
+
+
 template<typename T>
 T tanh_exp(T x);
 

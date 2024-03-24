@@ -68,9 +68,9 @@ Description
 #include "GenFvMatrix.H"
 #include "multivariateGaussConvectionScheme.H"
 
-#define _CSR_
+// #define _CSR_
 // #define _ELL_
-// #define _DIV_
+#define _DIV_
 // #define _LDU_
 #define OPT_GenMatrix_Y
 #define OPT_GenMatrix_E
@@ -221,8 +221,6 @@ int main(int argc, char *argv[])
 
     benchmark();
 
-    Info << "typeid(unsigned).name() : " << typeid(unsigned).name() << endl;
-    Info << "sizeof(unsigned) : " << sizeof(unsigned) << endl;
  
     clockTime initClock;
 

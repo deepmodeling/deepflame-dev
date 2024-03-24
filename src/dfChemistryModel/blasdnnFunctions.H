@@ -34,19 +34,23 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN_blas
     label input_dim = nSpecies + 2;
     int output_dim = nSpecies -1;
 
-    // double* NNInputs0 = (double*)aligned_alloc(64, (nCells * input_dim) * sizeof(double));
-    // double* results0 = (double*)aligned_alloc(64, (nCells * output_dim) * sizeof(double));
-    // memset(NNInputs0, '\0', (nCells * input_dim) * sizeof(double));
-
-#ifdef _FP16_
+#if defined(USE_BLASDNN_HALF)
     __fp16* NNInputs0 = (__fp16*)aligned_alloc(64, (nCells * input_dim) * sizeof(__fp16));
     __fp16* results0 = (__fp16*)aligned_alloc(64, (nCells * output_dim) * sizeof(__fp16));
     memset(NNInputs0, '\0', (nCells * input_dim) * sizeof(__fp16));
-#else
+#elif defined(USE_BLASDNN_FLOAT)
     float* NNInputs0 = (float*)aligned_alloc(64, (nCells * input_dim) * sizeof(float));
     float* results0 = (float*)aligned_alloc(64, (nCells * output_dim) * sizeof(float));
     memset(NNInputs0, '\0', (nCells * input_dim) * sizeof(float));
+#elif defined(USE_BLASDNN_DOUBLE)
+    double* NNInputs0 = (double*)aligned_alloc(64, (nCells * input_dim) * sizeof(double));
+    double* results0 = (double*)aligned_alloc(64, (nCells * output_dim) * sizeof(double));
+    memset(NNInputs0, '\0', (nCells * input_dim) * sizeof(double));
+#else
+#error "must define one of USE_BLASDNN_HALF, USE_BLASDNN_FLOAT or USE_BLASDNN_DOUBLE"
 #endif
+
+    init_time += clock.timeIncrement();
 
 #ifdef _OPENMP
     #pragma omp parallel
@@ -77,13 +81,10 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN_blas
             }
         }
     }
+
+    prepare_time += clock.timeIncrement();
     
-    double prepare_dnn_input_end = MPI_Wtime();
-
-    double dnn_infer_start = MPI_Wtime();
     DNNInferencer_blas_.Inference_multiDNNs(NNInputs0, results0, nCells);
-
-    double dnn_infer_end = MPI_Wtime();
 
     inference_time += clock.timeIncrement();
 
@@ -141,7 +142,6 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN_blas
 
     destory_time = clock.timeIncrement();
     double solve_DNN_blas_time = clock.elapsedTime();
-
 
     Info << "=== end solve_DNN with BLASDNN === " << endl;
 

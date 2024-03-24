@@ -94,7 +94,7 @@ if (pimple.momentumPredictor())
     auto& boundaryCoeffs = UEqn.boundaryCoeffs();
     csr.solve(psi, source, internalCoeffs, boundaryCoeffs);
 #endif
-MPI_Abort(MPI_COMM_WORLD, 1);
+
 #if !defined(_CSR_) && !defined(_ELL_) && !defined(_LDU_) && !defined(_DIV_)
     UEqn.solve();
 #endif

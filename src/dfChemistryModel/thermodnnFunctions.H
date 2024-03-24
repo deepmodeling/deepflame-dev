@@ -14,22 +14,28 @@ void Foam::dfChemistryModel<ThermoType>::thermoDNN_blas(volScalarField& he, cons
     label nCells = he.size();
     label input_dim = 3;
     label offset = 0;
-    label offset_r = 0;
+    label output_dim_0 = 1;
+    label output_dim_1 = 4;
+
 
     Info<<"=== begin solve_thermo with BLASDNN === "<<endl;
 
-#ifdef _FP16_
+
+#if defined(USE_BLASDNN_HALF)
     __fp16* NNInputs = (__fp16*)aligned_alloc(64, (nCells * input_dim) * sizeof(__fp16));
     memset(NNInputs, '\0', (nCells * input_dim) * sizeof(__fp16));
-
-    __fp16* results0 = (__fp16*)aligned_alloc(64, nCells * sizeof(__fp16));
-    __fp16* results1 = (__fp16*)aligned_alloc(64, (nCells*4) * sizeof(__fp16));
-#else
+    __fp16* results0 = (__fp16*)aligned_alloc(64, nCells * output_dim_0 * sizeof(__fp16));
+    __fp16* results1 = (__fp16*)aligned_alloc(64, (nCells * output_dim_1) * sizeof(__fp16));
+#elif defined(USE_BLASDNN_FLOAT)
     float* NNInputs = (float*)aligned_alloc(64, (nCells * input_dim) * sizeof(float));
     memset(NNInputs, '\0', (nCells * input_dim) * sizeof(float));
-
-    float* results0 = (float*)aligned_alloc(64, nCells * sizeof(float));
-    float* results1 = (float*)aligned_alloc(64, (nCells*4) * sizeof(float));
+    float* results0 = (float*)aligned_alloc(64, nCells * output_dim_0 * sizeof(float));
+    float* results1 = (float*)aligned_alloc(64, (nCells * output_dim_1) * sizeof(float));
+#elif defined(USE_BLASDNN_DOUBLE)
+    double* NNInputs = (double*)aligned_alloc(64, (nCells * input_dim) * sizeof(double));
+    memset(NNInputs, '\0', (nCells * input_dim) * sizeof(double));
+    double* results0 = (double*)aligned_alloc(64, nCells * output_dim_0 * sizeof(double));
+    double* results1 = (double*)aligned_alloc(64, nCells * output_dim_1 * sizeof(double));
 #endif
 
     init_time += clock.timeIncrement();
@@ -100,20 +106,29 @@ void Foam::dfChemistryModel<ThermoType>::thermoDNN_blas(volScalarField& he, cons
     /*
     ** boundaryField
     */
-#ifdef _FP16_
+// #ifdef _FP16_
+#if defined(USE_BLASDNN_HALF)
     __fp16* NNInputs_p = (__fp16*)aligned_alloc(64, (nFaces * input_dim) * sizeof(__fp16));
     memset(NNInputs_p, '\0', (nFaces * input_dim) * sizeof(__fp16));
-    __fp16* results0_p = (__fp16*)aligned_alloc(64, nFaces * sizeof(__fp16));
-    __fp16* results1_p = (__fp16*)aligned_alloc(64, (nFaces*4) * sizeof(__fp16));
-#else
+    __fp16* results0_p = (__fp16*)aligned_alloc(64, nFaces * output_dim_0 * sizeof(__fp16));
+    __fp16* results1_p = (__fp16*)aligned_alloc(64, (nFaces * output_dim_1) * sizeof(__fp16));
+#elif defined(USE_BLASDNN_FLOAT)
     float* NNInputs_p = (float*)aligned_alloc(64, (nFaces * input_dim) * sizeof(float));
     memset(NNInputs_p, '\0', (nFaces * input_dim) * sizeof(float));
-    float* results0_p = (float*)aligned_alloc(64, nFaces * sizeof(float));
-    float* results1_p = (float*)aligned_alloc(64, (nFaces*4) * sizeof(float));
+    float* results0_p = (float*)aligned_alloc(64, nFaces * output_dim_0 * sizeof(float));
+    float* results1_p = (float*)aligned_alloc(64, (nFaces * output_dim_1) * sizeof(float));
+#elif defined(USE_BLASDNN_DOUBLE)
+    double* NNInputs_p = (double*)aligned_alloc(64, (nFaces * input_dim) * sizeof(double));
+    memset(NNInputs_p, '\0', (nFaces * input_dim) * sizeof(double));
+    double* results0_p = (double*)aligned_alloc(64, nFaces * output_dim_0 * sizeof(double));
+    double* results1_p = (double*)aligned_alloc(64, (nFaces * output_dim_1) * sizeof(double));
+#else
+#error "must define one of USE_BLASDNN_HALF, USE_BLASDNN_FLOAT or USE_BLASDNN_DOUBLE"
 #endif
 
     init_time += clock.timeIncrement();
 
+    offset = 0;
     // Prepare input for DNN
     forAll(he.boundaryField(), patchi)
     {
@@ -139,6 +154,7 @@ void Foam::dfChemistryModel<ThermoType>::thermoDNN_blas(volScalarField& he, cons
 
     inference_time += clock.timeIncrement();
 
+    offset = 0;
     // update thermo properties
     forAll(he.boundaryField(), patchi)
     {
@@ -152,17 +168,17 @@ void Foam::dfChemistryModel<ThermoType>::thermoDNN_blas(volScalarField& he, cons
 #endif
         forAll(pT, facei)
         {
-            prho[facei] = std::pow((results0_p[offset_r +facei] * thermostd_[0] + thermomu_[0]) * 0.1 + 1., 10.) * 1000;
-            pT[facei] = results1_p[offset_r*4 +facei] * thermostd_[1] + thermomu_[1];
-            ppsi[facei] = results1_p[offset_r*4 +facei+1] * thermostd_[2] + thermomu_[2];
-            pmu[facei] = results1_p[offset_r*4 +facei+2] * thermostd_[3] + thermomu_[3];
-            palpha[facei] = results1_p[offset_r*4 +facei+3] * thermostd_[4] + thermomu_[4];
+            prho[facei] = std::pow((results0_p[(offset + facei) * output_dim_0 + 0] * thermostd_[0] + thermomu_[0]) * 0.1 + 1., 10.) * 1000;
+            pT[facei] = results1_p[(offset + facei) * output_dim_1 + 0] * thermostd_[1] + thermomu_[1];
+            ppsi[facei] = results1_p[(offset + facei) * output_dim_1 + 1] * thermostd_[2] + thermomu_[2];
+            pmu[facei] = results1_p[(offset + facei) * output_dim_1 + 2] * thermostd_[3] + thermomu_[3];
+            palpha[facei] = results1_p[(offset + facei) * output_dim_1 + 3] * thermostd_[4] + thermomu_[4];
             forAll(rhoD_, i)
             {
                 rhoD_[i].boundaryFieldRef()[patchi][facei] = palpha[facei];
             }
         }
-        offset_r += pT.size();
+        offset += pT.size();
     }
 
     update_time += clock.timeIncrement();

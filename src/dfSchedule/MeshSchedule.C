@@ -63,33 +63,6 @@ MeshSchedule::MeshSchedule(const fvMesh& mesh) : mesh_(mesh){
         }
     }
 
-    // cell -> Boundary
-    for(label patchi = 0; patchi < nPatches_; ++patchi){
-        label patchSize = patchSizes_[patchi];
-        const labelUList& faceCells = mesh.boundary()[patchi].faceCells();
-        if(patchTypes_[patchi] == PatchType::wall){
-            label markValue = 1;
-            labelList mark(nCells_, 0);
-            label count = 0;
-            wallPatchPtr_.append(count);
-            for(label i = 0; i < patchSize; ++i){
-                label cell = faceCells[i];
-                if(mark[cell] != markValue){
-                    mark[cell] = markValue;
-                    count += 1;
-                }else{
-                    markValue += 1;
-                    wallPatchPtr_.append(count);
-                }
-            }
-            wallPatchPtr_.append(patchSize);
-        }else if(patchTypes_[patchi] == PatchType::processor){
-
-        }
-        
-    }
-
-
     Info << "MeshSchedule::MeshSchedule end" << endl;
 }
 

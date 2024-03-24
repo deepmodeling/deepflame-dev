@@ -183,7 +183,7 @@ void DNNThermo_blas<DataType>::Inference(
     }
     double dnn_infer_end = MPI_Wtime();
     double dnn_infer_time = dnn_infer_end - dnn_infer_start;
-    double FLOPs = input_count * FLOPs_per_sample0_ + 4 * input_count * FLOPs_per_sample1_;
+    double FLOPs = input_count * FLOPs_per_sample0_ + input_count * FLOPs_per_sample1_;
     int num_threads = omp_get_max_threads();
     double theoretical_peak = 3.3792 / 48. * num_threads;
     if(sizeof(DataType) == sizeof(double)){

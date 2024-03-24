@@ -38,9 +38,10 @@ if [ ! -z "$USE_BLASDNN" ]; then
         cmake .. \
             -DCMAKE_CXX_COMPILER=mpiFCC \
             -DCMAKE_CXX_FLAGS="-Nclang -Ofast -g -fopenmp -Nfjomplib -std=c++11" \
+            -DUSE_HALF_PRECISION=ON \
             -DYAML_INCLUDE=/vol0001/hp230257/guozhuoqiang/DeepFlame/software/yaml-cpp-0.7.0/include/yaml-cpp \
             -DYAML_LIBRARY=/vol0001/hp230257/guozhuoqiang/DeepFlame/software/yaml-cpp-0.7.0/lib64/libyaml-cpp.so \
-            -DBLAS_LIBRARY=fjlapackexsve
+            -DBLAS_LIBRARY="-lfjlapackexsve -SSL2"
 
         if [ $? -ne 0 ]; then
             echo "Error: CMake configuration failed. Exiting installation."

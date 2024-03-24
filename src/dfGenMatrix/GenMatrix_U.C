@@ -1119,14 +1119,15 @@ void getrAUandHbyA(volScalarField& rAUout, volVectorField& HbyAout, fvVectorMatr
                 boundaryrAU_internal[patchi][s] = rAU[cellIndex];
             }
         }
-        for (label patchi = 0; patchi < nPatches; ++patchi) {
-            if (patchTypes[patchi] == MeshSchedule::PatchType::processor){
-                MPI_Sendrecv(
-                    &boundaryrAU_internal[patchi][0], patchSizes[patchi], MPI_DOUBLE, neighbProcNo[patchi], 0, 
-                    &boundaryrAU[patchi][0], patchSizes[patchi], MPI_DOUBLE, neighbProcNo[patchi], 0, 
-                    MPI_COMM_WORLD, MPI_STATUS_IGNORE
-                );
-            }
+    }
+
+    for (label patchi = 0; patchi < nPatches; ++patchi) {
+        if (patchTypes[patchi] == MeshSchedule::PatchType::processor){
+            MPI_Sendrecv(
+                &boundaryrAU_internal[patchi][0], patchSizes[patchi], MPI_DOUBLE, neighbProcNo[patchi], 0, 
+                &boundaryrAU[patchi][0], patchSizes[patchi], MPI_DOUBLE, neighbProcNo[patchi], 0, 
+                MPI_COMM_WORLD, MPI_STATUS_IGNORE
+            );
         }
     }
     Info << "prepreprocess_p correct_boundary_conditions_scalar : " << clock.timeIncrement() << endl;
@@ -1184,14 +1185,7 @@ void getrAUandHbyA(volScalarField& rAUout, volVectorField& HbyAout, fvVectorMatr
             HbyA[l[f] * 3 + 2] += ( -upperPtr[f] * UPtr[u[f] * 3 + 2]);
         }
     }
-    // for (label f = 0; f < nFaces; ++f){
-    //     HbyA[u[f] * 3 + 0] += ( -lowerPtr[f] * UPtr[l[f] * 3 + 0]);
-    //     HbyA[u[f] * 3 + 1] += ( -lowerPtr[f] * UPtr[l[f] * 3 + 1]);
-    //     HbyA[u[f] * 3 + 2] += ( -lowerPtr[f] * UPtr[l[f] * 3 + 2]);
-    //     HbyA[l[f] * 3 + 0] += ( -upperPtr[f] * UPtr[u[f] * 3 + 0]);
-    //     HbyA[l[f] * 3 + 1] += ( -upperPtr[f] * UPtr[u[f] * 3 + 1]);
-    //     HbyA[l[f] * 3 + 2] += ( -upperPtr[f] * UPtr[u[f] * 3 + 2]);
-    // }
+
     Info << "prepreprocess_p ueqn_lduMatrix_H : " << clock.timeIncrement() << endl;
 
     for(label patchi = 0; patchi < nPatches; ++patchi){
@@ -1264,6 +1258,8 @@ void getrAUandHbyA(volScalarField& rAUout, volVectorField& HbyAout, fvVectorMatr
             }
         }
     }
+    Info << "prepreprocess_p correct_boundary_conditions_vector : " << clock.timeIncrement() << endl;
+
     for (label patchi = 0; patchi < nPatches; ++patchi) {
         if (patchTypes[patchi] == MeshSchedule::PatchType::processor){
             MPI_Sendrecv(
@@ -1273,7 +1269,9 @@ void getrAUandHbyA(volScalarField& rAUout, volVectorField& HbyAout, fvVectorMatr
             );
         }
     }
-    Info << "prepreprocess_p correct_boundary_conditions_vector : " << clock.timeIncrement() << endl;
+
+    Info << "prepreprocess_p comm : " << clock.timeIncrement() << endl;
+
 
     /* scalar_field_multiply_vector_field */
 
@@ -1298,6 +1296,26 @@ void getrAUandHbyA(volScalarField& rAUout, volVectorField& HbyAout, fvVectorMatr
         }
     }
     Info << "prepreprocess_p scalar_field_multiply_vector_field : " << clock.timeIncrement() << endl;
+    
+
+    for (label patchi = 0; patchi < nPatches; ++patchi){
+        if (patchTypes[patchi] == MeshSchedule::PatchType::processor){
+            delete [] boundaryrAU_internal[patchi];
+            delete [] boundaryHbyA_internal[patchi];
+        }
+    }
+
+
+    delete [] internalCoeffsPtr;
+    delete [] boundaryCoeffsPtr;
+    delete [] boundaryU;
+    delete [] faceCells;
+    delete [] boundaryrAU;
+    delete [] boundaryrAU_internal;
+    delete [] boundaryHbyA;
+    delete [] boundaryHbyA_internal;
+    
+    Info << "prepreprocess_p free : " << clock.timeIncrement() << endl;
     Info << "prepreprocess_p total : " << clock.elapsedTime() << endl;
 }
 }

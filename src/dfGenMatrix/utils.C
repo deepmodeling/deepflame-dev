@@ -20,11 +20,11 @@ void check_field_error(const Field<scalar>& answer, const Field<scalar>& check, 
         double absulte_error = std::abs(answer[i] - check[i]);
         double relative_error = std::abs(answer[i]) < ZERO_TOLERANCE ? absulte_error : (absulte_error / std::abs(answer[i]));
         if(absulte_error > ABSULTE_ERROR_TOLERANCE && relative_error > RELATIVE_ERROR_TOLERANCE){
-            Pout << name << " error : " << endl;
-            Pout << "answer[i] : " << answer[i] << endl;
-            Pout << "check[i] : " << check[i] << endl;
-            Pout << "absulte_error : " << absulte_error << endl;
-            Pout << "relative_error : " << relative_error << endl;
+            Info << name << " error : " << endl;
+            Info << "answer[i] : " << answer[i] << endl;
+            Info << "check[i] : " << check[i] << endl;
+            Info << "absulte_error : " << absulte_error << endl;
+            Info << "relative_error : " << relative_error << endl;
             check_faild = true;
         }
         if(relative_error > max_relative_error){
@@ -35,10 +35,10 @@ void check_field_error(const Field<scalar>& answer, const Field<scalar>& check, 
     if(check_faild){
         MPI_Abort(PstreamGlobals::MPI_COMM_FOAM, -1);
     }else{
-        Pout << "error check pass : " << name << "-------------------------------------" << endl;
-        Pout << "max_absulte_error : " << max_absulte_error << endl;
-        Pout << "max_relative_error : " << max_relative_error << endl;
-        Pout << "---------------------------------------------------------" << endl;
+        Info << "error check pass : " << name << "-------------------------------------" << endl;
+        Info << "max_absulte_error : " << max_absulte_error << endl;
+        Info << "max_relative_error : " << max_relative_error << endl;
+        Info << "---------------------------------------------------------" << endl;
     }
 }
 

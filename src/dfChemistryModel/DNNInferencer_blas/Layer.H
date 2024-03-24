@@ -17,7 +17,7 @@ public:
 
 template<typename DataType>
 class Linear : public Layer<DataType>{
-private:
+protected:
     int64_t in_features_;
     int64_t out_features_;
     // (in_features, out_features)
@@ -44,31 +44,26 @@ public:
 };
 
 template<typename DataType>
-class LinearGELU : public Layer<DataType>{
-private:
-    int64_t in_features_;
-    int64_t out_features_;
-    // (in_features, out_features)
-    Tensor<DataType> weights_;
-    // (out_features,)
-    Tensor<DataType> bias_;
+class LinearGELU : public Linear<DataType>{
+protected:
+    // int64_t in_features_;
+    // int64_t out_features_;
+    // // (in_features, out_features)
+    // Tensor<DataType> weights_;
+    // // (out_features,)
+    // Tensor<DataType> bias_;
 
-    double gemm_time_;
-    double bias_time_;
+    // double gemm_time_;
+    // double bias_time_;
     double gelu_time_;
     double bias_gelu_fusion_time_;
-    double total_infer_time_;
+    // double total_infer_time_;
 
 public:
-    LinearGELU(int64_t in_features,int64_t out_features):
-        in_features_(in_features),
-        out_features_(out_features),
-        weights_({in_features_,out_features_}),
-        bias_({out_features_}){};
+    LinearGELU(int64_t in_features,int64_t out_features):Linear<DataType>(in_features, out_features){};
     virtual ~LinearGELU(){};
 
     virtual void forward(const Tensor<DataType>& input, Tensor<DataType>& output);
-    virtual void load_parameters(const std::string& dir, int64_t layer_id);
     virtual void reset_timer();
     virtual void print_timer();
 };

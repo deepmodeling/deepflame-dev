@@ -150,9 +150,9 @@ forAll(Y, i)
             auto& source = YiEqn.source();
             auto& internalCoeffs = YiEqn.internalCoeffs();
             auto& boundaryCoeffs = YiEqn.boundaryCoeffs();
-            div.solve(psi, source, internalCoeffs, boundaryCoeffs, "Yi");
+            div.solve(psi, source, internalCoeffs, boundaryCoeffs, Yi.name());
 #else
-        YiEqn.solve("Yi");
+        YiEqn.solve(Yi.name());
 #endif
 
         Y_solve_end = MPI_Wtime();

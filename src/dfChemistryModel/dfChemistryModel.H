@@ -176,21 +176,24 @@ public IOdictionary
 #endif
 
 #ifdef USE_BLASDNN
-        // tensorflow
-        // DNNInferencer_blas<double> DNNInferencer_blas_;
-#ifdef _FP16_
+
+#define USE_BLASDNN_HALF
+// #define USE_BLASDNN_FLOAT
+// #define USE_BLASDNN_DOUBLE
+
+#if defined(USE_BLASDNN_HALF)
         DNNInferencer_blas<__fp16> DNNInferencer_blas_;
-#else
-        DNNInferencer_blas<float> DNNInferencer_blas_;
-#endif
-        // thermo
-        // DNNThermo_blas<double> DNNThermo_blas_;
-        // DNNThermo_blas<float> DNNThermo_blas_;
-#ifdef _FP16_
         DNNThermo_blas<__fp16> DNNThermo_blas_;
-#else
+#elif defined(USE_BLASDNN_FLOAT)
         DNNThermo_blas<float> DNNThermo_blas_;
+        DNNInferencer_blas<float> DNNInferencer_blas_;
+#elif defined(USE_BLASDNN_DOUBLE)
+        DNNInferencer_blas<double> DNNInferencer_blas_;
+        DNNThermo_blas<double> DNNThermo_blas_;
+#else
+#error "must define one of USE_BLASDNN_HALF, USE_BLASDNN_FLOAT or USE_BLASDNN_DOUBLE"
 #endif
+
         string BLASDNNModelPath_;
         string thermoDNNModelPath_;
 #endif

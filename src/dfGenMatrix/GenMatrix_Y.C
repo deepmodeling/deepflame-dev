@@ -584,17 +584,8 @@ void preProcess_Y(
                     scalar grad_x = bouSfx * bouvf;
                     scalar grad_y = bouSfy * bouvf;
                     scalar grad_z = bouSfz * bouvf;
-#ifdef _OPENMP
-#pragma omp atomic
-#endif
                     gradY_Species[cellIdx * 3 + 0] += grad_x;
-#ifdef _OPENMP
-#pragma omp atomic
-#endif
                     gradY_Species[cellIdx * 3 + 1] += grad_y;
-#ifdef _OPENMP
-#pragma omp atomic
-#endif
                     gradY_Species[cellIdx * 3 + 2] += grad_z;
                 }
             } else if (patchTypes[j] == MeshSchedule::PatchType::processor) {
@@ -613,17 +604,8 @@ void preProcess_Y(
                     scalar grad_x = bouSfx * bouvf;
                     scalar grad_y = bouSfy * bouvf;
                     scalar grad_z = bouSfz * bouvf;
-#ifdef _OPENMP
-#pragma omp atomic
-#endif
                     gradY_Species[cellIdx * 3 + 0] += grad_x;
-#ifdef _OPENMP
-#pragma omp atomic
-#endif
                     gradY_Species[cellIdx * 3 + 1] += grad_y;
-#ifdef _OPENMP
-#pragma omp atomic
-#endif
                     gradY_Species[cellIdx * 3 + 2] += grad_z;
                 }
             }
@@ -631,8 +613,6 @@ void preProcess_Y(
 
 #else
 
-        const XYBlock1DColoringStructuredMeshSchedule& meshSchedule = XYBlock1DColoringStructuredMeshSchedule::getXYBlock1DColoringStructuredMeshSchedule();
-        const labelUList& wallPatchPtr = meshSchedule.wallPatchPtr();
         for (label j = 0; j < nPatches; ++j) {
             label patchSize = patchSizes[j];
             const scalar* boundaryYi_patch = boundaryYi[i * nPatches + j];
@@ -1094,118 +1074,103 @@ GenMatrix_Y(
     Info << "Gen_Y ddt : " << clock.timeIncrement() << endl;
 
     // fvmDiv(phi, Yi)
-    // - internal
-    for (label i = 0; i < nFaces; ++i) {
-        scalar w = upwindWeights[i];
-        scalar f = phiPtr[i];
-
-        scalar lower_value = (-w) * f;
-        scalar upper_value = (1 - w) * f;
-        upperPtr[i] += upper_value;
-        lowerPtr[i] += lower_value;
-    }
-
-    // - boundary
-    for (label patchi = 0; patchi < nPatches; ++patchi){
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-        for (label f = 0; f < patchSizes[patchi]; ++f){
-            scalar boundary_f = boundary_phi[patchi][f];
-            internal_coeffs[patchi][f] = value_internal_coeffs[patchi][f] * boundary_f;
-            boundary_coeffs[patchi][f] = -1. * value_boundary_coeffs[patchi][f] * boundary_f;
-        }
-    }
-
-    Info << "Gen_Y div phi : " << clock.timeIncrement() << endl;
-
     // fvmDiv(phiUc, Yi)
-    // - internal
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-    for (label i = 0; i < nFaces; ++i) {
-        scalar w = upwindWeights[i];
-        scalar f = phiUcPtr[i];
-
-        scalar lower_value = (-w) * f;
-        scalar upper_value = (1 - w) * f;
-        upperPtr[i] += upper_value;
-        lowerPtr[i] += lower_value;
-    }
-
-    // - boundary
-    for (label patchi = 0; patchi < nPatches; ++patchi){
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-        for (label f = 0; f < patchSizes[patchi]; ++f){
-            scalar boundary_f = boundary_phiUc[patchi][f];
-            internal_coeffs[patchi][f] += boundary_f * value_internal_coeffs[patchi][f];
-            boundary_coeffs[patchi][f] -= boundary_f * value_boundary_coeffs[patchi][f];
-        }
-    }
-
-    Info << "Gen_Y div phiUc : " << clock.timeIncrement() << endl;
-
     // fvm::laplacian(DEff(), Yi)
     // - internal
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
     for (label i = 0; i < nFaces; ++i) {
+        scalar upwindWeight = upwindWeights[i];
+        scalar phi = phiPtr[i];
+        scalar phiUc = phiUcPtr[i];
+
         label owner = own[i];
         label neighbor = nei[i];
-        scalar w = weightsPtr[i];
-        scalar face_gamma = w * rhoDPtr[owner] + (1 - w) * rhoDPtr[neighbor];
+        scalar weights = weightsPtr[i];
+        scalar face_gamma = weights * rhoDPtr[owner] + (1 - weights) * rhoDPtr[neighbor];
+        scalar tmp = -1. * face_gamma * magSfPtr[i] * deltaCoeffsPtr[i];
 
-        scalar upper_value = -1. * face_gamma * magSfPtr[i] * deltaCoeffsPtr[i];
-        scalar lower_value = upper_value;
-
-        upperPtr[i] += upper_value;
-        lowerPtr[i] += lower_value;
+        lowerPtr[i] += (-upwindWeight) * phi + (-upwindWeight) * phiUc + tmp;
+        upperPtr[i] += (1 - upwindWeight) * phi + (1 - upwindWeight) * phiUc + tmp;
     }
 
-    // - boundary
+    Info << "Gen_Y div phi phiUc laplacian DEff internal : " << clock.timeIncrement() << endl;
+
+#ifdef _OPENMP
+#pragma omp parallel
+#endif
     for (label patchi = 0; patchi < nPatches; ++patchi){
+        label patchSize = patchSizes[patchi];
+        const scalar* boundary_phi_patch = boundary_phi[patchi];
+        const scalar* boundary_phiUc_patch = boundary_phiUc[patchi];
+        const scalar* boundary_rhoD_patch = boundary_rhoD[patchi];
+        const scalar* boundary_mag_sf_patch = boundary_mag_sf[patchi];
+        const scalar* value_internal_coeffs_patch = value_internal_coeffs[patchi];
+        const scalar* value_boundary_coeffs_patch = value_boundary_coeffs[patchi];
+        const scalar* gradient_internal_coeffs_patch = gradient_internal_coeffs[patchi];
+        const scalar* gradient_boundary_coeffs_patch = gradient_boundary_coeffs[patchi];
+        scalar* internal_coeffs_patch = internal_coeffs[patchi];
+        scalar* boundary_coeffs_patch = boundary_coeffs[patchi];
 #ifdef _OPENMP
-#pragma omp parallel for
+#pragma omp for
 #endif
-        for (label f = 0; f < patchSizes[patchi]; ++f){
-            scalar boundary_value = boundary_rhoD[patchi][f] * boundary_mag_sf[patchi][f];
-            internal_coeffs[patchi][f] -= boundary_value * gradient_internal_coeffs[patchi][f];
-            boundary_coeffs[patchi][f] += boundary_value * gradient_boundary_coeffs[patchi][f];
+        for (label f = 0; f < patchSize; ++f){
+            scalar boundaryPhi = boundary_phi_patch[f];
+            scalar boundaryPhiUc = boundary_phiUc_patch[f];
+            scalar boundaryRhoD = boundary_rhoD_patch[f] * boundary_mag_sf_patch[f];
+            scalar value_internal_coeff = value_internal_coeffs_patch[f];
+            scalar value_boundary_coeff = value_boundary_coeffs_patch[f];
+            scalar gradient_internal_coeff = gradient_internal_coeffs_patch[f];
+            scalar gradient_boundary_coeff = gradient_boundary_coeffs_patch[f];
+            internal_coeffs_patch[f] = value_internal_coeff * boundaryPhi + boundaryPhiUc * value_internal_coeff - boundaryRhoD * gradient_internal_coeff;
+            boundary_coeffs_patch[f] = -1. * value_boundary_coeff * boundaryPhi - boundaryPhiUc * value_boundary_coeff + boundaryRhoD * gradient_boundary_coeff;
         }
     }
-    
-    Info << "Gen_Y laplacian DEff : " << clock.timeIncrement() << endl;
 
+    Info << "Gen_Y div phi phiUc laplacian DEff boundary : " << clock.timeIncrement() << endl;
+
+#ifdef OPT_FACE2CELL_COLORING_SCHEDULE
+
+    {
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-    for(label face_scheduling_i = 0; face_scheduling_i < face_scheduling.size()-1; face_scheduling_i += 2){
-        label face_start = face_scheduling[face_scheduling_i]; 
-        label face_end = face_scheduling[face_scheduling_i+1];
-        for (label j = face_start; j < face_end; ++j) {
-            label owner = own[j];
-            label neighbor = nei[j];
-            diagPtr[owner] -= lowerPtr[j];
-            diagPtr[neighbor] -= upperPtr[j];
+        for(label face_scheduling_i = 0; face_scheduling_i < face_scheduling.size()-1; face_scheduling_i += 2){
+            label face_start = face_scheduling[face_scheduling_i]; 
+            label face_end = face_scheduling[face_scheduling_i+1];
+            for (label j = face_start; j < face_end; ++j) {
+                label owner = own[j];
+                label neighbor = nei[j];
+                diagPtr[owner] -= lowerPtr[j];
+                diagPtr[neighbor] -= upperPtr[j];
+            }
         }
-    }
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-    for(label face_scheduling_i = 1; face_scheduling_i < face_scheduling.size(); face_scheduling_i += 2){
-        label face_start = face_scheduling[face_scheduling_i]; 
-        label face_end = face_scheduling[face_scheduling_i+1];
-        for (label j = face_start; j < face_end; ++j) {
-            label owner = own[j];
-            label neighbor = nei[j];
-            diagPtr[owner] -= lowerPtr[j];
-            diagPtr[neighbor] -= upperPtr[j];
+        for(label face_scheduling_i = 1; face_scheduling_i < face_scheduling.size(); face_scheduling_i += 2){
+            label face_start = face_scheduling[face_scheduling_i]; 
+            label face_end = face_scheduling[face_scheduling_i+1];
+            for (label j = face_start; j < face_end; ++j) {
+                label owner = own[j];
+                label neighbor = nei[j];
+                diagPtr[owner] -= lowerPtr[j];
+                diagPtr[neighbor] -= upperPtr[j];
+            }
         }
     }
+
+#else
+
+    for (label j = 0; j < nFaces; ++j) {
+        label owner = own[j];
+        label neighbor = nei[j];
+        diagPtr[owner] -= lowerPtr[j];
+        diagPtr[neighbor] -= upperPtr[j];
+    }
+
+#endif
 
     Info << "Gen_Y diag : " << clock.timeIncrement() << endl;
 
