@@ -359,6 +359,8 @@ void dfUEqn::setConstantValues(const std::string &mode_string, const std::string
   UxSolver = new AmgXSolver(mode_string, setting_path, dataBase_.localRank);
   UySolver = new AmgXSolver(mode_string, setting_path, dataBase_.localRank);
   UzSolver = new AmgXSolver(mode_string, setting_path, dataBase_.localRank);
+  
+  USolver = new PBiCGStabCSRSolver();
 }
 
 void dfUEqn::setConstantFields(const std::vector<int> patch_type) {
@@ -694,9 +696,11 @@ void dfUEqn::sync()
 }
 
 void dfUEqn::solve() {
-    dataBase_.solve(num_iteration, AMGXSetting::u_setting, d_A, dataBase_.d_u, d_b);
-    dataBase_.solve(num_iteration, AMGXSetting::u_setting, d_A + dataBase_.num_Nz, dataBase_.d_u + dataBase_.num_cells, d_b + dataBase_.num_cells);
-    dataBase_.solve(num_iteration, AMGXSetting::u_setting, d_A + 2 * dataBase_.num_Nz, dataBase_.d_u + 2 * dataBase_.num_cells, d_b + 2 * dataBase_.num_cells);
+    // dataBase_.solve(num_iteration, AMGXSetting::u_setting, d_A, dataBase_.d_u, d_b);
+    // dataBase_.solve(num_iteration, AMGXSetting::u_setting, d_A + dataBase_.num_Nz, dataBase_.d_u + dataBase_.num_cells, d_b + dataBase_.num_cells);
+    // dataBase_.solve(num_iteration, AMGXSetting::u_setting, d_A + 2 * dataBase_.num_Nz, dataBase_.d_u + 2 * dataBase_.num_cells, d_b + 2 * dataBase_.num_cells);
+
+    // USolver->solve(dataBase_.num_cells, );
     num_iteration++;
 }
 

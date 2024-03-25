@@ -21,7 +21,17 @@ if [ $USE_LIBTORCH = true ]; then
     mkdir build
     cd build
     cmake ..
-    make 
+    if [ $? -ne 0 ]; then
+        echo "Error: CMake configuration failed. Exiting installation."
+        cd $DF_ROOT
+        return 1
+    fi
+    make -j
+    if [ $? -ne 0 ]; then
+        echo "Error: Compilation failed. Exiting installation."
+        cd $DF_ROOT
+        return 1
+    fi
     export LD_LIBRARY_PATH=$DF_SRC/dfChemistryModel/DNNInferencer/build:$LD_LIBRARY_PATH
 fi
 if [ $USE_GPUSOLVER = true ]; then
@@ -29,7 +39,17 @@ if [ $USE_GPUSOLVER = true ]; then
     mkdir build
     cd build
     cmake ..
+    if [ $? -ne 0 ]; then
+        echo "Error: CMake configuration failed. Exiting installation."
+        cd $DF_ROOT
+        return 1
+    fi
     make -j
+    if [ $? -ne 0 ]; then
+        echo "Error: Compilation failed. Exiting installation."
+        cd $DF_ROOT
+        return 1
+    fi
     export LD_LIBRARY_PATH=$DF_ROOT/src_gpu/build:$LD_LIBRARY_PATH
 fi
 cd $DF_ROOT
