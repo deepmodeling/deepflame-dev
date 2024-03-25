@@ -125,6 +125,7 @@ void dfMatrixDataBase::setConstantValues(int num_cells, int num_total_cells, int
     this->num_species = num_species;
     this->rdelta_t = rdelta_t;
     this->num_Nz = num_cells + 2 * num_surfaces + num_proc_surfaces;
+    this->interfaceFlag = new int[num_patches]();
 
     // constant values -- ldu bytesize
     cell_value_bytes = num_cells * sizeof(double);
@@ -142,6 +143,7 @@ void dfMatrixDataBase::setConstantValues(int num_cells, int num_total_cells, int
     // constant values -- csr bytesize
     csr_row_index_bytes = (num_cells + 1) * sizeof(int);
     csr_col_index_bytes = num_Nz * sizeof(int);
+    csr_col_index_bytes_no_diag = 2 * num_surfaces * sizeof(int);
     csr_value_bytes = num_Nz * sizeof(double);
     csr_value_vec_bytes = num_Nz * 3 * sizeof(double);
 }
@@ -190,6 +192,10 @@ void dfMatrixDataBase::setConstantIndexes(const int *owner, const int *neighbor,
     checkCudaErrors(cudaMemcpyAsync(d_neighbor, neighbor, surface_index_bytes, cudaMemcpyHostToDevice, stream));
     DEBUG_TRACE;
 
+    /**
+     * @brief ldu2csr with diagonal
+     * 
+     */
     // build permTmp, rowIndicesTmp, colIndicesTmp
     std::vector<int> permTmp(num_Nz);
     std::iota(permTmp.begin(), permTmp.end(), 0);
@@ -274,6 +280,68 @@ void dfMatrixDataBase::setConstantIndexes(const int *owner, const int *neighbor,
     checkCudaErrors(cudaMalloc((void**)&d_csr_col_index, csr_col_index_bytes));
     checkCudaErrors(cudaMemcpy(d_csr_row_index, CSRRowIndex.data(), csr_row_index_bytes, cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemcpy(d_csr_col_index, CSRColIndex.data(), csr_col_index_bytes, cudaMemcpyHostToDevice));
+
+    /**
+     * @brief ldu2csr with no diagonal
+     * 
+     */
+    permTmp.resize(2 * num_surfaces);
+    std::iota(permTmp.begin(), permTmp.end(), 0);
+
+    // rowIndex of: low, upp
+    rowIndicesTmp.resize(2 * num_surfaces);
+    std::copy(neighbor, neighbor + num_surfaces, rowIndicesTmp.begin()); // row index of lower entry
+    std::copy(owner, owner + num_surfaces, rowIndicesTmp.begin() + num_surfaces); // row index of upper entry
+
+    // colIndex of: low, diag, upp, proc
+    colIndicesTmp.resize(2 * num_surfaces);
+    std::copy(owner, owner + num_surfaces, colIndicesTmp.begin()); // col index of lower entry
+    std::copy(neighbor, neighbor + num_surfaces, colIndicesTmp.begin() + num_surfaces); // col index of upper entry
+
+    // premute rowIndicesTmp, get CSRRowIndex and ldu2csrPerm
+    rowIndicesPermutation.clear();
+    for (int i = 0; i < 2 * num_surfaces; ++i){
+        rowIndicesPermutation.insert(std::make_pair(rowIndicesTmp[i], permTmp[i]));
+    }
+    rowIndicesPermPair.resize(rowIndicesPermutation.size());
+    std::copy(rowIndicesPermutation.begin(), rowIndicesPermutation.end(), rowIndicesPermPair.begin());
+
+    std::sort(rowIndicesPermPair.begin(), rowIndicesPermPair.end(), []
+    (const std::pair<int, int>& pair1, const std::pair<int, int>& pair2){
+        if (pair1.first != pair2.first) {
+            return pair1.first < pair2.first;
+        } else {
+            return pair1.second < pair2.second;
+        }
+    });
+    permRowIndex.clear();
+    std::transform(rowIndicesPermPair.begin(), rowIndicesPermPair.end(), std::back_inserter(permRowIndex), []
+        (const std::pair<int, int>& pair) {
+        return pair.first;
+    });
+    std::vector<int> CSRRowIndexNoDiag(num_cells + 1, 0);
+    for (int i = 0; i < num_Nz; i++) {
+        CSRRowIndexNoDiag[permRowIndex[i] + 1]++;
+    }
+    std::partial_sum(CSRRowIndexNoDiag.begin(), CSRRowIndexNoDiag.end(), CSRRowIndexNoDiag.begin());
+
+    std::transform(rowIndicesPermPair.begin(), rowIndicesPermPair.end(), std::back_inserter(lduCSRNoDiagIndex), []
+        (const std::pair<int, int>& pair) {
+        return pair.second;
+    });
+
+    // get CSRColNoDiagIndex
+    std::vector<int> CSRColIndexNoDiag(2 * num_surfaces);
+    for (int i = 0; i < 2 * num_surfaces; ++i) {
+        CSRColIndexNoDiag[i] = colIndicesTmp[lduCSRNoDiagIndex[i]];
+    }
+
+    checkCudaErrors(cudaMalloc((void**)&d_ldu_to_csr_no_diag, csr_col_index_bytes_no_diag));
+    checkCudaErrors(cudaMalloc((void**)&d_csr_row_index_no_diag, csr_row_index_bytes));
+    checkCudaErrors(cudaMalloc((void**)&d_csr_col_index_no_diag, csr_col_index_bytes_no_diag));
+    checkCudaErrors(cudaMemcpy(d_ldu_to_csr_no_diag, lduCSRNoDiagIndex.data(), csr_col_index_bytes_no_diag, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_csr_row_index_no_diag, CSRRowIndexNoDiag.data(), csr_row_index_bytes, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_csr_col_index_no_diag, CSRColIndexNoDiag.data(), csr_col_index_bytes_no_diag, cudaMemcpyHostToDevice));
 }
 
 void dfMatrixDataBase::createConstantFieldsInternal() {
