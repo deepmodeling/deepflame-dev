@@ -4,6 +4,7 @@
 #include <amgx_c.h>
 #include "dfMatrixDataBase.H"
 #include "dfMatrixOpBase.H"
+#include "dfCSRSolver.H"
 
 class dfUEqn
 {
@@ -28,6 +29,8 @@ private:
 	AmgXSolver *UxSolver = nullptr;
 	AmgXSolver *UySolver = nullptr;
 	AmgXSolver *UzSolver = nullptr;
+
+    CSRSolver *USolver = nullptr;
     int num_iteration = 0;
 
 	// constant fields - internal

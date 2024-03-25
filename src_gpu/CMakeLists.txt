@@ -20,6 +20,8 @@ include_directories(
     ${MPI_INCLUDE_PATH}
     ${CUDA_INCLUDE_DIRS}
     $ENV{AMGX_DIR}/include
+    ${CMAKE_SOURCE_DIR}
+    dfLinearSolver/CSRMatrix
 )
 
 add_library(${PROJECT_NAME} 
@@ -34,7 +36,9 @@ add_library(${PROJECT_NAME}
         dfRhoEqn.cu
         dfpEqn.cu
         dfThermo.cu
-        dfChemistrySolver.cu)
+        dfChemistrySolver.cu
+
+        dfLinearSolver/CSRMatrix/dfPBiCGStabCSRSolver.cu)
 
 target_link_libraries(${PROJECT_NAME}
     ${MPI_LIBRARIES}
