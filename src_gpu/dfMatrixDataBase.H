@@ -121,12 +121,14 @@ struct dfMatrixDataBase
     int num_Nz = 0;
     int num_patches = 0;
     int num_species = 0;
+    int *interfaceFlag = nullptr;
     std::vector<int> patch_size;
     std::vector<int> patch_type_calculated;
     std::vector<int> patch_type_extropolated;
     std::vector<int> patch_type_T;
     double rdelta_t = 0;
     std::vector<int> lduCSRIndex;
+    std::vector<int> lduCSRNoDiagIndex;
 
     // constant values -- ldu bytesize
     size_t cell_value_bytes = 0;
@@ -146,6 +148,7 @@ struct dfMatrixDataBase
     size_t csr_col_index_bytes = 0;
     size_t csr_value_bytes = 0;
     size_t csr_value_vec_bytes = 0;
+    size_t csr_col_index_bytes_no_diag = 0;
 
     // constant indexes
     int *d_owner = nullptr;
@@ -154,6 +157,9 @@ struct dfMatrixDataBase
     int *d_ldu_to_csr_index = nullptr;
     int *d_csr_row_index= nullptr;
     int *d_csr_col_index= nullptr;
+    int *d_ldu_to_csr_no_diag = nullptr;
+    int *d_csr_row_index_no_diag= nullptr;
+    int *d_csr_col_index_no_diag= nullptr;
 
     // amgx solvers
 	AmgXSolver *u_setting_solver = nullptr;

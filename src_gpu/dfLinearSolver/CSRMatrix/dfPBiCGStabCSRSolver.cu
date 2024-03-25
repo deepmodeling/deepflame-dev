@@ -12,4 +12,7 @@ void PBiCGStabCSRSolver::solve
 )
 {
     // Implement the PBiCGStab solver here
+    // dataBase.d_csr_col_index_no_diag
+    // dataBase.d_csr_row_index_no_diag
+    // dataBase.interfaceFlag
 };

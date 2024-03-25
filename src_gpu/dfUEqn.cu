@@ -372,6 +372,7 @@ void dfUEqn::setConstantFields(const std::vector<int> patch_type) {
                 || patch_type[i] == boundaryConditions::processorCyclic) {
             dataBase_.patchSizeOffset.push_back(offset);
             offset += dataBase_.patch_size[i] * 2;
+            dataBase_.interfaceFlag[i] = 1;
         } else {
             dataBase_.patchSizeOffset.push_back(offset);
             offset += dataBase_.patch_size[i];
@@ -618,6 +619,7 @@ void dfUEqn::process() {
             dataBase_.num_patches, dataBase_.patch_size.data(), patch_type.data(), dataBase_.d_u, dataBase_.d_boundary_u,
             d_ldu_solve, d_extern_solve, d_source_solve, d_internal_coeffs_solve, d_boundary_coeffs_solve, dataBase_.cyclicNeighbor.data(), 
             dataBase_.patchSizeOffset.data(), d_A, d_b);
+        // TODO: ueqn_ldu_to_csr_no_diag();
 #endif
 #ifdef USE_GRAPH
         checkCudaErrors(cudaStreamEndCapture(dataBase_.stream, &graph_pre));

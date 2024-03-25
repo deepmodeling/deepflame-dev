@@ -14,7 +14,7 @@ void dfRhoEqn::setConstantValues() {
 }
 
 void dfRhoEqn::setConstantFields(const std::vector<int> patch_type) {
-  this->patch_type = patch_type;
+    this->patch_type = patch_type;
 }
 
 void dfRhoEqn::initNonConstantFields(const double *rho, const double *phi, 
