@@ -1,2 +1,3 @@
 *.H linguist-language=C++
 *.C linguist-language=C++
+.git_archival.txt  export-subst
