@@ -60,9 +60,9 @@ Description
 #include "basicThermo.H"
 #include "CombustionModel.H"
 
-// #define GPUSolverNew_
+#define GPUSolverNew_
 // #define TIME
-// #define DEBUG_
+#define DEBUG_
 // #define SHOW_MEMINFO
 
 #include "dfMatrixDataBase.H"

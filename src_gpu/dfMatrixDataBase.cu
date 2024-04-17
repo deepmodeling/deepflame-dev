@@ -320,7 +320,7 @@ void dfMatrixDataBase::setConstantIndexes(const int *owner, const int *neighbor,
         return pair.first;
     });
     std::vector<int> CSRRowIndexNoDiag(num_cells + 1, 0);
-    for (int i = 0; i < num_Nz; i++) {
+    for (int i = 0; i < 2 * num_surfaces; i++) {
         CSRRowIndexNoDiag[permRowIndex[i] + 1]++;
     }
     std::partial_sum(CSRRowIndexNoDiag.begin(), CSRRowIndexNoDiag.end(), CSRRowIndexNoDiag.begin());

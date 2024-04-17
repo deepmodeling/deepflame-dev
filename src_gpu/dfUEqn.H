@@ -5,6 +5,7 @@
 #include "dfMatrixDataBase.H"
 #include "dfMatrixOpBase.H"
 #include "dfCSRSolver.H"
+#include "dfELLSolver.H"
 
 class dfUEqn
 {
@@ -31,6 +32,7 @@ private:
 	AmgXSolver *UzSolver = nullptr;
 
     CSRSolver *USolver = nullptr;
+    ELLSolver *UELLSolver = nullptr;
     int num_iteration = 0;
 
 	// constant fields - internal
@@ -92,6 +94,12 @@ private:
 	double *d_source_solve = nullptr;
 	double *d_internal_coeffs_solve = nullptr;
 	double *d_boundary_coeffs_solve = nullptr;
+    double *d_off_diag = nullptr;
+
+    // non-constant fields - ell
+    double *d_ellValues;
+    int *d_ellCols;
+    int maxcount;
 
     // field pointer map
     std::unordered_map<std::string, double*> fieldPointerMap;
@@ -151,6 +159,9 @@ public:
         int num_patches, const int *patch_size, const int *patch_type, const double *vf, const double *boundary_vf, 
         const double *ldu, double *external, const double *source, const double *internal_coeffs, const double *boundary_coeffs,
         const int *cyclicNeighbor, const int *patchSizeOffset, double *A, double *b);
+    void ueqn_ldu_to_csr_no_diag(int row_, int num_surfaces, int *off_diag_rowptr_, double *lower, double *upper, int *lowerAddr, int *upperAddr, double *off_diag_value_);
+    int get_ell_row_maxcount(int row_, int num_surfaces, int* lowerAddr, int* upperAddr);
+    void ueqn_ldu_to_ell_no_diag(int row_, int num_surfaces, double* lower, double* upper, int* lowerAddr, int* upperAddr, double* ellValues, int* ellCols, int maxcount);
 
     void solve();
     void sync();
