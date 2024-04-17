@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.5)
 project(dfMatrix LANGUAGES CXX CUDA)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_PREFIX_PATH /root/libtorch)
+set(CMAKE_PREFIX_PATH /root/libtorch/libtorch)
 
 find_package(CUDA REQUIRED)
 find_package(MPI REQUIRED)
@@ -22,6 +22,7 @@ include_directories(
     $ENV{AMGX_DIR}/include
     ${CMAKE_SOURCE_DIR}
     dfLinearSolver/CSRMatrix
+    dfLinearSolver/ELLMatrix
 )
 
 add_library(${PROJECT_NAME} 

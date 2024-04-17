@@ -1,26 +1,26 @@
 #include <nccl.h>
 #include <cuda_runtime.h>
-#include "dfCSRSolver.H"
+#include "dfELLSolver.H"
 #include "dfMatrixDataBase.H"
 #include <cmath>
 #include "dfMatrixOpBase.H"
 
 // #define PARALLEL_
 
-double small_ = 1e-20;
-double vsmall_ = 2.22507e-308;
-int maxIter_ = 100;
-int minIter_ = 0;
-double tolerance_ = 1e-09;
-double relTol_ = 0.01;
+double small_ell_ = 1e-20;
+double vsmall_ell_ = 2.22507e-308;
+int maxIter_ell_ = 100;
+int minIter_ell_ = 0;
+double tolerance_ell_ = 1e-9;
+double relTol_ell_ = 0.01;
 
 // --- member function ---
 
-bool checkSingularity(double input){
-    return (input < vsmall_);
+bool checkSingularity_ell(double input){
+    return (input < vsmall_ell_);
 }
 
-bool checkConvergence
+bool checkConvergence_ell
 (
     double finalResidual, 
     double initialResidual,
@@ -28,11 +28,11 @@ bool checkConvergence
 )
 {
     if(
-        finalResidual < tolerance_ 
-        || (relTol_ > small_ * 1 && finalResidual < relTol_ * initialResidual)
+        finalResidual < tolerance_ell_
+        || (relTol_ell_ > small_ell_ * 1 && finalResidual < relTol_ell_ * initialResidual)
     )
     {
-        printf("GPU-CSR-PBiCGStab::solve end --------------------------------------------\n");
+        printf("GPU-ELL-PBiCGStab::solve end --------------------------------------------\n");
         printf("Initial residual = %.5e, Final residual = %.5e, No Iterations %d\n",initialResidual,finalResidual,nIterations);
         return true;
     }
@@ -43,19 +43,21 @@ bool checkConvergence
 
 /*------------------------------------------------solve---------------------------------------------------------*/
 
-void PBiCGStabCSRSolver::solve
+void PBiCGStabELLSolver::solve
 (
     const dfMatrixDataBase& dataBase,
     const double* d_internal_coeffs,
     const double* d_boundary_coeffs,
     int* patch_type,
     double* diagPtr,
-    const double* off_diag_value,
+    double* ellValues,
+    int* ellCols,
+    int ell_max_count_,
     const double *rhs, 
     double *psi
 )
 {
-    printf("GPU-CSR-PBiCGStab::solve start --------------------------------------------\n");
+    printf("GPU-ELL-PBiCGStab::solve start --------------------------------------------\n");
 
     int nIterations = 0;
  
@@ -70,7 +72,7 @@ void PBiCGStabCSRSolver::solve
     double normFactor = 0.;
     double initialResidual = 0.;
     double finalResidual = 0.;
-
+    
     // --- reduce psi to get : psi_ave ---
     reduce(nCells, threads_per_block, blocks_per_grid, psi, reduce_result, dataBase.stream, false);
 #ifndef PARALLEL_
@@ -89,7 +91,7 @@ void PBiCGStabCSRSolver::solve
 
     // --- SpMV : yA ---
     // input : psi, diag
-    SpMV4CSR(dataBase.stream, nCells, diagPtr, off_diag_value, dataBase.d_csr_row_index_no_diag, dataBase.d_csr_col_index_no_diag, psi, d_yA); 
+    SpMV4ELL(dataBase.stream, nCells, diagPtr, ellValues, ellCols, ell_max_count_, psi, d_yA);
 
 #ifdef PARALLEL_      
     // --- initMatrixInterfaces & updateMatrixInterfaces : yA ---
@@ -100,12 +102,12 @@ void PBiCGStabCSRSolver::solve
         dataBase.interfaceFlag, psi, d_yA, 
         scalarSendBufList_, scalarRecvBufList_,
         d_boundary_coeffs, dataBase.d_boundary_face_cell, patch_type);
-
+    
 #endif
 
     // --- calculate : rA and pA ---
     // input : rhs, yA and diag
-    calrAandpA4CSR(dataBase.stream, nCells, d_rA, rhs, d_yA, diagPtr, off_diag_value, dataBase.d_csr_row_index_no_diag, d_pA);
+    calrAandpA4ELL(dataBase.stream, nCells, d_rA, rhs, d_yA, diagPtr, ellValues, ell_max_count_, d_pA);
 
     // --- subBoundaryCoeffs : pA ---
     // input : d_boundary_coeffs
@@ -115,7 +117,7 @@ void PBiCGStabCSRSolver::solve
     // --- calculate : pA and d_normFactors_tmp ---
     // input : psi_ave and yA, pA, rhs
     calpAandnormFactor(dataBase.stream, nCells, psi_ave, d_pA, d_normFactors_tmp, d_yA, rhs);
-    
+
     // --- reduce d_normFactors_tmp to get : normFactor ---
     reduce(nCells, threads_per_block, blocks_per_grid, d_normFactors_tmp, reduce_result, dataBase.stream, false);
 #ifndef PARALLEL_
@@ -126,8 +128,8 @@ void PBiCGStabCSRSolver::solve
     cudaMemcpyAsync(&normFactor, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
 #endif
 
-    normFactor += small_;
-    
+    normFactor += small_ell_;
+
     // --- reduce abs(rA) to get : initialResidual ---
     reduce(nCells, threads_per_block, blocks_per_grid, d_rA, reduce_result, dataBase.stream, true);
 #ifndef PARALLEL_
@@ -137,15 +139,15 @@ void PBiCGStabCSRSolver::solve
     cudaStreamSynchronize(dataBase.stream);
     cudaMemcpyAsync(&initialResidual, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
 #endif
-        
+    
     initialResidual = initialResidual / normFactor;
 
     finalResidual = initialResidual;
 
     if
     (
-        minIter_ > 0
-     || !checkConvergence(finalResidual, initialResidual, nIterations)
+        minIter_ell_ > 0
+     || !checkConvergence_ell(finalResidual, initialResidual, nIterations)
     ){
         
         // --- Store initial residual : rA0 ---
@@ -178,17 +180,19 @@ void PBiCGStabCSRSolver::solve
             cudaMemcpyAsync(&rA0rA, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
 #endif
 
-            if (checkSingularity(std::abs(rA0rA)))
+            if (checkSingularity_ell(abs(rA0rA)))
             {
                 break;
             }
+
+            // --- Update pA
 
             if(nIterations == 0){
                 // --- calculate pA and yA ---
                 // input : rA and pA
                 calpAandyAInit(dataBase.stream, nCells, d_pA, d_rA, d_yA);
             }else{
-                if(checkSingularity(std::abs(omega))){
+                if(checkSingularity_ell(std::abs(omega))){
                     break;
                 }
                 // --- calculate pA and yA ---
@@ -199,8 +203,8 @@ void PBiCGStabCSRSolver::solve
 
             // --- SpMV : AyA ---
             // input : yA, diag
-            SpMV4CSR(dataBase.stream, nCells, diagPtr, off_diag_value, dataBase.d_csr_row_index_no_diag, dataBase.d_csr_col_index_no_diag, d_yA, d_AyA);
-            
+            SpMV4ELL(dataBase.stream, nCells, diagPtr, ellValues, ellCols, ell_max_count_, d_yA, d_AyA);
+
 #ifdef PARALLEL_
             // --- initMatrixInterfaces & updateMatrixInterfaces AyA ---
             // input : yA (neighbor's yA)
@@ -215,7 +219,7 @@ void PBiCGStabCSRSolver::solve
             // --- calculate : d_rA0AyA_tmp ---
             // input : rA0, AyA
             AmulBtoC(dataBase.stream, nCells, d_rA0, d_AyA, d_rA0AyA_tmp);
-            
+
             // --- reduce d_rA0AyA_tmp to get : rA0AyA ---
             reduce(nCells, threads_per_block, blocks_per_grid, d_rA0AyA_tmp, reduce_result, dataBase.stream, false);
 #ifndef PARALLEL_
@@ -227,11 +231,11 @@ void PBiCGStabCSRSolver::solve
 #endif
 
             alpha = rA0rA/rA0AyA;
-
+            
             // --- calculate : sA ---
             // input : rA, alpha, AyA
             calsA(dataBase.stream,nCells, d_sA, d_rA, alpha, d_AyA);
-            
+
             // --- reduce abs(sA) to get : finalResidual ---
             reduce(nCells, threads_per_block, blocks_per_grid, d_sA, reduce_result, dataBase.stream, true);
 #ifndef PARALLEL_
@@ -243,10 +247,10 @@ void PBiCGStabCSRSolver::solve
 #endif
 
             finalResidual = finalResidual / normFactor;
-
+            
             if
             (
-                checkConvergence(finalResidual, initialResidual, nIterations)
+                checkConvergence_ell(finalResidual, initialResidual, nIterations)
             )
             {
                 // --- calculate : psi ---
@@ -264,8 +268,8 @@ void PBiCGStabCSRSolver::solve
 
             // --- SpMV : tA ---
             // input : sA, diag
-            SpMV4CSR(dataBase.stream, nCells, diagPtr, off_diag_value, dataBase.d_csr_row_index_no_diag, dataBase.d_csr_col_index_no_diag, d_zA, d_tA);
-            
+            SpMV4ELL(dataBase.stream, nCells, diagPtr, ellValues, ellCols, ell_max_count_, d_zA, d_tA);
+
 #ifdef PARALLEL_
             // --- initMatrixInterfaces & updateMatrixInterfaces tA ---
             // input : zA (neighbor's zA)
@@ -280,7 +284,7 @@ void PBiCGStabCSRSolver::solve
             // --- calculate : d_tAtA_tmp ---
             // input : tA
             AmulAtoB(dataBase.stream, nCells, d_tA, d_tAtA_tmp);
-            
+
             // --- reduce d_tAtA_tmp to get : tAtA ---
             reduce(nCells, threads_per_block, blocks_per_grid, d_tAtA_tmp, reduce_result, dataBase.stream, false);
 #ifndef PARALLEL_
@@ -294,7 +298,7 @@ void PBiCGStabCSRSolver::solve
             // --- calculate : d_sAtA_tmp ---
             // input : sA, tA
             AmulBtoC(dataBase.stream, nCells, d_sA, d_tA, d_sAtA_tmp);
-            
+
             // --- reduce d_sAtA_tmp to get : omega ---
             reduce(nCells, threads_per_block, blocks_per_grid, d_sAtA_tmp, reduce_result, dataBase.stream, false);
 #ifndef PARALLEL_
@@ -321,13 +325,14 @@ void PBiCGStabCSRSolver::solve
 #endif
             
             finalResidual = finalResidual / normFactor;
+
         }while
         (
             (
-            ++nIterations < maxIter_
-            && !checkConvergence(finalResidual, initialResidual, nIterations)
+            ++nIterations < maxIter_ell_
+            && !checkConvergence_ell(finalResidual, initialResidual, nIterations)
             )
-            || nIterations < minIter_
+            || nIterations < minIter_ell_
         );
     }
 

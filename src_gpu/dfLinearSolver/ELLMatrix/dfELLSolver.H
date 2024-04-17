@@ -2,7 +2,7 @@
 #include "dfMatrixDataBase.H"
 #include "dfMatrixOpBase.H"
 
-class CSRSolver {
+class ELLSolver {
 protected:
     double small_;
     double vsmall_;
@@ -30,8 +30,8 @@ public:
     double* scalarRecvBufList_;
 
 
-    CSRSolver() : small_(1e-20), vsmall_(2.22507e-308), maxIter_(100), minIter_(0), tolerance_(1e-9), relTol_(0.01) {}
-    virtual ~CSRSolver() {}
+    ELLSolver() : small_(1e-20), vsmall_(2.22507e-308), maxIter_(100), minIter_(0), tolerance_(1e-9), relTol_(0.01) {}
+    virtual ~ELLSolver() {}
 
     virtual void solve
     (
@@ -40,7 +40,9 @@ public:
         const double* d_boundary_coeffs,
         int* patch_type,
         double* diagPtr,
-        const double* off_diag_value,
+        double* ellValues,
+        int* ellCols,
+        int ell_max_count,
         const double *rhs, 
         double *psi
     ) = 0;
@@ -63,10 +65,10 @@ public:
     }
 };
 
-class PBiCGStabCSRSolver : public CSRSolver {
+class PBiCGStabELLSolver : public ELLSolver {
 public:
-    PBiCGStabCSRSolver() {}
-    virtual ~PBiCGStabCSRSolver() {}
+    PBiCGStabELLSolver() {}
+    virtual ~PBiCGStabELLSolver() {}
 
     virtual void solve
     (
@@ -75,16 +77,18 @@ public:
         const double* d_boundary_coeffs,
         int* patch_type,
         double* diagPtr,
-        const double* off_diag_value,
+        double* ellValues,
+        int* ellCols,
+        int ell_max_count,
         const double *rhs, 
         double *psi
     ) override;
 };
 
-class PCGCSRSolver : public CSRSolver {
+class PCGELLSolver : public ELLSolver {
 public:
-    PCGCSRSolver() {}
-    virtual ~PCGCSRSolver() {}
+    PCGELLSolver() {}
+    virtual ~PCGELLSolver() {}
 
     virtual void solve
     (
@@ -93,7 +97,9 @@ public:
         const double* d_boundary_coeffs,
         int* patch_type,
         double* diagPtr,
-        const double* off_diag_value,
+        double* ellValues,
+        int* ellCols,
+        int ell_max_count,
         const double *rhs, 
         double *psi
     ) override;
