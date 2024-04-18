@@ -32,6 +32,10 @@ EXE_INC = -std=c++14 \
 	-I$(DF_ROOT)/GPUTestRef/lnInclude \
     -I$(DF_ROOT)/src_gpu/dfLinearSolver/CSRMatrix/lnInclude \
     -I$(DF_ROOT)/src_gpu/dfLinearSolver/ELLMatrix/lnInclude \
+    -I$(DF_SRC)/dfUtils/lnInclude \
+    -I$(DF_SRC)/dfGenMatrix/lnInclude \
+    -I$(DF_SRC)/dfMatrices/lnInclude \
+    -I$(DF_SRC)/dfSchedule/lnInclude \
 
 EXE_LIBS = \
     -lcompressibleTransportModels \
@@ -45,6 +49,10 @@ EXE_LIBS = \
     -ldfCanteraMixture \
     -ldfChemistryModel \
     -ldfCombustionModels  \
+    -ldfUtils \
+    -ldfGenMatrix \
+    -ldfMatrices \
+    -ldfSchedule \
     $(CANTERA_ROOT)/lib/libcantera.so \
     $(if $(LIBTORCH_ROOT),$(LIBTORCH_ROOT)/lib/libtorch.so,) \
     $(if $(LIBTORCH_ROOT),$(LIBTORCH_ROOT)/lib/libc10.so,) \

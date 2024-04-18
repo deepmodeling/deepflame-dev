@@ -37,6 +37,7 @@ Description
 #include "CanteraMixture.H"
 // #include "hePsiThermo.H"
 #include "heRhoThermo.H"
+#include "csrMatrix.H"
 
 #ifdef USE_PYTORCH
 #include <pybind11/embed.h>
@@ -62,7 +63,7 @@ Description
 
 #define GPUSolverNew_
 // #define TIME
-#define DEBUG_
+// #define DEBUG_
 // #define SHOW_MEMINFO
 
 #include "dfMatrixDataBase.H"

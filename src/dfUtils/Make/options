@@ -1,0 +1,8 @@
+-include $(GENERAL_RULES)/mplibType
+
+EXE_INC = -std=c++14 \
+    $(PFLAGS) $(PINC) \
+    -I$(LIB_SRC)/Pstream/mpi
+    
+LIB_LIBS = 
+

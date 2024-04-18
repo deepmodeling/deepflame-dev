@@ -1,0 +1,37 @@
+-include $(GENERAL_RULES)/mplibType
+
+EXE_INC = -std=c++17\
+	-g \
+    -DOPT_FACE2CELL_COLORING_SCHEDULE \
+    $(PFLAGS) $(PINC) \
+    -I$(LIB_SRC)/transportModels/compressible/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
+    -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude \
+    -I$(LIB_SRC)/TurbulenceModels/compressible/lnInclude \
+    -I$(LIB_SRC)/finiteVolume/cfdTools \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/sampling/lnInclude \
+    -I$(LIB_SRC)/dynamicFvMesh/lnInclude \
+    -I$(LIB_SRC)/Pstream/mpi \
+    -I$(DF_SRC)/dfCanteraMixture/lnInclude \
+    -I$(DF_SRC)/dfChemistryModel/lnInclude \
+    -I$(DF_SRC)/dfCombustionModels/lnInclude \
+    -I$(DF_SRC)/dfSchedule/lnInclude \
+    -I$(DF_SRC)/dfUtils/lnInclude \
+    -I$(LIB_SRC)/parallel/decompose/decompositionMethods/lnInclude \
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/fileFormats/lnInclude \
+    -I$(LIB_SRC)/triSurface/lnInclude \
+    -I$(LIB_SRC)/surfMesh/lnInclude \
+    -I$(LIB_SRC)/dynamicMesh/lnInclude \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(CANTERA_ROOT)/include
+
+
+EXE_LIBS = \
+    -ldfSchedule \
+    -ldfUtils \
+    -lmeshTools \
+    -ltriSurface \
+    -lOpenFOAM
