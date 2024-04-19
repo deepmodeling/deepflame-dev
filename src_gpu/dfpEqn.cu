@@ -1,4 +1,6 @@
 #include "dfpEqn.H"
+// #define AMGX_
+#define CSR_
 
 __global__ void fvc_interpolate_internal_multi_scalar_kernel(int num_surfaces, const int *lower_index, const int *upper_index,
         const double *vf1, const double *vf2, const double *weight, double *output, double sign)
@@ -298,6 +300,20 @@ void dfpEqn::setConstantValues(const std::string &mode_string, const std::string
     this->mode_string = mode_string;
     this->setting_path = setting_path;
     pSolver = new AmgXSolver(mode_string, setting_path, dataBase_.localRank);
+
+#ifdef CSR_
+    pCSRSolver = new PCGCSRSolver();
+    pCSRSolver->initSolvePerformance
+    (     
+        1e-20, //small_
+        2.22507e-308, //vsmall_
+        4, //maxIter_ 
+        4, //minIter_ 
+        1e-9, //tolerance_ 
+        0.01 //relTol_
+    );
+    pCSRSolver->initialize(dataBase_.num_cells, dataBase_.boundary_surface_value_bytes);
+#endif
 }
 
 void dfpEqn::setConstantFields(const std::vector<int> patch_type_U, const std::vector<int> patch_type_p) {
@@ -453,11 +469,20 @@ void dfpEqn::process() {
             dataBase_.d_boundary_mag_sf, d_boundary_rhorAUf, d_gradient_internal_coeffs, d_gradient_boundary_coeffs, 
             d_internal_coeffs, d_boundary_coeffs, -1.);
     
-    // solve
+#ifdef AMGX_
     ldu_to_csr_scalar(dataBase_.stream, dataBase_.num_cells, dataBase_.num_surfaces, dataBase_.num_boundary_surfaces,
             dataBase_.num_Nz, dataBase_.d_boundary_face_cell, dataBase_.d_ldu_to_csr_index,
             dataBase_.num_patches, dataBase_.patch_size.data(), patch_type_p.data(),
             d_ldu, d_source, d_internal_coeffs, d_boundary_coeffs, d_A);
+#endif
+
+#ifdef CSR_
+    // timeLoopFunc(d_diag,)
+    ldu_to_csr_scalar(dataBase_.stream, dataBase_.num_cells, dataBase_.num_surfaces, dataBase_.num_boundary_surfaces,
+            dataBase_.num_Nz, dataBase_.d_boundary_face_cell, dataBase_.d_ldu_to_csr_index,
+            dataBase_.num_patches, dataBase_.patch_size.data(), patch_type_p.data(),
+            d_ldu, d_source, d_internal_coeffs, d_boundary_coeffs, d_A);
+#endif
 
 #ifdef USE_GRAPH
         checkCudaErrors(cudaStreamEndCapture(dataBase_.stream, &graph_pre));

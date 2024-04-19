@@ -8,33 +8,6 @@
 #define PARALLEL_
 #define PRINT_
 
-// --- member function ---
-
-bool PBiCGStabCSRSolver::checkSingularity(double input){
-    return (input < vsmall_);
-}
-
-bool PBiCGStabCSRSolver::checkConvergence
-(
-    double finalResidual, 
-    double initialResidual,
-    int nIterations
-)
-{
-    if(
-        finalResidual < tolerance_ 
-        || (relTol_ > small_ * 1 && finalResidual < relTol_ * initialResidual)
-    )
-    {
-        printf("GPU-CSR-PBiCGStab::solve end --------------------------------------------\n");
-        printf("Initial residual = %.5e, Final residual = %.5e, No Iterations %d\n",initialResidual,finalResidual,nIterations);
-        return true;
-    }
-    else{
-        return false;
-    }
-}
-
 /*------------------------------------------------malloc---------------------------------------------------------*/
 
 void PBiCGStabCSRSolver::initialize(const int nCells, const size_t boundary_surface_value_bytes)

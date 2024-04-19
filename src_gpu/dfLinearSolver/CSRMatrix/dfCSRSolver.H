@@ -1,5 +1,6 @@
 #pragma once
 #include "dfMatrixDataBase.H"
+#include "dfCSRPreconditioner.H"
 
 class CSRSolver {
 protected:
@@ -16,14 +17,30 @@ public:
 
     virtual void initialize(const int, const size_t) = 0;
 
-    virtual bool checkSingularity(double input) = 0;
+    virtual bool checkSingularity(double input){
+        return (input < vsmall_);
+    };
 
     virtual bool checkConvergence
     (
         double finalResidual, 
         double initialResidual,
         int nIterations
-    ) = 0;
+    )
+    {
+        if(
+            finalResidual < tolerance_ 
+            || (relTol_ > small_ * 1 && finalResidual < relTol_ * initialResidual)
+        )
+        {
+            printf("GPU-CSR-PBiCGStab::solve end --------------------------------------------\n");
+            printf("Initial residual = %.5e, Final residual = %.5e, No Iterations %d\n",initialResidual,finalResidual,nIterations);
+            return true;
+        }
+        else{
+            return false;
+        }
+    };
 
     virtual void solve
     (
@@ -79,15 +96,6 @@ public:
 
     virtual void initialize(const int nCells, const size_t boundary_surface_value_bytes) override;
 
-    virtual bool checkSingularity(double input) override;
-
-    virtual bool checkConvergence
-    (
-        double finalResidual, 
-        double initialResidual,
-        int nIterations
-    ) override;
-
     virtual void solve
     (
         const dfMatrixDataBase& dataBase,
@@ -103,8 +111,16 @@ public:
 
 class PCGCSRSolver : public CSRSolver {
 public:
+    // variables related to PCG solver
+
+    // tmp
+    GAMGCSRPreconditioner *precond_;
+
+
     PCGCSRSolver() {}
     virtual ~PCGCSRSolver() {}
+
+    virtual void initialize(const int nCells, const size_t boundary_surface_value_bytes) override;
 
     virtual void solve
     (

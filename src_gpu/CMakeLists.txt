@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.5)
 project(dfMatrix LANGUAGES CXX CUDA)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_PREFIX_PATH /root/libtorch/libtorch)
+set(CMAKE_PREFIX_PATH $ENV{LIBTORCH_ROOT})
 
 find_package(CUDA REQUIRED)
 find_package(MPI REQUIRED)
@@ -42,6 +42,9 @@ add_library(${PROJECT_NAME}
 
         dfLinearSolver/dfSolverOpBase.cu
         dfLinearSolver/CSRMatrix/dfPBiCGStabCSRSolver.cu
+        dfLinearSolver/CSRMatrix/dfPCGCSRSolver.cu
+        dfLinearSolver/CSRMatrix/dfGAMGCSRPreconditioner.cu
+
         dfLinearSolver/ELLMatrix/dfPBiCGStabELLSolver.cu)
 
 target_link_libraries(${PROJECT_NAME}
