@@ -104,7 +104,15 @@ UEqn_GPU.sync();
     while (pimple.correctNonOrthogonal())
     {
         fvScalarMatrix pEqn(pDDtEqn - fvm::laplacian(rhorAUf, p));
-        pEqn.solve();
+        
+        csrMatrix csr(pEqn);
+        auto& p_psi = const_cast<GeometricField<scalar, fvPatchField, volMesh>&>(pEqn.psi());
+        auto& source = pEqn.source();
+        auto& internalCoeffs = pEqn.internalCoeffs();
+        auto& boundaryCoeffs = pEqn.boundaryCoeffs();
+        csr.solve(p_psi, source, internalCoeffs, boundaryCoeffs);
+
+        // pEqn.solve();
         if (pimple.finalNonOrthogonalIter())
         {
             phi = phiHbyA + pEqn.flux();

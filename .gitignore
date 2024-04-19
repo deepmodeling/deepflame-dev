@@ -55,7 +55,7 @@ dynamicCode/
 postProcessing/
 *.out
 
-processor*/
+# processor*/
 chemkin/
 *.foam
 0.*/

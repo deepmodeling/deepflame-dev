@@ -4,6 +4,7 @@
 #include <amgx_c.h>
 #include "dfMatrixDataBase.H"
 #include "dfMatrixOpBase.H"
+#include "dfCSRSolver.H"
 
 class dfpEqn
 {
@@ -26,6 +27,7 @@ private:
 
 	// constant values -- amgx solvers
 	AmgXSolver *pSolver = nullptr;
+    CSRSolver *pCSRSolver = nullptr;
     int num_iteration = 0;
 
 	// constant fields - internal
