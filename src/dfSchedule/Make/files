@@ -1,0 +1,13 @@
+SubMesh.C
+StructuredSubMesh.C
+UnstructuredSubMesh.C
+
+MeshSchedule.C
+PartitionMeshSchedule.C
+StructuredMeshSchedule.C
+XYBlock1DColoringStructuredMeshSchedule.C
+XBlock2DPartitionStructuredMeshSchedule.C
+UnstructuredMeshSchedule.C
+csrPattern.C
+
+LIB = $(DF_LIBBIN)/libdfSchedule

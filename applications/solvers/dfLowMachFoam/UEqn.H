@@ -1,6 +1,23 @@
 // Solve the Momentum equation
 #ifdef GPUSolverNew_
 
+// tmp<fvVectorMatrix> tUEqn0
+// (
+//     fvm::ddt(rho, U) 
+//     + 
+//     fvm::div(phi, U)
+//     +  
+//     turbulence->divDevRhoReff(U)
+//     == -fvc::grad(p)
+// );
+// fvVectorMatrix& UEqn0 = tUEqn0.ref();
+// csrMatrix csr0(UEqn0);
+// auto& psi0 = const_cast<volVectorField&>(UEqn0.psi());
+// auto& source0 = UEqn0.source();
+// auto& internalCoeffs0 = UEqn0.internalCoeffs();
+// auto& boundaryCoeffs0 = UEqn0.boundaryCoeffs();
+// csr0.solve(psi0, source0, internalCoeffs0, boundaryCoeffs0);
+
 #if defined DEBUG_
     // run CPU, for temp
     TICK_START;

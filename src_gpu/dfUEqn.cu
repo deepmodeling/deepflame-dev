@@ -1,7 +1,7 @@
 #include "dfUEqn.H"
 
-#define AMGXSolver_
-// #define CSRPBiCGSolver_
+// #define AMGXSolver_
+#define CSRPBiCGSolver_
 // #define ELLPBiCGSolver_
 
 __global__ void addAveInternaltoDiagUeqn(int num_cells, int num_boundary_surfaces, const int *face2Cells, 
@@ -62,11 +62,6 @@ __global__ void ueqn_addBoundaryDiag(int num_cells, int num_boundary_surfaces, c
     double ave_internal = (internal_x + internal_y + internal_z) / 3;
 
     int cellIndex = face2Cells[index];
-
-    // if (index == 0)
-    // {
-    //     printf("gpu H_pEqn[8680] = %.20e\n", H_pEqn[8680]);
-    // }
 
     // do not permute H anymore
     atomicAdd(&H_pEqn[num_cells * 0 + cellIndex], (-internal_x + ave_internal) * psi[num_cells * 0 + cellIndex]);
@@ -366,46 +361,30 @@ void dfUEqn::setConstantValues(const std::string &mode_string, const std::string
   
 #ifdef CSRPBiCGSolver_
   USolver = new PBiCGStabCSRSolver();
-  int nCells = dataBase_.num_cells;
-  cudaMalloc(&USolver->d_yA, nCells * sizeof(double));
-  cudaMalloc(&USolver->d_rA, nCells * sizeof(double));
-  cudaMalloc(&USolver->d_pA, nCells * sizeof(double));
-  cudaMalloc(&USolver->d_normFactors_tmp, nCells * sizeof(double));
-  cudaMalloc(&USolver->d_AyA, nCells * sizeof(double));
-  cudaMalloc(&USolver->d_sA, nCells * sizeof(double));
-  cudaMalloc(&USolver->d_zA, nCells * sizeof(double));
-  cudaMalloc(&USolver->d_tA, nCells * sizeof(double));
-  cudaMalloc(&USolver->d_rA0, nCells * sizeof(double));
-  cudaMalloc(&USolver->d_rA0rA_tmp, nCells * sizeof(double));
-  cudaMalloc(&USolver->d_rA0AyA_tmp, nCells * sizeof(double));
-  cudaMalloc(&USolver->d_tAtA_tmp, nCells * sizeof(double));
-  cudaMalloc(&USolver->d_sAtA_tmp, nCells * sizeof(double));
-  cudaMalloc(&USolver->reduce_result, sizeof(double));
-  // for parallel
-  cudaMalloc(&USolver->scalarSendBufList_, dataBase_.boundary_surface_value_bytes);
-  cudaMalloc(&USolver->scalarRecvBufList_, dataBase_.boundary_surface_value_bytes);
+  USolver->initSolvePerformance
+    (     
+        1e-20, //small_
+        2.22507e-308, //vsmall_
+        4, //maxIter_ 
+        4, //minIter_ 
+        1e-9, //tolerance_ 
+        0.01 //relTol_
+    );
+  USolver->initialize(dataBase_.num_cells, dataBase_.boundary_surface_value_bytes);
 #endif
 
 #ifdef ELLPBiCGSolver_
   UELLSolver = new PBiCGStabELLSolver();
-  int nCells = dataBase_.num_cells;
-  cudaMalloc(&UELLSolver->d_yA, nCells * sizeof(double));
-  cudaMalloc(&UELLSolver->d_rA, nCells * sizeof(double));
-  cudaMalloc(&UELLSolver->d_pA, nCells * sizeof(double));
-  cudaMalloc(&UELLSolver->d_normFactors_tmp, nCells * sizeof(double));
-  cudaMalloc(&UELLSolver->d_AyA, nCells * sizeof(double));
-  cudaMalloc(&UELLSolver->d_sA, nCells * sizeof(double));
-  cudaMalloc(&UELLSolver->d_zA, nCells * sizeof(double));
-  cudaMalloc(&UELLSolver->d_tA, nCells * sizeof(double));
-  cudaMalloc(&UELLSolver->d_rA0, nCells * sizeof(double));
-  cudaMalloc(&UELLSolver->d_rA0rA_tmp, nCells * sizeof(double));
-  cudaMalloc(&UELLSolver->d_rA0AyA_tmp, nCells * sizeof(double));
-  cudaMalloc(&UELLSolver->d_tAtA_tmp, nCells * sizeof(double));
-  cudaMalloc(&UELLSolver->d_sAtA_tmp, nCells * sizeof(double));
-  cudaMalloc(&UELLSolver->reduce_result, sizeof(double));
-  // for parallel
-  cudaMalloc(&UELLSolver->scalarSendBufList_, dataBase_.boundary_surface_value_bytes);
-  cudaMalloc(&UELLSolver->scalarRecvBufList_, dataBase_.boundary_surface_value_bytes);
+  UELLSolver->initSolvePerformance
+    (     
+        1e-20, //small_
+        2.22507e-308, //vsmall_
+        4, //maxIter_ 
+        4, //minIter_ 
+        1e-9, //tolerance_ 
+        0.01 //relTol_
+    );
+  UELLSolver->initialize(dataBase_.num_cells, dataBase_.boundary_surface_value_bytes);
 #endif
 
 }
@@ -791,13 +770,12 @@ void dfUEqn::solve() {
 #ifdef AMGXSolver_
     TICK_INIT_EVENT;
     TICK_START_EVENT;
-    sync();
-    nvtxRangePushA("AMGX solve x");
+    // nvtxRangePushA("AMGX solve x");
     dataBase_.solve(num_iteration, AMGXSetting::u_setting, d_A, dataBase_.d_u, d_b);
-    nvtxRangePop();
-    TICK_END_EVENT(AMGX solve x);
+    // nvtxRangePop();
     dataBase_.solve(num_iteration, AMGXSetting::u_setting, d_A + dataBase_.num_Nz, dataBase_.d_u + dataBase_.num_cells, d_b + dataBase_.num_cells);
     dataBase_.solve(num_iteration, AMGXSetting::u_setting, d_A + 2 * dataBase_.num_Nz, dataBase_.d_u + 2 * dataBase_.num_cells, d_b + 2 * dataBase_.num_cells);
+    TICK_END_EVENT(AMGX solve);
 #endif
 #ifdef CSRPBiCGSolver_
     double* d_diag_tmp;
@@ -805,15 +783,14 @@ void dfUEqn::solve() {
     cudaMemcpyAsync(d_diag_tmp, d_diag, dataBase_.num_cells * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream);
     TICK_INIT_EVENT;
     TICK_START_EVENT;
-    sync();
-    nvtxRangePushA("CSR PBiCGStab solve x");
+    // nvtxRangePushA("CSR PBiCGStab solve x");
     USolver->solve(dataBase_, d_internal_coeffs_solve, d_boundary_coeffs_solve, &patch_type[0], d_diag_tmp, d_off_diag, d_source_solve, dataBase_.d_u);
-    nvtxRangePop();
-    TICK_END_EVENT(CSR PBiCGStab solve x);
+    // nvtxRangePop();
     cudaMemcpyAsync(d_diag_tmp, d_diag, dataBase_.num_cells * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream);
     USolver->solve(dataBase_, d_internal_coeffs_solve + dataBase_.num_boundary_surfaces, d_boundary_coeffs_solve + dataBase_.num_boundary_surfaces, &patch_type[0], d_diag_tmp, d_off_diag, d_source_solve + dataBase_.num_cells, dataBase_.d_u + dataBase_.num_cells);
     cudaMemcpyAsync(d_diag_tmp, d_diag, dataBase_.num_cells * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream);
     USolver->solve(dataBase_, d_internal_coeffs_solve + 2 * dataBase_.num_boundary_surfaces, d_boundary_coeffs_solve + 2 * dataBase_.num_boundary_surfaces, &patch_type[0], d_diag_tmp, d_off_diag, d_source_solve + 2 * dataBase_.num_cells, dataBase_.d_u + 2 * dataBase_.num_cells);
+    TICK_END_EVENT(CSR PBiCGStab solve);
 #endif
 #ifdef ELLPBiCGSolver_
     double* d_diag_tmp;
@@ -821,15 +798,14 @@ void dfUEqn::solve() {
     cudaMemcpyAsync(d_diag_tmp, d_diag, dataBase_.num_cells * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream);
     TICK_INIT_EVENT;
     TICK_START_EVENT;
-    sync();
-    nvtxRangePushA("ELL PBiCGStab solve x");
+    // nvtxRangePushA("ELL PBiCGStab solve x");
     UELLSolver->solve(dataBase_, d_internal_coeffs_solve, d_boundary_coeffs_solve, &patch_type[0], d_diag_tmp, d_ellValues, d_ellCols, maxcount, d_source_solve, dataBase_.d_u);
-    nvtxRangePop();
-    TICK_END_EVENT(ELL PBiCGStab solve x);
+    // nvtxRangePop();
     cudaMemcpyAsync(d_diag_tmp, d_diag, dataBase_.num_cells * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream);
     UELLSolver->solve(dataBase_, d_internal_coeffs_solve + dataBase_.num_boundary_surfaces, d_boundary_coeffs_solve + dataBase_.num_boundary_surfaces, &patch_type[0], d_diag_tmp, d_ellValues, d_ellCols, maxcount,  d_source_solve + dataBase_.num_cells, dataBase_.d_u + dataBase_.num_cells);
     cudaMemcpyAsync(d_diag_tmp, d_diag, dataBase_.num_cells * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream);
     UELLSolver->solve(dataBase_, d_internal_coeffs_solve + 2 * dataBase_.num_boundary_surfaces, d_boundary_coeffs_solve + 2 * dataBase_.num_boundary_surfaces, &patch_type[0], d_diag_tmp, d_ellValues, d_ellCols, maxcount, d_source_solve + 2 * dataBase_.num_cells, dataBase_.d_u + 2 * dataBase_.num_cells);
+    TICK_END_EVENT(ELL PBiCGStab solve);
 #endif
     num_iteration++;
 }

@@ -3,24 +3,18 @@
 #include "dfCSRSolver.H"
 #include "dfMatrixDataBase.H"
 #include <cmath>
-#include "dfMatrixOpBase.H"
+#include "dfSolverOpBase.H"
 
-// #define PARALLEL_
-
-double small_ = 1e-20;
-double vsmall_ = 2.22507e-308;
-int maxIter_ = 100;
-int minIter_ = 0;
-double tolerance_ = 1e-09;
-double relTol_ = 0.01;
+#define PARALLEL_
+#define PRINT_
 
 // --- member function ---
 
-bool checkSingularity(double input){
+bool PBiCGStabCSRSolver::checkSingularity(double input){
     return (input < vsmall_);
 }
 
-bool checkConvergence
+bool PBiCGStabCSRSolver::checkConvergence
 (
     double finalResidual, 
     double initialResidual,
@@ -39,6 +33,29 @@ bool checkConvergence
     else{
         return false;
     }
+}
+
+/*------------------------------------------------malloc---------------------------------------------------------*/
+
+void PBiCGStabCSRSolver::initialize(const int nCells, const size_t boundary_surface_value_bytes)
+{
+    cudaMalloc(&d_yA, nCells * sizeof(double));
+    cudaMalloc(&d_rA, nCells * sizeof(double));
+    cudaMalloc(&d_pA, nCells * sizeof(double));
+    cudaMalloc(&d_normFactors_tmp, nCells * sizeof(double));
+    cudaMalloc(&d_AyA, nCells * sizeof(double));
+    cudaMalloc(&d_sA, nCells * sizeof(double));
+    cudaMalloc(&d_zA, nCells * sizeof(double));
+    cudaMalloc(&d_tA, nCells * sizeof(double));
+    cudaMalloc(&d_rA0, nCells * sizeof(double));
+    cudaMalloc(&d_rA0rA_tmp, nCells * sizeof(double));
+    cudaMalloc(&d_rA0AyA_tmp, nCells * sizeof(double));
+    cudaMalloc(&d_tAtA_tmp, nCells * sizeof(double));
+    cudaMalloc(&d_sAtA_tmp, nCells * sizeof(double));
+    cudaMalloc(&reduce_result, sizeof(double));
+    // for parallel
+    cudaMalloc(&scalarSendBufList_, boundary_surface_value_bytes);
+    cudaMalloc(&scalarRecvBufList_, boundary_surface_value_bytes);
 }
 
 /*------------------------------------------------solve---------------------------------------------------------*/
@@ -66,6 +83,10 @@ void PBiCGStabCSRSolver::solve
     size_t threads_per_block = 1024;
     size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
 
+#ifdef PRINT_    
+    printf("threads_per_block = %d, blocks_per_grid = %d\n",threads_per_block, blocks_per_grid);
+#endif
+
     double psi_ave = 0.;
     double normFactor = 0.;
     double initialResidual = 0.;
@@ -81,6 +102,10 @@ void PBiCGStabCSRSolver::solve
     cudaMemcpyAsync(&psi_ave, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
 #endif
     psi_ave = psi_ave / row_;
+
+#ifdef PRINT_
+    printf("psi_ave = %.10e\n",psi_ave);
+#endif
 
     // --- addInternalCoeffs : diag ---
     // input : d_internal_coeffs
@@ -127,6 +152,10 @@ void PBiCGStabCSRSolver::solve
 #endif
 
     normFactor += small_;
+
+#ifdef PRINT_
+    printf("normFactor = %.10e\n",normFactor);
+#endif
     
     // --- reduce abs(rA) to get : initialResidual ---
     reduce(nCells, threads_per_block, blocks_per_grid, d_rA, reduce_result, dataBase.stream, true);
@@ -141,6 +170,10 @@ void PBiCGStabCSRSolver::solve
     initialResidual = initialResidual / normFactor;
 
     finalResidual = initialResidual;
+
+#ifdef PRINT_
+    printf("first finalResidual = %.10e\n",finalResidual);
+#endif
 
     if
     (
@@ -161,6 +194,11 @@ void PBiCGStabCSRSolver::solve
         // --- Solver iteration ---
         do
         {
+
+#ifdef PRINT_
+            printf("nIterations = %d\n",nIterations);
+#endif
+
             // --- Store previous : rA0rAold ---
             const double rA0rAold = rA0rA;
 
@@ -176,6 +214,10 @@ void PBiCGStabCSRSolver::solve
             ncclAllReduce(&reduce_result[0], &reduce_result[0], 1, ncclDouble, ncclSum, dataBase.nccl_comm, dataBase.stream);
             cudaStreamSynchronize(dataBase.stream);
             cudaMemcpyAsync(&rA0rA, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+#endif
+
+#ifdef PRINT_
+            printf("rA0rA = %.5e\n",rA0rA);
 #endif
 
             if (checkSingularity(std::abs(rA0rA)))
@@ -228,6 +270,10 @@ void PBiCGStabCSRSolver::solve
 
             alpha = rA0rA/rA0AyA;
 
+#ifdef PRINT_
+            printf("alpha = rA0rA/rA0AyA : %.10e, %.10e, %.10e\n", alpha, rA0rA, rA0AyA);
+#endif
+
             // --- calculate : sA ---
             // input : rA, alpha, AyA
             calsA(dataBase.stream,nCells, d_sA, d_rA, alpha, d_AyA);
@@ -244,6 +290,10 @@ void PBiCGStabCSRSolver::solve
 
             finalResidual = finalResidual / normFactor;
 
+#ifdef PRINT_
+            printf("second finalResidual = finalResidual / normFactor : %.10e\n", finalResidual);
+#endif
+
             if
             (
                 checkConvergence(finalResidual, initialResidual, nIterations)
@@ -252,7 +302,11 @@ void PBiCGStabCSRSolver::solve
                 // --- calculate : psi ---
                 // input : alpha, yA
                 exitLoop(dataBase.stream, nCells, alpha, d_yA, psi);
-                
+
+#ifdef PRINT_
+                printf("exitLoop at mid!\n");
+#endif
+
                 nIterations++;
 
                 break;
@@ -306,6 +360,10 @@ void PBiCGStabCSRSolver::solve
 #endif
             omega = omega / tAtA;
 
+#ifdef PRINT_
+            printf("omega = omega / tAtA : %.10e, %.10e\n", omega, tAtA);
+#endif
+
             // --- calculate : psi and rA ---
             // input : alpha, yA, omega, zA and sA, omega, tA
             calpsiandrA(dataBase.stream, nCells, psi, d_yA, d_zA, d_rA, d_sA, d_tA, alpha, omega);
@@ -321,6 +379,11 @@ void PBiCGStabCSRSolver::solve
 #endif
             
             finalResidual = finalResidual / normFactor;
+
+#ifdef PRINT_
+            printf("third finalResidual = finalResidual / normFactor : %.10e\n",finalResidual);
+#endif
+            
         }while
         (
             (
