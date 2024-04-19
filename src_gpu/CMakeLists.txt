@@ -47,6 +47,8 @@ add_library(${PROJECT_NAME}
 
         dfLinearSolver/ELLMatrix/dfPBiCGStabELLSolver.cu)
 
+set_target_properties(dfMatrix PROPERTIES CUDA_ARCHITECTURES "60;61;62;70;72;75")
+
 target_link_libraries(${PROJECT_NAME}
     ${MPI_LIBRARIES}
     ${CUDA_LIBRARIES}
