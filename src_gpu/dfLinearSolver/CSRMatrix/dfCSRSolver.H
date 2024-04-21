@@ -112,6 +112,12 @@ public:
 class PCGCSRSolver : public CSRSolver {
 public:
     // variables related to PCG solver
+    double *d_wA;
+    double *d_rA;
+    
+    double *reduce_result;
+    double *scalarSendBufList_;
+    double *scalarRecvBufList_;
 
     // tmp
     GAMGCSRPreconditioner *precond_;
