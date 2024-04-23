@@ -33,7 +33,7 @@ public:
             || (relTol_ > small_ * 1 && finalResidual < relTol_ * initialResidual)
         )
         {
-            printf("GPU-CSR-PBiCGStab::solve end --------------------------------------------\n");
+            printf("GPU-CSR::solve end --------------------------------------------\n");
             printf("Initial residual = %.5e, Final residual = %.5e, No Iterations %d\n",initialResidual,finalResidual,nIterations);
             return true;
         }
@@ -114,6 +114,10 @@ public:
     // variables related to PCG solver
     double *d_wA;
     double *d_rA;
+    double *d_pA;
+    double *d_normFactors_tmp;
+    double *d_wArA_tmp;
+    double *d_wApA_tmp;
     
     double *reduce_result;
     double *scalarSendBufList_;

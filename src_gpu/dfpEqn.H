@@ -65,6 +65,7 @@ private:
 
 	// non-constant fields - csr
 	double *d_A = nullptr;
+    double *d_off_diag = nullptr;
 
     // field pointer map
     std::unordered_map<std::string, double*> fieldPointerMap;
@@ -132,4 +133,6 @@ public:
     void comparep(const double *p, const double *boundary_p, bool printFlag);
     void compareU(const double *U, const double *boundary_U, bool printFlag);
     void comparedpdt(const double *dpdt, bool printFlag);
+
+    void peqn_ldu_to_csr_no_diag(int row_, int num_surfaces, int *off_diag_rowptr_, double *lower, double *upper, int *lowerAddr, int *upperAddr, double *off_diag_value_);
 };
