@@ -1,4 +1,5 @@
 #include <queue>
+#include "CSRGAMGAgglomeration.H"
 
 ncclUniqueId nccl_id;
 ncclComm_t nccl_comm;
@@ -593,6 +594,17 @@ void createGPUpEqn(const IOdictionary& CanteraTorchProperties, volScalarField& p
     pEqn_GPU.createNonConstantFieldsInternal();
     pEqn_GPU.createNonConstantFieldsBoundary();
     pEqn_GPU.createNonConstantLduAndCsrFields();
+
+    // map coeffs for GAMG solver
+    const dictionary solverControls = p.mesh().solverDict
+    (
+        p.select
+        (
+            p.mesh().data::template lookupOrDefault<bool>
+            ("finalIteration", false)
+        )
+    );
+    const CSRGAMGAgglomeration& agglomeration(CSRGAMGAgglomeration::New(p.mesh(), solverControls));
 }
 
 void createGPUThermo(const IOdictionary& CanteraTorchProperties, volScalarField& T, volScalarField& he, 
