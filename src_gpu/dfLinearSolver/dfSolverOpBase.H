@@ -71,4 +71,13 @@ void updateMatrixInterfaces(
     const double *d_boundary_coeffs, int *d_boundary_face_cell, int *patch_type
 );
 
+// PCG
+void calpA(
+    cudaStream_t stream, int nCells, double* pAPtr, double* wAPtr, double beta
+);
+
+void calpsiandrA(
+    cudaStream_t stream,  int nCells, double* psi, double* pA, double* rA, double* wA, double alpha
+);
+
 void reduce(int size, int threads, int blocks, double *d_idata, double *d_odata, cudaStream_t stream, const bool isabs);

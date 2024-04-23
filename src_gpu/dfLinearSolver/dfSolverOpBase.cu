@@ -291,6 +291,39 @@ __global__ void kernel_updateMatrixInterfaces
     output[cellIndex] -= d_boundary_coeffs[start_index] * scalarRecvBufList_[start_index];
 }
 
+// PCG
+__global__ void kernel_10
+(
+    int nCells,
+    double* pAPtr,
+    double* wAPtr,
+    double beta
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= nCells)
+        return;
+
+    pAPtr[index] = wAPtr[index] + beta*pAPtr[index];
+}
+
+__global__ void kernel_11
+(
+    int nCells,
+    double* psiPtr,
+    double* pAPtr,
+    double* rAPtr,
+    double* wAPtr,
+    double alpha
+){
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= nCells)
+        return;
+
+    psiPtr[index] += alpha*pAPtr[index];
+    rAPtr[index] -= alpha*wAPtr[index];
+}
+
 
 // --- member functions ---
 
@@ -493,6 +526,27 @@ void updateMatrixInterfaces(
             offset += 2 * patch_size[i] : offset += patch_size[i];
     }
 
+}
+
+// PCG
+void calpA(
+    cudaStream_t stream, int nCells, double* pAPtr, double* wAPtr, double beta
+){
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
+
+    kernel_10<<<blocks_per_grid, threads_per_block, 0, stream>>>
+        (nCells, pAPtr, wAPtr, beta);
+}
+
+void calpsiandrA(
+    cudaStream_t stream,  int nCells, double* psi, double* pA, double* rA, double* wA, double alpha
+){
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
+
+    kernel_11<<<blocks_per_grid, threads_per_block, 0, stream>>>
+        (nCells, psi, pA, rA, wA, alpha);
 }
 
 

@@ -477,11 +477,29 @@ void dfpEqn::process() {
 #endif
 
 #ifdef CSR_
-    // timeLoopFunc(d_diag,)
-    ldu_to_csr_scalar(dataBase_.stream, dataBase_.num_cells, dataBase_.num_surfaces, dataBase_.num_boundary_surfaces,
-            dataBase_.num_Nz, dataBase_.d_boundary_face_cell, dataBase_.d_ldu_to_csr_index,
-            dataBase_.num_patches, dataBase_.patch_size.data(), patch_type_p.data(),
-            d_ldu, d_source, d_internal_coeffs, d_boundary_coeffs, d_A);
+
+        double *h_lower;
+        double *h_upper;
+        int *h_owner;
+        int *h_neighbor;
+        h_lower = (double*)malloc(dataBase_.num_surfaces * sizeof(double));
+        h_upper = (double*)malloc(dataBase_.num_surfaces * sizeof(double));
+        h_owner = (int*)malloc(dataBase_.num_surfaces * sizeof(int));
+        h_neighbor = (int*)malloc(dataBase_.num_surfaces * sizeof(int));
+        cudaMemcpyAsync(h_lower, d_lower, dataBase_.num_surfaces * sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream);
+        cudaMemcpyAsync(h_upper, d_upper, dataBase_.num_surfaces * sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream);
+        cudaMemcpyAsync(h_owner, dataBase_.d_owner, dataBase_.num_surfaces * sizeof(int), cudaMemcpyDeviceToHost, dataBase_.stream);
+        cudaMemcpyAsync(h_neighbor, dataBase_.d_neighbor, dataBase_.num_surfaces * sizeof(int), cudaMemcpyDeviceToHost, dataBase_.stream);
+
+        int *h_csr_row_index_no_diag;
+        h_csr_row_index_no_diag = (int*)malloc((dataBase_.num_cells + 1) * sizeof(int));
+        cudaMemcpyAsync(h_csr_row_index_no_diag, dataBase_.d_csr_row_index_no_diag, (dataBase_.num_cells + 1) * sizeof(int), cudaMemcpyDeviceToHost, dataBase_.stream);
+        checkCudaErrors(cudaMallocAsync((void**)&d_off_diag, dataBase_.num_surfaces * 2 * sizeof(double), dataBase_.stream));        
+        double *h_off_diag;
+        h_off_diag = (double*)malloc(dataBase_.num_surfaces * 2 * sizeof(double));
+        peqn_ldu_to_csr_no_diag(dataBase_.num_cells, dataBase_.num_surfaces, h_csr_row_index_no_diag, 
+            h_lower, h_upper, h_owner, h_neighbor, h_off_diag);
+        cudaMemcpy(d_off_diag, h_off_diag, dataBase_.num_surfaces * 2 * sizeof(double), cudaMemcpyHostToDevice);
 #endif
 
 #ifdef USE_GRAPH
@@ -707,7 +725,16 @@ void dfpEqn::sync()
 
 void dfpEqn::solve()
 {
+#ifdef AMGX_
     dataBase_.solve(num_iteration, AMGXSetting::p_setting, d_A, dataBase_.d_p, d_source);
+#endif
+#ifdef CSR_
+    double* d_diag_tmp;
+    cudaMallocAsync((void**)&d_diag_tmp, dataBase_.num_cells * sizeof(double), dataBase_.stream);
+    cudaMemcpyAsync(d_diag_tmp, d_diag, dataBase_.num_cells * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream);
+    pCSRSolver -> solve(dataBase_, d_internal_coeffs, d_boundary_coeffs, dataBase_.patch_type_extropolated.data(), d_diag_tmp, d_off_diag, d_source, dataBase_.d_p);
+    printf("peqn PCG solve end\n");
+#endif
     num_iteration++;
 }
 
@@ -866,3 +893,29 @@ void dfpEqn::compareResult(const double *lower, const double *upper, const doubl
     checkVectorEqual(dataBase_.num_boundary_surfaces, boundary_coeffs, h_boundary_coeffs.data(), 1e-14, printFlag);
     DEBUG_TRACE;
 }
+
+void dfpEqn::peqn_ldu_to_csr_no_diag
+(int row_, int num_surfaces, int *off_diag_rowptr_, double *lower, double *upper, int *lowerAddr, int *upperAddr, double *off_diag_value_)
+{
+    std::vector<int> off_diag_current_index(row_ + 1);
+    off_diag_current_index[0] = 0;
+    for(int i = 0; i < row_; ++i){
+        off_diag_current_index[i + 1] = off_diag_rowptr_[i + 1];
+    }
+    // fill non-zero value
+    for(int i = 0; i < num_surfaces; ++i){
+        int row = upperAddr[i];
+        if(row > row_)printf("overflow\n");
+        int index = off_diag_current_index[row];
+        if(index > num_surfaces * 2)printf("index overflow! index = %d\n",index);
+        off_diag_value_[index] = lower[i]; 
+        off_diag_current_index[row] += 1;
+    }
+    for(int i = 0; i < num_surfaces; ++i){
+        int row = lowerAddr[i];
+        int index = off_diag_current_index[row];
+        off_diag_value_[index] = upper[i];
+        off_diag_current_index[row] += 1;
+    }
+}
+
