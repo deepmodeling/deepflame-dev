@@ -16,6 +16,7 @@ public:
     virtual ~CSRSolver() {}
 
     virtual void initialize(const int, const size_t) = 0;
+    virtual void initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) = 0;
 
     virtual bool checkSingularity(double input){
         return (input < vsmall_);
@@ -95,6 +96,7 @@ public:
     virtual ~PBiCGStabCSRSolver() {}
 
     virtual void initialize(const int nCells, const size_t boundary_surface_value_bytes) override;
+    virtual void initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) override;
 
     virtual void solve
     (
@@ -125,7 +127,7 @@ public:
 
     // tmp
     GAMGCSRPreconditioner *precond_;
-
+    virtual void initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) override;;
 
     PCGCSRSolver() {}
     virtual ~PCGCSRSolver() {}

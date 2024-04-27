@@ -594,17 +594,6 @@ void createGPUpEqn(const IOdictionary& CanteraTorchProperties, volScalarField& p
     pEqn_GPU.createNonConstantFieldsInternal();
     pEqn_GPU.createNonConstantFieldsBoundary();
     pEqn_GPU.createNonConstantLduAndCsrFields();
-
-    // map coeffs for GAMG solver
-    const dictionary solverControls = p.mesh().solverDict
-    (
-        p.select
-        (
-            p.mesh().data::template lookupOrDefault<bool>
-            ("finalIteration", false)
-        )
-    );
-    const CSRGAMGAgglomeration& agglomeration(CSRGAMGAgglomeration::New(p.mesh(), solverControls));
 }
 
 void createGPUThermo(const IOdictionary& CanteraTorchProperties, volScalarField& T, volScalarField& he, 
@@ -718,4 +707,56 @@ void createGPUThermo(const IOdictionary& CanteraTorchProperties, volScalarField&
     delete h_boundary_k;
     delete h_boundary_thermo_rhoD;
     delete h_thermo_rhoD;
+}
+
+void createGPUGAMGMaps(GAMGStruct *GAMGdata, const CSRGAMGAgglomeration& agglomeration) {
+    DEBUG_TRACE;
+
+    #include "dfCSRPreconditioner.H" // use GAMGStruct
+    std::cout << "====== start in createGPUGAMGMaps ======" << std::endl;
+
+    forAll(agglomeration, leveli)
+    {
+        std::vector<int> upperAddrVector( agglomeration.restrictAddressing(leveli).begin(), 
+                                          agglomeration.restrictAddressing(leveli).end());
+        std::vector<int> lowerAddrVector( agglomeration.restrictAddressing(leveli).begin(), 
+                                          agglomeration.restrictAddressing(leveli).end());
+
+        std::vector<int> restrictMapVector( agglomeration.restrictAddressing(leveli).begin(), 
+                                            agglomeration.restrictAddressing(leveli).end());
+        std::vector<int> faceRestrictMapVector( agglomeration.faceRestrictAddressing(leveli).begin(), 
+                                                agglomeration.faceRestrictAddressing(leveli).end());
+        std::vector<bool> faceFlipMapVector( agglomeration.faceFlipMap(leveli).begin(), 
+                                             agglomeration.faceFlipMap(leveli).end());
+
+        GAMGdata[leveli].curLevel = leveli;
+        GAMGdata[leveli].nCell = restrictMapVector.size();
+        GAMGdata[leveli].nFace = faceRestrictMapVector.size();
+
+        GAMGdata[leveli].upperAddr = upperAddrVector;
+        GAMGdata[leveli].lowerAddr = lowerAddrVector;
+
+        GAMGdata[leveli].restrictMap = restrictMapVector;
+        GAMGdata[leveli].faceRestrictMap = faceRestrictMapVector;
+
+        // TODO: bool2int needtest: all false in this case
+        std::transform(faceFlipMapVector.begin(), faceFlipMapVector.end(), 
+                        std::back_inserter(GAMGdata[leveli].faceFlipMap), [](bool b) { return static_cast<int>(b); });
+
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_restrictMap, GAMGdata[leveli].restrictMap.size() * sizeof(int)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_faceRestrictMap, GAMGdata[leveli].faceRestrictMap.size() * sizeof(int)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_faceFlipMap, GAMGdata[leveli].faceFlipMap.size() * sizeof(int)));
+
+        checkCudaErrors(cudaMemcpyAsync( GAMGdata[leveli].d_restrictMap, GAMGdata[leveli].restrictMap.data(), 
+                                         GAMGdata[leveli].restrictMap.size() * sizeof(int), cudaMemcpyHostToDevice));
+        checkCudaErrors(cudaMemcpyAsync( GAMGdata[leveli].d_faceRestrictMap, GAMGdata[leveli].faceRestrictMap.data(), 
+                                         GAMGdata[leveli].faceRestrictMap.size() * sizeof(int), cudaMemcpyHostToDevice));
+        checkCudaErrors(cudaMemcpyAsync( GAMGdata[leveli].d_faceFlipMap, GAMGdata[leveli].faceFlipMap.data(), 
+                                         GAMGdata[leveli].faceFlipMap.size() * sizeof(int), cudaMemcpyHostToDevice));
+    
+        std::cout << "  == level: " << leveli << ", cell: " << GAMGdata[leveli].restrictMap.size()
+                                              << ", face: " << GAMGdata[leveli].faceRestrictMap.size() << std::endl;
+    }
+    std::cout << "======= end in createGPUGAMGMaps =======" << std::endl;
+    
 }

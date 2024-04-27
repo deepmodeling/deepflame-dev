@@ -100,7 +100,7 @@ public:
     void correctPsi(const double *h_thermoPsi, double *h_boundary_thermoPsi); // tmp
     void correctP(const double *h_p, double *h_boundary_p); // tmp
     //void getFlux();
-	void process();
+	void process(GAMGStruct *GAMGdata, int agglomeration_level);
 	void postProcess();
 
     // get intermediate variable
