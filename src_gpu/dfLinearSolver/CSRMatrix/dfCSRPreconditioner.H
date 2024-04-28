@@ -48,7 +48,7 @@ public:
     CSRPreconditioner(){}
     virtual ~CSRPreconditioner() {}
 
-    virtual void initialize() = 0;
+    virtual void initialize(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) = 0;
 
     virtual void precondition
     (
@@ -77,5 +77,10 @@ public:
     ) override;
 
     virtual void agglomerateMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level);
+
+    virtual void fine2coarse(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level, int startLevel, int endLevel);
+    virtual void coarse2fine(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level, int startLevel, int endLevel);
+
+    virtual void Vcycle(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level);
 };
 

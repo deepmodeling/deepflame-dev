@@ -550,14 +550,15 @@ void createGPUEEqn(const IOdictionary& CanteraTorchProperties, volScalarField& h
     EEqn_GPU.initNonConstantFields(h_he, h_boundary_he);
 }
 
-void createGPUpEqn(const IOdictionary& CanteraTorchProperties, volScalarField& p, const volVectorField& U) {
+void createGPUpEqn(const IOdictionary& CanteraTorchProperties, volScalarField& p, const volVectorField& U,
+                    GAMGStruct *GAMGdata_, int agglomeration_level) {
     DEBUG_TRACE;
     // TODO need remove amgx solver setting
     // prepare mode_string and setting_path
     string mode_string = "dDDI";
     string settingPath;
     settingPath = CanteraTorchProperties.subDict("AmgxSettings").lookupOrDefault("pEqnSettingPath", string(""));
-    pEqn_GPU.setConstantValues(mode_string, settingPath);
+    pEqn_GPU.setConstantValues(mode_string, settingPath, dfDataBase, GAMGdata_, agglomeration_level);
     
     // prepare patch_type
     std::vector<int> patch_type_p(dfDataBase.num_patches);

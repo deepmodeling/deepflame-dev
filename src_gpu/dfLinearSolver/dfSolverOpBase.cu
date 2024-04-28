@@ -927,7 +927,8 @@ void prolongFieldGPU(cudaStream_t stream, int nFineCells, int* d_restrictMap,
     checkCudaErrors(cudaStreamSynchronize(stream));
 }
 
-void scaleFieldGPU( cudaStream_t stream, int nCells, 
+void scaleFieldGPU( cudaStream_t stream, ncclComm_t nccl_comm,int nCells, 
+                    double* reduce_result,
                     double* d_Field, double* d_Source, 
                     double* d_AcfField, double* d_diag,
                     double* d_scalingFactorNum, double* d_scalingFactorDenom )
@@ -947,33 +948,33 @@ void scaleFieldGPU( cudaStream_t stream, int nCells,
     //     cmpt
     // );
 
-    checkCudaErrors(cudaMemset(d_scalingFactorNum,   0, nCell*sizeof(double)));
-    checkCudaErrors(cudaMemset(d_scalingFactorDenom, 0, nCell*sizeof(double)));
+    checkCudaErrors(cudaMemset(d_scalingFactorNum,   0, nCells*sizeof(double)));
+    checkCudaErrors(cudaMemset(d_scalingFactorDenom, 0, nCells*sizeof(double)));
 
     kernel_calcNumDenom<<<blocks_per_grid, threads_per_block, 0, stream>>>
         (nCells, d_Field, d_Source, d_AcfField, d_scalingFactorNum, d_scalingFactorDenom);
     checkCudaErrors(cudaStreamSynchronize(stream));
 
-    reduce(nCells, threads_per_block, blocks_per_grid, d_scalingFactorNum, reduce_result, dataBase.stream, false);
+    reduce(nCells, threads_per_block, blocks_per_grid, d_scalingFactorNum, reduce_result, stream, false);
 #ifndef PARALLEL_
-    cudaMemcpyAsync(&sum_scalingFactorNum, &reduce_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+    cudaMemcpyAsync(&sum_scalingFactorNum, &reduce_result[0] , sizeof(double), cudaMemcpyDeviceToHost, stream);
 #else
-    ncclAllReduce(&reduce_result[0], &reduce_result[0], 1, ncclDouble, ncclSum, dataBase.nccl_comm, dataBase.stream);
-    cudaStreamSynchronize(dataBase.stream);
-    cudaMemcpyAsync(&sum_scalingFactorNum, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+    ncclAllReduce(&reduce_result[0], &reduce_result[0], 1, ncclDouble, ncclSum, nccl_comm, stream);
+    cudaStreamSynchronize(stream);
+    cudaMemcpyAsync(&sum_scalingFactorNum, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, stream);
 #endif
 
-    reduce(nCells, threads_per_block, blocks_per_grid, d_scalingFactorDenom, reduce_result, dataBase.stream, false);
+    reduce(nCells, threads_per_block, blocks_per_grid, d_scalingFactorDenom, reduce_result, stream, false);
 #ifndef PARALLEL_
-    cudaMemcpyAsync(&sum_scalingFactorDenom, &reduce_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+    cudaMemcpyAsync(&sum_scalingFactorDenom, &reduce_result[0] , sizeof(double), cudaMemcpyDeviceToHost, stream);
 #else
-    ncclAllReduce(&reduce_result[0], &reduce_result[0], 1, ncclDouble, ncclSum, dataBase.nccl_comm, dataBase.stream);
-    cudaStreamSynchronize(dataBase.stream);
-    cudaMemcpyAsync(&sum_scalingFactorDenom, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+    ncclAllReduce(&reduce_result[0], &reduce_result[0], 1, ncclDouble, ncclSum, nccl_comm, stream);
+    cudaStreamSynchronize(stream);
+    cudaMemcpyAsync(&sum_scalingFactorDenom, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, stream);
 #endif
 
-    vector2D scalingVector(sum_scalingFactorNum, sum_scalingFactorDenom);
-    scalingFactor = scalingVector.x()/stabilise(scalingVector.y(), vSmall);
+    std::vector scalingVector(sum_scalingFactorNum, sum_scalingFactorDenom);
+    scalingFactor = scalingVector[0]/(scalingVector[1] + 1e-10); // need test stabilise
 
     kernel_scale<<<blocks_per_grid, threads_per_block, 0, stream>>>
         (nCells, scalingFactor, d_Field, d_Source, d_AcfField, d_diag);

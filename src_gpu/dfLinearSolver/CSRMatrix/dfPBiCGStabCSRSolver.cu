@@ -37,6 +37,23 @@ void PBiCGStabCSRSolver::initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGSt
     std::cout << "********* call in PBiCGStabCSRSolver::initGAMGMatrix() " << std::endl;
 }
 
+void PBiCGStabCSRSolver::initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
+            const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) {};
+            
+void PBiCGStabCSRSolver::solve_useGAMG
+(
+    const dfMatrixDataBase& dataBase,
+    const double* d_internal_coeffs,
+    const double* d_boundary_coeffs,
+    int* patch_type,
+    double* diagPtr,
+    const double* off_diag_value,
+    const double *rhs, 
+    double *psi,
+    GAMGStruct *GAMGdata_, 
+    int agglomeration_level
+){};
+
 /*------------------------------------------------solve---------------------------------------------------------*/
 
 void PBiCGStabCSRSolver::solve

@@ -318,13 +318,15 @@ double* dfpEqn::getFieldPointer(const char* fieldAlias, location loc, position p
     return pointer;
 }
 
-void dfpEqn::setConstantValues(const std::string &mode_string, const std::string &setting_path) {
+void dfpEqn::setConstantValues(const std::string &mode_string, const std::string &setting_path,
+                const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) {
     this->stream = dataBase_.stream;
     this->mode_string = mode_string;
     this->setting_path = setting_path;
     pSolver = new AmgXSolver(mode_string, setting_path, dataBase_.localRank);
 
 #ifdef CSR_
+    bool useGAMG = true;
     pCSRSolver = new PCGCSRSolver();
     pCSRSolver->initSolvePerformance
     (     
@@ -335,7 +337,15 @@ void dfpEqn::setConstantValues(const std::string &mode_string, const std::string
         1e-9, //tolerance_ 
         0.01 //relTol_
     );
-    pCSRSolver->initialize(dataBase_.num_cells, dataBase_.boundary_surface_value_bytes);
+    if (useGAMG)
+    {
+        pCSRSolver->initializeGAMG(dataBase_.num_cells, dataBase_.boundary_surface_value_bytes,
+                            dataBase, GAMGdata_, agglomeration_level);
+    }
+    else 
+    {
+        pCSRSolver->initialize(dataBase_.num_cells, dataBase_.boundary_surface_value_bytes);
+    }
 #endif
 }
 
@@ -632,7 +642,7 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
                                             GAMGdata[leveli].nCell*sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream));
             // GAMGdata[leveli].upperAddr,  GAMGdata[leveli].lowerAddr
 
-            bool writeData2Files = true;
+            bool writeData2Files = false;
             if (writeData2Files)
             {
                 // write data to file ...
@@ -670,7 +680,7 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
     TICK_END_EVENT(pEqn assembly);
 
     TICK_START_EVENT;
-    solve();
+    solve(GAMGdata, agglomeration_level);
     TICK_END_EVENT(pEqn solve);
 
 #ifdef USE_GRAPH
@@ -880,17 +890,28 @@ void dfpEqn::sync()
     checkCudaErrors(cudaStreamSynchronize(dataBase_.stream));
 }
 
-void dfpEqn::solve()
+void dfpEqn::solve(GAMGStruct *GAMGdata, int agglomeration_level)
 {
 #ifdef AMGX_
     dataBase_.solve(num_iteration, AMGXSetting::p_setting, d_A, dataBase_.d_p, d_source);
 #endif
 #ifdef CSR_
+    bool useGAMG = true;
     std::cout << "*** call in dfpEqn::solve() for CSR " << std::endl;
     double* d_diag_tmp;
     cudaMallocAsync((void**)&d_diag_tmp, dataBase_.num_cells * sizeof(double), dataBase_.stream);
     cudaMemcpyAsync(d_diag_tmp, d_diag, dataBase_.num_cells * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream);
-    pCSRSolver -> solve(dataBase_, d_internal_coeffs, d_boundary_coeffs, dataBase_.patch_type_extropolated.data(), d_diag_tmp, d_off_diag, d_source, dataBase_.d_p);
+    if (useGAMG)
+    {
+        pCSRSolver -> solve_useGAMG(dataBase_, d_internal_coeffs, d_boundary_coeffs, dataBase_.patch_type_extropolated.data(), 
+                        d_diag_tmp, d_off_diag, d_source, dataBase_.d_p,
+                        GAMGdata, agglomeration_level);
+    }
+    else
+    {
+        pCSRSolver -> solve(dataBase_, d_internal_coeffs, d_boundary_coeffs, dataBase_.patch_type_extropolated.data(), 
+                        d_diag_tmp, d_off_diag, d_source, dataBase_.d_p);
+    }
     printf("peqn PCG solve end\n");
 #endif
     num_iteration++;

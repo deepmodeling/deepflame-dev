@@ -84,7 +84,8 @@ public:
     double* getFieldPointer(const char* fieldAlias, location loc, position pos);
 
 	// initialization
-	void setConstantValues(const std::string &mode_string, const std::string &setting_path); 
+	void setConstantValues(const std::string &mode_string, const std::string &setting_path,
+                        const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level); 
 	void setConstantFields(const std::vector<int> patch_type_U, const std::vector<int> patch_type_p);
     void initNonConstantFields(const double *p, const double *boundary_p);
     void createNonConstantFieldsInternal();
@@ -119,7 +120,7 @@ public:
         const double *boundary_weight, double *boundary_output, double sign = 1.);
     void correctionDiagMtxMultiTPsi(cudaStream_t stream, int num_cells, const double *psi, const double *thermo_psi, double *diag, double *source);
 
-    void solve();
+    void solve(GAMGStruct *GAMGdata, int agglomeration_level);
     void sync();
 
 // #if defined DEBUG_
