@@ -132,7 +132,8 @@ public:
     PCGCSRSolver() {}
     virtual ~PCGCSRSolver() {}
 
-    virtual void initialize(const int nCells, const size_t boundary_surface_value_bytes) override;
+    virtual void initialize(const int nCells, const size_t boundary_surface_value_bytes,
+                const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) override;
 
     virtual void solve
     (

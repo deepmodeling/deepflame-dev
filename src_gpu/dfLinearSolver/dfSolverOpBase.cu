@@ -846,6 +846,22 @@ __global__ void kernel_restrictMatrix
     }
 }
 
+__global__ void kernel_prolong
+(
+    int nFineCells,
+    int* d_restrictMap,
+    double* fineField,
+    double* coarseField
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= nFineCells)
+        return;
+
+    int mapIndex = d_restrictMap[index];
+    fineField[index] = coarseField[mapIndex];
+}
+
 void restrictFieldGPU(cudaStream_t stream, int nFineCells, int* d_restrictMap, 
                         double* d_fineField, double* d_coarseField)
 {
@@ -868,5 +884,16 @@ void restrictMatrixGPU(cudaStream_t stream, int nFineFaces, int* d_faceRestrictM
     kernel_restrictMatrix<<<blocks_per_grid, threads_per_block, 0, stream>>>
         (nFineFaces, d_faceRestrictMap, d_faceFlipMap, d_fineUpper, d_fineLower, 
         d_coarseUpper, d_coarseLower, d_coarseDiag);
+    checkCudaErrors(cudaStreamSynchronize(stream));
+}
+
+void prolongFieldGPU(cudaStream_t stream, int nFineCells, int* d_restrictMap, 
+                        double* d_fineField, double* d_coarseField)
+{
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (nFineCells + threads_per_block - 1) / threads_per_block;
+
+    kernel_prolong<<<blocks_per_grid, threads_per_block, 0, stream>>>
+        (nFineCells, d_restrictMap, d_fineField, d_coarseField);
     checkCudaErrors(cudaStreamSynchronize(stream));
 }

@@ -31,6 +31,10 @@ struct GAMGStruct
     double* d_diag = nullptr;
     double* d_internal_coeffs = nullptr;
     double* d_boundary_coeffs = nullptr;
+
+    // === device iteration data
+    double* d_CorrFields = nullptr;
+    double* d_Sources = nullptr;
 };
 
 class CSRPreconditioner{
@@ -59,6 +63,7 @@ public:
 
     virtual void initialize(
         /* init variables related to GAMG preconditioner */
+        const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level
     ) override;
 
     virtual void precondition

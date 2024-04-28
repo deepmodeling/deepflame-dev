@@ -3,10 +3,21 @@
 
 // kernel functions for PBiCGStab solver
 
-void GAMGCSRPreconditioner::initialize()
+void GAMGCSRPreconditioner::initialize
+(
+    const dfMatrixDataBase& dataBase,
+    GAMGStruct *GAMGdata_, int agglomeration_level
+)
 {
-    std::cout << "*** call in GAMGCSRPreconditioner::initialize() " << std::endl;
-    // Implement the GAMG preconditioner here
+    std::cout << "*** call in GAMGCSRPreconditioner::initialize(): init Vcycle " << std::endl;
+    for(int leveli=0; leveli<agglomeration_level; leveli++)
+    {
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_CorrFields, GAMGdata[leveli].nCell * sizeof(double)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_Sources, GAMGdata[leveli].nCell * sizeof(double)));
+
+        checkCudaErrors(cudaMemset(GAMGdata[leveli].d_CorrFields, 0, GAMGdata[leveli].nCell * sizeof(double)));
+        checkCudaErrors(cudaMemset(GAMGdata[leveli].d_Sources, 0, GAMGdata[leveli].nCell * sizeof(double)));
+    }
 };
 
 void GAMGCSRPreconditioner::agglomerateMatrix

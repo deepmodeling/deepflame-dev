@@ -7,7 +7,8 @@
 
 // kernel functions for PBiCGStab solver
 
-void PCGCSRSolver::initialize(const int nCells, const size_t boundary_surface_value_bytes)
+void PCGCSRSolver::initialize(const int nCells, const size_t boundary_surface_value_bytes,
+                    const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level)
 {
     // cudamalloc variables related to PCGSolver
     cudaMalloc(&d_wA, nCells * sizeof(double));
@@ -24,7 +25,7 @@ void PCGCSRSolver::initialize(const int nCells, const size_t boundary_surface_va
     // preconditioner
     std::cout << "*** call in PCGCSRSolver::initialize new GAMGCSRPreconditioner() " << std::endl;
     precond_ = new GAMGCSRPreconditioner();
-    precond_->initialize();
+    precond_->initialize(dataBase, GAMGdata_, agglomeration_level);
 }
 
 void PCGCSRSolver::initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level)

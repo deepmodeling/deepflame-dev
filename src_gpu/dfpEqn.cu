@@ -525,7 +525,7 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
         cudaMemcpy(d_off_diag, h_off_diag, dataBase_.num_surfaces * 2 * sizeof(double), cudaMemcpyHostToDevice);
 
         // load CPU data for test ---start
-        bool loadCPUdata4test = true;
+        bool loadCPUdata4test = false;
         if (loadCPUdata4test){
             std::string filename_diag = "/root/0422/deepflame-dev/examples/dfLowMachFoam/cvodeIntegrator_64/h_diag_0_Ref.txt";
             std::string filename_upper = "/root/0422/deepflame-dev/examples/dfLowMachFoam/cvodeIntegrator_64/h_upper_0_Ref.txt";
