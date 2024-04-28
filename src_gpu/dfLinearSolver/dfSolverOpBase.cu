@@ -862,6 +862,35 @@ __global__ void kernel_prolong
     fineField[index] = coarseField[mapIndex];
 }
 
+__global__ void kernel_calcNumDenom
+(
+    int nCells,
+    double* field, double* source, double* Acf,
+    double* scalingFactorNum, double* scalingFactorDenom
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= nCells)
+        return;
+    
+    scalingFactorNum[index] = source[index] * field[index];
+    scalingFactorDenom[index] = Acf[index] * field[index];
+}
+
+__global__ void kernel_scale
+(
+    int nCells, double scalingFactor,
+    double* field, double* source, double* Acf, double* diag
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= nCells)
+        return;
+    
+    field[index] = scalingFactor*field[index] 
+                    + (source[index] - scalingFactor*Acf[index]) / diag[index];
+}
+
 void restrictFieldGPU(cudaStream_t stream, int nFineCells, int* d_restrictMap, 
                         double* d_fineField, double* d_coarseField)
 {
@@ -896,4 +925,58 @@ void prolongFieldGPU(cudaStream_t stream, int nFineCells, int* d_restrictMap,
     kernel_prolong<<<blocks_per_grid, threads_per_block, 0, stream>>>
         (nFineCells, d_restrictMap, d_fineField, d_coarseField);
     checkCudaErrors(cudaStreamSynchronize(stream));
+}
+
+void scaleFieldGPU( cudaStream_t stream, int nCells, 
+                    double* d_Field, double* d_Source, 
+                    double* d_AcfField, double* d_diag,
+                    double* d_scalingFactorNum, double* d_scalingFactorDenom )
+{
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
+    double scalingFactor = 0.0;
+    double sum_scalingFactorNum = 0.0, sum_scalingFactorDenom = 0.0;
+
+    //TODO: A.Amul get Acf
+    // A.Amul
+    // (
+    //     Acf,
+    //     field,
+    //     interfaceLevelBouCoeffs,
+    //     interfaceLevel,
+    //     cmpt
+    // );
+
+    checkCudaErrors(cudaMemset(d_scalingFactorNum,   0, nCell*sizeof(double)));
+    checkCudaErrors(cudaMemset(d_scalingFactorDenom, 0, nCell*sizeof(double)));
+
+    kernel_calcNumDenom<<<blocks_per_grid, threads_per_block, 0, stream>>>
+        (nCells, d_Field, d_Source, d_AcfField, d_scalingFactorNum, d_scalingFactorDenom);
+    checkCudaErrors(cudaStreamSynchronize(stream));
+
+    reduce(nCells, threads_per_block, blocks_per_grid, d_scalingFactorNum, reduce_result, dataBase.stream, false);
+#ifndef PARALLEL_
+    cudaMemcpyAsync(&sum_scalingFactorNum, &reduce_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+#else
+    ncclAllReduce(&reduce_result[0], &reduce_result[0], 1, ncclDouble, ncclSum, dataBase.nccl_comm, dataBase.stream);
+    cudaStreamSynchronize(dataBase.stream);
+    cudaMemcpyAsync(&sum_scalingFactorNum, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+#endif
+
+    reduce(nCells, threads_per_block, blocks_per_grid, d_scalingFactorDenom, reduce_result, dataBase.stream, false);
+#ifndef PARALLEL_
+    cudaMemcpyAsync(&sum_scalingFactorDenom, &reduce_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+#else
+    ncclAllReduce(&reduce_result[0], &reduce_result[0], 1, ncclDouble, ncclSum, dataBase.nccl_comm, dataBase.stream);
+    cudaStreamSynchronize(dataBase.stream);
+    cudaMemcpyAsync(&sum_scalingFactorDenom, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+#endif
+
+    vector2D scalingVector(sum_scalingFactorNum, sum_scalingFactorDenom);
+    scalingFactor = scalingVector.x()/stabilise(scalingVector.y(), vSmall);
+
+    kernel_scale<<<blocks_per_grid, threads_per_block, 0, stream>>>
+        (nCells, scalingFactor, d_Field, d_Source, d_AcfField, d_diag);
+    checkCudaErrors(cudaStreamSynchronize(stream));
+
 }

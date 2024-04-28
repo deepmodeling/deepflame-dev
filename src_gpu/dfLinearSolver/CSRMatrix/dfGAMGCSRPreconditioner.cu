@@ -12,11 +12,16 @@ void GAMGCSRPreconditioner::initialize
     std::cout << "*** call in GAMGCSRPreconditioner::initialize(): init Vcycle " << std::endl;
     for(int leveli=0; leveli<agglomeration_level; leveli++)
     {
+        // iteration data
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_CorrFields, GAMGdata[leveli].nCell * sizeof(double)));
-        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_Sources, GAMGdata[leveli].nCell * sizeof(double)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_Sources,    GAMGdata[leveli].nCell * sizeof(double)));
 
         checkCudaErrors(cudaMemset(GAMGdata[leveli].d_CorrFields, 0, GAMGdata[leveli].nCell * sizeof(double)));
-        checkCudaErrors(cudaMemset(GAMGdata[leveli].d_Sources, 0, GAMGdata[leveli].nCell * sizeof(double)));
+        checkCudaErrors(cudaMemset(GAMGdata[leveli].d_Sources,    0, GAMGdata[leveli].nCell * sizeof(double)));
+
+        // temp data for reduce
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_scalingFactorNum,   GAMGdata[leveli].nCell * sizeof(double)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_scalingFactorDenom, GAMGdata[leveli].nCell * sizeof(double)));
     }
 };
 

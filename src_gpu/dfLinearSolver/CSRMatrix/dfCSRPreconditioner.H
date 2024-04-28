@@ -35,6 +35,10 @@ struct GAMGStruct
     // === device iteration data
     double* d_CorrFields = nullptr;
     double* d_Sources = nullptr;
+
+    // === device temp data
+    double* d_scalingFactorNum = nullptr;
+    double* d_scalingFactorDenom = nullptr;
 };
 
 class CSRPreconditioner{

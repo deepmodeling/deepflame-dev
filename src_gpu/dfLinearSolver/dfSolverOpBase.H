@@ -89,3 +89,6 @@ void restrictFieldGPU(cudaStream_t stream, int nFineCells, int* d_restrictMap,
 void restrictMatrixGPU(cudaStream_t stream, int nFineFaces, int* d_faceRestrictMap, int* d_faceFlipMap,
                         double* d_fineUpper, double* d_fineLower, 
                         double* d_coarseUpper, double* d_coarseLower, double* d_coarseDiag);
+
+void prolongFieldGPU(cudaStream_t stream, int nFineCells, int* d_restrictMap, 
+                        double* d_fineField, double* d_coarseField);
