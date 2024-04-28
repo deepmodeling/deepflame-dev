@@ -23,7 +23,7 @@ void PCGCSRSolver::initialize(const int nCells, const size_t boundary_surface_va
 }
 
 void PCGCSRSolver::initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
-                    const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level)
+                    GAMGStruct *GAMGdata_, int agglomeration_level)
 {
     // cudamalloc variables related to PCGSolver
     cudaMalloc(&d_wA, nCells * sizeof(double));
@@ -40,7 +40,7 @@ void PCGCSRSolver::initializeGAMG(const int nCells, const size_t boundary_surfac
     // preconditioner
     std::cout << "*** call in PCGCSRSolver::initialize new GAMGCSRPreconditioner() " << std::endl;
     precond_ = new GAMGCSRPreconditioner();
-    precond_->initialize(dataBase, GAMGdata_, agglomeration_level);
+    precond_->initialize(GAMGdata_, agglomeration_level);
 }
 
 void PCGCSRSolver::initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level)

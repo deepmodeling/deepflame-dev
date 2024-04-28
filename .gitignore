@@ -54,6 +54,8 @@ log.*
 dynamicCode/
 postProcessing/
 *.out
+*.txt
+examples/
 
 # processor*/
 chemkin/

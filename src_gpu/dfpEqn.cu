@@ -319,7 +319,7 @@ double* dfpEqn::getFieldPointer(const char* fieldAlias, location loc, position p
 }
 
 void dfpEqn::setConstantValues(const std::string &mode_string, const std::string &setting_path,
-                const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) {
+                GAMGStruct *GAMGdata_, int agglomeration_level) {
     this->stream = dataBase_.stream;
     this->mode_string = mode_string;
     this->setting_path = setting_path;
@@ -340,7 +340,7 @@ void dfpEqn::setConstantValues(const std::string &mode_string, const std::string
     if (useGAMG)
     {
         pCSRSolver->initializeGAMG(dataBase_.num_cells, dataBase_.boundary_surface_value_bytes,
-                            dataBase, GAMGdata_, agglomeration_level);
+                            GAMGdata_, agglomeration_level);
     }
     else 
     {

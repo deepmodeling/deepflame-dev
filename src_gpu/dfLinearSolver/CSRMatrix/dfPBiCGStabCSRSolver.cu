@@ -38,7 +38,7 @@ void PBiCGStabCSRSolver::initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGSt
 }
 
 void PBiCGStabCSRSolver::initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
-            const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) {};
+            GAMGStruct *GAMGdata_, int agglomeration_level) {};
             
 void PBiCGStabCSRSolver::solve_useGAMG
 (

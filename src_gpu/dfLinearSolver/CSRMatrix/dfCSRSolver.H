@@ -73,7 +73,7 @@ public:
     }
 
     virtual void initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
-                const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) = 0;
+                GAMGStruct *GAMGdata_, int agglomeration_level) = 0;
                 
     virtual void solve_useGAMG
     (
@@ -128,7 +128,7 @@ public:
     ) override;
 
     void initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
-                const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) override;
+                GAMGStruct *GAMGdata_, int agglomeration_level) override;
                 
     void solve_useGAMG
     (
@@ -181,7 +181,7 @@ public:
     ) override;
 
     void initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
-                const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level);
+                GAMGStruct *GAMGdata_, int agglomeration_level);
 
     void solve_useGAMG
     (

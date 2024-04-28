@@ -558,7 +558,7 @@ void createGPUpEqn(const IOdictionary& CanteraTorchProperties, volScalarField& p
     string mode_string = "dDDI";
     string settingPath;
     settingPath = CanteraTorchProperties.subDict("AmgxSettings").lookupOrDefault("pEqnSettingPath", string(""));
-    pEqn_GPU.setConstantValues(mode_string, settingPath, dfDataBase, GAMGdata_, agglomeration_level);
+    pEqn_GPU.setConstantValues(mode_string, settingPath, GAMGdata_, agglomeration_level);
     
     // prepare patch_type
     std::vector<int> patch_type_p(dfDataBase.num_patches);
