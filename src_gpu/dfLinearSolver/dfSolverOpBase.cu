@@ -891,6 +891,32 @@ __global__ void kernel_scale
                     + (source[index] - scalingFactor*Acf[index]) / diag[index];
 }
 
+__global__ void kernel_updateSource
+(
+    int nCells,
+    double* field, double* Acf
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= nCells)
+        return;
+    
+    atomicAdd(&field[index], -Acf[index]);
+}
+
+__global__ void kernel_updateCorr
+(
+    int nCells,
+    double* field, double* preSmooth
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= nCells)
+        return;
+    
+    atomicAdd(&field[index], preSmooth[index]);
+}
+
 void restrictFieldGPU(cudaStream_t stream, int nFineCells, int* d_restrictMap, 
                         double* d_fineField, double* d_coarseField)
 {
@@ -980,4 +1006,26 @@ void scaleFieldGPU( cudaStream_t stream, ncclComm_t nccl_comm,int nCells,
         (nCells, scalingFactor, d_Field, d_Source, d_AcfField, d_diag);
     checkCudaErrors(cudaStreamSynchronize(stream));
 
+}
+
+void updateSourceFieldGPU(cudaStream_t stream, int nCells, 
+                        double* d_Field, double* d_AcfField)
+{
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
+
+    kernel_updateSource<<<blocks_per_grid, threads_per_block, 0, stream>>>
+        (nCells, d_Field, d_AcfField);
+    checkCudaErrors(cudaStreamSynchronize(stream));
+}
+
+void updateCorrFieldGPU(cudaStream_t stream, int nCells, 
+                        double* d_Field, double* d_preSmoothField)
+{
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
+
+    kernel_updateCorr<<<blocks_per_grid, threads_per_block, 0, stream>>>
+        (nCells, d_Field, d_preSmoothField);
+    checkCudaErrors(cudaStreamSynchronize(stream));
 }

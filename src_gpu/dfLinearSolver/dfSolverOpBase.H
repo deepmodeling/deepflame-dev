@@ -92,3 +92,15 @@ void restrictMatrixGPU(cudaStream_t stream, int nFineFaces, int* d_faceRestrictM
 
 void prolongFieldGPU(cudaStream_t stream, int nFineCells, int* d_restrictMap, 
                         double* d_fineField, double* d_coarseField);
+
+void scaleFieldGPU( cudaStream_t stream, ncclComm_t nccl_comm,int nCells, 
+                    double* reduce_result,
+                    double* d_Field, double* d_Source, 
+                    double* d_AcfField, double* d_diag,
+                    double* d_scalingFactorNum, double* d_scalingFactorDenom );
+
+void updateSourceFieldGPU(cudaStream_t stream, int nCells, 
+                        double* d_Field, double* d_AcfField);
+
+void updateCorrFieldGPU(cudaStream_t stream, int nCells, 
+                        double* d_Field, double* d_preSmoothField);

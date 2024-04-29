@@ -290,13 +290,6 @@ void PCGCSRSolver::solve_useGAMG
 {
     printf("GPU-CSR-PCGStab::solve start --------------------------------------------\n");
 
-    // ==================================
-    // check start if use GAMG ==========
-    std::cout << "=-=-=- Call Vcycle ..." << std::endl;
-    precond_->Vcycle(dataBase, GAMGdata_, agglomeration_level);
-    // endif need delete after verify
-    // ==================================
-
     int nIterations = 0;
  
     const int row_ = dataBase.num_total_cells;
@@ -407,10 +400,22 @@ void PCGCSRSolver::solve_useGAMG
     ){
 
         do{
-            // startif use GAMG
-            std::cout << "=-=-=- Call Vcycle ..." << std::endl;
+            // ====================================================================
+            // ====================== startif use GAMG ============================
+            std::cout << "*******************************************" << std::endl;
+            std::cout << "==== Call Vcycle & Set fineLevel source ===" << std::endl;
+            // set GAMGdata_[0].d_Sources
+            checkCudaErrors(cudaMemcpyAsync(GAMGdata_[0].d_Sources, d_rA, GAMGdata_[0].nCell*sizeof(double), cudaMemcpyDeviceToDevice, dataBase.stream));
+            
+            // start Vcycle
             precond_->Vcycle(dataBase, GAMGdata_, agglomeration_level);
-            // endif
+
+            // use GAMGdata_[0].d_CorrFields
+            updateCorrFieldGPU( dataBase.stream, GAMGdata_[0].nCell, psi, GAMGdata_[0].d_CorrFields);
+
+            //TODO: add smoother for leveli=0, nFinestSweeps_
+            
+            // ======================= endif use GAMG =============================
 
             wArAold = wArA;
 

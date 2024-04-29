@@ -24,7 +24,7 @@ struct GAMGStruct
     int* d_restrictMap = nullptr;
     int* d_faceRestrictMap = nullptr;
     int* d_faceFlipMap = nullptr;   // bool2int
-
+  
     // === device matrix data
     double* d_lower = nullptr;
     double* d_upper = nullptr;
@@ -37,6 +37,8 @@ struct GAMGStruct
     double* d_Sources = nullptr;
 
     // === device temp data
+    double* d_AcfField = nullptr;
+    double* d_preSmoothField = nullptr;
     double* d_scalingFactorNum = nullptr;
     double* d_scalingFactorDenom = nullptr;
 };
