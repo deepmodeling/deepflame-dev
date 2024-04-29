@@ -81,3 +81,11 @@ void calpsiandrA(
 );
 
 void reduce(int size, int threads, int blocks, double *d_idata, double *d_odata, cudaStream_t stream, const bool isabs);
+
+// GAMG
+void restrictFieldGPU(cudaStream_t stream, int nFineCells, int* d_restrictMap, 
+                        double* d_fineField, double* d_coarseField);
+                        
+void restrictMatrixGPU(cudaStream_t stream, int nFineFaces, int* d_faceRestrictMap, int* d_faceFlipMap,
+                        double* d_fineUpper, double* d_fineLower, 
+                        double* d_coarseUpper, double* d_coarseLower, double* d_coarseDiag);

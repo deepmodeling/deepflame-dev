@@ -795,3 +795,78 @@ void reduce(int size, int threads, int blocks, double *d_idata,
     cudaMemset(d_odata, 0 ,sizeof(double));
     runReduce<double>(size, threads, blocks, d_idata, d_odata, stream, isabs);
 }
+
+/*==========================================================================*/
+/*=============================GAMG Start===================================*/
+__global__ void kernel_restrict
+(
+    int nFineCells,
+    int* d_restrictMap,
+    double* fineField,
+    double* coarseField
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= nFineCells)
+        return;
+
+    int mapIndex = d_restrictMap[index];
+    atomicAdd(&coarseField[mapIndex], fineField[index]);
+}
+
+__global__ void kernel_restrictMatrix
+(
+    int nFineFaces, int* d_faceRestrictMap, int* d_faceFlipMap,
+    double* d_fineUpper, double* d_fineLower,
+    double* d_coarseUpper, double* d_coarseLower, double* d_coarseDiag
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= nFineFaces)
+        return;
+
+    int faceMapIndex = d_faceRestrictMap[index];
+    if (faceMapIndex >= 0) 
+    {
+        if (d_faceFlipMap[index] > 0)
+        {
+            atomicAdd(&d_coarseUpper[faceMapIndex], d_fineLower[index]);
+            atomicAdd(&d_coarseLower[faceMapIndex], d_fineUpper[index]);
+        }
+        else
+        {
+            atomicAdd(&d_coarseUpper[faceMapIndex], d_fineUpper[index]);
+            atomicAdd(&d_coarseLower[faceMapIndex], d_fineLower[index]);
+        }
+    }
+    else
+    {
+        int diagIndex = -1 - faceMapIndex;
+        atomicAdd(&d_coarseDiag[diagIndex], (d_fineUpper[index] + d_fineLower[index]));
+    }
+}
+
+void restrictFieldGPU(cudaStream_t stream, int nFineCells, int* d_restrictMap, 
+                        double* d_fineField, double* d_coarseField)
+{
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (nFineCells + threads_per_block - 1) / threads_per_block;
+
+    kernel_restrict<<<blocks_per_grid, threads_per_block, 0, stream>>>
+        (nFineCells, d_restrictMap, d_fineField, d_coarseField);
+    checkCudaErrors(cudaStreamSynchronize(stream));
+}
+
+void restrictMatrixGPU(cudaStream_t stream, int nFineFaces, int* d_faceRestrictMap, int* d_faceFlipMap,
+                        double* d_fineUpper, double* d_fineLower, 
+                        double* d_coarseUpper, double* d_coarseLower, double* d_coarseDiag)
+{
+    // TODO: if matrix is symmetric, kernel can be simplified, not implement yet.
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (nFineFaces + threads_per_block - 1) / threads_per_block;
+
+    kernel_restrictMatrix<<<blocks_per_grid, threads_per_block, 0, stream>>>
+        (nFineFaces, d_faceRestrictMap, d_faceFlipMap, d_fineUpper, d_fineLower, 
+        d_coarseUpper, d_coarseLower, d_coarseDiag);
+    checkCudaErrors(cudaStreamSynchronize(stream));
+}

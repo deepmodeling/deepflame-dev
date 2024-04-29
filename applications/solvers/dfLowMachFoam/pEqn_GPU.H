@@ -1,12 +1,12 @@
-thermo_GPU.updateRho();
+// thermo_GPU.updateRho();
 
-// Thermodynamic density needs to be updated by psi*d(p) after the
-// pressure solution
-thermo_GPU.psip0();
+// // Thermodynamic density needs to be updated by psi*d(p) after the
+// // pressure solution
+// thermo_GPU.psip0();
 
-UEqn_GPU.getHbyA();
-pEqn_GPU.process();
-UEqn_GPU.sync();
+// UEqn_GPU.getHbyA();
+// pEqn_GPU.process();
+// UEqn_GPU.sync();
 
 #if defined DEBUG_
     if (!pimple.simpleRho())
@@ -64,7 +64,6 @@ UEqn_GPU.sync();
     delete h_boundary_HbyA;
 #endif
 
-
 #if defined DEBUG_
     surfaceScalarField phiHbyA
     (
@@ -110,7 +109,9 @@ UEqn_GPU.sync();
         auto& source = pEqn.source();
         auto& internalCoeffs = pEqn.internalCoeffs();
         auto& boundaryCoeffs = pEqn.boundaryCoeffs();
+        std::cout << "=== start call csr.solve " << std::endl;
         csr.solve(p_psi, source, internalCoeffs, boundaryCoeffs);
+        std::cout << "=== end call csr.solve " << std::endl;
 
         // pEqn.solve();
         if (pimple.finalNonOrthogonalIter())

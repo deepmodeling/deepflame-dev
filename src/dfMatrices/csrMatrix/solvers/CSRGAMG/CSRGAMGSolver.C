@@ -26,6 +26,30 @@ License
 #include "CSRGAMGSolver.H"
 #include "CSRGAMGInterface.H"
 
+#include <fstream>
+#include <iomanip>
+template<typename Container>
+void write_vector_to_file(const Container& container, const std::string& filename);
+
+// Template function that can accept any type of array or vector
+template<typename Container>
+void write_vector_to_file(const Container& container, const std::string& filename) {
+
+    std::ofstream file(filename);
+    
+    if (file.is_open()) {
+
+        for (const auto& value : container) {
+            file << std::setprecision(10) << value << '\n'; 
+        }
+        
+        file.close();
+    } else {
+
+        std::cerr << " error!!!!!!!! "  << std::endl;
+    }
+}
+
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
@@ -220,8 +244,33 @@ Foam::CSRGAMGSolver::CSRGAMGSolver
                 agglomeration_.meshLevel(fineLevelIndex + 1),
                 agglomeration_.interfaceLevel(fineLevelIndex + 1)
             );
+
+            bool writeData2Files = false;
+            if (writeData2Files)
+            {
+                // write data to file ...
+                std::stringstream s_h_lower;
+                s_h_lower << "h_lower_" << fineLevelIndex << "_Ref.txt";
+                std::string file_name_h_lower = s_h_lower.str();
+                std::vector<double> vectorh_lower(matrixLevel(fineLevelIndex).lower().begin(), matrixLevel(fineLevelIndex).lower().end());
+                write_vector_to_file(vectorh_lower, file_name_h_lower);
+
+                std::stringstream s_h_upper;
+                s_h_upper << "h_upper_" << fineLevelIndex << "_Ref.txt";
+                std::string file_name_h_upper = s_h_upper.str();
+                std::vector<double> vectorh_upper(matrixLevel(fineLevelIndex).upper().begin(), matrixLevel(fineLevelIndex).upper().end());
+                write_vector_to_file(vectorh_upper, file_name_h_upper);
+
+                std::stringstream s_h_diag;
+                s_h_diag << "h_diag_" << fineLevelIndex << "_Ref.txt";
+                std::string file_name_h_diag = s_h_diag.str();
+                std::vector<double> vectorh_diag(matrixLevel(fineLevelIndex).diag().begin(), matrixLevel(fineLevelIndex).diag().end());
+                write_vector_to_file(vectorh_diag, file_name_h_diag);
+            }
         }
     }
+
+
 
 
     if (debug)

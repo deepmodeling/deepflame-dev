@@ -214,6 +214,30 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef GPUSolverNew_
+    //============================================================================
+    // startif use GAMG Solver ... 
+    #include "dfCSRPreconditioner.H" // use GAMGStruct
+    #include "CSRGAMGAgglomeration.H"
+    // map coeffs for GAMG solver
+    const dictionary solverControls = p.mesh().solverDict
+    (
+        p.select
+        (
+            p.mesh().data::template lookupOrDefault<bool>
+            ("finalIteration", false)
+        )
+    );
+    const CSRGAMGAgglomeration& agglomeration(CSRGAMGAgglomeration::New(p.mesh(), solverControls));
+    std::cout << "=== get agglomeration in createGPUGAMGMaps " << std::endl;
+
+    int agglomeration_level = agglomeration.size();
+    std::cout << "=== agglomeration level: " << agglomeration_level << std::endl;
+
+    GAMGStruct GAMGdata[agglomeration_level]; 
+    createGPUGAMGMaps(GAMGdata, agglomeration);
+    // endif ...
+    //============================================================================
+
     createGPUUEqn(CanteraTorchProperties, U);
     createGPUYEqn(CanteraTorchProperties, Y, inertIndex);
     createGPUEEqn(CanteraTorchProperties, thermo.he(), K);
@@ -452,6 +476,15 @@ int main(int argc, char *argv[])
                 {
 
                 #if defined GPUSolverNew_
+                    thermo_GPU.updateRho();
+
+                    // Thermodynamic density needs to be updated by psi*d(p) after the
+                    // pressure solution
+                    thermo_GPU.psip0();
+
+                    UEqn_GPU.getHbyA();
+                    pEqn_GPU.process(GAMGdata, agglomeration_level);
+                    UEqn_GPU.sync();
                     #include "pEqn_GPU.H"
                 #else
                     #include "pEqn_CPU.H"

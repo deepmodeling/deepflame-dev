@@ -1,6 +1,38 @@
 #pragma once
 #include "dfMatrixDataBase.H"
 
+struct GAMGStruct
+{
+    int curLevel = -100; // current level && flag to save data 
+    int nCell;
+    int nFace;
+
+    // === host data get from agglomeration
+    std::vector<int> upperAddr;
+    std::vector<int> lowerAddr;
+
+    std::vector<int> restrictMap;
+    std::vector<int> faceRestrictMap;
+    std::vector<int> faceFlipMap;   // bool2int
+
+    // === d2h matrix data for verify
+    double* h_lower = nullptr;
+    double* h_upper = nullptr;
+    double* h_diag = nullptr;
+
+    // === device map data
+    int* d_restrictMap = nullptr;
+    int* d_faceRestrictMap = nullptr;
+    int* d_faceFlipMap = nullptr;   // bool2int
+
+    // === device matrix data
+    double* d_lower = nullptr;
+    double* d_upper = nullptr;
+    double* d_diag = nullptr;
+    double* d_internal_coeffs = nullptr;
+    double* d_boundary_coeffs = nullptr;
+};
+
 class CSRPreconditioner{
 
 public:
@@ -34,4 +66,7 @@ public:
         double *wA,
         const double *rA
     ) override;
+
+    virtual void agglomerateMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level);
 };
+

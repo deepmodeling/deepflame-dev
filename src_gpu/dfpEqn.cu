@@ -2,6 +2,29 @@
 // #define AMGX_
 #define CSR_
 
+// Start if write vector to file ...
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <vector>
+#include <string>
+template<typename Container>
+void write_vector_to_file(const Container& container, const std::string& filename);
+
+template<typename Container>
+void write_vector_to_file(const Container& container, const std::string& filename) {
+    std::ofstream file(filename);
+    if (file.is_open()) {
+        for (const auto& value : container) {
+            file << std::setprecision(10) << value << '\n'; 
+        }
+        file.close();
+    } else {
+        std::cerr << " error!!!!!!!! "  << std::endl;
+    }
+}
+// End if ...
+
 __global__ void fvc_interpolate_internal_multi_scalar_kernel(int num_surfaces, const int *lower_index, const int *upper_index,
         const double *vf1, const double *vf2, const double *weight, double *output, double sign)
 {
@@ -392,7 +415,7 @@ void dfpEqn::correctP(const double *h_p, double *h_boundary_p) {
     checkCudaErrors(cudaMemcpyAsync(dataBase_.d_boundary_p, h_boundary_p, dataBase_.boundary_surface_value_bytes, cudaMemcpyHostToDevice, dataBase_.stream));
 };
 
-void dfpEqn::process() {
+void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
     TICK_INIT_EVENT;
     TICK_START_EVENT;
 #ifdef USE_GRAPH
@@ -500,6 +523,140 @@ void dfpEqn::process() {
         peqn_ldu_to_csr_no_diag(dataBase_.num_cells, dataBase_.num_surfaces, h_csr_row_index_no_diag, 
             h_lower, h_upper, h_owner, h_neighbor, h_off_diag);
         cudaMemcpy(d_off_diag, h_off_diag, dataBase_.num_surfaces * 2 * sizeof(double), cudaMemcpyHostToDevice);
+
+        // load CPU data for test ---start
+        bool loadCPUdata4test = true;
+        if (loadCPUdata4test){
+            std::string filename_diag = "/root/0422/deepflame-dev/examples/dfLowMachFoam/cvodeIntegrator_64/h_diag_0_Ref.txt";
+            std::string filename_upper = "/root/0422/deepflame-dev/examples/dfLowMachFoam/cvodeIntegrator_64/h_upper_0_Ref.txt";
+            std::string filename_lower = "/root/0422/deepflame-dev/examples/dfLowMachFoam/cvodeIntegrator_64/h_lower_0_Ref.txt";
+
+            std::vector<double> data_diag, data_upper, data_lower;
+
+            int offset = 0;
+            std::ifstream file_diag(filename_diag);
+            if (!file_diag.is_open()) {
+                    std::cerr << "error open filename_diag : " << filename_diag << std::endl;
+            }
+            double number_diag;
+            while (file_diag >> std::setprecision(10) >> number_diag){
+                if(offset < dataBase_.num_cells){
+                    data_diag.push_back(number_diag);
+                }
+                offset++;
+            }
+            file_diag.close();
+
+            offset = 0;
+            std::ifstream file_upper(filename_upper);
+            if (!file_upper.is_open()) {
+                    std::cerr << "error open file_upper : " << filename_upper << std::endl;
+            }
+            double number_upper;
+            while (file_upper >> std::setprecision(10) >> number_upper){
+                if(offset < dataBase_.num_surfaces){
+                    data_upper.push_back(number_upper);
+                }
+                offset++;
+            }
+            file_upper.close();
+
+            offset = 0;
+            std::ifstream file_lower(filename_lower);
+            if (!file_lower.is_open()) {
+                    std::cerr << "error open filename_diag : " << filename_lower << std::endl;
+            }
+            double number_lower;
+            while (file_lower >> std::setprecision(10) >> number_lower){
+                if(offset < dataBase_.num_surfaces){
+                    data_lower.push_back(number_lower);
+                }
+                offset++;
+            }
+            file_lower.close();
+
+            cudaMemcpy(d_diag,  &data_diag[0],  sizeof(double)*dataBase_.num_cells,    cudaMemcpyHostToDevice);
+            cudaMemcpy(d_lower, &data_lower[0], sizeof(double)*dataBase_.num_surfaces, cudaMemcpyHostToDevice);
+            cudaMemcpy(d_upper, &data_upper[0], sizeof(double)*dataBase_.num_surfaces, cudaMemcpyHostToDevice);
+        }
+
+        // ========================================================================================
+        // startif use GAMG ... save for finest matrix
+        std::cout << "=== start agglomeration in dfpEqn::process() " << std::endl;
+        std::cout << "dataBase_.num_cells: " << dataBase_.num_cells 
+                  << ", dataBase_.num_surfaces: " << dataBase_.num_surfaces
+                  << ", dataBase_.num_boundary_surfaces: " << dataBase_.num_boundary_surfaces << std::endl;
+
+        checkCudaErrors(cudaMalloc(&GAMGdata[0].d_lower, dataBase_.num_surfaces * sizeof(double)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[0].d_upper, dataBase_.num_surfaces * sizeof(double)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[0].d_diag, dataBase_.num_cells * sizeof(double)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[0].d_internal_coeffs, dataBase_.num_boundary_surfaces * sizeof(double)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[0].d_boundary_coeffs, dataBase_.num_boundary_surfaces * sizeof(double)));
+
+        checkCudaErrors(cudaMemcpyAsync(GAMGdata[0].d_lower, d_lower, dataBase_.num_surfaces*sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
+        checkCudaErrors(cudaMemcpyAsync(GAMGdata[0].d_upper, d_upper, dataBase_.num_surfaces*sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
+        checkCudaErrors(cudaMemcpyAsync(GAMGdata[0].d_diag, d_diag, dataBase_.num_cells*sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
+        checkCudaErrors(cudaMemcpyAsync(GAMGdata[0].d_internal_coeffs, d_internal_coeffs, dataBase_.num_boundary_surfaces*sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
+        checkCudaErrors(cudaMemcpyAsync(GAMGdata[0].d_boundary_coeffs, d_boundary_coeffs, dataBase_.num_boundary_surfaces*sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
+
+        // malloc & memset coarse level
+        for(int leveli=1; leveli<agglomeration_level; leveli++)
+        {
+            checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_lower, GAMGdata[leveli].nFace * sizeof(double)));
+            checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_upper, GAMGdata[leveli].nFace * sizeof(double)));
+            checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_diag, GAMGdata[leveli].nCell * sizeof(double)));
+
+            checkCudaErrors(cudaMemset(GAMGdata[leveli].d_lower, 0, GAMGdata[leveli].nFace * sizeof(double)));
+            checkCudaErrors(cudaMemset(GAMGdata[leveli].d_upper, 0, GAMGdata[leveli].nFace * sizeof(double)));
+            checkCudaErrors(cudaMemset(GAMGdata[leveli].d_diag, 0, GAMGdata[leveli].nCell * sizeof(double)));
+        }
+
+        std::cout << "=============================================" << std::endl;
+        std::cout << "====== call pCSRSolver->initGAMGMatrix ======" << std::endl;
+        pCSRSolver->initGAMGMatrix(dataBase_, GAMGdata, agglomeration_level);
+
+        // coarse level ldu to csr
+        for(int leveli=0; leveli<agglomeration_level; leveli++)
+        {
+            std::cout << "d2hcopy... leveli: " << leveli << std::endl;
+
+            GAMGdata[leveli].h_lower = (double*)malloc(GAMGdata[leveli].nFace*sizeof(double));
+            GAMGdata[leveli].h_upper = (double*)malloc(GAMGdata[leveli].nFace*sizeof(double));
+            GAMGdata[leveli].h_diag  = (double*)malloc(GAMGdata[leveli].nCell*sizeof(double));
+
+            checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].h_lower, GAMGdata[leveli].d_lower, 
+                                            GAMGdata[leveli].nFace*sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream));
+            checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].h_upper, GAMGdata[leveli].d_upper, 
+                                            GAMGdata[leveli].nFace*sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream));
+            checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].h_diag, GAMGdata[leveli].d_diag, 
+                                            GAMGdata[leveli].nCell*sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream));
+            // GAMGdata[leveli].upperAddr,  GAMGdata[leveli].lowerAddr
+
+            bool writeData2Files = true;
+            if (writeData2Files)
+            {
+                // write data to file ...
+                std::stringstream s_h_lower;
+                s_h_lower << "h_lower_" << leveli << ".txt";
+                std::string file_name_h_lower = s_h_lower.str();
+                std::vector<double> vectorh_lower(GAMGdata[leveli].h_lower, GAMGdata[leveli].h_lower + GAMGdata[leveli].nFace);
+                write_vector_to_file(vectorh_lower, file_name_h_lower);
+
+                std::stringstream s_h_upper;
+                s_h_upper << "h_upper_" << leveli << ".txt";
+                std::string file_name_h_upper = s_h_upper.str();
+                std::vector<double> vectorh_upper(GAMGdata[leveli].h_upper, GAMGdata[leveli].h_upper + GAMGdata[leveli].nFace);
+                write_vector_to_file(vectorh_upper, file_name_h_upper);
+
+                std::stringstream s_h_diag;
+                s_h_diag << "h_diag_" << leveli << ".txt";
+                std::string file_name_h_diag = s_h_diag.str();
+                std::vector<double> vectorh_diag(GAMGdata[leveli].h_diag, GAMGdata[leveli].h_diag + GAMGdata[leveli].nCell);
+                write_vector_to_file(vectorh_diag, file_name_h_diag);
+            }
+        }
+        // endif
+        // ========================================================================================
 #endif
 
 #ifdef USE_GRAPH
@@ -729,6 +886,7 @@ void dfpEqn::solve()
     dataBase_.solve(num_iteration, AMGXSetting::p_setting, d_A, dataBase_.d_p, d_source);
 #endif
 #ifdef CSR_
+    std::cout << "*** call in dfpEqn::solve() for CSR " << std::endl;
     double* d_diag_tmp;
     cudaMallocAsync((void**)&d_diag_tmp, dataBase_.num_cells * sizeof(double), dataBase_.stream);
     cudaMemcpyAsync(d_diag_tmp, d_diag, dataBase_.num_cells * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream);

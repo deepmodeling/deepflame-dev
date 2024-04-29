@@ -31,6 +31,12 @@ void PBiCGStabCSRSolver::initialize(const int nCells, const size_t boundary_surf
     cudaMalloc(&scalarRecvBufList_, boundary_surface_value_bytes);
 }
 
+void PBiCGStabCSRSolver::initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level)
+{
+    // preconditioner
+    std::cout << "********* call in PBiCGStabCSRSolver::initGAMGMatrix() " << std::endl;
+}
+
 /*------------------------------------------------solve---------------------------------------------------------*/
 
 void PBiCGStabCSRSolver::solve
