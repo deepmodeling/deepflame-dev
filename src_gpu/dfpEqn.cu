@@ -624,6 +624,8 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
         std::cout << "=============================================" << std::endl;
         std::cout << "====== call pCSRSolver->initGAMGMatrix ======" << std::endl;
         pCSRSolver->initGAMGMatrix(dataBase_, GAMGdata, agglomeration_level);
+        std::cout << "====== end pCSRSolver->initGAMGMatrix =======" << std::endl;
+        std::cout << "=============================================" << std::endl;
 
         // coarse level ldu to csr
         for(int leveli=0; leveli<agglomeration_level; leveli++)

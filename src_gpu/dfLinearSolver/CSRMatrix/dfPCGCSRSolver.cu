@@ -38,7 +38,6 @@ void PCGCSRSolver::initializeGAMG(const int nCells, const size_t boundary_surfac
     cudaMalloc(&scalarRecvBufList_, boundary_surface_value_bytes);
 
     // preconditioner
-    std::cout << "*** call in PCGCSRSolver::initialize new GAMGCSRPreconditioner() " << std::endl;
     precond_ = new GAMGCSRPreconditioner();
     precond_->initialize(GAMGdata_, agglomeration_level);
 }
@@ -46,7 +45,6 @@ void PCGCSRSolver::initializeGAMG(const int nCells, const size_t boundary_surfac
 void PCGCSRSolver::initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level)
 {
     // preconditioner
-    std::cout << "********* call in PCGCSRSolver::initGAMGMatrix() " << std::endl;
     precond_->agglomerateMatrix(dataBase, GAMGdata_, agglomeration_level);
 }
 

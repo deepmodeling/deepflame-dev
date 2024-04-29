@@ -11,7 +11,7 @@ void GAMGCSRPreconditioner::initialize
     std::cout << "*** call in GAMGCSRPreconditioner::initialize(): init Vcycle " << std::endl;
     for(int leveli=0; leveli<agglomeration_level; leveli++)
     {
-        std::cout << "malloc leveli: " << leveli << std::endl;
+        std::cout << "   malloc leveli: " << leveli << std::endl;
         // iteration data
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_CorrFields, GAMGdata[leveli].nCell * sizeof(double)));
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_Sources,    GAMGdata[leveli].nCell * sizeof(double)));
