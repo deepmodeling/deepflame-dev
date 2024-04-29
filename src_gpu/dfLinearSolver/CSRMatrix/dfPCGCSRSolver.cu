@@ -410,7 +410,7 @@ void PCGCSRSolver::solve_useGAMG
             // start Vcycle
             precond_->Vcycle(dataBase, GAMGdata_, agglomeration_level);
 
-            // use GAMGdata_[0].d_CorrFields
+            // use GAMGdata_[0].d_CorrFields to update psi
             updateCorrFieldGPU( dataBase.stream, GAMGdata_[0].nCell, psi, GAMGdata_[0].d_CorrFields);
 
             //TODO: add smoother for leveli=0, nFinestSweeps_

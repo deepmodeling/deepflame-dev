@@ -104,3 +104,6 @@ void updateSourceFieldGPU(cudaStream_t stream, int nCells,
 
 void updateCorrFieldGPU(cudaStream_t stream, int nCells, 
                         double* d_Field, double* d_preSmoothField);
+
+void directSolve1x1GPU(cudaStream_t stream, int nCells, 
+                        double* d_diag, double* d_corrField, double* d_sourceField);

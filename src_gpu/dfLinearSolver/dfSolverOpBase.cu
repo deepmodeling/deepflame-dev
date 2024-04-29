@@ -917,6 +917,19 @@ __global__ void kernel_updateCorr
     atomicAdd(&field[index], preSmooth[index]);
 }
 
+__global__ void kernel_directSolve1x1
+(
+    int nCells,
+    double* d_diag, double* d_corr, double* d_source
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index == 0) 
+    { 
+        d_corr[index] = d_source[index] / d_diag[index]; 
+    }
+}
+
 void restrictFieldGPU(cudaStream_t stream, int nFineCells, int* d_restrictMap, 
                         double* d_fineField, double* d_coarseField)
 {
@@ -1027,5 +1040,13 @@ void updateCorrFieldGPU(cudaStream_t stream, int nCells,
 
     kernel_updateCorr<<<blocks_per_grid, threads_per_block, 0, stream>>>
         (nCells, d_Field, d_preSmoothField);
+    checkCudaErrors(cudaStreamSynchronize(stream));
+}
+
+void directSolve1x1GPU(cudaStream_t stream, int nCells, 
+                        double* d_diag, double* d_corrField, double* d_sourceField)
+{
+    kernel_directSolve1x1<<<1, 1, 0, stream>>>
+        (nCells, d_diag, d_corrField, d_sourceField);
     checkCudaErrors(cudaStreamSynchronize(stream));
 }

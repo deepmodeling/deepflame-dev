@@ -127,8 +127,31 @@ void GAMGCSRPreconditioner::Vcycle
     GAMGStruct *GAMGdata_, int agglomeration_level
 )
 {
+    bool solveCoarsest = false;
+
     std::cout << "********* call in GAMGCSRPreconditioner::Vcycle " << std::endl;
     fine2coarse(dataBase, GAMGdata_, agglomeration_level, 0, agglomeration_level-1);
+
+    if (solveCoarsest)
+    {
+        if (GAMGdata_[agglomeration_level-1].nCell == 1)
+        {
+            //directSolve1x1
+            directSolve1x1GPU(dataBase.stream, GAMGdata_[agglomeration_level-1].nCell, 
+                                GAMGdata_[agglomeration_level-1].d_diag, 
+                                GAMGdata_[agglomeration_level-1].d_CorrFields, 
+                                GAMGdata_[agglomeration_level-1].d_Sources);
+        }
+        else if (GAMGdata_[agglomeration_level-1].nCell == 4)
+        {
+            //directSolve4x4
+        }
+        else
+        {
+            std::cout << "*** Unsupported dimension for aggregation amg level ..."<< std::endl;
+        }
+    }
+
     coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 0);
 };
 
