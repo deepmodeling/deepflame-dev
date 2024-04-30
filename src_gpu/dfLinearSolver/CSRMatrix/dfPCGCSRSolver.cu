@@ -400,26 +400,10 @@ void PCGCSRSolver::solve_useGAMG
     ){
 
         do{
-            // ====================================================================
-            // ====================== startif use GAMG ============================
-            std::cout << "*******************************************" << std::endl;
-            std::cout << "==== Call Vcycle & Set fineLevel source ===" << std::endl;
-            // set GAMGdata_[0].d_Sources
-            checkCudaErrors(cudaMemcpyAsync(GAMGdata_[0].d_Sources, d_rA, GAMGdata_[0].nCell*sizeof(double), cudaMemcpyDeviceToDevice, dataBase.stream));
-            
-            // start Vcycle
-            precond_->Vcycle(dataBase, GAMGdata_, agglomeration_level);
 
-            // use GAMGdata_[0].d_CorrFields to update psi
-            updateCorrFieldGPU( dataBase.stream, GAMGdata_[0].nCell, psi, GAMGdata_[0].d_CorrFields);
-
-            //TODO: add smoother for leveli=0, nFinestSweeps_
-            
-            // ======================= endif use GAMG =============================
+            precond_->precondition(d_wA, d_rA, psi, dataBase, GAMGdata_, agglomeration_level);
 
             wArAold = wArA;
-
-            // TODO: precondition
 
             // --- calculate : d_wArA_tmp ---
             // input : wA, rA

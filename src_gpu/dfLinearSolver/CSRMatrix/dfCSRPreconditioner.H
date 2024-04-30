@@ -55,7 +55,10 @@ public:
     virtual void precondition
     (
         double *wA,
-        const double *rA
+        const double *rA,
+        double *phi,
+        const dfMatrixDataBase& dataBase,
+        GAMGStruct *GAMGdata_, int agglomeration_level
     ) = 0;
 };
 
@@ -75,13 +78,17 @@ public:
     virtual void precondition
     (
         double *wA,
-        const double *rA
+        const double *rA,
+        double *phi,
+        const dfMatrixDataBase& dataBase,
+        GAMGStruct *GAMGdata_, int agglomeration_level
     ) override;
 
     virtual void agglomerateMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level);
 
     virtual void fine2coarse(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level, int startLevel, int endLevel);
     virtual void coarse2fine(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level, int startLevel, int endLevel);
+    virtual void directSolveCoarsest(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level);
 
     virtual void Vcycle(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level);
 };

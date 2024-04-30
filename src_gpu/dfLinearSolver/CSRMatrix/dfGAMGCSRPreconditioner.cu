@@ -58,7 +58,7 @@ void GAMGCSRPreconditioner::fine2coarse
     int startLevel, int endLevel
 )
 {
-    std::cout << "********* call in GAMGCSRPreconditioner::fine2coarse " << std::endl;
+    std::cout << "   ****** call in GAMGCSRPreconditioner::fine2coarse " << std::endl;
     for(int leveli=startLevel; leveli<endLevel; leveli++)
     {
         std::cout << "  this level: " << leveli << ", restrict source for coarser level " << std::endl;
@@ -92,7 +92,7 @@ void GAMGCSRPreconditioner::coarse2fine
     int startLevel, int endLevel
 )
 {
-    std::cout << "********* call in GAMGCSRPreconditioner::coarse2fine " << std::endl;
+    std::cout << "   ****** call in GAMGCSRPreconditioner::coarse2fine " << std::endl;
     for(int leveli=startLevel; leveli>endLevel; leveli--)
     {
         //Purpose: preSmoothedCoarseCorrField = MGCorrFields[leveli-1];
@@ -121,19 +121,16 @@ void GAMGCSRPreconditioner::coarse2fine
 
 };
 
-void GAMGCSRPreconditioner::Vcycle
+void GAMGCSRPreconditioner::directSolveCoarsest
 (
     const dfMatrixDataBase& dataBase,
     GAMGStruct *GAMGdata_, int agglomeration_level
 )
 {
     bool solveCoarsest = false;
-
-    std::cout << "********* call in GAMGCSRPreconditioner::Vcycle " << std::endl;
-    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 0, agglomeration_level-1);
-
     if (solveCoarsest)
     {
+        std::cout << "   ****** call in GAMGCSRPreconditioner::directSolveCoarsest " << std::endl;
         if (GAMGdata_[agglomeration_level-1].nCell == 1)
         {
             //directSolve1x1
@@ -151,16 +148,54 @@ void GAMGCSRPreconditioner::Vcycle
             std::cout << "*** Unsupported dimension for aggregation amg level ..."<< std::endl;
         }
     }
+};
+
+void GAMGCSRPreconditioner::Vcycle
+(
+    const dfMatrixDataBase& dataBase,
+    GAMGStruct *GAMGdata_, int agglomeration_level
+)
+{
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 0, agglomeration_level-1);
+
+    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
 
     coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 0);
 };
 
 void GAMGCSRPreconditioner::precondition
 (
-    double *wA,
-    const double *rA
+    double *d_wA,
+    const double *d_rA,
+    double *psi,
+    const dfMatrixDataBase& dataBase,
+    GAMGStruct *GAMGdata_, int agglomeration_level
 )
 {
-    // Implement the GAMG precondition procedure here
+    std::cout << "******************************************************" << std::endl;
     std::cout << "********* call in GAMGCSRPreconditioner::precondition " << std::endl;
+
+    //TODO: get nVcycles from control files
+    int nVcycles_ = 1; 
+
+    for (int cycle=0; cycle<nVcycles_; cycle++)
+    {
+        // set GAMGdata_[0].d_Sources
+        checkCudaErrors(cudaMemcpyAsync(GAMGdata_[0].d_Sources, d_rA, GAMGdata_[0].nCell*sizeof(double), cudaMemcpyDeviceToDevice, dataBase.stream));
+        
+        // start Vcycle
+        Vcycle(dataBase, GAMGdata_, agglomeration_level);
+
+        // use GAMGdata_[0].d_CorrFields to update psi
+        updateCorrFieldGPU( dataBase.stream, GAMGdata_[0].nCell, psi, GAMGdata_[0].d_CorrFields);
+
+        //TODO: add smoother for leveli=0, nFinestSweeps_
+
+        if (cycle < nVcycles_-1)
+        {
+            // Calculate finest level residual field to update d_rA
+        }
+    }
+    std::cout << "********** end in GAMGCSRPreconditioner::precondition " << std::endl;
+    std::cout << "******************************************************" << std::endl;
 };
