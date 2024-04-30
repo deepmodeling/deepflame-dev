@@ -32,6 +32,11 @@ struct GAMGStruct
     double* d_internal_coeffs = nullptr;
     double* d_boundary_coeffs = nullptr;
 
+    // === device csr matrix data
+    double* d_off_diag_value = nullptr;
+    int* d_csr_row_index_no_diag = nullptr;
+    int* d_csr_col_index_no_diag = nullptr;
+
     // === device iteration data
     double* d_CorrFields = nullptr;
     double* d_Sources = nullptr;
