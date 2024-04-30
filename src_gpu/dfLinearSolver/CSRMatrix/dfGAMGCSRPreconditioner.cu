@@ -77,7 +77,7 @@ void GAMGCSRPreconditioner::fine2coarse
         if (leveli < endLevel - 1)
         {
             //Purpose: scale d_CorrFields leveli+1, if (matrix.symmetric())
-            //TODO: add scale here 
+            //TODO: add scale here, (need calc Acf in scale) 
 
             //Purpose: spmv to get Acf = A * Corr
             //TODO: add Amul to get Acf
@@ -172,9 +172,8 @@ void GAMGCSRPreconditioner::Vcycle
 
 void GAMGCSRPreconditioner::precondition
 (
-    double *d_wA,
-    const double *d_rA,
     double *psi,
+    const double *finestResidual,
     const dfMatrixDataBase& dataBase,
     GAMGStruct *GAMGdata_, int agglomeration_level
 )
@@ -182,14 +181,17 @@ void GAMGCSRPreconditioner::precondition
     std::cout << "******************************************************" << std::endl;
     std::cout << "********* call in GAMGCSRPreconditioner::precondition " << std::endl;
 
+    // wA = 0.0;
+    checkCudaErrors(cudaMemset(psi, 0, GAMGdata_[0].nCell*sizeof(double)));
+
     //TODO: get nVcycles from control files
     int nVcycles_ = 1; 
 
+    // set GAMGdata_[0].d_Sources
+    checkCudaErrors(cudaMemcpyAsync(GAMGdata_[0].d_Sources, finestResidual, GAMGdata_[0].nCell*sizeof(double), cudaMemcpyDeviceToDevice, dataBase.stream));
+
     for (int cycle=0; cycle<nVcycles_; cycle++)
     {
-        // set GAMGdata_[0].d_Sources
-        checkCudaErrors(cudaMemcpyAsync(GAMGdata_[0].d_Sources, d_rA, GAMGdata_[0].nCell*sizeof(double), cudaMemcpyDeviceToDevice, dataBase.stream));
-        
         // start Vcycle
         Vcycle(dataBase, GAMGdata_, agglomeration_level);
 
@@ -200,7 +202,10 @@ void GAMGCSRPreconditioner::precondition
 
         if (cycle < nVcycles_-1)
         {
-            // Calculate finest level residual field to update d_rA
+            // TODO: Calculate finest level residual field to update finestResidual
+            // matrix_.Amul(AwA, wA, interfaceBouCoeffs_, interfaces_, cmpt);
+
+            updateSourceFieldGPU(dataBase.stream, GAMGdata_[0].nCell, GAMGdata_[0].d_Sources, GAMGdata_[0].d_AcfField);
         }
     }
     std::cout << "********** end in GAMGCSRPreconditioner::precondition " << std::endl;

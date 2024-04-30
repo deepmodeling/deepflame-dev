@@ -61,7 +61,6 @@ public:
     (
         double *wA,
         const double *rA,
-        double *phi,
         const dfMatrixDataBase& dataBase,
         GAMGStruct *GAMGdata_, int agglomeration_level
     ) = 0;
@@ -84,7 +83,6 @@ public:
     (
         double *wA,
         const double *rA,
-        double *phi,
         const dfMatrixDataBase& dataBase,
         GAMGStruct *GAMGdata_, int agglomeration_level
     ) override;

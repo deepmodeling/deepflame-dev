@@ -401,7 +401,7 @@ void PCGCSRSolver::solve_useGAMG
 
         do{
 
-            precond_->precondition(d_wA, d_rA, psi, dataBase, GAMGdata_, agglomeration_level);
+            precond_->precondition(d_wA, d_rA, dataBase, GAMGdata_, agglomeration_level);
 
             wArAold = wArA;
 
