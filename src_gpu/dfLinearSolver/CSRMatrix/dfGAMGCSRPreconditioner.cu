@@ -62,27 +62,31 @@ void GAMGCSRPreconditioner::fine2coarse
     for(int leveli=startLevel; leveli<endLevel; leveli++)
     {
         std::cout << "  this level: " << leveli << ", restrict source for coarser level " << std::endl;
+
+        //Purpose: get next level (leveli+1) source
         restrictFieldGPU(dataBase.stream, GAMGdata_[leveli].nCell, 
                         GAMGdata_[leveli].d_restrictMap, 
                         GAMGdata_[leveli].d_Sources, GAMGdata_[leveli+1].d_Sources);
         
+        //Purpose: coarseCorrFields[leveli] = 0.0;
         checkCudaErrors(cudaMemset(GAMGdata_[leveli+1].d_CorrFields, 0, GAMGdata_[leveli+1].nCell*sizeof(double)));
 
-        //TODO: add smoother here to get d_CorrFields for leveli+1 
+        //Purpose: Smooth [ A * Corr = Source ] to get d_CorrFields for leveli+1
+        //TODO: add smoother here
 
-        if (leveli < endLevel-1)
+        if (leveli < endLevel - 1)
         {
-            //TODO: add scale here for d_CorrFields leveli+1
+            //Purpose: scale d_CorrFields leveli+1, if (matrix.symmetric())
+            //TODO: add scale here 
 
+            //Purpose: spmv to get Acf = A * Corr
             //TODO: add Amul to get Acf
-
 
             //Purpose: GAMGdata_[leveli+1].d_Sources -= Acf
             updateSourceFieldGPU( dataBase.stream, GAMGdata_[leveli+1].nCell, 
                                   GAMGdata_[leveli+1].d_Sources, GAMGdata_[leveli+1].d_AcfField);
         }    
     }
-
 };
 
 void GAMGCSRPreconditioner::coarse2fine
@@ -95,18 +99,21 @@ void GAMGCSRPreconditioner::coarse2fine
     std::cout << "   ****** call in GAMGCSRPreconditioner::coarse2fine " << std::endl;
     for(int leveli=startLevel; leveli>endLevel; leveli--)
     {
+        std::cout << "  this level: " << leveli << ", prolong correct for finer level " << std::endl;
+
         //Purpose: preSmoothedCoarseCorrField = MGCorrFields[leveli-1];
         checkCudaErrors(cudaMemcpyAsync(GAMGdata_[leveli-1].d_preSmoothField, GAMGdata_[leveli-1].d_CorrFields, 
                                         GAMGdata_[leveli-1].nCell*sizeof(double), cudaMemcpyDeviceToDevice, dataBase.stream));
 
-        std::cout << "  this level: " << leveli << ", prolong correct for finer level " << std::endl;
+        //Purpose: get next level (leveli-1) corr
         prolongFieldGPU(dataBase.stream, GAMGdata_[leveli-1].nCell, 
                         GAMGdata_[leveli-1].d_restrictMap, 
                         GAMGdata_[leveli-1].d_CorrFields, GAMGdata_[leveli].d_CorrFields);
 
         if (leveli < startLevel - 1)
         {
-            //TODO: add scale here for leveli-1
+            //Purpose: scale d_CorrFields leveli-1, if (matrix.symmetric())
+            //TODO: add scale here
         }
         
         if (leveli > endLevel + 1)
@@ -115,10 +122,10 @@ void GAMGCSRPreconditioner::coarse2fine
             updateCorrFieldGPU( dataBase.stream, GAMGdata_[leveli-1].nCell, 
                                 GAMGdata_[leveli-1].d_CorrFields, GAMGdata_[leveli-1].d_preSmoothField);
 
+            //Purpose: Smooth [ A * Corr = Source ] to get d_CorrFields for leveli-1
             //TODO: add smoother here for leveli-1
         }
     }
-
 };
 
 void GAMGCSRPreconditioner::directSolveCoarsest
