@@ -597,28 +597,46 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
                   << ", dataBase_.num_surfaces: " << dataBase_.num_surfaces
                   << ", dataBase_.num_boundary_surfaces: " << dataBase_.num_boundary_surfaces << std::endl;
 
-        checkCudaErrors(cudaMalloc(&GAMGdata[0].d_lower, dataBase_.num_surfaces * sizeof(double)));
-        checkCudaErrors(cudaMalloc(&GAMGdata[0].d_upper, dataBase_.num_surfaces * sizeof(double)));
-        checkCudaErrors(cudaMalloc(&GAMGdata[0].d_diag, dataBase_.num_cells * sizeof(double)));
-        checkCudaErrors(cudaMalloc(&GAMGdata[0].d_internal_coeffs, dataBase_.num_boundary_surfaces * sizeof(double)));
-        checkCudaErrors(cudaMalloc(&GAMGdata[0].d_boundary_coeffs, dataBase_.num_boundary_surfaces * sizeof(double)));
-
-        checkCudaErrors(cudaMemcpyAsync(GAMGdata[0].d_lower, d_lower, dataBase_.num_surfaces*sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
-        checkCudaErrors(cudaMemcpyAsync(GAMGdata[0].d_upper, d_upper, dataBase_.num_surfaces*sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
-        checkCudaErrors(cudaMemcpyAsync(GAMGdata[0].d_diag, d_diag, dataBase_.num_cells*sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
-        checkCudaErrors(cudaMemcpyAsync(GAMGdata[0].d_internal_coeffs, d_internal_coeffs, dataBase_.num_boundary_surfaces*sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
-        checkCudaErrors(cudaMemcpyAsync(GAMGdata[0].d_boundary_coeffs, d_boundary_coeffs, dataBase_.num_boundary_surfaces*sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
-
         // malloc & memset coarse level
-        for(int leveli=1; leveli<agglomeration_level; leveli++)
+        for(int leveli=0; leveli<agglomeration_level; leveli++)
         {
-            checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_lower, GAMGdata[leveli].nFace * sizeof(double)));
-            checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_upper, GAMGdata[leveli].nFace * sizeof(double)));
-            checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_diag, GAMGdata[leveli].nCell * sizeof(double)));
+            std::cout << "leveli: " << leveli << std::endl;
+            // Set matrix data
+            if(leveli==0)
+            {
+                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_lower, d_lower, GAMGdata[leveli].nFace * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
+                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_upper, d_upper, GAMGdata[leveli].nFace * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
+                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_diag, d_diag, GAMGdata[leveli].nCell * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
+            }
+            else
+            {
+                checkCudaErrors(cudaMemset(GAMGdata[leveli].d_lower, 0, GAMGdata[leveli].nFace * sizeof(double)));
+                checkCudaErrors(cudaMemset(GAMGdata[leveli].d_upper, 0, GAMGdata[leveli].nFace * sizeof(double)));
+                checkCudaErrors(cudaMemset(GAMGdata[leveli].d_diag, 0, GAMGdata[leveli].nCell * sizeof(double)));
+            }
 
-            checkCudaErrors(cudaMemset(GAMGdata[leveli].d_lower, 0, GAMGdata[leveli].nFace * sizeof(double)));
-            checkCudaErrors(cudaMemset(GAMGdata[leveli].d_upper, 0, GAMGdata[leveli].nFace * sizeof(double)));
-            checkCudaErrors(cudaMemset(GAMGdata[leveli].d_diag, 0, GAMGdata[leveli].nCell * sizeof(double)));
+#ifndef PARALLEL_
+            // Set interface coef data
+            for(int patchi=0; patchi<GAMGdata[leveli].nPatchFaces.size(); patchi++)
+            {
+                if (GAMGdata[leveli].d_patchFaceRestrictMap[patchi] != nullptr)
+                {
+                    std::cout << "in patch: " << patchi << std::endl;
+                    if(leveli==0)
+                    {
+                        // error, just test code
+                        // TODO: get interface coef from d_internal_coeffs, d_boundary_coeffs
+                        checkCudaErrors(cudaMemset(GAMGdata[leveli].d_interfaceBouCoeffs[patchi], 0, GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double)));
+                        checkCudaErrors(cudaMemset(GAMGdata[leveli].d_interfaceIntCoeffs[patchi], 0, GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double)));
+                    }
+                    else
+                    {
+                        checkCudaErrors(cudaMemset(GAMGdata[leveli].d_interfaceBouCoeffs[patchi], 0, GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double)));
+                        checkCudaErrors(cudaMemset(GAMGdata[leveli].d_interfaceIntCoeffs[patchi], 0, GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double)));
+                    }
+                }
+            }
+#endif
         }
 
         std::cout << "=============================================" << std::endl;

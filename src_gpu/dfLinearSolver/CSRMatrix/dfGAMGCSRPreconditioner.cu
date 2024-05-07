@@ -12,6 +12,11 @@ void GAMGCSRPreconditioner::initialize
     for(int leveli=0; leveli<agglomeration_level; leveli++)
     {
         std::cout << "   malloc leveli: " << leveli << std::endl;
+        // matrix data                                      
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_lower, GAMGdata[leveli].nFace * sizeof(double)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_upper, GAMGdata[leveli].nFace * sizeof(double)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_diag, GAMGdata[leveli].nCell * sizeof(double)));       
+
         // iteration data
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_CorrFields, GAMGdata[leveli].nCell*sizeof(double)));
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_Sources,    GAMGdata[leveli].nCell*sizeof(double)));
@@ -47,7 +52,27 @@ void GAMGCSRPreconditioner::agglomerateMatrix
                         GAMGdata_[leveli].d_upper, GAMGdata_[leveli].d_lower,
                         GAMGdata_[leveli+1].d_upper, GAMGdata_[leveli+1].d_lower, GAMGdata_[leveli+1].d_diag);
 
-        //TODO: calculate interface & interfaceCoef on coarseGrid...
+#ifndef PARALLEL_
+        // agglomerateInterfaceCoefficients
+        std::cout << "In Parallel agglomerateMatrix: " << std::endl;
+
+        for(int patchi=0; patchi<GAMGdata_[leveli].nPatchFaces.size(); patchi++)
+        {
+            if (GAMGdata_[leveli].d_patchFaceRestrictMap[patchi] != nullptr)
+            {
+                std::cout << "in patch" << std::endl;
+                restrictFieldGPU(dataBase.stream, GAMGdata_[leveli].nPatchFaces[patchi], 
+                                GAMGdata_[leveli].d_patchFaceRestrictMap[patchi], 
+                                GAMGdata_[leveli].d_interfaceBouCoeffs[patchi], 
+                                GAMGdata_[leveli+1].d_interfaceBouCoeffs[patchi]);
+
+                restrictFieldGPU(dataBase.stream, GAMGdata_[leveli].nPatchFaces[patchi], 
+                                GAMGdata_[leveli].d_patchFaceRestrictMap[patchi], 
+                                GAMGdata_[leveli].d_interfaceIntCoeffs[patchi], 
+                                GAMGdata_[leveli+1].d_interfaceIntCoeffs[patchi]);
+            }
+        }
+#endif
     }
 };
 

@@ -766,9 +766,9 @@ void createGPUGAMGMaps(GAMGStruct *GAMGdata, const CSRGAMGAgglomeration& agglome
 
         GAMGdata[leveli].nPatchFaces = nPatchFacesVector;
 
-        GAMGdata[leveli].patchFaceRestrictMap = new int*[nPatchFacesVector.size()]();
-
-        checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_patchFaceRestrictMap, nPatchFacesVector.size()*sizeof(int*)));
+        GAMGdata[leveli].d_patchFaceRestrictMap = new int*[nPatchFacesVector.size()]();
+        GAMGdata[leveli].d_interfaceBouCoeffs = new double*[nPatchFacesVector.size()]();
+        GAMGdata[leveli].d_interfaceIntCoeffs = new double*[nPatchFacesVector.size()]();
 
         for(int patchi=0; patchi<nPatchFacesVector.size(); patchi++)
         {
@@ -777,11 +777,13 @@ void createGPUGAMGMaps(GAMGStruct *GAMGdata, const CSRGAMGAgglomeration& agglome
 
             if (patchFaceRestrictMapVector.size() > 0)
             {
-                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].patchFaceRestrictMap[patchi], patchFaceRestrictMapVector.size()*sizeof(int)));
-                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].patchFaceRestrictMap[patchi], patchFaceRestrictMapVector.data(), 
+                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_patchFaceRestrictMap[patchi], patchFaceRestrictMapVector.size()*sizeof(int)));
+                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_interfaceBouCoeffs[patchi], patchFaceRestrictMapVector.size()*sizeof(double)));
+                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_interfaceIntCoeffs[patchi], patchFaceRestrictMapVector.size()*sizeof(double)));
+
+                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_patchFaceRestrictMap[patchi], patchFaceRestrictMapVector.data(), 
                                                 patchFaceRestrictMapVector.size()*sizeof(int), cudaMemcpyHostToDevice));
-                checkCudaErrors(cudaMemcpyAsync(&GAMGdata[leveli].d_patchFaceRestrictMap[patchi], &GAMGdata[leveli].patchFaceRestrictMap[patchi], 
-                                                sizeof(int*), cudaMemcpyHostToDevice));
+
             }
         }
 #endif
