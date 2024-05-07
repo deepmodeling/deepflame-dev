@@ -757,6 +757,34 @@ void createGPUGAMGMaps(GAMGStruct *GAMGdata, const CSRGAMGAgglomeration& agglome
     
         std::cout << "  == level: " << leveli << ", cell: " << GAMGdata[leveli].restrictMap.size()
                                               << ", face: " << GAMGdata[leveli].faceRestrictMap.size() << std::endl;
+
+#ifndef PARALLEL_
+        std::cout << "In Parallel nPatch: " << agglomeration.nPatchFaces(leveli).size() << std::endl;
+
+        std::vector<int> nPatchFacesVector( agglomeration.nPatchFaces(leveli).begin(), 
+                                            agglomeration.nPatchFaces(leveli).end());
+
+        GAMGdata[leveli].nPatchFaces = nPatchFacesVector;
+
+        GAMGdata[leveli].patchFaceRestrictMap = new int*[nPatchFacesVector.size()]();
+
+        checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_patchFaceRestrictMap, nPatchFacesVector.size()*sizeof(int*)));
+
+        for(int patchi=0; patchi<nPatchFacesVector.size(); patchi++)
+        {
+            std::vector<int> patchFaceRestrictMapVector( agglomeration.patchFaceRestrictAddressing(leveli)[patchi].begin(), 
+                                                         agglomeration.patchFaceRestrictAddressing(leveli)[patchi].end());
+
+            if (patchFaceRestrictMapVector.size() > 0)
+            {
+                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].patchFaceRestrictMap[patchi], patchFaceRestrictMapVector.size()*sizeof(int)));
+                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].patchFaceRestrictMap[patchi], patchFaceRestrictMapVector.data(), 
+                                                patchFaceRestrictMapVector.size()*sizeof(int), cudaMemcpyHostToDevice));
+                checkCudaErrors(cudaMemcpyAsync(&GAMGdata[leveli].d_patchFaceRestrictMap[patchi], &GAMGdata[leveli].patchFaceRestrictMap[patchi], 
+                                                sizeof(int*), cudaMemcpyHostToDevice));
+            }
+        }
+#endif
     }
     std::cout << "======= end in createGPUGAMGMaps =======" << std::endl;
     

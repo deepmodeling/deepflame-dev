@@ -15,6 +15,11 @@ struct GAMGStruct
     std::vector<int> faceRestrictMap;
     std::vector<int> faceFlipMap;   // bool2int
 
+    // === host data for multigpu parallel
+    std::vector<int> interfaceLevel; 
+    std::vector<int> nPatchFaces;
+    int** patchFaceRestrictMap = nullptr;
+
     // === d2h matrix data for verify
     double* h_lower = nullptr;
     double* h_upper = nullptr;
@@ -24,6 +29,9 @@ struct GAMGStruct
     int* d_restrictMap = nullptr;
     int* d_faceRestrictMap = nullptr;
     int* d_faceFlipMap = nullptr;   // bool2int
+
+    // === device map data for multigpu parallel
+    int** d_patchFaceRestrictMap = nullptr;
   
     // === device matrix data
     double* d_lower = nullptr;
