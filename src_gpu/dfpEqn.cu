@@ -616,26 +616,30 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
             }
 
 #ifndef PARALLEL_
-            // Set interface coef data
-            for(int patchi=0; patchi<GAMGdata[leveli].nPatchFaces.size(); patchi++)
+            if (leveli==0)
             {
-                if (GAMGdata[leveli].d_patchFaceRestrictMap[patchi] != nullptr)
+                std::cout << "getInterfacesCoeffs: " << std::endl;
+                getInterfacesCoeffs(dataBase_.stream, dataBase_.num_patches, dataBase_.patch_size, 
+                                    dataBase_.interfaceFlag, dataBase_.patch_type_extropolated.data(), 
+                                    d_boundary_coeffs, d_internal_coeffs, 
+                                    GAMGdata[0].d_interfaceBouCoeffs, GAMGdata[0].d_interfaceIntCoeffs);
+            }
+            else
+            {
+                // Set interface coef data
+                for(int patchi=0; patchi<GAMGdata[leveli].nPatchFaces.size(); patchi++)
                 {
-                    std::cout << "in patch: " << patchi << std::endl;
-                    if(leveli==0)
+                    if (GAMGdata[leveli].d_patchFaceRestrictMap[patchi] != nullptr)
                     {
-                        // error, just test code
-                        // TODO: get interface coef from d_internal_coeffs, d_boundary_coeffs
+                        std::cout << "memset 0 in patch: " << patchi << std::endl;
+
                         checkCudaErrors(cudaMemset(GAMGdata[leveli].d_interfaceBouCoeffs[patchi], 0, GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double)));
                         checkCudaErrors(cudaMemset(GAMGdata[leveli].d_interfaceIntCoeffs[patchi], 0, GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double)));
-                    }
-                    else
-                    {
-                        checkCudaErrors(cudaMemset(GAMGdata[leveli].d_interfaceBouCoeffs[patchi], 0, GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double)));
-                        checkCudaErrors(cudaMemset(GAMGdata[leveli].d_interfaceIntCoeffs[patchi], 0, GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double)));
+                    
                     }
                 }
             }
+
 #endif
         }
 
@@ -1118,3 +1122,51 @@ void dfpEqn::peqn_ldu_to_csr_no_diag
     }
 }
 
+__global__ void kernel_getInterfacesCoeffs
+(
+    const double* d_boundary_coeffs,
+    const double* d_internal_coeffs,
+    double* d_interfaceBouCoeffs,
+    double* d_interfaceIntCoeffs,
+    int interfaceiSize,
+    int offset
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= interfaceiSize)
+        return;
+
+    int interface_index = offset + index;
+    d_interfaceBouCoeffs[index] = d_boundary_coeffs[interface_index];
+    d_interfaceIntCoeffs[index] = d_internal_coeffs[interface_index];
+}
+
+void dfpEqn::getInterfacesCoeffs(
+    cudaStream_t stream, int num_patches, std::vector<int> patch_size, 
+    int *interfaceFlag, int *patch_type, 
+    const double *d_boundary_coeffs, const double *d_internal_coeffs, 
+    double **d_interfaceBouCoeffs, double **d_interfaceIntCoeffs
+){
+    int offset = 0;
+    for (int i = 0; i < num_patches; i++) {
+        if (patch_size[i] == 0) continue;
+        else if (interfaceFlag[i] == 0){
+            (patch_type[i] == boundaryConditions::processor
+                || patch_type[i] == boundaryConditions::processorCyclic) ?
+                offset += 2 * patch_size[i] : offset += patch_size[i];
+            continue;
+        }
+
+        size_t threads_per_block = 1024;
+        size_t blocks_per_grid = (patch_size[i] + threads_per_block - 1) / threads_per_block;
+
+        kernel_getInterfacesCoeffs<<<blocks_per_grid, threads_per_block, 0, stream>>>
+            (d_boundary_coeffs, d_internal_coeffs, d_interfaceBouCoeffs[i], d_interfaceIntCoeffs[i],
+             patch_size[i], offset);
+
+        (patch_type[i] == boundaryConditions::processor
+            || patch_type[i] == boundaryConditions::processorCyclic) ?
+            offset += 2 * patch_size[i] : offset += patch_size[i];
+    }
+
+}
