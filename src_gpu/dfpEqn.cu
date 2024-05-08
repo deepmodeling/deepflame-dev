@@ -618,18 +618,69 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
 #ifndef PARALLEL_
             if (leveli==0)
             {
-                std::cout << "getInterfacesCoeffs: " << std::endl;
                 getInterfacesCoeffs(dataBase_.stream, dataBase_.num_patches, dataBase_.patch_size, 
                                     dataBase_.interfaceFlag, dataBase_.patch_type_extropolated.data(), 
                                     d_boundary_coeffs, d_internal_coeffs, 
                                     GAMGdata[0].d_interfaceBouCoeffs, GAMGdata[0].d_interfaceIntCoeffs);
+
+                bool loadCPUCoeffdata4test = false;
+                if (loadCPUCoeffdata4test){
+                    int mpirank = dataBase_.localRank;
+                    for(int patchi=0; patchi<GAMGdata[leveli].nPatchFaces.size(); patchi++)
+                    {
+                        if (GAMGdata[leveli].nPatchFaces[patchi] > 0)
+                        {
+                            std::stringstream filenameBouCoeff; 
+                            std::stringstream filenameIntCoeff; 
+
+                            filenameBouCoeff << "/root/0427/deepflame-dev/examples/dfLowMachFoam/cvodeIntegrator_64/h_bouCoeff_0_" << patchi << "_" << mpirank << "_Ref.txt";
+                            filenameIntCoeff << "/root/0427/deepflame-dev/examples/dfLowMachFoam/cvodeIntegrator_64/h_intCoeff_0_" << patchi << "_" << mpirank << "_Ref.txt";
+
+                            std::string filename_bouCoeff = filenameBouCoeff.str();
+                            std::string filename_intCoeff = filenameIntCoeff.str();
+
+                            std::vector<double> data_bouCoeff, data_intCoeff;
+
+                            int offset = 0;
+                            std::ifstream file_bouCoeff(filename_bouCoeff);
+                            if (!file_bouCoeff.is_open()) {
+                                    std::cerr << "error open filename_bouCoeff : " << filename_bouCoeff << std::endl;
+                            }
+                            double number_bouCoeff;
+                            while (file_bouCoeff >> std::setprecision(10) >> number_bouCoeff){
+                                if(offset < GAMGdata[leveli].nPatchFaces[patchi]){
+                                    data_bouCoeff.push_back(number_bouCoeff);
+                                }
+                                offset++;
+                            }
+                            file_bouCoeff.close();
+
+                            offset = 0;
+                            std::ifstream file_intCoeff(filename_intCoeff);
+                            if (!file_intCoeff.is_open()) {
+                                    std::cerr << "error open filename_intCoeff : " << filename_intCoeff << std::endl;
+                            }
+                            double number_intCoeff;
+                            while (file_intCoeff >> std::setprecision(10) >> number_intCoeff){
+                                if(offset < GAMGdata[leveli].nPatchFaces[patchi]){
+                                    data_intCoeff.push_back(number_intCoeff);
+                                }
+                                offset++;
+                            }
+                            file_intCoeff.close();
+
+                            cudaMemcpy(GAMGdata[0].d_interfaceBouCoeffs[patchi], &data_bouCoeff[0], sizeof(double)*GAMGdata[leveli].nPatchFaces[patchi], cudaMemcpyHostToDevice);
+                            cudaMemcpy(GAMGdata[0].d_interfaceIntCoeffs[patchi], &data_intCoeff[0], sizeof(double)*GAMGdata[leveli].nPatchFaces[patchi], cudaMemcpyHostToDevice);
+                        }
+                    }
+                }
             }
             else
             {
                 // Set interface coef data
                 for(int patchi=0; patchi<GAMGdata[leveli].nPatchFaces.size(); patchi++)
                 {
-                    if (GAMGdata[leveli].d_patchFaceRestrictMap[patchi] != nullptr)
+                    if (GAMGdata[leveli].nPatchFaces[patchi] > 0)
                     {
                         std::cout << "memset 0 in patch: " << patchi << std::endl;
 
@@ -639,7 +690,6 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
                     }
                 }
             }
-
 #endif
         }
 
@@ -652,23 +702,23 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
         // coarse level ldu to csr
         for(int leveli=0; leveli<agglomeration_level; leveli++)
         {
-            std::cout << "d2hcopy... leveli: " << leveli << std::endl;
-
-            GAMGdata[leveli].h_lower = (double*)malloc(GAMGdata[leveli].nFace*sizeof(double));
-            GAMGdata[leveli].h_upper = (double*)malloc(GAMGdata[leveli].nFace*sizeof(double));
-            GAMGdata[leveli].h_diag  = (double*)malloc(GAMGdata[leveli].nCell*sizeof(double));
-
-            checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].h_lower, GAMGdata[leveli].d_lower, 
-                                            GAMGdata[leveli].nFace*sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream));
-            checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].h_upper, GAMGdata[leveli].d_upper, 
-                                            GAMGdata[leveli].nFace*sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream));
-            checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].h_diag, GAMGdata[leveli].d_diag, 
-                                            GAMGdata[leveli].nCell*sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream));
-            // GAMGdata[leveli].upperAddr,  GAMGdata[leveli].lowerAddr
-
             bool writeData2Files = false;
             if (writeData2Files)
             {
+                std::cout << "d2hcopy... leveli: " << leveli << std::endl;
+
+                GAMGdata[leveli].h_lower = (double*)malloc(GAMGdata[leveli].nFace*sizeof(double));
+                GAMGdata[leveli].h_upper = (double*)malloc(GAMGdata[leveli].nFace*sizeof(double));
+                GAMGdata[leveli].h_diag  = (double*)malloc(GAMGdata[leveli].nCell*sizeof(double));
+
+                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].h_lower, GAMGdata[leveli].d_lower, 
+                                                GAMGdata[leveli].nFace*sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream));
+                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].h_upper, GAMGdata[leveli].d_upper, 
+                                                GAMGdata[leveli].nFace*sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream));
+                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].h_diag, GAMGdata[leveli].d_diag, 
+                                                GAMGdata[leveli].nCell*sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream));
+                // GAMGdata[leveli].upperAddr,  GAMGdata[leveli].lowerAddr
+
                 // write data to file ...
                 std::stringstream s_h_lower;
                 s_h_lower << "h_lower_" << leveli << ".txt";
@@ -687,6 +737,45 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
                 std::string file_name_h_diag = s_h_diag.str();
                 std::vector<double> vectorh_diag(GAMGdata[leveli].h_diag, GAMGdata[leveli].h_diag + GAMGdata[leveli].nCell);
                 write_vector_to_file(vectorh_diag, file_name_h_diag);
+
+#ifndef PARALLEL_
+                int mpirank = dataBase_.localRank;
+
+                GAMGdata[leveli].h_interfaceBouCoeffs = new double*[GAMGdata[leveli].nPatchFaces.size()]();
+                GAMGdata[leveli].h_interfaceIntCoeffs = new double*[GAMGdata[leveli].nPatchFaces.size()]();
+
+                for(int patchi=0; patchi<GAMGdata[leveli].nPatchFaces.size(); patchi++)
+                {
+                    if (GAMGdata[leveli].nPatchFaces[patchi] > 0)
+                    {
+                        GAMGdata[leveli].h_interfaceBouCoeffs[patchi] = (double*) malloc(GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double));
+                        GAMGdata[leveli].h_interfaceIntCoeffs[patchi] = (double*) malloc(GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double));
+
+                        checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].h_interfaceBouCoeffs[patchi], GAMGdata[leveli].d_interfaceBouCoeffs[patchi], 
+                                                        GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream));
+                        checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].h_interfaceIntCoeffs[patchi], GAMGdata[leveli].d_interfaceIntCoeffs[patchi], 
+                                                        GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream));
+                    }
+                }
+
+                for (int patchi=0; patchi<GAMGdata[leveli].nPatchFaces.size(); patchi++)
+                {
+                    if (GAMGdata[leveli].nPatchFaces[patchi] > 0)
+                    {
+                        std::stringstream s_h_bouCoeff;
+                        s_h_bouCoeff << "h_bouCoeff_" << leveli << "_" << patchi << "_" << mpirank  << ".txt";
+                        std::string file_name_h_bouCoeff = s_h_bouCoeff.str();
+                        std::vector<double> vectorh_bouCoeff(GAMGdata[leveli].h_interfaceBouCoeffs[patchi], GAMGdata[leveli].h_interfaceBouCoeffs[patchi] + GAMGdata[leveli].nPatchFaces[patchi]);
+                        write_vector_to_file(vectorh_bouCoeff, file_name_h_bouCoeff);
+
+                        std::stringstream s_h_intCoeff;
+                        s_h_intCoeff << "h_intCoeff_" << leveli << "_" << patchi << "_" << mpirank   << ".txt";
+                        std::string file_name_h_intCoeff = s_h_intCoeff.str();
+                        std::vector<double> vectorh_intCoeff(GAMGdata[leveli].h_interfaceIntCoeffs[patchi], GAMGdata[leveli].h_interfaceIntCoeffs[patchi] + GAMGdata[leveli].nPatchFaces[patchi]);
+                        write_vector_to_file(vectorh_intCoeff, file_name_h_intCoeff);
+                    }
+                }
+#endif
             }
         }
         // endif

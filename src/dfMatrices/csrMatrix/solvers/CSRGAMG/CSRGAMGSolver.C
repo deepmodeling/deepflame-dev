@@ -266,6 +266,28 @@ Foam::CSRGAMGSolver::CSRGAMGSolver
                 std::string file_name_h_diag = s_h_diag.str();
                 std::vector<double> vectorh_diag(matrixLevel(fineLevelIndex).diag().begin(), matrixLevel(fineLevelIndex).diag().end());
                 write_vector_to_file(vectorh_diag, file_name_h_diag);
+
+#ifndef PARALLEL_
+                int mpirank = Pstream::myProcNo();
+
+                for (int patchi=0; patchi<agglomeration_.nPatchFaces(fineLevelIndex).size(); patchi++)
+                {
+                    if (agglomeration_.nPatchFaces(fineLevelIndex)[patchi] > 0)
+                    {
+                        std::stringstream s_h_bouCoeff;
+                        s_h_bouCoeff << "h_bouCoeff_" << fineLevelIndex << "_" << patchi << "_" << mpirank << "_Ref.txt";
+                        std::string file_name_h_bouCoeff = s_h_bouCoeff.str();
+                        std::vector<double> vectorh_bouCoeff(interfaceBouCoeffsLevel(fineLevelIndex)[patchi].begin(), interfaceBouCoeffsLevel(fineLevelIndex)[patchi].end());
+                        write_vector_to_file(vectorh_bouCoeff, file_name_h_bouCoeff);
+
+                        std::stringstream s_h_intCoeff;
+                        s_h_intCoeff << "h_intCoeff_" << fineLevelIndex << "_" << patchi << "_" << mpirank << "_Ref.txt";
+                        std::string file_name_h_intCoeff = s_h_intCoeff.str();
+                        std::vector<double> vectorh_intCoeff(interfaceBouCoeffsLevel(fineLevelIndex)[patchi].begin(), interfaceBouCoeffsLevel(fineLevelIndex)[patchi].end());
+                        write_vector_to_file(vectorh_intCoeff, file_name_h_intCoeff); 
+                    }
+                }
+#endif
             }
         }
     }

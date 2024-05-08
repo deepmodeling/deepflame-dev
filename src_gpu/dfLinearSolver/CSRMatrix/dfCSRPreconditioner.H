@@ -23,6 +23,10 @@ struct GAMGStruct
     double* h_upper = nullptr;
     double* h_diag = nullptr;
 
+    // === d2h interface data for verify
+    double** h_interfaceBouCoeffs = nullptr;
+    double** h_interfaceIntCoeffs = nullptr;
+
     // === device map data
     int* d_restrictMap = nullptr;
     int* d_faceRestrictMap = nullptr;

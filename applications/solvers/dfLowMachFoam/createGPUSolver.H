@@ -759,23 +759,37 @@ void createGPUGAMGMaps(GAMGStruct *GAMGdata, const CSRGAMGAgglomeration& agglome
                                               << ", face: " << GAMGdata[leveli].faceRestrictMap.size() << std::endl;
 
 #ifndef PARALLEL_
-        std::cout << "In Parallel nPatch: " << agglomeration.nPatchFaces(leveli).size() << std::endl;
+        int patchSize = agglomeration.nPatchFaces(0).size();
 
-        std::vector<int> nPatchFacesVector( agglomeration.nPatchFaces(leveli).begin(), 
-                                            agglomeration.nPatchFaces(leveli).end());
+        if(leveli==0)
+        {
+            std::vector<int> nPatchFacesVector( agglomeration.nPatchFaces(leveli).begin(), 
+                                                agglomeration.nPatchFaces(leveli).end());
 
-        GAMGdata[leveli].nPatchFaces = nPatchFacesVector;
+            GAMGdata[leveli].nPatchFaces = nPatchFacesVector;
+        }
+        else
+        {
+            std::vector<int> nPatchFacesVector( agglomeration.nPatchFaces(leveli-1).begin(), 
+                                                agglomeration.nPatchFaces(leveli-1).end());
 
-        GAMGdata[leveli].d_patchFaceRestrictMap = new int*[nPatchFacesVector.size()]();
-        GAMGdata[leveli].d_interfaceBouCoeffs = new double*[nPatchFacesVector.size()]();
-        GAMGdata[leveli].d_interfaceIntCoeffs = new double*[nPatchFacesVector.size()]();
+            GAMGdata[leveli].nPatchFaces = nPatchFacesVector;
+        }
 
-        for(int patchi=0; patchi<nPatchFacesVector.size(); patchi++)
+        GAMGdata[leveli].d_patchFaceRestrictMap = new int*[patchSize]();
+        GAMGdata[leveli].d_interfaceBouCoeffs = new double*[patchSize]();
+        GAMGdata[leveli].d_interfaceIntCoeffs = new double*[patchSize]();
+
+        for(int patchi=0; patchi < patchSize; patchi++)
         {
             std::vector<int> patchFaceRestrictMapVector( agglomeration.patchFaceRestrictAddressing(leveli)[patchi].begin(), 
                                                          agglomeration.patchFaceRestrictAddressing(leveli)[patchi].end());
+            if (leveli == 0)
+            {
+                GAMGdata[leveli].nPatchFaces[patchi] = patchFaceRestrictMapVector.size();
+            }
 
-            if (patchFaceRestrictMapVector.size() > 0)
+            if (GAMGdata[leveli].nPatchFaces[patchi] > 0)
             {
                 checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_patchFaceRestrictMap[patchi], patchFaceRestrictMapVector.size()*sizeof(int)));
                 checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_interfaceBouCoeffs[patchi], patchFaceRestrictMapVector.size()*sizeof(double)));

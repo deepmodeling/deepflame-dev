@@ -811,7 +811,10 @@ __global__ void kernel_restrict
         return;
 
     int mapIndex = d_restrictMap[index];
-    atomicAdd(&coarseField[mapIndex], fineField[index]);
+    if(mapIndex >= 0)
+    {
+        atomicAdd(&coarseField[mapIndex], fineField[index]);
+    }
 }
 
 __global__ void kernel_restrictMatrix

@@ -54,13 +54,10 @@ void GAMGCSRPreconditioner::agglomerateMatrix
 
 #ifndef PARALLEL_
         // agglomerateInterfaceCoefficients
-        std::cout << "In Parallel agglomerateMatrix: " << std::endl;
-
         for(int patchi=0; patchi<GAMGdata_[leveli].nPatchFaces.size(); patchi++)
         {
-            if (GAMGdata_[leveli].d_patchFaceRestrictMap[patchi] != nullptr)
+            if (GAMGdata_[leveli].nPatchFaces[patchi] > 0)
             {
-                std::cout << "in patch" << std::endl;
                 restrictFieldGPU(dataBase.stream, GAMGdata_[leveli].nPatchFaces[patchi], 
                                 GAMGdata_[leveli].d_patchFaceRestrictMap[patchi], 
                                 GAMGdata_[leveli].d_interfaceBouCoeffs[patchi], 
