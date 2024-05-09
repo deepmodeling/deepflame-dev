@@ -33,6 +33,7 @@ struct GAMGStruct
     int* d_faceFlipMap = nullptr;   // bool2int
 
     // === device data for multigpu parallel
+    int** d_faceCells = nullptr;
     int** d_patchFaceRestrictMap = nullptr;
     double** d_interfaceBouCoeffs = nullptr;
     double** d_interfaceIntCoeffs = nullptr;
