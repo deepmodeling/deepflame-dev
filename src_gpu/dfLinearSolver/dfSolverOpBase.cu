@@ -1053,3 +1053,112 @@ void directSolve1x1GPU(cudaStream_t stream, int nCells,
         (nCells, d_diag, d_corrField, d_sourceField);
     checkCudaErrors(cudaStreamSynchronize(stream));
 }
+
+__global__ void kernel_addInternalInterfaceCoeffs
+(
+    int num, 
+    const double* interfaceIntCoeffs, 
+    int* face2Cells, 
+    double* diag
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= num)
+        return;
+
+    int cellIndex = face2Cells[index];
+    diag[cellIndex] += interfaceIntCoeffs[index];
+}
+
+__global__ void kernel_initMatrixInterfacesCoeffs
+(
+    double* input, 
+    int interfaceiSize,
+    double* scalarSendBufList_,
+    int* face2Cells
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= interfaceiSize)
+        return;
+
+    int cellIndex = face2Cells[index];
+    scalarSendBufList_[index] = input[cellIndex];
+}
+
+__global__ void kernel_updateMatrixInterfacesCoeffs
+(
+    const double* interfaceBouCoeffs,
+    int interfaceiSize,
+    double* scalarRecvBufList_,
+    int* face2Cells,
+    double* output
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= interfaceiSize)
+        return;
+
+    int cellIndex = face2Cells[index];
+    output[cellIndex] -= interfaceBouCoeffs[index] * scalarRecvBufList_[index];
+}
+
+void AmulGPU(const dfMatrixDataBase& dataBase, double* result, double* input,
+            double* diag, double* off_diag_value,
+            int* csr_row_index_no_diag, int* csr_col_index_no_diag, 
+            double** interfaceIntCoeffs, double** interfaceBouCoeffs,
+            int** faceCells, std::vector<int> nPatchFaces, int nCells)
+{
+    // --- addInternalInterfaceCoeffs ---
+    addInternalInterfaceCoeffs(dataBase.stream, nPatchFaces, interfaceIntCoeffs, faceCells, diag);
+
+    // --- SpMV ---
+    SpMV4CSR(dataBase.stream, nCells, diag, off_diag_value, csr_row_index_no_diag, csr_col_index_no_diag, input, result); 
+
+#ifdef PARALLEL_      
+    // --- initMatrixInterfaces & updateMatrixInterfaces ---
+    updateMatrixInterfaceCoeffs(
+        dataBase.stream, dataBase.neighbProcNo, dataBase.nccl_comm,
+        nPatchFaces, input, result, 
+        scalarSendBufList_, scalarRecvBufList_,
+        interfaceBouCoeffs, faceCells);
+#endif
+}
+
+void addInternalInterfaceCoeffs(
+        cudaStream_t stream, std::vector<int> patchSize, 
+        double **interfaceIntCoeffs, int **boundaryFaceCell, double *diag) 
+{
+    for (int patchi = 0; patchi < patchSize.size(); patchi++) 
+    {
+        size_t threads_per_block = 1024;
+        size_t blocks_per_grid = (patchSize[patchi] + threads_per_block - 1) / threads_per_block;
+
+        kernel_addInternalInterfaceCoeffs<<<blocks_per_grid, threads_per_block, 0, stream>>>
+            (patchSize[patchi], interfaceIntCoeffs[patchi], boundaryFaceCell[patchi], diag);
+    }
+}
+
+void updateMatrixInterfaceCoeffs(
+    cudaStream_t stream, std::vector<int> neighbProcNo,  ncclComm_t nccl_comm,
+    std::vector<int> patchSize, double *input, double *output, 
+    double *scalarSendBufList_, double *scalarRecvBufList_,
+    double **interfaceBouCoeffs, int **boundaryFaceCell)
+{
+    for (int patchi = 0; patchi < patchSize.size(); patchi++) 
+    {
+        size_t threads_per_block = 1024;
+        size_t blocks_per_grid = (patchSize[patchi] + threads_per_block - 1) / threads_per_block;
+
+        kernel_initMatrixInterfacesCoeffs<<<blocks_per_grid, threads_per_block, 0, stream>>>
+            (input, patchSize[patchi], scalarSendBufList_, boundaryFaceCell[patchi]);
+
+        ncclGroupStart();
+        ncclSend(scalarSendBufList_, patchSize[patchi], ncclDouble, neighbProcNo[patchi], nccl_comm, stream);
+        ncclRecv(scalarRecvBufList_, patchSize[patchi], ncclDouble, neighbProcNo[patchi], nccl_comm, stream);
+        ncclGroupEnd();
+
+        kernel_updateMatrixInterfacesCoeffs<<<blocks_per_grid, threads_per_block, 0, stream>>>
+            (interfaceBouCoeffs[patchi], patchSize[patchi], scalarRecvBufList_, boundaryFaceCell[patchi], output);
+    }
+}

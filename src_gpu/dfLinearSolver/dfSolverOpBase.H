@@ -2,6 +2,7 @@
 #include <cuda_runtime.h>
 #include <nccl.h>
 #include <vector>
+#include "dfMatrixDataBase.H"
 
 using std::min;
 using std::max;
@@ -107,3 +108,19 @@ void updateCorrFieldGPU(cudaStream_t stream, int nCells,
 
 void directSolve1x1GPU(cudaStream_t stream, int nCells, 
                         double* d_diag, double* d_corrField, double* d_sourceField);
+
+void AmulGPU(const dfMatrixDataBase& dataBase, double* result, double* input,
+            double* diag, double* off_diag_value,
+            int* csr_row_index_no_diag, int* csr_col_index_no_diag, 
+            double** interfaceIntCoeffs, double** interfaceBouCoeffs,
+            int** faceCells, std::vector<int> nPatchFaces, int nCells);
+
+void addInternalInterfaceCoeffs(
+        cudaStream_t stream, std::vector<int> patchSize, 
+        double **interfaceIntCoeffs, int **boundaryFaceCell, double *diag);
+
+void updateMatrixInterfaceCoeffs(
+    cudaStream_t stream, std::vector<int> neighbProcNo,  ncclComm_t nccl_comm,
+    std::vector<int> patchSize, double *input, double *output, 
+    double *scalarSendBufList_, double *scalarRecvBufList_,
+    double **interfaceBouCoeffs, int **boundaryFaceCell);
