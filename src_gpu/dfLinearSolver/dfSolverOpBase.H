@@ -94,14 +94,20 @@ void restrictMatrixGPU(cudaStream_t stream, int nFineFaces, int* d_faceRestrictM
 void prolongFieldGPU(cudaStream_t stream, int nFineCells, int* d_restrictMap, 
                         double* d_fineField, double* d_coarseField);
 
-void scaleFieldGPU( cudaStream_t stream, ncclComm_t nccl_comm,int nCells, 
-                    double* reduce_result,
-                    double* d_Field, double* d_Source, 
-                    double* d_AcfField, double* d_diag,
+void scaleFieldGPU( const dfMatrixDataBase& dataBase,int nCells, 
+                    double* d_Field, double* d_Source, double* d_AcfField, 
+                    double* diag, double* off_diag_value,
+                    int* csr_row_index_no_diag, int* csr_col_index_no_diag, 
+                    double** interfaceIntCoeffs, double** interfaceBouCoeffs,
+                    int** faceCells, std::vector<int> nPatchFaces, 
                     double* d_scalingFactorNum, double* d_scalingFactorDenom );
 
-void updateSourceFieldGPU(cudaStream_t stream, int nCells, 
-                        double* d_Field, double* d_AcfField);
+void updateSourceFieldGPU(const dfMatrixDataBase& dataBase, int nCells, 
+                        double* d_Sources, double* d_AcfField, double* d_CorrFields,
+                        double* diag, double* off_diag_value,
+                        int* csr_row_index_no_diag, int* csr_col_index_no_diag, 
+                        double** interfaceIntCoeffs, double** interfaceBouCoeffs,
+                        int** faceCells, std::vector<int> nPatchFaces);
 
 void updateCorrFieldGPU(cudaStream_t stream, int nCells, 
                         double* d_Field, double* d_preSmoothField);
@@ -124,3 +130,11 @@ void updateMatrixInterfaceCoeffs(
     std::vector<int> patchSize, double *input, double *output, 
     double *scalarSendBufList_, double *scalarRecvBufList_,
     double **interfaceBouCoeffs, int **boundaryFaceCell);
+
+void interpolateFieldGPU(const dfMatrixDataBase& dataBase, int nCells, int nCCells, 
+                    double* psi, double* Apsi, 
+                    double* diag, double* off_diag_value,
+                    int* csr_row_index_no_diag, int* csr_col_index_no_diag,  
+                    double** interfaceIntCoeffs, double** interfaceBouCoeffs, 
+                    int** faceCells, std::vector<int> nPatchFaces,
+                    int* restrictAddressing, double* psiC);

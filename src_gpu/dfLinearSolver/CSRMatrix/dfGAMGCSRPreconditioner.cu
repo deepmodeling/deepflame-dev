@@ -15,15 +15,15 @@ void GAMGCSRPreconditioner::initialize
         // matrix data                                      
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_lower, GAMGdata[leveli].nFace * sizeof(double)));
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_upper, GAMGdata[leveli].nFace * sizeof(double)));
-        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_diag, GAMGdata[leveli].nCell * sizeof(double)));       
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_diag,  GAMGdata[leveli].nCell * sizeof(double)));       
 
         // iteration data
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_CorrFields, GAMGdata[leveli].nCell*sizeof(double)));
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_Sources,    GAMGdata[leveli].nCell*sizeof(double)));
 
         // temp data for reduce
-        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_AcfField,   GAMGdata[leveli].nCell*sizeof(double)));
-        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_preSmoothField,   GAMGdata[leveli].nCell*sizeof(double)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_AcfField,           GAMGdata[leveli].nCell*sizeof(double)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_preSmoothField,     GAMGdata[leveli].nCell*sizeof(double)));
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_scalingFactorNum,   GAMGdata[leveli].nCell*sizeof(double)));
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_scalingFactorDenom, GAMGdata[leveli].nCell*sizeof(double)));
     }
@@ -80,6 +80,9 @@ void GAMGCSRPreconditioner::fine2coarse
     int startLevel, int endLevel
 )
 {
+    bool scaleCorrection = false;
+    bool ldu2csrDone = false; // delete after finish ldu2csr
+
     std::cout << "   ****** call in GAMGCSRPreconditioner::fine2coarse " << std::endl;
     for(int leveli=startLevel; leveli<endLevel; leveli++)
     {
@@ -99,14 +102,25 @@ void GAMGCSRPreconditioner::fine2coarse
         if (leveli < endLevel - 1)
         {
             //Purpose: scale d_CorrFields leveli+1, if (matrix.symmetric())
-            //TODO: add scale here, (need calc Acf in scale) 
+            if (scaleCorrection) 
+            {
+                scaleFieldGPU( dataBase, GAMGdata_[leveli+1].nCell, 
+                    GAMGdata_[leveli+1].d_CorrFields, GAMGdata_[leveli+1].d_Sources, GAMGdata_[leveli+1].d_AcfField, 
+                    GAMGdata_[leveli+1].d_diag, GAMGdata_[leveli+1].d_off_diag_value,
+                    GAMGdata_[leveli+1].d_csr_row_index_no_diag, GAMGdata_[leveli+1].d_csr_col_index_no_diag, 
+                    GAMGdata_[leveli+1].d_interfaceIntCoeffs, GAMGdata_[leveli+1].d_interfaceBouCoeffs,
+                    GAMGdata_[leveli+1].d_faceCells, GAMGdata_[leveli+1].nPatchFaces, 
+                    GAMGdata_[leveli+1].d_scalingFactorNum, GAMGdata_[leveli+1].d_scalingFactorDenom );
+            }
 
-            //Purpose: spmv to get Acf = A * Corr
-            //TODO: add Amul to get Acf
-
-            //Purpose: GAMGdata_[leveli+1].d_Sources -= Acf
-            updateSourceFieldGPU( dataBase.stream, GAMGdata_[leveli+1].nCell, 
-                                  GAMGdata_[leveli+1].d_Sources, GAMGdata_[leveli+1].d_AcfField);
+            //Purpose: get Acf = A * Corr & GAMGdata_[leveli+1].d_Sources -= Acf
+            if (ldu2csrDone) // delete after finish ldu2csr
+            updateSourceFieldGPU( dataBase, GAMGdata_[leveli+1].nCell, 
+                                GAMGdata_[leveli+1].d_Sources, GAMGdata_[leveli+1].d_AcfField, GAMGdata_[leveli+1].d_CorrFields,
+                                GAMGdata_[leveli+1].d_diag, GAMGdata_[leveli+1].d_off_diag_value, 
+                                GAMGdata_[leveli+1].d_csr_row_index_no_diag, GAMGdata_[leveli+1].d_csr_col_index_no_diag, 
+                                GAMGdata_[leveli+1].d_interfaceIntCoeffs, GAMGdata_[leveli+1].d_interfaceBouCoeffs,
+                                GAMGdata_[leveli+1].d_faceCells, GAMGdata_[leveli+1].nPatchFaces);
         }    
     }
 };
@@ -118,6 +132,9 @@ void GAMGCSRPreconditioner::coarse2fine
     int startLevel, int endLevel
 )
 {
+    bool interpolateCorrection = false;
+    bool scaleCorrection = false;
+
     std::cout << "   ****** call in GAMGCSRPreconditioner::coarse2fine " << std::endl;
     for(int leveli=startLevel; leveli>endLevel; leveli--)
     {
@@ -131,11 +148,29 @@ void GAMGCSRPreconditioner::coarse2fine
         prolongFieldGPU(dataBase.stream, GAMGdata_[leveli-1].nCell, 
                         GAMGdata_[leveli-1].d_restrictMap, 
                         GAMGdata_[leveli-1].d_CorrFields, GAMGdata_[leveli].d_CorrFields);
+        
+        if (interpolateCorrection)
+        {
+            //Purpose: interpolate correctionField for next level (leveli-1)
+            interpolateFieldGPU(dataBase, GAMGdata_[leveli-1].nCell, GAMGdata_[leveli].nCell, 
+                    GAMGdata_[leveli-1].d_CorrFields, GAMGdata_[leveli-1].d_AcfField, 
+                    GAMGdata_[leveli-1].d_diag, GAMGdata_[leveli-1].d_off_diag_value,
+                    GAMGdata_[leveli-1].d_csr_row_index_no_diag, GAMGdata_[leveli-1].d_csr_col_index_no_diag,  
+                    GAMGdata_[leveli-1].d_interfaceIntCoeffs, GAMGdata_[leveli-1].d_interfaceBouCoeffs, 
+                    GAMGdata_[leveli-1].d_faceCells, GAMGdata_[leveli-1].nPatchFaces,
+                    GAMGdata_[leveli-1].d_restrictMap, GAMGdata_[leveli].d_CorrFields);
+        }
 
-        if (leveli < startLevel - 1)
+        if (leveli < startLevel - 1 && scaleCorrection)
         {
             //Purpose: scale d_CorrFields leveli-1, if (matrix.symmetric())
-            //TODO: add scale here
+            scaleFieldGPU( dataBase, GAMGdata_[leveli-1].nCell, 
+                GAMGdata_[leveli-1].d_CorrFields, GAMGdata_[leveli-1].d_Sources, GAMGdata_[leveli-1].d_AcfField, 
+                GAMGdata_[leveli-1].d_diag, GAMGdata_[leveli-1].d_off_diag_value,
+                GAMGdata_[leveli-1].d_csr_row_index_no_diag, GAMGdata_[leveli-1].d_csr_col_index_no_diag, 
+                GAMGdata_[leveli-1].d_interfaceIntCoeffs, GAMGdata_[leveli-1].d_interfaceBouCoeffs,
+                GAMGdata_[leveli-1].d_faceCells, GAMGdata_[leveli-1].nPatchFaces, 
+                GAMGdata_[leveli-1].d_scalingFactorNum, GAMGdata_[leveli-1].d_scalingFactorDenom );
         }
         
         if (leveli > endLevel + 1)
@@ -200,34 +235,40 @@ void GAMGCSRPreconditioner::precondition
     GAMGStruct *GAMGdata_, int agglomeration_level
 )
 {
+    bool ldu2csrDone = false; // delete after finish ldu2csr
+
     std::cout << "******************************************************" << std::endl;
     std::cout << "********* call in GAMGCSRPreconditioner::precondition " << std::endl;
-
-    // wA = 0.0;
-    checkCudaErrors(cudaMemset(psi, 0, GAMGdata_[0].nCell*sizeof(double)));
 
     //TODO: get nVcycles from control files
     int nVcycles_ = 1; 
 
-    // set GAMGdata_[0].d_Sources
+    // Purpose: wA = 0.0;
+    checkCudaErrors(cudaMemset(psi, 0, GAMGdata_[0].nCell*sizeof(double)));
+
+    // Purpose: set GAMGdata_[0].d_Sources
     checkCudaErrors(cudaMemcpyAsync(GAMGdata_[0].d_Sources, finestResidual, GAMGdata_[0].nCell*sizeof(double), cudaMemcpyDeviceToDevice, dataBase.stream));
 
     for (int cycle=0; cycle<nVcycles_; cycle++)
     {
-        // start Vcycle
+        // Purpose: do Vcycle calculation
         Vcycle(dataBase, GAMGdata_, agglomeration_level);
 
-        // use GAMGdata_[0].d_CorrFields to update psi
+        // Purpose: use GAMGdata_[0].d_CorrFields to update psi
         updateCorrFieldGPU( dataBase.stream, GAMGdata_[0].nCell, psi, GAMGdata_[0].d_CorrFields);
 
         //TODO: add smoother for leveli=0, nFinestSweeps_
 
         if (cycle < nVcycles_-1)
         {
-            // TODO: Calculate finest level residual field to update finestResidual
-            // matrix_.Amul(AwA, wA, interfaceBouCoeffs_, interfaces_, cmpt);
-
-            updateSourceFieldGPU(dataBase.stream, GAMGdata_[0].nCell, GAMGdata_[0].d_Sources, GAMGdata_[0].d_AcfField);
+            // Purpose: Calculate finest level residual field to update finestResidual
+            if (ldu2csrDone) // delete after finish ldu2csr
+            updateSourceFieldGPU( dataBase, GAMGdata_[0].nCell, 
+                                GAMGdata_[0].d_Sources, GAMGdata_[0].d_AcfField, GAMGdata_[0].d_CorrFields,
+                                GAMGdata_[0].d_diag, GAMGdata_[0].d_off_diag_value, 
+                                GAMGdata_[0].d_csr_row_index_no_diag, GAMGdata_[0].d_csr_col_index_no_diag, 
+                                GAMGdata_[0].d_interfaceIntCoeffs, GAMGdata_[0].d_interfaceBouCoeffs,
+                                GAMGdata_[0].d_faceCells, GAMGdata_[0].nPatchFaces);
         }
     }
     std::cout << "********** end in GAMGCSRPreconditioner::precondition " << std::endl;
