@@ -112,8 +112,12 @@ void updateSourceFieldGPU(const dfMatrixDataBase& dataBase, int nCells,
 void updateCorrFieldGPU(cudaStream_t stream, int nCells, 
                         double* d_Field, double* d_preSmoothField);
 
-void directSolve1x1GPU(cudaStream_t stream, int nCells, 
+void directSolve1x1GPU(cudaStream_t stream, 
                         double* d_diag, double* d_corrField, double* d_sourceField);
+                        
+void directSolve4x4GPU(cudaStream_t stream, 
+                        double* d_diag, double* d_upper, double* d_lower, 
+                        double* d_corrField, double* d_sourceField);
 
 void AmulGPU(const dfMatrixDataBase& dataBase, double* result, double* input,
             double* diag, double* off_diag_value,

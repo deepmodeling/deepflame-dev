@@ -922,7 +922,6 @@ __global__ void kernel_updateCorr
 
 __global__ void kernel_directSolve1x1
 (
-    int nCells,
     double* d_diag, double* d_corr, double* d_source
 )
 {
@@ -1056,11 +1055,11 @@ void updateCorrFieldGPU(cudaStream_t stream, int nCells,
     checkCudaErrors(cudaStreamSynchronize(stream));
 }
 
-void directSolve1x1GPU(cudaStream_t stream, int nCells, 
+void directSolve1x1GPU(cudaStream_t stream, 
                         double* d_diag, double* d_corrField, double* d_sourceField)
 {
     kernel_directSolve1x1<<<1, 1, 0, stream>>>
-        (nCells, d_diag, d_corrField, d_sourceField);
+        (d_diag, d_corrField, d_sourceField);
     checkCudaErrors(cudaStreamSynchronize(stream));
 }
 
@@ -1272,4 +1271,99 @@ void interpolateFieldGPU(const dfMatrixDataBase& dataBase, int nCells, int nCCel
 
     checkCudaErrors(cudaFreeAsync(corrC, dataBase.stream));
     checkCudaErrors(cudaFreeAsync(diagC, dataBase.stream));
+}
+
+// gaussianElimination4by4 using ldu matrix
+__global__ void gaussianElimination4by4(double* diag, double* upper, double* lower,
+                                        double* x, double* b)
+{
+    // ldu to standard matrix (need check)
+    // upper:
+    //                     E[1][0] = upper[0], E[2][0] = upper[1], E[3][0] = upper[2]
+    //                                         E[2][1] = upper[3], E[3][1] = upper[4]
+    //                                                             E[3][2] = upper[5]
+    // lower:
+    // E[0][1] = lower[0]
+    // E[0][2] = lower[1], E[1][2] = lower[2]
+    // E[0][3] = lower[3], E[1][3] = lower[4], E[2][3] = lower[5]
+
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index == 0) 
+    { 
+        double pivot, ratio, tmp;
+        
+        // j=0
+        pivot    = diag[0];
+        // k=1
+        ratio    = upper[0] / pivot;
+        b[1]     = b[1] - b[0] * ratio;
+        diag[1]  = diag[1] - lower[0] * ratio;
+        lower[2] = lower[2] - lower[1] * ratio;
+        lower[4] = lower[4] - lower[3] * ratio;
+        // k=2
+        ratio    = upper[1] / pivot;
+        b[2]     = b[2] - b[0] * ratio;
+        upper[3] = upper[3] - lower[0] * ratio;
+        diag[2]  = diag[2] - lower[1] * ratio;
+        lower[5] = lower[5] - lower[3] * ratio;
+        //k=3
+        ratio    = upper[2] / pivot;
+        b[3]     = b[3] - b[0] * ratio;
+        upper[4] = upper[4] - lower[0] * ratio;
+        upper[5] = upper[4] - lower[1] * ratio;
+        diag[3]  = upper[4] - lower[3] * ratio;
+        // j=1
+        pivot    = diag[1];
+        // k=2
+        ratio    = upper[3] / pivot;
+        b[2]     = b[2] - b[1] * ratio;
+        diag[2]  = diag[2] - lower[2] * ratio;
+        lower[5] = lower[5] - lower[4] * ratio;
+        // k=3
+        ratio    = upper[4] / pivot;
+        b[3]     = b[3] - b[1] * ratio;
+        upper[5] = upper[5] - lower[2] * ratio;
+        diag[3]  = diag[3] - lower[4] * ratio;
+        // j=2
+        pivot    = diag[2];
+        // k=3
+        ratio    = upper[5] / pivot;
+        b[3]     = b[3] - b[2] * ratio;
+        diag[3]  = diag[3] - lower[5] * ratio;
+
+        // back substitution
+        x[3] = b[3] / diag[3];
+        tmp  = lower[5] * x[3];
+        x[2] = (b[2] - tmp) / diag[2];
+        tmp  = lower[2] * x[2] + lower[4] * x[3];
+        x[1] = (b[1] - tmp) / diag[1];
+        tmp  = lower[0] * x[1] + lower[1] * x[2] + lower[3] * x[3];
+        x[0] = (b[0] - tmp) / diag[0];
+    }
+}
+
+void directSolve4x4GPU(cudaStream_t stream, 
+                        double* d_diag, double* d_upper, double* d_lower, 
+                        double* d_corrField, double* d_sourceField)
+{
+    double *diag_tmp, *upper_tmp, *lower_tmp, *source_tmp;
+
+    checkCudaErrors(cudaMalloc(&source_tmp,  4*sizeof(double)));
+    checkCudaErrors(cudaMalloc(&diag_tmp,    4*sizeof(double)));
+    checkCudaErrors(cudaMalloc(&upper_tmp,   5*sizeof(double)));
+    checkCudaErrors(cudaMalloc(&lower_tmp,   5*sizeof(double)));
+
+    checkCudaErrors(cudaMemcpyAsync(source_tmp,  d_sourceField,  4*sizeof(double), cudaMemcpyDeviceToDevice, stream));
+    checkCudaErrors(cudaMemcpyAsync(diag_tmp,    d_diag,  4*sizeof(double), cudaMemcpyDeviceToDevice, stream));
+    checkCudaErrors(cudaMemcpyAsync(upper_tmp,   d_upper, 5*sizeof(double), cudaMemcpyDeviceToDevice, stream));
+    checkCudaErrors(cudaMemcpyAsync(lower_tmp,   d_lower, 5*sizeof(double), cudaMemcpyDeviceToDevice, stream));
+
+    gaussianElimination4by4<<<1, 1, 0, stream>>>
+        (diag_tmp, upper_tmp, lower_tmp, d_corrField, source_tmp);
+    checkCudaErrors(cudaStreamSynchronize(stream));
+
+    checkCudaErrors(cudaFreeAsync(source_tmp, stream));
+    checkCudaErrors(cudaFreeAsync(diag_tmp, stream));
+    checkCudaErrors(cudaFreeAsync(upper_tmp, stream));
+    checkCudaErrors(cudaFreeAsync(lower_tmp, stream));
 }

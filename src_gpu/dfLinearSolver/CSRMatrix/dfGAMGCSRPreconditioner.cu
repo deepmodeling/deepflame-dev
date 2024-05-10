@@ -226,7 +226,7 @@ void GAMGCSRPreconditioner::directSolveCoarsest
         if (GAMGdata_[agglomeration_level-1].nCell == 1)
         {
             //directSolve1x1
-            directSolve1x1GPU(dataBase.stream, GAMGdata_[agglomeration_level-1].nCell, 
+            directSolve1x1GPU(dataBase.stream, 
                                 GAMGdata_[agglomeration_level-1].d_diag, 
                                 GAMGdata_[agglomeration_level-1].d_CorrFields, 
                                 GAMGdata_[agglomeration_level-1].d_Sources);
@@ -234,6 +234,12 @@ void GAMGCSRPreconditioner::directSolveCoarsest
         else if (GAMGdata_[agglomeration_level-1].nCell == 4)
         {
             //directSolve4x4
+            directSolve4x4GPU(dataBase.stream, 
+                        GAMGdata_[agglomeration_level-1].d_diag, 
+                        GAMGdata_[agglomeration_level-1].d_upper, 
+                        GAMGdata_[agglomeration_level-1].d_lower, 
+                        GAMGdata_[agglomeration_level-1].d_CorrFields, 
+                        GAMGdata_[agglomeration_level-1].d_Sources);
         }
         else
         {
