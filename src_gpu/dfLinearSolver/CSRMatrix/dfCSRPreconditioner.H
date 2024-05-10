@@ -105,5 +105,7 @@ public:
     virtual void directSolveCoarsest(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level);
 
     virtual void Vcycle(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level);
+
+    virtual void freeInitialize(GAMGStruct *GAMGdata, int agglomeration_level);
 };
 

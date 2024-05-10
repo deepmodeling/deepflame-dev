@@ -1269,4 +1269,7 @@ void interpolateFieldGPU(const dfMatrixDataBase& dataBase, int nCells, int nCCel
     kernel_interpolateFineLevel<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
         (nCells, restrictAddressing, psi, corrC);
     checkCudaErrors(cudaStreamSynchronize(dataBase.stream));
+
+    checkCudaErrors(cudaFreeAsync(corrC, dataBase.stream));
+    checkCudaErrors(cudaFreeAsync(diagC, dataBase.stream));
 }

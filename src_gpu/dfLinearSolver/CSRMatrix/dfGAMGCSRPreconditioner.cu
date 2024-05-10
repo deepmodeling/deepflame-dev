@@ -31,6 +31,34 @@ void GAMGCSRPreconditioner::initialize
     std::cout << "*********************************************************** " << std::endl;
 };
 
+void GAMGCSRPreconditioner::freeInitialize
+(
+    GAMGStruct *GAMGdata, int agglomeration_level
+)
+{
+    std::cout << "*** call in GAMGCSRPreconditioner::initialize(): init Vcycle " << std::endl;
+    for(int leveli=0; leveli<agglomeration_level; leveli++)
+    {
+        std::cout << "   malloc leveli: " << leveli << std::endl;
+        // matrix data                                      
+        checkCudaErrors(cudaFree(GAMGdata[leveli].d_lower));
+        checkCudaErrors(cudaFree(GAMGdata[leveli].d_upper));
+        checkCudaErrors(cudaFree(GAMGdata[leveli].d_diag));       
+
+        // iteration data
+        checkCudaErrors(cudaFree(GAMGdata[leveli].d_CorrFields));
+        checkCudaErrors(cudaFree(GAMGdata[leveli].d_Sources));
+
+        // temp data for reduce
+        checkCudaErrors(cudaFree(GAMGdata[leveli].d_AcfField));
+        checkCudaErrors(cudaFree(GAMGdata[leveli].d_preSmoothField));
+        checkCudaErrors(cudaFree(GAMGdata[leveli].d_scalingFactorNum));
+        checkCudaErrors(cudaFree(GAMGdata[leveli].d_scalingFactorDenom));
+    }
+    std::cout << "*** end in GAMGCSRPreconditioner::initialize(): init Vcycle " << std::endl;
+    std::cout << "*********************************************************** " << std::endl;
+};
+
 void GAMGCSRPreconditioner::agglomerateMatrix
 (
     const dfMatrixDataBase& dataBase,
