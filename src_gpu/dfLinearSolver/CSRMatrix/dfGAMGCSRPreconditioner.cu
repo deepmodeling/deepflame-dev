@@ -261,6 +261,62 @@ void GAMGCSRPreconditioner::Vcycle
     coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 0);
 };
 
+void GAMGCSRPreconditioner::Wcycle
+(
+    const dfMatrixDataBase& dataBase,
+    GAMGStruct *GAMGdata_, int agglomeration_level
+)
+{
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 0, agglomeration_level-1);
+
+    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
+
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, agglomeration_level-2);
+
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-2, agglomeration_level-1);
+
+    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
+
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 1);
+
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 1, agglomeration_level-1);
+
+    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
+
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, agglomeration_level-2);
+
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-2, agglomeration_level-1);
+
+    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
+
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 0);
+};
+
+void GAMGCSRPreconditioner::Fcycle
+(
+    const dfMatrixDataBase& dataBase,
+    GAMGStruct *GAMGdata_, int agglomeration_level
+)
+{
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 0, agglomeration_level-1);
+
+    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
+
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, agglomeration_level-2);
+
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-2, agglomeration_level-1);
+
+    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
+
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 1);
+
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 1, agglomeration_level-1);
+
+    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
+
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 0);
+};
+
 void GAMGCSRPreconditioner::precondition
 (
     double *psi,
