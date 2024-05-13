@@ -811,7 +811,10 @@ __global__ void kernel_restrict
         return;
 
     int mapIndex = d_restrictMap[index];
-    atomicAdd(&coarseField[mapIndex], fineField[index]);
+    if(mapIndex >= 0)
+    {
+        atomicAdd(&coarseField[mapIndex], fineField[index]);
+    }
 }
 
 __global__ void kernel_restrictMatrix
@@ -846,6 +849,89 @@ __global__ void kernel_restrictMatrix
     }
 }
 
+__global__ void kernel_prolong
+(
+    int nFineCells,
+    int* d_restrictMap,
+    double* fineField,
+    double* coarseField
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= nFineCells)
+        return;
+
+    int mapIndex = d_restrictMap[index];
+    fineField[index] = coarseField[mapIndex];
+}
+
+__global__ void kernel_calcNumDenom
+(
+    int nCells,
+    double* field, double* source, double* Acf,
+    double* scalingFactorNum, double* scalingFactorDenom
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= nCells)
+        return;
+    
+    scalingFactorNum[index] = source[index] * field[index];
+    scalingFactorDenom[index] = Acf[index] * field[index];
+}
+
+__global__ void kernel_scale
+(
+    int nCells, double scalingFactor,
+    double* field, double* source, double* Acf, double* diag
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= nCells)
+        return;
+    
+    field[index] = scalingFactor*field[index] 
+                    + (source[index] - scalingFactor*Acf[index]) / diag[index];
+}
+
+__global__ void kernel_updateSource
+(
+    int nCells,
+    double* field, double* Acf
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= nCells)
+        return;
+    
+    atomicAdd(&field[index], -Acf[index]);
+}
+
+__global__ void kernel_updateCorr
+(
+    int nCells,
+    double* field, double* preSmooth
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= nCells)
+        return;
+    
+    atomicAdd(&field[index], preSmooth[index]);
+}
+
+__global__ void kernel_directSolve1x1
+(
+    double* d_diag, double* d_corr, double* d_source
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index == 0) 
+    { 
+        d_corr[index] = d_source[index] / d_diag[index]; 
+    }
+}
+
 void restrictFieldGPU(cudaStream_t stream, int nFineCells, int* d_restrictMap, 
                         double* d_fineField, double* d_coarseField)
 {
@@ -869,4 +955,415 @@ void restrictMatrixGPU(cudaStream_t stream, int nFineFaces, int* d_faceRestrictM
         (nFineFaces, d_faceRestrictMap, d_faceFlipMap, d_fineUpper, d_fineLower, 
         d_coarseUpper, d_coarseLower, d_coarseDiag);
     checkCudaErrors(cudaStreamSynchronize(stream));
+}
+
+void prolongFieldGPU(cudaStream_t stream, int nFineCells, int* d_restrictMap, 
+                        double* d_fineField, double* d_coarseField)
+{
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (nFineCells + threads_per_block - 1) / threads_per_block;
+
+    kernel_prolong<<<blocks_per_grid, threads_per_block, 0, stream>>>
+        (nFineCells, d_restrictMap, d_fineField, d_coarseField);
+    checkCudaErrors(cudaStreamSynchronize(stream));
+}
+
+void scaleFieldGPU( const dfMatrixDataBase& dataBase, int nCells, 
+                    double* d_Field, double* d_Source, double* d_AcfField, 
+                    double* diag, double* off_diag_value,
+                    int* csr_row_index_no_diag, int* csr_col_index_no_diag, 
+                    double** interfaceIntCoeffs, double** interfaceBouCoeffs,
+                    int** faceCells, std::vector<int> nPatchFaces, 
+                    double* d_scalingFactorNum, double* d_scalingFactorDenom )
+{
+    double* reduce_result;
+
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
+
+    //Purpose: A.Amul get Acf
+    AmulGPU(dataBase, d_AcfField, d_Field,
+            diag, off_diag_value, csr_row_index_no_diag, csr_col_index_no_diag, 
+            interfaceIntCoeffs, interfaceBouCoeffs,
+            faceCells, nPatchFaces, nCells);
+
+    double scalingFactor = 0.0;
+    double sum_scalingFactorNum = 0.0, sum_scalingFactorDenom = 0.0;
+
+    checkCudaErrors(cudaMemset(d_scalingFactorNum,   0, nCells*sizeof(double)));
+    checkCudaErrors(cudaMemset(d_scalingFactorDenom, 0, nCells*sizeof(double)));
+
+    kernel_calcNumDenom<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
+        (nCells, d_Field, d_Source, d_AcfField, d_scalingFactorNum, d_scalingFactorDenom);
+    checkCudaErrors(cudaStreamSynchronize(dataBase.stream));
+
+    reduce(nCells, threads_per_block, blocks_per_grid, d_scalingFactorNum, reduce_result, dataBase.stream, false);
+#ifndef PARALLEL_
+    cudaMemcpyAsync(&sum_scalingFactorNum, &reduce_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+#else
+    ncclAllReduce(&reduce_result[0], &reduce_result[0], 1, ncclDouble, ncclSum, dataBase.nccl_comm, dataBase.stream);
+    cudaStreamSynchronize(dataBase.stream);
+    cudaMemcpyAsync(&sum_scalingFactorNum, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+#endif
+
+    reduce(nCells, threads_per_block, blocks_per_grid, d_scalingFactorDenom, reduce_result, dataBase.stream, false);
+#ifndef PARALLEL_
+    cudaMemcpyAsync(&sum_scalingFactorDenom, &reduce_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+#else
+    ncclAllReduce(&reduce_result[0], &reduce_result[0], 1, ncclDouble, ncclSum, dataBase.nccl_comm, dataBase.stream);
+    cudaStreamSynchronize(dataBase.stream);
+    cudaMemcpyAsync(&sum_scalingFactorDenom, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+#endif
+
+    std::vector scalingVector(sum_scalingFactorNum, sum_scalingFactorDenom);
+    scalingFactor = scalingVector[0]/(scalingVector[1] + 1e-20); // need test stabilise
+
+    kernel_scale<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
+        (nCells, scalingFactor, d_Field, d_Source, d_AcfField, diag);
+    checkCudaErrors(cudaStreamSynchronize(dataBase.stream));
+
+}
+
+void updateSourceFieldGPU(const dfMatrixDataBase& dataBase, int nCells, 
+                        double* d_Sources, double* d_AcfField, double* d_CorrFields,
+                        double* diag, double* off_diag_value,
+                        int* csr_row_index_no_diag, int* csr_col_index_no_diag, 
+                        double** interfaceIntCoeffs, double** interfaceBouCoeffs,
+                        int** faceCells, std::vector<int> nPatchFaces)
+{
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
+
+    //Purpose: spmv to get Acf = A * Corr
+    AmulGPU(dataBase, d_AcfField, d_CorrFields,
+            diag, off_diag_value, csr_row_index_no_diag, csr_col_index_no_diag, 
+            interfaceIntCoeffs, interfaceBouCoeffs, faceCells, nPatchFaces, nCells);
+
+    kernel_updateSource<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
+        (nCells, d_Sources, d_AcfField);
+    checkCudaErrors(cudaStreamSynchronize(dataBase.stream));
+}
+
+void updateCorrFieldGPU(cudaStream_t stream, int nCells, 
+                        double* d_Field, double* d_preSmoothField)
+{
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
+
+    kernel_updateCorr<<<blocks_per_grid, threads_per_block, 0, stream>>>
+        (nCells, d_Field, d_preSmoothField);
+    checkCudaErrors(cudaStreamSynchronize(stream));
+}
+
+void directSolve1x1GPU(cudaStream_t stream, 
+                        double* d_diag, double* d_corrField, double* d_sourceField)
+{
+    kernel_directSolve1x1<<<1, 1, 0, stream>>>
+        (d_diag, d_corrField, d_sourceField);
+    checkCudaErrors(cudaStreamSynchronize(stream));
+}
+
+__global__ void kernel_addInternalInterfaceCoeffs
+(
+    int num, 
+    const double* interfaceIntCoeffs, 
+    int* face2Cells, 
+    double* diag
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= num)
+        return;
+
+    int cellIndex = face2Cells[index];
+    diag[cellIndex] += interfaceIntCoeffs[index];
+}
+
+__global__ void kernel_initMatrixInterfacesCoeffs
+(
+    double* input, 
+    int interfaceiSize,
+    double* scalarSendBufList_,
+    int* face2Cells
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= interfaceiSize)
+        return;
+
+    int cellIndex = face2Cells[index];
+    scalarSendBufList_[index] = input[cellIndex];
+}
+
+__global__ void kernel_updateMatrixInterfacesCoeffs
+(
+    const double* interfaceBouCoeffs,
+    int interfaceiSize,
+    double* scalarRecvBufList_,
+    int* face2Cells,
+    double* output
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= interfaceiSize)
+        return;
+
+    int cellIndex = face2Cells[index];
+    output[cellIndex] -= interfaceBouCoeffs[index] * scalarRecvBufList_[index];
+}
+
+void AmulGPU(const dfMatrixDataBase& dataBase, double* result, double* input,
+            double* diag, double* off_diag_value,
+            int* csr_row_index_no_diag, int* csr_col_index_no_diag, 
+            double** interfaceIntCoeffs, double** interfaceBouCoeffs,
+            int** faceCells, std::vector<int> nPatchFaces, int nCells)
+{
+    // --- addInternalInterfaceCoeffs ---
+    addInternalInterfaceCoeffs(dataBase.stream, nPatchFaces, interfaceIntCoeffs, faceCells, diag);
+
+    // --- SpMV ---
+    SpMV4CSR(dataBase.stream, nCells, diag, off_diag_value, csr_row_index_no_diag, csr_col_index_no_diag, input, result); 
+
+#ifdef PARALLEL_      
+    // --- initMatrixInterfaces & updateMatrixInterfaces ---
+    updateMatrixInterfaceCoeffs(
+        dataBase.stream, dataBase.neighbProcNo, dataBase.nccl_comm,
+        nPatchFaces, input, result, 
+        scalarSendBufList_, scalarRecvBufList_,
+        interfaceBouCoeffs, faceCells);
+#endif
+}
+
+void addInternalInterfaceCoeffs(
+        cudaStream_t stream, std::vector<int> patchSize, 
+        double **interfaceIntCoeffs, int **boundaryFaceCell, double *diag) 
+{
+    for (int patchi = 0; patchi < patchSize.size(); patchi++) 
+    {
+        size_t threads_per_block = 1024;
+        size_t blocks_per_grid = (patchSize[patchi] + threads_per_block - 1) / threads_per_block;
+
+        kernel_addInternalInterfaceCoeffs<<<blocks_per_grid, threads_per_block, 0, stream>>>
+            (patchSize[patchi], interfaceIntCoeffs[patchi], boundaryFaceCell[patchi], diag);
+    }
+}
+
+void updateMatrixInterfaceCoeffs(
+    cudaStream_t stream, std::vector<int> neighbProcNo,  ncclComm_t nccl_comm,
+    std::vector<int> patchSize, double *input, double *output, 
+    double *scalarSendBufList_, double *scalarRecvBufList_,
+    double **interfaceBouCoeffs, int **boundaryFaceCell)
+{
+    for (int patchi = 0; patchi < patchSize.size(); patchi++) 
+    {
+        size_t threads_per_block = 1024;
+        size_t blocks_per_grid = (patchSize[patchi] + threads_per_block - 1) / threads_per_block;
+
+        kernel_initMatrixInterfacesCoeffs<<<blocks_per_grid, threads_per_block, 0, stream>>>
+            (input, patchSize[patchi], scalarSendBufList_, boundaryFaceCell[patchi]);
+
+        ncclGroupStart();
+        ncclSend(scalarSendBufList_, patchSize[patchi], ncclDouble, neighbProcNo[patchi], nccl_comm, stream);
+        ncclRecv(scalarRecvBufList_, patchSize[patchi], ncclDouble, neighbProcNo[patchi], nccl_comm, stream);
+        ncclGroupEnd();
+
+        kernel_updateMatrixInterfacesCoeffs<<<blocks_per_grid, threads_per_block, 0, stream>>>
+            (interfaceBouCoeffs[patchi], patchSize[patchi], scalarRecvBufList_, boundaryFaceCell[patchi], output);
+    }
+}
+
+__global__ void kernel_interpolate
+(
+    int nCells,
+    double* Apsi, double* diag, double* psi
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= nCells)
+        return;
+    
+    psi[index] = -Apsi[index]/(diag[index]);
+}
+
+__global__ void kernel_interpolateUpdateCoarseLevel
+(
+    int nCells, int* restrictMap,
+    double* corrC, double* diagC, double* diag, double* psi
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= nCells)
+        return;
+
+    int mapIndex = restrictMap[index];
+    atomicAdd(&corrC[mapIndex], (diag[index] * psi[index]));
+    atomicAdd(&diagC[mapIndex], diag[index]);
+}
+
+__global__ void kernel_interpolateCoarseCorr
+(
+    int nCCells, double* corrC, double* diagC, double* psiC
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= nCCells)
+        return;
+
+    corrC[index] = psiC[index] - corrC[index] / diagC[index];
+}
+
+__global__ void kernel_interpolateFineLevel
+(
+    int nCells, int* restrictMap,
+    double* psi, double* corrC
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= nCells)
+        return;
+
+    int mapIndex = restrictMap[index];
+    atomicAdd(&psi[index], corrC[mapIndex]);
+}
+
+void interpolateFieldGPU(const dfMatrixDataBase& dataBase, int nCells, int nCCells, 
+                    double* psi, double* Apsi, 
+                    double* diag, double* off_diag_value,
+                    int* csr_row_index_no_diag, int* csr_col_index_no_diag,  
+                    double** interfaceIntCoeffs, double** interfaceBouCoeffs, 
+                    int** faceCells, std::vector<int> nPatchFaces,
+                    int* restrictAddressing, double* psiC)
+{
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
+
+    // Purpose: m.Amul(Apsi, psi, interfaceBouCoeffs, interfaces, cmpt);
+    AmulGPU(dataBase, Apsi, psi,
+            diag, off_diag_value, csr_row_index_no_diag, csr_col_index_no_diag, 
+            interfaceIntCoeffs, interfaceBouCoeffs,
+            faceCells, nPatchFaces, nCells);
+
+    kernel_interpolate<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
+        (nCells, Apsi, diag, psi);
+    checkCudaErrors(cudaStreamSynchronize(dataBase.stream));
+
+    // tmp data for interpolate can remove to init
+    double* corrC;
+    double* diagC;
+
+    checkCudaErrors(cudaMalloc(&corrC, nCCells*sizeof(double)));
+    checkCudaErrors(cudaMalloc(&diagC, nCCells*sizeof(double)));
+
+    checkCudaErrors(cudaMemset(corrC, 0, nCCells*sizeof(double)));
+    checkCudaErrors(cudaMemset(diagC, 0, nCCells*sizeof(double)));
+
+    kernel_interpolateUpdateCoarseLevel<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
+        (nCells, restrictAddressing, corrC, diagC, diag, psi);
+    checkCudaErrors(cudaStreamSynchronize(dataBase.stream));
+
+    kernel_interpolateCoarseCorr<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
+        (nCCells, corrC, diagC, psiC);
+    checkCudaErrors(cudaStreamSynchronize(dataBase.stream));
+
+    kernel_interpolateFineLevel<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
+        (nCells, restrictAddressing, psi, corrC);
+    checkCudaErrors(cudaStreamSynchronize(dataBase.stream));
+
+    checkCudaErrors(cudaFreeAsync(corrC, dataBase.stream));
+    checkCudaErrors(cudaFreeAsync(diagC, dataBase.stream));
+}
+
+// gaussianElimination4by4 using ldu matrix
+__global__ void gaussianElimination4by4(double* diag, double* upper, double* lower,
+                                        double* x, double* b)
+{
+    // ldu to standard matrix (need check)
+    // upper:
+    //                     E[1][0] = upper[0], E[2][0] = upper[1], E[3][0] = upper[2]
+    //                                         E[2][1] = upper[3], E[3][1] = upper[4]
+    //                                                             E[3][2] = upper[5]
+    // lower:
+    // E[0][1] = lower[0]
+    // E[0][2] = lower[1], E[1][2] = lower[2]
+    // E[0][3] = lower[3], E[1][3] = lower[4], E[2][3] = lower[5]
+
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index == 0) 
+    { 
+        double pivot, ratio, tmp;
+        
+        // j=0
+        pivot    = diag[0];
+        // k=1
+        ratio    = upper[0] / pivot;
+        b[1]     = b[1] - b[0] * ratio;
+        diag[1]  = diag[1] - lower[0] * ratio;
+        lower[2] = lower[2] - lower[1] * ratio;
+        lower[4] = lower[4] - lower[3] * ratio;
+        // k=2
+        ratio    = upper[1] / pivot;
+        b[2]     = b[2] - b[0] * ratio;
+        upper[3] = upper[3] - lower[0] * ratio;
+        diag[2]  = diag[2] - lower[1] * ratio;
+        lower[5] = lower[5] - lower[3] * ratio;
+        //k=3
+        ratio    = upper[2] / pivot;
+        b[3]     = b[3] - b[0] * ratio;
+        upper[4] = upper[4] - lower[0] * ratio;
+        upper[5] = upper[4] - lower[1] * ratio;
+        diag[3]  = upper[4] - lower[3] * ratio;
+        // j=1
+        pivot    = diag[1];
+        // k=2
+        ratio    = upper[3] / pivot;
+        b[2]     = b[2] - b[1] * ratio;
+        diag[2]  = diag[2] - lower[2] * ratio;
+        lower[5] = lower[5] - lower[4] * ratio;
+        // k=3
+        ratio    = upper[4] / pivot;
+        b[3]     = b[3] - b[1] * ratio;
+        upper[5] = upper[5] - lower[2] * ratio;
+        diag[3]  = diag[3] - lower[4] * ratio;
+        // j=2
+        pivot    = diag[2];
+        // k=3
+        ratio    = upper[5] / pivot;
+        b[3]     = b[3] - b[2] * ratio;
+        diag[3]  = diag[3] - lower[5] * ratio;
+
+        // back substitution
+        x[3] = b[3] / diag[3];
+        tmp  = lower[5] * x[3];
+        x[2] = (b[2] - tmp) / diag[2];
+        tmp  = lower[2] * x[2] + lower[4] * x[3];
+        x[1] = (b[1] - tmp) / diag[1];
+        tmp  = lower[0] * x[1] + lower[1] * x[2] + lower[3] * x[3];
+        x[0] = (b[0] - tmp) / diag[0];
+    }
+}
+
+void directSolve4x4GPU(cudaStream_t stream, 
+                        double* d_diag, double* d_upper, double* d_lower, 
+                        double* d_corrField, double* d_sourceField)
+{
+    double *diag_tmp, *upper_tmp, *lower_tmp, *source_tmp;
+
+    checkCudaErrors(cudaMalloc(&source_tmp,  4*sizeof(double)));
+    checkCudaErrors(cudaMalloc(&diag_tmp,    4*sizeof(double)));
+    checkCudaErrors(cudaMalloc(&upper_tmp,   5*sizeof(double)));
+    checkCudaErrors(cudaMalloc(&lower_tmp,   5*sizeof(double)));
+
+    checkCudaErrors(cudaMemcpyAsync(source_tmp,  d_sourceField,  4*sizeof(double), cudaMemcpyDeviceToDevice, stream));
+    checkCudaErrors(cudaMemcpyAsync(diag_tmp,    d_diag,  4*sizeof(double), cudaMemcpyDeviceToDevice, stream));
+    checkCudaErrors(cudaMemcpyAsync(upper_tmp,   d_upper, 5*sizeof(double), cudaMemcpyDeviceToDevice, stream));
+    checkCudaErrors(cudaMemcpyAsync(lower_tmp,   d_lower, 5*sizeof(double), cudaMemcpyDeviceToDevice, stream));
+
+    gaussianElimination4by4<<<1, 1, 0, stream>>>
+        (diag_tmp, upper_tmp, lower_tmp, d_corrField, source_tmp);
+    checkCudaErrors(cudaStreamSynchronize(stream));
+
+    checkCudaErrors(cudaFreeAsync(source_tmp, stream));
+    checkCudaErrors(cudaFreeAsync(diag_tmp, stream));
+    checkCudaErrors(cudaFreeAsync(upper_tmp, stream));
+    checkCudaErrors(cudaFreeAsync(lower_tmp, stream));
 }

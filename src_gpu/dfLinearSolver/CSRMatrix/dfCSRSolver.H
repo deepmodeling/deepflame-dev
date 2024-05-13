@@ -71,6 +71,23 @@ public:
         tolerance_ = tolerance;
         relTol_ = relTol;
     }
+
+    virtual void initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
+                GAMGStruct *GAMGdata_, int agglomeration_level) = 0;
+                
+    virtual void solve_useGAMG
+    (
+        const dfMatrixDataBase& dataBase,
+        const double* d_internal_coeffs,
+        const double* d_boundary_coeffs,
+        int* patch_type,
+        double* diagPtr,
+        const double* off_diag_value,
+        const double *rhs, 
+        double *psi,
+        GAMGStruct *GAMGdata_, 
+        int agglomeration_level
+    ) = 0;
 };
 
 class PBiCGStabCSRSolver : public CSRSolver {
@@ -109,6 +126,23 @@ public:
         const double *rhs, 
         double *psi
     ) override;
+
+    void initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
+                GAMGStruct *GAMGdata_, int agglomeration_level) override;
+                
+    void solve_useGAMG
+    (
+        const dfMatrixDataBase& dataBase,
+        const double* d_internal_coeffs,
+        const double* d_boundary_coeffs,
+        int* patch_type,
+        double* diagPtr,
+        const double* off_diag_value,
+        const double *rhs, 
+        double *psi,
+        GAMGStruct *GAMGdata_, 
+        int agglomeration_level
+    ) override;
 };
 
 class PCGCSRSolver : public CSRSolver {
@@ -127,14 +161,14 @@ public:
 
     // tmp
     GAMGCSRPreconditioner *precond_;
-    virtual void initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) override;;
+    virtual void initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) override;
 
     PCGCSRSolver() {}
     virtual ~PCGCSRSolver() {}
 
-    virtual void initialize(const int nCells, const size_t boundary_surface_value_bytes) override;
+    void initialize(const int nCells, const size_t boundary_surface_value_bytes) override;
 
-    virtual void solve
+    void solve
     (
         const dfMatrixDataBase& dataBase,
         const double* d_internal_coeffs,
@@ -145,4 +179,21 @@ public:
         const double *rhs, 
         double *psi
     ) override;
+
+    void initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
+                GAMGStruct *GAMGdata_, int agglomeration_level);
+
+    void solve_useGAMG
+    (
+        const dfMatrixDataBase& dataBase,
+        const double* d_internal_coeffs,
+        const double* d_boundary_coeffs,
+        int* patch_type,
+        double* diagPtr,
+        const double* off_diag_value,
+        const double *rhs, 
+        double *psi,
+        GAMGStruct *GAMGdata_, 
+        int agglomeration_level
+    );
 };

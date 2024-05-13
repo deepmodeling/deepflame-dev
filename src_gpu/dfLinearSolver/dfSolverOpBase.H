@@ -2,6 +2,7 @@
 #include <cuda_runtime.h>
 #include <nccl.h>
 #include <vector>
+#include "dfMatrixDataBase.H"
 
 using std::min;
 using std::max;
@@ -89,3 +90,55 @@ void restrictFieldGPU(cudaStream_t stream, int nFineCells, int* d_restrictMap,
 void restrictMatrixGPU(cudaStream_t stream, int nFineFaces, int* d_faceRestrictMap, int* d_faceFlipMap,
                         double* d_fineUpper, double* d_fineLower, 
                         double* d_coarseUpper, double* d_coarseLower, double* d_coarseDiag);
+
+void prolongFieldGPU(cudaStream_t stream, int nFineCells, int* d_restrictMap, 
+                        double* d_fineField, double* d_coarseField);
+
+void scaleFieldGPU( const dfMatrixDataBase& dataBase,int nCells, 
+                    double* d_Field, double* d_Source, double* d_AcfField, 
+                    double* diag, double* off_diag_value,
+                    int* csr_row_index_no_diag, int* csr_col_index_no_diag, 
+                    double** interfaceIntCoeffs, double** interfaceBouCoeffs,
+                    int** faceCells, std::vector<int> nPatchFaces, 
+                    double* d_scalingFactorNum, double* d_scalingFactorDenom );
+
+void updateSourceFieldGPU(const dfMatrixDataBase& dataBase, int nCells, 
+                        double* d_Sources, double* d_AcfField, double* d_CorrFields,
+                        double* diag, double* off_diag_value,
+                        int* csr_row_index_no_diag, int* csr_col_index_no_diag, 
+                        double** interfaceIntCoeffs, double** interfaceBouCoeffs,
+                        int** faceCells, std::vector<int> nPatchFaces);
+
+void updateCorrFieldGPU(cudaStream_t stream, int nCells, 
+                        double* d_Field, double* d_preSmoothField);
+
+void directSolve1x1GPU(cudaStream_t stream, 
+                        double* d_diag, double* d_corrField, double* d_sourceField);
+                        
+void directSolve4x4GPU(cudaStream_t stream, 
+                        double* d_diag, double* d_upper, double* d_lower, 
+                        double* d_corrField, double* d_sourceField);
+
+void AmulGPU(const dfMatrixDataBase& dataBase, double* result, double* input,
+            double* diag, double* off_diag_value,
+            int* csr_row_index_no_diag, int* csr_col_index_no_diag, 
+            double** interfaceIntCoeffs, double** interfaceBouCoeffs,
+            int** faceCells, std::vector<int> nPatchFaces, int nCells);
+
+void addInternalInterfaceCoeffs(
+        cudaStream_t stream, std::vector<int> patchSize, 
+        double **interfaceIntCoeffs, int **boundaryFaceCell, double *diag);
+
+void updateMatrixInterfaceCoeffs(
+    cudaStream_t stream, std::vector<int> neighbProcNo,  ncclComm_t nccl_comm,
+    std::vector<int> patchSize, double *input, double *output, 
+    double *scalarSendBufList_, double *scalarRecvBufList_,
+    double **interfaceBouCoeffs, int **boundaryFaceCell);
+
+void interpolateFieldGPU(const dfMatrixDataBase& dataBase, int nCells, int nCCells, 
+                    double* psi, double* Apsi, 
+                    double* diag, double* off_diag_value,
+                    int* csr_row_index_no_diag, int* csr_col_index_no_diag,  
+                    double** interfaceIntCoeffs, double** interfaceBouCoeffs, 
+                    int** faceCells, std::vector<int> nPatchFaces,
+                    int* restrictAddressing, double* psiC);

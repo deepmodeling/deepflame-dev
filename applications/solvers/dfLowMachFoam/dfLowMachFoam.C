@@ -241,7 +241,7 @@ int main(int argc, char *argv[])
     createGPUUEqn(CanteraTorchProperties, U);
     createGPUYEqn(CanteraTorchProperties, Y, inertIndex);
     createGPUEEqn(CanteraTorchProperties, thermo.he(), K);
-    createGPUpEqn(CanteraTorchProperties, p, U);
+    createGPUpEqn(CanteraTorchProperties, p, U, GAMGdata, agglomeration_level);
     createGPURhoEqn(rho, phi);
 
     const volScalarField& mu = thermo.mu();

@@ -84,7 +84,8 @@ public:
     double* getFieldPointer(const char* fieldAlias, location loc, position pos);
 
 	// initialization
-	void setConstantValues(const std::string &mode_string, const std::string &setting_path); 
+	void setConstantValues(const std::string &mode_string, const std::string &setting_path,
+                        GAMGStruct *GAMGdata_, int agglomeration_level); 
 	void setConstantFields(const std::vector<int> patch_type_U, const std::vector<int> patch_type_p);
     void initNonConstantFields(const double *p, const double *boundary_p);
     void createNonConstantFieldsInternal();
@@ -119,7 +120,7 @@ public:
         const double *boundary_weight, double *boundary_output, double sign = 1.);
     void correctionDiagMtxMultiTPsi(cudaStream_t stream, int num_cells, const double *psi, const double *thermo_psi, double *diag, double *source);
 
-    void solve();
+    void solve(GAMGStruct *GAMGdata, int agglomeration_level);
     void sync();
 
 // #if defined DEBUG_
@@ -135,4 +136,10 @@ public:
     void comparedpdt(const double *dpdt, bool printFlag);
 
     void peqn_ldu_to_csr_no_diag(int row_, int num_surfaces, int *off_diag_rowptr_, double *lower, double *upper, int *lowerAddr, int *upperAddr, double *off_diag_value_);
+
+    // add for GAMG
+    void getInterfacesCoeffs(cudaStream_t stream, int num_patches, std::vector<int> patch_size, 
+                                int *interfaceFlag, int *patch_type, 
+                                const double *d_boundary_coeffs, const double *d_internal_coeffs, 
+                                double **d_interfaceBouCoeffs, double **d_interfaceIntCoeffs);
 };

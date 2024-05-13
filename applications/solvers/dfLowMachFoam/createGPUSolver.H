@@ -550,14 +550,15 @@ void createGPUEEqn(const IOdictionary& CanteraTorchProperties, volScalarField& h
     EEqn_GPU.initNonConstantFields(h_he, h_boundary_he);
 }
 
-void createGPUpEqn(const IOdictionary& CanteraTorchProperties, volScalarField& p, const volVectorField& U) {
+void createGPUpEqn(const IOdictionary& CanteraTorchProperties, volScalarField& p, const volVectorField& U,
+                    GAMGStruct *GAMGdata_, int agglomeration_level) {
     DEBUG_TRACE;
     // TODO need remove amgx solver setting
     // prepare mode_string and setting_path
     string mode_string = "dDDI";
     string settingPath;
     settingPath = CanteraTorchProperties.subDict("AmgxSettings").lookupOrDefault("pEqnSettingPath", string(""));
-    pEqn_GPU.setConstantValues(mode_string, settingPath);
+    pEqn_GPU.setConstantValues(mode_string, settingPath, GAMGdata_, agglomeration_level);
     
     // prepare patch_type
     std::vector<int> patch_type_p(dfDataBase.num_patches);
@@ -756,6 +757,55 @@ void createGPUGAMGMaps(GAMGStruct *GAMGdata, const CSRGAMGAgglomeration& agglome
     
         std::cout << "  == level: " << leveli << ", cell: " << GAMGdata[leveli].restrictMap.size()
                                               << ", face: " << GAMGdata[leveli].faceRestrictMap.size() << std::endl;
+
+#ifndef PARALLEL_
+
+        int patchSize = agglomeration.nPatchFaces(0).size();
+
+        if(leveli == 0)
+        {
+            std::vector<int> nPatchFacesVector( agglomeration.nPatchFaces(leveli).begin(), 
+                                                agglomeration.nPatchFaces(leveli).end());
+            GAMGdata[leveli].nPatchFaces = nPatchFacesVector;
+        }
+        else
+        {
+            std::vector<int> nPatchFacesVector( agglomeration.nPatchFaces(leveli-1).begin(), 
+                                                agglomeration.nPatchFaces(leveli-1).end());
+            GAMGdata[leveli].nPatchFaces = nPatchFacesVector;
+        }
+
+        GAMGdata[leveli].d_faceCells = new int*[patchSize]();
+        GAMGdata[leveli].d_patchFaceRestrictMap = new int*[patchSize]();
+        GAMGdata[leveli].d_interfaceBouCoeffs = new double*[patchSize]();
+        GAMGdata[leveli].d_interfaceIntCoeffs = new double*[patchSize]();
+
+        for(int patchi=0; patchi < patchSize; patchi++)
+        {
+            if (GAMGdata[leveli].nPatchFaces[patchi] > 0)
+            {
+                std::vector<int> faceCellsVector (  agglomeration.interfaceLevel(leveli)[patchi].faceCells().begin(),
+                                                    agglomeration.interfaceLevel(leveli)[patchi].faceCells().end());
+                std::vector<int> patchFaceRestrictMapVector(agglomeration.patchFaceRestrictAddressing(leveli)[patchi].begin(), 
+                                                            agglomeration.patchFaceRestrictAddressing(leveli)[patchi].end());
+                if (leveli == 0)
+                {
+                    GAMGdata[leveli].nPatchFaces[patchi] = patchFaceRestrictMapVector.size();
+                }
+
+                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_faceCells[patchi], faceCellsVector.size()*sizeof(int)));
+                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_patchFaceRestrictMap[patchi], patchFaceRestrictMapVector.size()*sizeof(int)));
+                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_interfaceBouCoeffs[patchi], patchFaceRestrictMapVector.size()*sizeof(double)));
+                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_interfaceIntCoeffs[patchi], patchFaceRestrictMapVector.size()*sizeof(double)));
+
+                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_faceCells[patchi], faceCellsVector.data(), 
+                                                faceCellsVector.size()*sizeof(int), cudaMemcpyHostToDevice));
+                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_patchFaceRestrictMap[patchi], patchFaceRestrictMapVector.data(), 
+                                                patchFaceRestrictMapVector.size()*sizeof(int), cudaMemcpyHostToDevice));
+                
+            }
+        }
+#endif
     }
     std::cout << "======= end in createGPUGAMGMaps =======" << std::endl;
     
