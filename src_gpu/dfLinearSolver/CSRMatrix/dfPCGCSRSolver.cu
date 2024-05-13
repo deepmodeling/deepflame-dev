@@ -5,7 +5,7 @@
 // #define PARALLEL_
 #define PRINT_
 
-// kernel functions for PBiCGStab solver
+// kernel functions for PCG solver
 
 void PCGCSRSolver::initialize(const int nCells, const size_t boundary_surface_value_bytes)
 {
@@ -20,6 +20,34 @@ void PCGCSRSolver::initialize(const int nCells, const size_t boundary_surface_va
     // for parallel
     cudaMalloc(&scalarSendBufList_, boundary_surface_value_bytes);
     cudaMalloc(&scalarRecvBufList_, boundary_surface_value_bytes);
+}
+
+void PCGCSRSolver::initializeStream(const int nCells, const size_t boundary_surface_value_bytes, cudaStream_t stream)
+{
+    // cudamalloc variables related to PCGSolver
+    cudaMallocAsync(&d_wA, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_rA, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_pA, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_normFactors_tmp, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_wArA_tmp, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_wApA_tmp, nCells * sizeof(double), stream);
+    cudaMallocAsync(&reduce_result, sizeof(double), stream);
+    // for parallel
+    cudaMallocAsync(&scalarSendBufList_, boundary_surface_value_bytes, stream);
+    cudaMallocAsync(&scalarRecvBufList_, boundary_surface_value_bytes, stream);
+}
+
+void PCGCSRSolver::freeInit()
+{
+    cudaFree(d_wA);
+    cudaFree(d_rA);
+    cudaFree(d_pA);
+    cudaFree(d_normFactors_tmp);
+    cudaFree(d_wArA_tmp);
+    cudaFree(d_wApA_tmp);
+    cudaFree(reduce_result);
+    cudaFree(scalarSendBufList_);
+    cudaFree(scalarRecvBufList_);
 }
 
 void PCGCSRSolver::initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,

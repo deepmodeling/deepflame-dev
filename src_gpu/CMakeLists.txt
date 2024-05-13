@@ -44,6 +44,7 @@ add_library(${PROJECT_NAME}
         dfLinearSolver/CSRMatrix/dfPBiCGStabCSRSolver.cu
         dfLinearSolver/CSRMatrix/dfPCGCSRSolver.cu
         dfLinearSolver/CSRMatrix/dfGAMGCSRPreconditioner.cu
+        dfLinearSolver/CSRMatrix/dfCSRJacobiSmoother.cu
 
         dfLinearSolver/ELLMatrix/dfPBiCGStabELLSolver.cu)
 

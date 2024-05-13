@@ -16,6 +16,11 @@ public:
     virtual ~CSRSolver() {}
 
     virtual void initialize(const int, const size_t) = 0;
+
+    virtual void initializeStream(const int, const size_t, cudaStream_t) = 0;
+
+    virtual void freeInit() = 0;
+
     virtual void initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) = 0;
 
     virtual bool checkSingularity(double input){
@@ -113,6 +118,11 @@ public:
     virtual ~PBiCGStabCSRSolver() {}
 
     virtual void initialize(const int nCells, const size_t boundary_surface_value_bytes) override;
+
+    virtual void initializeStream(const int nCells, const size_t boundary_surface_value_bytes, cudaStream_t stream) override;
+
+    void freeInit() override;
+    
     virtual void initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) override;
 
     virtual void solve
@@ -167,6 +177,10 @@ public:
     virtual ~PCGCSRSolver() {}
 
     void initialize(const int nCells, const size_t boundary_surface_value_bytes) override;
+
+    virtual void initializeStream(const int nCells, const size_t boundary_surface_value_bytes, cudaStream_t stream) override;
+
+    void freeInit() override;
 
     void solve
     (

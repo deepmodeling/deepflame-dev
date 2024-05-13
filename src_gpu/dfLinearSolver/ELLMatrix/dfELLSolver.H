@@ -16,14 +16,32 @@ public:
 
     virtual void initialize(const int, const size_t) = 0;
 
-    virtual bool checkSingularity(double input) = 0;
+    virtual void initializeStream(const int, const size_t, cudaStream_t) = 0;
+
+    virtual bool checkSingularity(double input){
+        return (input < vsmall_);
+    }
 
     virtual bool checkConvergence
     (
         double finalResidual, 
         double initialResidual,
         int nIterations
-    ) = 0;
+    )
+    {
+        if(
+            finalResidual < tolerance_
+            || (relTol_ > small_ * 1 && finalResidual < relTol_ * initialResidual)
+        )
+        {
+            printf("GPU-ELL::solve end --------------------------------------------\n");
+            printf("Initial residual = %.5e, Final residual = %.5e, No Iterations %d\n",initialResidual,finalResidual,nIterations);
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
 
     virtual void solve
     (
@@ -81,14 +99,7 @@ public:
 
     virtual void initialize(const int nCells, const size_t boundary_surface_value_bytes) override;
 
-    virtual bool checkSingularity(double input) override;
-
-    virtual bool checkConvergence
-    (
-        double finalResidual, 
-        double initialResidual,
-        int nIterations
-    ) override;
+    virtual void initializeStream(const int nCells, const size_t boundary_surface_value_bytes, cudaStream_t stream) override;
 
     virtual void solve
     (
@@ -107,8 +118,24 @@ public:
 
 class PCGELLSolver : public ELLSolver {
 public:
+    // variables related to PCG solver
+    double *d_wA;
+    double *d_rA;
+    double *d_pA;
+    double *d_normFactors_tmp;
+    double *d_wArA_tmp;
+    double *d_wApA_tmp;
+    
+    double *reduce_result;
+    double *scalarSendBufList_;
+    double *scalarRecvBufList_;
+
     PCGELLSolver() {}
     virtual ~PCGELLSolver() {}
+
+    virtual void initialize(const int nCells, const size_t boundary_surface_value_bytes) override;
+
+    virtual void initializeStream(const int nCells, const size_t boundary_surface_value_bytes, cudaStream_t stream) override;
 
     virtual void solve
     (

@@ -1,6 +1,8 @@
 #include "dfCSRPreconditioner.H"
 #include "dfSolverOpBase.H"
 
+#define nSweeps 0
+
 // kernel functions for PBiCGStab solver
 
 void GAMGCSRPreconditioner::initialize
@@ -9,13 +11,22 @@ void GAMGCSRPreconditioner::initialize
 )
 {
     std::cout << "*** call in GAMGCSRPreconditioner::initialize(): init Vcycle " << std::endl;
+
+    // Jacobi Smoother
+    smoother = new CSRJacobiSmoother();
+
     for(int leveli=0; leveli<agglomeration_level; leveli++)
     {
         std::cout << "   malloc leveli: " << leveli << std::endl;
         // matrix data                                      
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_lower, GAMGdata[leveli].nFace * sizeof(double)));
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_upper, GAMGdata[leveli].nFace * sizeof(double)));
-        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_diag,  GAMGdata[leveli].nCell * sizeof(double)));       
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_diag,  GAMGdata[leveli].nCell * sizeof(double)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_lowerAddr, GAMGdata[leveli].nFace * sizeof(int)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_upperAddr, GAMGdata[leveli].nFace * sizeof(int)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_off_diag_value, GAMGdata[leveli].nFace * 2 * sizeof(double)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_csr_row_index_no_diag, (GAMGdata[leveli].nCell + 1) * sizeof(int)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_csr_col_index_no_diag, GAMGdata[leveli].nFace * 2 * sizeof(int)));
 
         // iteration data
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_CorrFields, GAMGdata[leveli].nCell*sizeof(double)));
@@ -125,7 +136,10 @@ void GAMGCSRPreconditioner::fine2coarse
         checkCudaErrors(cudaMemset(GAMGdata_[leveli+1].d_CorrFields, 0, GAMGdata_[leveli+1].nCell*sizeof(double)));
 
         //Purpose: Smooth [ A * Corr = Source ] to get d_CorrFields for leveli+1
-        //TODO: add smoother here
+        //TODO: write nSweeps 
+        smoother->smooth(dataBase.stream, nSweeps, GAMGdata_[leveli+1].nCell, GAMGdata_[leveli+1].d_CorrFields, 
+                            GAMGdata_[leveli+1].d_Sources, GAMGdata_[leveli+1].d_off_diag_value, GAMGdata_[leveli+1].d_csr_row_index_no_diag,
+                            GAMGdata_[leveli+1].d_csr_col_index_no_diag, GAMGdata_[leveli+1].d_diag);
 
         if (leveli < endLevel - 1)
         {
@@ -208,7 +222,11 @@ void GAMGCSRPreconditioner::coarse2fine
                                 GAMGdata_[leveli-1].d_CorrFields, GAMGdata_[leveli-1].d_preSmoothField);
 
             //Purpose: Smooth [ A * Corr = Source ] to get d_CorrFields for leveli-1
-            //TODO: add smoother here for leveli-1
+            //TODO: write nSweeps
+            smoother->smooth(dataBase.stream, nSweeps, GAMGdata_[leveli-1].nCell, GAMGdata_[leveli-1].d_CorrFields, 
+                    GAMGdata_[leveli-1].d_Sources, GAMGdata_[leveli-1].d_off_diag_value, GAMGdata_[leveli-1].d_csr_row_index_no_diag,
+                    GAMGdata_[leveli-1].d_csr_col_index_no_diag, GAMGdata_[leveli-1].d_diag);
+
         }
     }
 };
@@ -347,7 +365,12 @@ void GAMGCSRPreconditioner::precondition
         // Purpose: use GAMGdata_[0].d_CorrFields to update psi
         updateCorrFieldGPU( dataBase.stream, GAMGdata_[0].nCell, psi, GAMGdata_[0].d_CorrFields);
 
-        //TODO: add smoother for leveli=0, nFinestSweeps_
+        //add smoother for leveli=0, nFinestSweeps_
+        //TODO: write nSweeps 
+        smoother->smooth(dataBase.stream, nSweeps, GAMGdata_[0].nCell, GAMGdata_[0].d_CorrFields, 
+                    GAMGdata_[0].d_Sources, GAMGdata_[0].d_off_diag_value, GAMGdata_[0].d_csr_row_index_no_diag,
+                    GAMGdata_[0].d_csr_col_index_no_diag, GAMGdata_[0].d_diag);
+
 
         if (cycle < nVcycles_-1)
         {

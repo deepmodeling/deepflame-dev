@@ -1,5 +1,6 @@
 #pragma once
 #include "dfMatrixDataBase.H"
+#include "dfCSRSmoother.H"
 
 struct GAMGStruct
 {
@@ -42,6 +43,8 @@ struct GAMGStruct
     double* d_lower = nullptr;
     double* d_upper = nullptr;
     double* d_diag = nullptr;
+    int* d_lowerAddr = nullptr;
+    int* d_upperAddr = nullptr;
 
     // === device csr matrix data
     double* d_off_diag_value = nullptr;
@@ -81,6 +84,8 @@ class GAMGCSRPreconditioner : public CSRPreconditioner {
 public:
     // variables related to the GAMG preconditioner
     int nLevels;
+
+    CSRSmoother *smoother = nullptr;
 
     GAMGCSRPreconditioner() {}
     virtual ~GAMGCSRPreconditioner() {}

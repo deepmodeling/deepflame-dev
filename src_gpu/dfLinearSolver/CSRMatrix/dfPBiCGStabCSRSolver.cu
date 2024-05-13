@@ -31,6 +31,46 @@ void PBiCGStabCSRSolver::initialize(const int nCells, const size_t boundary_surf
     cudaMalloc(&scalarRecvBufList_, boundary_surface_value_bytes);
 }
 
+void PBiCGStabCSRSolver::initializeStream(const int nCells, const size_t boundary_surface_value_bytes, cudaStream_t stream)
+{
+    cudaMallocAsync(&d_yA, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_rA, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_pA, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_normFactors_tmp, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_AyA, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_sA, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_zA, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_tA, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_rA0, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_rA0rA_tmp, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_rA0AyA_tmp, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_tAtA_tmp, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_sAtA_tmp, nCells * sizeof(double), stream);
+    cudaMallocAsync(&reduce_result, sizeof(double), stream);
+    // for parallel
+    cudaMallocAsync(&scalarSendBufList_, boundary_surface_value_bytes, stream);
+    cudaMallocAsync(&scalarRecvBufList_, boundary_surface_value_bytes, stream);
+}
+
+void PBiCGStabCSRSolver::freeInit(){
+    cudaFree(d_yA);
+    cudaFree(d_rA);
+    cudaFree(d_pA);
+    cudaFree(d_normFactors_tmp);
+    cudaFree(d_AyA);
+    cudaFree(d_sA);
+    cudaFree(d_zA);
+    cudaFree(d_tA);
+    cudaFree(d_rA0);
+    cudaFree(d_rA0rA_tmp);
+    cudaFree(d_rA0AyA_tmp);
+    cudaFree(d_tAtA_tmp);
+    cudaFree(d_sAtA_tmp);
+    cudaFree(reduce_result);
+    cudaFree(scalarSendBufList_);
+    cudaFree(scalarRecvBufList_);
+}
+
 void PBiCGStabCSRSolver::initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level)
 {
     // preconditioner

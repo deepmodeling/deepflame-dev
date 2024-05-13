@@ -97,6 +97,7 @@ Foam::solverPerformance Foam::CSRPCG::solve
     // --- Calculate normalisation factor
     normFactor_start = MPI_Wtime();
     scalar normFactor = this->normFactor(psi, source, wA, pA);
+    printf("normFactor -C = %.10e\n",normFactor);
     normFactor_end = MPI_Wtime();
     normFactor_time += normFactor_end - normFactor_start;
 
@@ -109,6 +110,7 @@ Foam::solverPerformance Foam::CSRPCG::solve
     gSumMag_time += gSumMag_end - gSumMag_start;
 
     solverPerf.finalResidual() = solverPerf.initialResidual();
+    printf("first finalResidual -C = %.10e\n",solverPerf.finalResidual());
     // --- Check convergence, solve if not converged
     if
     (
@@ -131,6 +133,7 @@ Foam::solverPerformance Foam::CSRPCG::solve
             // --- Update search directions:
             gSumProd_start = MPI_Wtime();
             wArA = gSumProd(wA, rA, matrix().mesh().comm());
+            printf("wArA -C = %.10e\n",wArA);
             gSumProd_end = MPI_Wtime();
             gSumProd_time += gSumProd_end - gSumProd_start;
 
@@ -163,6 +166,7 @@ Foam::solverPerformance Foam::CSRPCG::solve
 
             gSumProd_start = MPI_Wtime();
             scalar wApA = gSumProd(wA, pA, matrix().mesh().comm());
+            printf("wApA -C = %.10e\n",wApA);
             gSumProd_end = MPI_Wtime();
             gSumProd_time += gSumProd_end - gSumProd_start;
 
@@ -187,6 +191,7 @@ Foam::solverPerformance Foam::CSRPCG::solve
             gSumMag_end = MPI_Wtime();
             gSumMag_time += gSumMag_end - gSumMag_start;
 
+            printf("final finalResidual = finalResidual / normFactor : %.10e\n",solverPerf.finalResidual());
         } while
         (
             (
