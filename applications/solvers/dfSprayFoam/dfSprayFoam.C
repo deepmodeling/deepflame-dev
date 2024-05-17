@@ -80,6 +80,16 @@ int main(int argc, char *argv[])
     #include "setInitialDeltaT.H"
     #include "initContinuityErrs.H"
     #include "createRhoUfIfPresent.H"
+    
+    double time_monitor_rho = 0;
+    double time_monitor_U = 0;
+    double time_monitor_Y = 0;
+    double time_monitor_E = 0;
+    double time_monitor_p = 0;
+    double time_monitor_parcels=0;
+    double time_monitor_chemistry_correctThermo=0;
+    double time_monitor_turbulence_correct=0;
+    clock_t start, end;
 
     turbulence->validate();
 
@@ -118,8 +128,11 @@ int main(int argc, char *argv[])
             rhoU = new volVectorField("rhoU", rho*U);
         }
 
+        start = std::clock();
         // Store the particle positions
         parcels.storeGlobalPositions();
+        end = std::clock();
+        time_monitor_parcels += double(end - start) / double(CLOCKS_PER_SEC);
 
         // Do any mesh changes
         mesh.update();
@@ -145,20 +158,40 @@ int main(int argc, char *argv[])
             }
         }
 
+        start = std::clock();
         parcels.evolve();
+        end = std::clock();
+        time_monitor_parcels += double(end - start) / double(CLOCKS_PER_SEC);
 
+        start = std::clock();
         #include "rhoEqn.H"
+        end = std::clock();
+        time_monitor_rho += double(end - start) / double(CLOCKS_PER_SEC);
 
         // --- Pressure-velocity PIMPLE corrector loop
         while (pimple.loop())
         {
+            start = std::clock();
             #include "UEqn.H"
+            end = std::clock();
+            time_monitor_U += double(end - start) / double(CLOCKS_PER_SEC);
 
             if(combModelName!="ESF" && combModelName!="flareFGM"  && combModelName!="DeePFGM" && combModelName!="FSD")
             {
+                start = std::clock();
                 #include "YEqn.H"
+                end = std::clock();
+                time_monitor_Y += double(end - start) / double(CLOCKS_PER_SEC);
+
+                start = std::clock();
                 #include "EEqn.H"
+                end = std::clock();
+                time_monitor_E += double(end - start) / double(CLOCKS_PER_SEC);
+
+                start = std::clock();
                 chemistry->correctThermo();
+                end = std::clock();
+                time_monitor_chemistry_correctThermo += double(end - start) / double(CLOCKS_PER_SEC);
             }
             else
             {
@@ -168,20 +201,37 @@ int main(int argc, char *argv[])
                 << max(T).value() << endl;
 
             // --- Pressure corrector loop
+            start = std::clock();
             while (pimple.correct())
             {
                 #include "pEqn.H"
             }
+            end = std::clock();
+            time_monitor_p += double(end - start) / double(CLOCKS_PER_SEC);
 
+            start = std::clock();
             if (pimple.turbCorr())
             {
                 turbulence->correct();
             }
+            end = std::clock();
+            time_monitor_turbulence_correct += double(end - start) / double(CLOCKS_PER_SEC);
         }
 
         rho = thermo.rho();
 
         runTime.write();
+
+        Info<< "========Time Spent in diffenet parts========"<< endl;
+        Info<< "rho Equations                = " << time_monitor_rho << " s" << endl;
+        Info<< "U Equations                  = " << time_monitor_U << " s" << endl;
+        Info<< "Y Equations                  = " << time_monitor_Y << " s" << endl;
+        Info<< "E Equations                  = " << time_monitor_E << " s" << endl;
+        Info<< "p Equations                  = " << time_monitor_p << " s" << endl;
+        Info<< "calculate parcels            = " << time_monitor_parcels << " s" << endl;
+        Info<< "chemistry correctThermo      = " << time_monitor_chemistry_correctThermo << " s" << endl;
+        Info<< "turbulence correct           = " << time_monitor_turbulence_correct << " s" << endl;
+        Info<< "============================================"<<nl<< endl;
 
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"
