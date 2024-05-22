@@ -8,33 +8,6 @@
 #define PARALLEL_
 #define PRINT_
 
-// --- member function ---
-
-bool PBiCGStabELLSolver::checkSingularity(double input){
-    return (input < vsmall_);
-}
-
-bool PBiCGStabELLSolver::checkConvergence
-(
-    double finalResidual, 
-    double initialResidual,
-    int nIterations
-)
-{
-    if(
-        finalResidual < tolerance_
-        || (relTol_ > small_ * 1 && finalResidual < relTol_ * initialResidual)
-    )
-    {
-        printf("GPU-ELL-PBiCGStab::solve end --------------------------------------------\n");
-        printf("Initial residual = %.5e, Final residual = %.5e, No Iterations %d\n",initialResidual,finalResidual,nIterations);
-        return true;
-    }
-    else{
-        return false;
-    }
-}
-
 /*------------------------------------------------malloc---------------------------------------------------------*/
 
 void PBiCGStabELLSolver::initialize(const int nCells, const size_t boundary_surface_value_bytes)
@@ -56,6 +29,27 @@ void PBiCGStabELLSolver::initialize(const int nCells, const size_t boundary_surf
     // for parallel
     cudaMalloc(&scalarSendBufList_, boundary_surface_value_bytes);
     cudaMalloc(&scalarRecvBufList_, boundary_surface_value_bytes);
+}
+
+void PBiCGStabELLSolver::initializeStream(const int nCells, const size_t boundary_surface_value_bytes, cudaStream_t stream)
+{
+    cudaMallocAsync(&d_yA, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_rA, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_pA, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_normFactors_tmp, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_AyA, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_sA, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_zA, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_tA, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_rA0, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_rA0rA_tmp, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_rA0AyA_tmp, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_tAtA_tmp, nCells * sizeof(double), stream);
+    cudaMallocAsync(&d_sAtA_tmp, nCells * sizeof(double), stream);
+    cudaMallocAsync(&reduce_result, sizeof(double), stream);
+    // for parallel
+    cudaMallocAsync(&scalarSendBufList_, boundary_surface_value_bytes, stream);
+    cudaMallocAsync(&scalarRecvBufList_, boundary_surface_value_bytes, stream);
 }
 
 /*------------------------------------------------solve---------------------------------------------------------*/

@@ -159,7 +159,7 @@ public:
         int num_patches, const int *patch_size, const int *patch_type, const double *vf, const double *boundary_vf, 
         const double *ldu, double *external, const double *source, const double *internal_coeffs, const double *boundary_coeffs,
         const int *cyclicNeighbor, const int *patchSizeOffset, double *A, double *b);
-    void ueqn_ldu_to_csr_no_diag(int row_, int num_surfaces, int *off_diag_rowptr_, double *lower, double *upper, int *lowerAddr, int *upperAddr, double *off_diag_value_);
+    void ueqn_ldu_to_csr_no_diag(int num_surfaces, int* index, double* value, double* result);
     int get_ell_row_maxcount(int row_, int num_surfaces, int* lowerAddr, int* upperAddr);
     void ueqn_ldu_to_ell_no_diag(int row_, int num_surfaces, double* lower, double* upper, int* lowerAddr, int* upperAddr, double* ellValues, int* ellCols, int maxcount);
 

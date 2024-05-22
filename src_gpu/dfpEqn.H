@@ -136,6 +136,7 @@ public:
     void comparedpdt(const double *dpdt, bool printFlag);
 
     void peqn_ldu_to_csr_no_diag(int row_, int num_surfaces, int *off_diag_rowptr_, double *lower, double *upper, int *lowerAddr, int *upperAddr, double *off_diag_value_);
+    void peqn_ldu2csr(cudaStream_t stream, int row_, int num_surfaces, double *d_lower, double *d_upper, int *d_lowerAddr, int *d_upperAddr, double *d_off_diag_value, int *d_csr_row_index_no_diag, int *d_csr_col_index_no_diag);
 
     // add for GAMG
     void getInterfacesCoeffs(cudaStream_t stream, int num_patches, std::vector<int> patch_size, 

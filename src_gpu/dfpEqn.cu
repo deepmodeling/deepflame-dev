@@ -613,6 +613,10 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
                 checkCudaErrors(cudaMemset(GAMGdata[leveli].d_lower, 0, GAMGdata[leveli].nFace * sizeof(double)));
                 checkCudaErrors(cudaMemset(GAMGdata[leveli].d_upper, 0, GAMGdata[leveli].nFace * sizeof(double)));
                 checkCudaErrors(cudaMemset(GAMGdata[leveli].d_diag, 0, GAMGdata[leveli].nCell * sizeof(double)));
+                checkCudaErrors(cudaMemset(GAMGdata[leveli].d_off_diag_value, 0, GAMGdata[leveli].nFace * 2 * sizeof(double)));
+                checkCudaErrors(cudaMemset(GAMGdata[leveli].d_csr_row_index_no_diag, 0, (GAMGdata[leveli].nCell + 1) * sizeof(int)));
+                checkCudaErrors(cudaMemset(GAMGdata[leveli].d_csr_col_index_no_diag, 0, GAMGdata[leveli].nFace * 2 * sizeof(int)));
+
             }
 
 #ifndef PARALLEL_
@@ -702,6 +706,13 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
         // coarse level ldu to csr
         for(int leveli=0; leveli<agglomeration_level; leveli++)
         {
+
+            // ldu2csr
+            checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_lowerAddr, &GAMGdata[leveli].lowerAddr[0], GAMGdata[leveli].nFace * sizeof(int), cudaMemcpyHostToDevice, dataBase_.stream));
+            checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_upperAddr, &GAMGdata[leveli].upperAddr[0], GAMGdata[leveli].nFace * sizeof(int), cudaMemcpyHostToDevice, dataBase_.stream));
+            peqn_ldu2csr(dataBase_.stream, GAMGdata[leveli].nCell, GAMGdata[leveli].nFace, GAMGdata[leveli].d_lower, GAMGdata[leveli].d_upper, GAMGdata[leveli].d_lowerAddr, GAMGdata[leveli].d_upperAddr, 
+                GAMGdata[leveli].d_off_diag_value, GAMGdata[leveli].d_csr_row_index_no_diag, GAMGdata[leveli].d_csr_col_index_no_diag);
+
             bool writeData2Files = false;
             if (writeData2Files)
             {
@@ -1209,6 +1220,170 @@ void dfpEqn::peqn_ldu_to_csr_no_diag
         off_diag_value_[index] = upper[i];
         off_diag_current_index[row] += 1;
     }
+}
+
+__global__ void compute_row_count(cudaStream_t stream, int num_surfaces, int* d_off_diag_count, int* d_lower_count, int* d_upper_count, int* d_lowerAddr, int* d_upperAddr)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= num_surfaces)
+        return;
+
+    atomicAdd(&d_off_diag_count[d_upperAddr[index]], 1);
+    atomicAdd(&d_off_diag_count[d_lowerAddr[index]], 1);
+
+    atomicAdd(&d_lower_count[d_upperAddr[index]], 1);
+    atomicAdd(&d_upper_count[d_lowerAddr[index]], 1);
+
+}
+
+__global__ void compute_csr_row_index
+(
+    cudaStream_t stream, int row_, int* d_off_diag_count, int* d_csr_row_index_no_diag, 
+    int* d_lower_count, int* d_upper_count, int* d_csr_lower_index, int* d_csr_upper_index
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= row_)
+        return;
+
+    for(int i = 0; i <= index; i++){
+        d_csr_row_index_no_diag[index + 1] += d_off_diag_count[i];
+        d_csr_lower_index[index + 1] += d_lower_count[i];
+        d_csr_upper_index[index + 1] += d_upper_count[i];
+    }
+}
+
+__global__ void resort_ldu
+(
+    cudaStream_t stream, int row_, int num_surfaces, int* d_csr_lower_index, int* d_csr_upper_index, int* d_upperAddr, 
+    int* d_lowerAddr, double* d_lower, double* d_upper, double* d_resortColValue, int* d_resortColIndex,
+    double* d_resortRowValue, int* d_resortRowIndex
+)
+{
+    int index = blockDim.x * blockIdx.x + threadIdx.x;
+    if (index >= row_)
+        return;
+
+    // upper
+    int offset = d_csr_upper_index[index];
+    int count = 0;
+    for(int j = 0; j< num_surfaces; j++){
+        if(d_lowerAddr[j] == index){
+            d_resortColValue[offset + count] = d_upper[j];
+            d_resortColIndex[offset + count] = d_upperAddr[j];
+            count++;
+        }
+    }
+
+    // lower
+    offset = d_csr_lower_index[index];
+    count = 0;
+    for(int j = 0; j< num_surfaces; j++){
+        if(d_upperAddr[j] == index){
+            d_resortRowValue[offset + count] = d_lower[j];
+            d_resortRowIndex[offset + count] = d_lowerAddr[j];
+            count++;
+        }
+    }
+}
+
+__global__ void compute_csr_col_index_and_value
+(
+    cudaStream_t stream, int row_, int* d_lower_count, int* d_upper_count,
+    int* d_csr_lower_index, int* d_csr_upper_index, double *d_lower, 
+    double *d_upper, int *d_lowerAddr, int *d_upperAddr, double *d_off_diag_value, 
+    int* d_csr_row_index_no_diag, int *d_csr_col_index_no_diag
+)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i >= row_)
+        return;
+
+    int lsize = d_lower_count[i];
+    int usize = d_upper_count[i];
+    // lower
+    for(int j = 0; j < lsize; j++){
+        int lduloc = d_csr_lower_index[i] + j;
+        int col = d_lowerAddr[lduloc];
+        double value = d_lower[lduloc];
+        d_csr_col_index_no_diag[d_csr_row_index_no_diag[i] + j] = col;
+        d_off_diag_value[d_csr_row_index_no_diag[i] + j] = value;
+    }
+    // upper
+    for(int j = lsize; j < (lsize + usize); j++){
+        int lduloc = d_csr_upper_index[i] + j - lsize;
+        int col = d_upperAddr[lduloc];
+        double value = d_upper[lduloc];
+        d_csr_col_index_no_diag[d_csr_row_index_no_diag[i] + j] = col;
+        d_off_diag_value[d_csr_row_index_no_diag[i] + j] = value;
+    }
+}
+
+void dfpEqn::peqn_ldu2csr(
+    cudaStream_t stream,
+    int row_, 
+    int num_surfaces, 
+    double *d_lower, 
+    double *d_upper, 
+    int *d_lowerAddr, 
+    int *d_upperAddr, 
+    double *d_off_diag_value, 
+    int *d_csr_row_index_no_diag, 
+    int *d_csr_col_index_no_diag
+){
+
+    int* d_off_diag_count;
+    int* d_lower_count;
+    int* d_upper_count;
+    int* d_csr_lower_index;
+    int* d_csr_upper_index;
+    cudaMalloc(&d_off_diag_count, row_ * sizeof(int));
+    cudaMalloc(&d_lower_count, row_ * sizeof(int));
+    cudaMalloc(&d_upper_count, row_ * sizeof(int));
+    cudaMalloc(&d_csr_lower_index, (row_ + 1) * sizeof(int));
+    cudaMalloc(&d_csr_upper_index, (row_ + 1) * sizeof(int));
+    cudaMemset(d_off_diag_count, 0, row_ * sizeof(int));
+    cudaMemset(d_lower_count, 0, row_ * sizeof(int));
+    cudaMemset(d_upper_count, 0, row_ * sizeof(int));
+    cudaMemset(d_csr_lower_index, 0, (row_ + 1) * sizeof(int));
+    cudaMemset(d_csr_upper_index, 0, (row_ + 1) * sizeof(int));
+
+    int* d_resortColIndex;
+    double* d_resortColValue;
+    cudaMalloc(&d_resortColIndex, num_surfaces * sizeof(int));
+    cudaMalloc(&d_resortColValue, num_surfaces * sizeof(double));
+    int* d_resortRowIndex;
+    double* d_resortRowValue;
+    cudaMalloc(&d_resortRowIndex, num_surfaces * sizeof(int));
+    cudaMalloc(&d_resortRowValue, num_surfaces * sizeof(double));
+
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (num_surfaces + threads_per_block - 1) / threads_per_block;
+    compute_row_count<<<blocks_per_grid, threads_per_block, 0, stream>>>
+        (stream, num_surfaces, d_off_diag_count, d_lower_count, d_upper_count, d_lowerAddr, d_upperAddr);
+
+    threads_per_block = 1024;
+    blocks_per_grid = (row_ + threads_per_block - 1) / threads_per_block;
+    compute_csr_row_index<<<blocks_per_grid, threads_per_block, 0, stream>>>
+        (stream, row_, d_off_diag_count, d_csr_row_index_no_diag, d_lower_count, d_upper_count, d_csr_lower_index, d_csr_upper_index);
+
+    threads_per_block = 1024;
+    blocks_per_grid = (row_ + threads_per_block - 1) / threads_per_block;
+    resort_ldu<<<blocks_per_grid, threads_per_block, 0, stream>>>
+        (stream, row_, num_surfaces, d_csr_lower_index, d_csr_upper_index, d_upperAddr,
+        d_lowerAddr, d_lower, d_upper, d_resortColValue, d_resortColIndex, d_resortRowValue, d_resortRowIndex);
+
+    threads_per_block = 1024;
+    blocks_per_grid = (row_ + threads_per_block - 1) / threads_per_block;
+    compute_csr_col_index_and_value<<<blocks_per_grid, threads_per_block, 0, stream>>>
+        (stream, row_, d_lower_count, d_upper_count, d_csr_lower_index, d_csr_upper_index, d_resortRowValue, 
+        d_resortColValue, d_resortRowIndex, d_resortColIndex, d_off_diag_value, d_csr_row_index_no_diag, d_csr_col_index_no_diag);
+
+    cudaFree(d_off_diag_count);
+    cudaFree(d_lower_count);
+    cudaFree(d_upper_count);
+    cudaFree(d_csr_lower_index);
+    cudaFree(d_csr_upper_index);
 }
 
 __global__ void kernel_getInterfacesCoeffs
