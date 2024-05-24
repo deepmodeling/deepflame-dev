@@ -31,7 +31,7 @@ private:
 	AmgXSolver *UySolver = nullptr;
 	AmgXSolver *UzSolver = nullptr;
 
-    CSRSolver *USolver = nullptr;
+    CSRSolver *UCSRSolver = nullptr;
     ELLSolver *UELLSolver = nullptr;
     int num_iteration = 0;
 
@@ -98,8 +98,6 @@ private:
 
     // non-constant fields - ell
     double *d_ellValues;
-    int *d_ellCols;
-    int maxcount;
 
     // field pointer map
     std::unordered_map<std::string, double*> fieldPointerMap;
@@ -160,8 +158,7 @@ public:
         const double *ldu, double *external, const double *source, const double *internal_coeffs, const double *boundary_coeffs,
         const int *cyclicNeighbor, const int *patchSizeOffset, double *A, double *b);
     void ueqn_ldu_to_csr_no_diag(int num_surfaces, int* index, double* value, double* result);
-    int get_ell_row_maxcount(int row_, int num_surfaces, int* lowerAddr, int* upperAddr);
-    void ueqn_ldu_to_ell_no_diag(int row_, int num_surfaces, double* lower, double* upper, int* lowerAddr, int* upperAddr, double* ellValues, int* ellCols, int maxcount);
+    void ueqn_ldu_to_ell_no_diag(int num_surfaces, int* ldu2ellIndex, double* ldu, double* result);
 
     void solve();
     void sync();

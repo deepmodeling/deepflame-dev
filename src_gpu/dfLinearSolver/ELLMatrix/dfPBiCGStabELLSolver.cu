@@ -52,6 +52,69 @@ void PBiCGStabELLSolver::initializeStream(const int nCells, const size_t boundar
     cudaMallocAsync(&scalarRecvBufList_, boundary_surface_value_bytes, stream);
 }
 
+void PBiCGStabELLSolver::freeInit(){
+    cudaFree(d_yA);
+    cudaFree(d_rA);
+    cudaFree(d_pA);
+    cudaFree(d_normFactors_tmp);
+    cudaFree(d_AyA);
+    cudaFree(d_sA);
+    cudaFree(d_zA);
+    cudaFree(d_tA);
+    cudaFree(d_rA0);
+    cudaFree(d_rA0rA_tmp);
+    cudaFree(d_rA0AyA_tmp);
+    cudaFree(d_tAtA_tmp);
+    cudaFree(d_sAtA_tmp);
+    cudaFree(reduce_result);
+    cudaFree(scalarSendBufList_);
+    cudaFree(scalarRecvBufList_);
+}
+
+void PBiCGStabELLSolver::freeInitStream(cudaStream_t stream){
+    cudaFreeAsync(d_yA, stream);
+    cudaFreeAsync(d_rA, stream);
+    cudaFreeAsync(d_pA, stream);
+    cudaFreeAsync(d_normFactors_tmp, stream);
+    cudaFreeAsync(d_AyA, stream);
+    cudaFreeAsync(d_sA, stream);
+    cudaFreeAsync(d_zA, stream);
+    cudaFreeAsync(d_tA, stream);
+    cudaFreeAsync(d_rA0, stream);
+    cudaFreeAsync(d_rA0rA_tmp, stream);
+    cudaFreeAsync(d_rA0AyA_tmp, stream);
+    cudaFreeAsync(d_tAtA_tmp, stream);
+    cudaFreeAsync(d_sAtA_tmp, stream);
+    cudaFreeAsync(reduce_result, stream);
+    cudaFreeAsync(scalarSendBufList_, stream);
+    cudaFreeAsync(scalarRecvBufList_, stream);
+}
+
+void PBiCGStabELLSolver::initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level)
+{
+    // preconditioner
+    std::cout << "********* call in PBiCGStabELLSolver::initGAMGMatrix() " << std::endl;
+}
+
+void PBiCGStabELLSolver::initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
+            GAMGStruct *GAMGdata_, int agglomeration_level) {};
+            
+void PBiCGStabELLSolver::solve_useGAMG
+(
+    const dfMatrixDataBase& dataBase,
+    const double* d_internal_coeffs,
+    const double* d_boundary_coeffs,
+    int* patch_type,
+    double* diagPtr,
+    double* d_ell_values,
+    int* d_ell_cols,
+    int ell_row_maxcount,
+    const double *rhs, 
+    double *psi,
+    GAMGStruct *GAMGdata_, 
+    int agglomeration_level
+){};
+
 /*------------------------------------------------solve---------------------------------------------------------*/
 
 void PBiCGStabELLSolver::solve

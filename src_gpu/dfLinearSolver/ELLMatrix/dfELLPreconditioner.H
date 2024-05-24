@@ -1,13 +1,13 @@
 #pragma once
 #include "dfMatrixDataBase.H"
-#include "dfCSRSmoother.H"
+#include "dfELLSmoother.H"
 
-class CSRPreconditioner{
+class ELLPreconditioner{
 
 public:
 
-    CSRPreconditioner(){}
-    virtual ~CSRPreconditioner() {}
+    ELLPreconditioner(){}
+    virtual ~ELLPreconditioner() {}
 
     virtual void initialize(GAMGStruct *GAMGdata_, int agglomeration_level) = 0;
 
@@ -20,15 +20,15 @@ public:
     ) = 0;
 };
 
-class GAMGCSRPreconditioner : public CSRPreconditioner {
+class GAMGELLPreconditioner : public ELLPreconditioner {
 public:
     // variables related to the GAMG preconditioner
     int nLevels;
 
-    CSRSmoother *smoother = nullptr;
+    ELLSmoother *smoother = nullptr;
 
-    GAMGCSRPreconditioner() {}
-    virtual ~GAMGCSRPreconditioner() {}
+    GAMGELLPreconditioner() {}
+    virtual ~GAMGELLPreconditioner() {}
 
     virtual void initialize(
         /* init variables related to GAMG preconditioner */
@@ -57,4 +57,3 @@ public:
 
     virtual void initCycle(GAMGStruct *GAMGdata, int agglomeration_level);
 };
-

@@ -1,6 +1,7 @@
 #include "dfpEqn.H"
 // #define AMGX_
 #define CSR_
+// #define ELL_
 
 // Start if write vector to file ...
 #include <fstream>
@@ -8,22 +9,18 @@
 #include <iostream>
 #include <vector>
 #include <string>
-template<typename Container>
-void write_vector_to_file(const Container& container, const std::string& filename);
 
-template<typename Container>
-void write_vector_to_file(const Container& container, const std::string& filename) {
-    std::ofstream file(filename);
-    if (file.is_open()) {
-        for (const auto& value : container) {
-            file << std::setprecision(10) << value << '\n'; 
-        }
-        file.close();
-    } else {
-        std::cerr << " error!!!!!!!! "  << std::endl;
+void readArrayFromBinaryFile(const std::string& filename, double* array, std::size_t size) {
+    std::ifstream inFile(filename, std::ios::binary);
+    if (!inFile) {
+        std::cerr << "Error opening file for reading: " << filename << std::endl;
+        return;
     }
+
+    inFile.read(reinterpret_cast<char*>(array), size * sizeof(double));
+    inFile.close();
 }
-// End if ...
+
 
 __global__ void fvc_interpolate_internal_multi_scalar_kernel(int num_surfaces, const int *lower_index, const int *upper_index,
         const double *vf1, const double *vf2, const double *weight, double *output, double sign)
@@ -323,7 +320,9 @@ void dfpEqn::setConstantValues(const std::string &mode_string, const std::string
     this->stream = dataBase_.stream;
     this->mode_string = mode_string;
     this->setting_path = setting_path;
+#ifdef AMGX_
     pSolver = new AmgXSolver(mode_string, setting_path, dataBase_.localRank);
+#endif
 
 #ifdef CSR_
     bool useGAMG = true;
@@ -345,6 +344,29 @@ void dfpEqn::setConstantValues(const std::string &mode_string, const std::string
     else 
     {
         pCSRSolver->initialize(dataBase_.num_cells, dataBase_.boundary_surface_value_bytes);
+    }
+#endif
+
+#ifdef ELL_
+    bool useGAMG = true;
+    pELLSolver = new PCGELLSolver();
+    pELLSolver->initSolvePerformance
+    (     
+        1e-20, //small_
+        2.22507e-308, //vsmall_
+        4, //maxIter_ 
+        4, //minIter_ 
+        1e-9, //tolerance_ 
+        0.01 //relTol_
+    );
+    if (useGAMG)
+    {
+        pELLSolver->initializeGAMG(dataBase_.num_cells, dataBase_.boundary_surface_value_bytes,
+                            GAMGdata_, agglomeration_level);
+    }
+    else 
+    {
+        pELLSolver->initialize(dataBase_.num_cells, dataBase_.boundary_surface_value_bytes);
     }
 #endif
 }
@@ -380,9 +402,21 @@ void dfpEqn::createNonConstantFieldsBoundary() {
 void dfpEqn::createNonConstantLduAndCsrFields() {
     // ldu and csr
     checkCudaErrors(cudaMalloc((void**)&d_ldu, dataBase_.csr_value_bytes));
+#ifdef AMGX_
     d_lower = d_ldu;
     d_diag = d_ldu + dataBase_.num_surfaces;
     d_upper = d_ldu + dataBase_.num_cells + dataBase_.num_surfaces;
+#endif
+#ifdef CSR_
+    d_lower = d_ldu;
+    d_upper = d_ldu + dataBase_.num_surfaces;
+    d_diag = d_ldu + 2 * dataBase_.num_surfaces;
+#endif
+#ifdef ELL_
+    d_lower = d_ldu;
+    d_upper = d_ldu + dataBase_.num_surfaces;
+    d_diag = d_ldu + 2 * dataBase_.num_surfaces;
+#endif
     d_extern = d_ldu + dataBase_.num_cells + 2 * dataBase_.num_surfaces;
 #ifndef STREAM_ALLOCATOR
     checkCudaErrors(cudaMalloc((void**)&d_source, dataBase_.cell_value_bytes));
@@ -390,6 +424,16 @@ void dfpEqn::createNonConstantLduAndCsrFields() {
     checkCudaErrors(cudaMalloc((void**)&d_boundary_coeffs, dataBase_.boundary_surface_value_bytes));
     checkCudaErrors(cudaMalloc((void**)&d_A, dataBase_.csr_value_bytes));
 #endif
+}
+
+void dfpEqn::GAMGpEqnldu(GAMGStruct *GAMGdata_, int agglomeration_level){
+    GAMGlduPtr.resize(agglomeration_level);
+    GAMGldu2csrPtr.resize(agglomeration_level);
+    for(int i = 0; i < agglomeration_level; i++){
+        checkCudaErrors(cudaMalloc((void**)&GAMGlduPtr[i], GAMGdata_[i].nFace * 2 * sizeof(double)));
+        checkCudaErrors(cudaMalloc((void**)&GAMGldu2csrPtr[i], GAMGdata_[i].nFace * 2 * sizeof(int)));
+        checkCudaErrors(cudaMemcpy(GAMGldu2csrPtr[i], dataBase_.h_ldu_to_csr_no_diag[i], GAMGdata_[i].nFace * 2 * sizeof(int), cudaMemcpyHostToDevice));
+    }
 }
 
 void dfpEqn::initNonConstantFields(const double *p, const double *boundary_p){
@@ -509,86 +553,34 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
             d_ldu, d_source, d_internal_coeffs, d_boundary_coeffs, d_A);
 #endif
 
+    // load CPU data for test ---start
+    bool loadCPUdata4test = true;
+    if (loadCPUdata4test){
+        printf("*** LOADing data from files ***\n");
+        std::string filename_diag = "/root/gpuversion0417/tmp0418/test0514/cvodeIntegrator_64/diag.bin";
+        std::string filename_upper = "/root/gpuversion0417/tmp0418/test0514/cvodeIntegrator_64/upper.bin";
+        std::string filename_lower = "/root/gpuversion0417/tmp0418/test0514/cvodeIntegrator_64/lower.bin";
+        std::string filename_source = "/root/gpuversion0417/tmp0418/test0514/cvodeIntegrator_64/source.bin";
+        double* data_diag;
+        double* data_upper;
+        double* data_lower;
+        double* data_source;
+        data_diag = (double*)malloc(sizeof(double)*dataBase_.num_cells);
+        data_upper = (double*)malloc(sizeof(double)*dataBase_.num_surfaces);
+        data_lower = (double*)malloc(sizeof(double)*dataBase_.num_surfaces);
+        data_source = (double*)malloc(sizeof(double)*dataBase_.num_cells);
+        readArrayFromBinaryFile(filename_diag, data_diag, dataBase_.num_cells);
+        readArrayFromBinaryFile(filename_upper, data_upper, dataBase_.num_surfaces);
+        readArrayFromBinaryFile(filename_lower, data_lower, dataBase_.num_surfaces);
+        readArrayFromBinaryFile(filename_source, data_source, dataBase_.num_cells);
+
+        cudaMemcpy(d_diag,  &data_diag[0],  sizeof(double)*dataBase_.num_cells,    cudaMemcpyHostToDevice);
+        cudaMemcpy(d_lower, &data_lower[0], sizeof(double)*dataBase_.num_surfaces, cudaMemcpyHostToDevice);
+        cudaMemcpy(d_upper, &data_upper[0], sizeof(double)*dataBase_.num_surfaces, cudaMemcpyHostToDevice);
+        cudaMemcpy(d_source, &data_source[0], sizeof(double)*dataBase_.num_cells, cudaMemcpyHostToDevice);
+    }
+
 #ifdef CSR_
-
-        double *h_lower;
-        double *h_upper;
-        int *h_owner;
-        int *h_neighbor;
-        h_lower = (double*)malloc(dataBase_.num_surfaces * sizeof(double));
-        h_upper = (double*)malloc(dataBase_.num_surfaces * sizeof(double));
-        h_owner = (int*)malloc(dataBase_.num_surfaces * sizeof(int));
-        h_neighbor = (int*)malloc(dataBase_.num_surfaces * sizeof(int));
-        cudaMemcpyAsync(h_lower, d_lower, dataBase_.num_surfaces * sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream);
-        cudaMemcpyAsync(h_upper, d_upper, dataBase_.num_surfaces * sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream);
-        cudaMemcpyAsync(h_owner, dataBase_.d_owner, dataBase_.num_surfaces * sizeof(int), cudaMemcpyDeviceToHost, dataBase_.stream);
-        cudaMemcpyAsync(h_neighbor, dataBase_.d_neighbor, dataBase_.num_surfaces * sizeof(int), cudaMemcpyDeviceToHost, dataBase_.stream);
-
-        int *h_csr_row_index_no_diag;
-        h_csr_row_index_no_diag = (int*)malloc((dataBase_.num_cells + 1) * sizeof(int));
-        cudaMemcpyAsync(h_csr_row_index_no_diag, dataBase_.d_csr_row_index_no_diag, (dataBase_.num_cells + 1) * sizeof(int), cudaMemcpyDeviceToHost, dataBase_.stream);
-        checkCudaErrors(cudaMallocAsync((void**)&d_off_diag, dataBase_.num_surfaces * 2 * sizeof(double), dataBase_.stream));        
-        double *h_off_diag;
-        h_off_diag = (double*)malloc(dataBase_.num_surfaces * 2 * sizeof(double));
-        peqn_ldu_to_csr_no_diag(dataBase_.num_cells, dataBase_.num_surfaces, h_csr_row_index_no_diag, 
-            h_lower, h_upper, h_owner, h_neighbor, h_off_diag);
-        cudaMemcpy(d_off_diag, h_off_diag, dataBase_.num_surfaces * 2 * sizeof(double), cudaMemcpyHostToDevice);
-
-        // load CPU data for test ---start
-        bool loadCPUdata4test = false;
-        if (loadCPUdata4test){
-            std::string filename_diag = "/root/0422/deepflame-dev/examples/dfLowMachFoam/cvodeIntegrator_64/h_diag_0_Ref.txt";
-            std::string filename_upper = "/root/0422/deepflame-dev/examples/dfLowMachFoam/cvodeIntegrator_64/h_upper_0_Ref.txt";
-            std::string filename_lower = "/root/0422/deepflame-dev/examples/dfLowMachFoam/cvodeIntegrator_64/h_lower_0_Ref.txt";
-
-            std::vector<double> data_diag, data_upper, data_lower;
-
-            int offset = 0;
-            std::ifstream file_diag(filename_diag);
-            if (!file_diag.is_open()) {
-                    std::cerr << "error open filename_diag : " << filename_diag << std::endl;
-            }
-            double number_diag;
-            while (file_diag >> std::setprecision(10) >> number_diag){
-                if(offset < dataBase_.num_cells){
-                    data_diag.push_back(number_diag);
-                }
-                offset++;
-            }
-            file_diag.close();
-
-            offset = 0;
-            std::ifstream file_upper(filename_upper);
-            if (!file_upper.is_open()) {
-                    std::cerr << "error open file_upper : " << filename_upper << std::endl;
-            }
-            double number_upper;
-            while (file_upper >> std::setprecision(10) >> number_upper){
-                if(offset < dataBase_.num_surfaces){
-                    data_upper.push_back(number_upper);
-                }
-                offset++;
-            }
-            file_upper.close();
-
-            offset = 0;
-            std::ifstream file_lower(filename_lower);
-            if (!file_lower.is_open()) {
-                    std::cerr << "error open filename_diag : " << filename_lower << std::endl;
-            }
-            double number_lower;
-            while (file_lower >> std::setprecision(10) >> number_lower){
-                if(offset < dataBase_.num_surfaces){
-                    data_lower.push_back(number_lower);
-                }
-                offset++;
-            }
-            file_lower.close();
-
-            cudaMemcpy(d_diag,  &data_diag[0],  sizeof(double)*dataBase_.num_cells,    cudaMemcpyHostToDevice);
-            cudaMemcpy(d_lower, &data_lower[0], sizeof(double)*dataBase_.num_surfaces, cudaMemcpyHostToDevice);
-            cudaMemcpy(d_upper, &data_upper[0], sizeof(double)*dataBase_.num_surfaces, cudaMemcpyHostToDevice);
-        }
 
         // ========================================================================================
         // startif use GAMG ... save for finest matrix
@@ -600,13 +592,16 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
         // malloc & memset coarse level
         for(int leveli=0; leveli<agglomeration_level; leveli++)
         {
-            std::cout << "leveli: " << leveli << std::endl;
+            std::cout << "malloc and memset leveli: " << leveli << std::endl;
             // Set matrix data
             if(leveli==0)
             {
                 checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_lower, d_lower, GAMGdata[leveli].nFace * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
                 checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_upper, d_upper, GAMGdata[leveli].nFace * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
                 checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_diag, d_diag, GAMGdata[leveli].nCell * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
+                checkCudaErrors(cudaMemset(GAMGdata[leveli].d_off_diag_value, 0, GAMGdata[leveli].nFace * 2 * sizeof(double)));
+                checkCudaErrors(cudaMemset(GAMGdata[leveli].d_csr_row_index_no_diag, 0, (GAMGdata[leveli].nCell + 1) * sizeof(int)));
+                checkCudaErrors(cudaMemset(GAMGdata[leveli].d_csr_col_index_no_diag, 0, GAMGdata[leveli].nFace * 2 * sizeof(int)));
             }
             else
             {
@@ -616,10 +611,10 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
                 checkCudaErrors(cudaMemset(GAMGdata[leveli].d_off_diag_value, 0, GAMGdata[leveli].nFace * 2 * sizeof(double)));
                 checkCudaErrors(cudaMemset(GAMGdata[leveli].d_csr_row_index_no_diag, 0, (GAMGdata[leveli].nCell + 1) * sizeof(int)));
                 checkCudaErrors(cudaMemset(GAMGdata[leveli].d_csr_col_index_no_diag, 0, GAMGdata[leveli].nFace * 2 * sizeof(int)));
-
             }
 
-#ifndef PARALLEL_
+
+#ifdef PARALLEL_
             if (leveli==0)
             {
                 getInterfacesCoeffs(dataBase_.stream, dataBase_.num_patches, dataBase_.patch_size, 
@@ -706,91 +701,148 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
         // coarse level ldu to csr
         for(int leveli=0; leveli<agglomeration_level; leveli++)
         {
-
-            // ldu2csr
+            checkCudaErrors(cudaMemcpy(GAMGdata[leveli].d_csr_row_index_no_diag, dataBase_.h_csr_row_index_no_diag[leveli], (GAMGdata[leveli].nCell + 1) * sizeof(int), cudaMemcpyHostToDevice));
+            checkCudaErrors(cudaMemcpy(GAMGdata[leveli].d_csr_col_index_no_diag, dataBase_.h_csr_col_index_no_diag[leveli], GAMGdata[leveli].nFace * 2 * sizeof(int), cudaMemcpyHostToDevice));
             checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_lowerAddr, &GAMGdata[leveli].lowerAddr[0], GAMGdata[leveli].nFace * sizeof(int), cudaMemcpyHostToDevice, dataBase_.stream));
             checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_upperAddr, &GAMGdata[leveli].upperAddr[0], GAMGdata[leveli].nFace * sizeof(int), cudaMemcpyHostToDevice, dataBase_.stream));
-            peqn_ldu2csr(dataBase_.stream, GAMGdata[leveli].nCell, GAMGdata[leveli].nFace, GAMGdata[leveli].d_lower, GAMGdata[leveli].d_upper, GAMGdata[leveli].d_lowerAddr, GAMGdata[leveli].d_upperAddr, 
-                GAMGdata[leveli].d_off_diag_value, GAMGdata[leveli].d_csr_row_index_no_diag, GAMGdata[leveli].d_csr_col_index_no_diag);
+            checkCudaErrors(cudaMemcpy(GAMGlduPtr[leveli], GAMGdata[leveli].d_lower, GAMGdata[leveli].nFace * sizeof(double), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaMemcpy(GAMGlduPtr[leveli] + GAMGdata[leveli].nFace, GAMGdata[leveli].d_upper, GAMGdata[leveli].nFace * sizeof(double), cudaMemcpyDeviceToDevice));
+            peqn_ldu_to_csr_no_diag(GAMGdata[leveli].nFace * 2, GAMGldu2csrPtr[leveli], GAMGlduPtr[leveli], GAMGdata[leveli].d_off_diag_value);
+            
+            // checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_lowerAddr, &GAMGdata[leveli].lowerAddr[0], GAMGdata[leveli].nFace * sizeof(int), cudaMemcpyHostToDevice, dataBase_.stream));
+            // checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_upperAddr, &GAMGdata[leveli].upperAddr[0], GAMGdata[leveli].nFace * sizeof(int), cudaMemcpyHostToDevice, dataBase_.stream));
+            // peqn_ldu2csr(dataBase_.stream, GAMGdata[leveli].nCell, GAMGdata[leveli].nFace, GAMGdata[leveli].d_lower, GAMGdata[leveli].d_upper, GAMGdata[leveli].d_lowerAddr, GAMGdata[leveli].d_upperAddr, 
+            //     GAMGdata[leveli].d_off_diag_value, GAMGdata[leveli].d_csr_row_index_no_diag, GAMGdata[leveli].d_csr_col_index_no_diag);
+        }
+#endif
 
-            bool writeData2Files = false;
-            if (writeData2Files)
+#ifdef ELL_
+        // ========================================================================================
+        // startif use GAMG ... save for finest matrix
+        std::cout << "=== start agglomeration in dfpEqn::process() " << std::endl;
+        std::cout << "dataBase_.num_cells: " << dataBase_.num_cells 
+                  << ", dataBase_.num_surfaces: " << dataBase_.num_surfaces
+                  << ", dataBase_.num_boundary_surfaces: " << dataBase_.num_boundary_surfaces << std::endl;
+
+        // malloc & memset coarse level
+        for(int leveli=0; leveli<agglomeration_level; leveli++)
+        {
+            std::cout << "malloc and memset leveli: " << leveli << std::endl;
+            // Set matrix data
+            if(leveli==0)
             {
-                std::cout << "d2hcopy... leveli: " << leveli << std::endl;
+                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_lower, d_lower, GAMGdata[leveli].nFace * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
+                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_upper, d_upper, GAMGdata[leveli].nFace * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
+                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_diag, d_diag, GAMGdata[leveli].nCell * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
+                checkCudaErrors(cudaMemset(GAMGdata[leveli].d_ell_cols, 0, GAMGdata[leveli].ell_row_maxcount * GAMGdata[leveli].nCell * sizeof(int)));
+                checkCudaErrors(cudaMemset(GAMGdata[leveli].d_ell_values, 0, GAMGdata[leveli].ell_row_maxcount * GAMGdata[leveli].nCell * sizeof(double)));
+            }
+            else
+            {
+                checkCudaErrors(cudaMemset(GAMGdata[leveli].d_lower, 0, GAMGdata[leveli].nFace * sizeof(double)));
+                checkCudaErrors(cudaMemset(GAMGdata[leveli].d_upper, 0, GAMGdata[leveli].nFace * sizeof(double)));
+                checkCudaErrors(cudaMemset(GAMGdata[leveli].d_diag, 0, GAMGdata[leveli].nCell * sizeof(double)));
+                checkCudaErrors(cudaMemset(GAMGdata[leveli].d_ell_cols, 0, GAMGdata[leveli].ell_row_maxcount * GAMGdata[leveli].nCell * sizeof(int)));
+                checkCudaErrors(cudaMemset(GAMGdata[leveli].d_ell_values, 0, GAMGdata[leveli].ell_row_maxcount * GAMGdata[leveli].nCell * sizeof(double)));
 
-                GAMGdata[leveli].h_lower = (double*)malloc(GAMGdata[leveli].nFace*sizeof(double));
-                GAMGdata[leveli].h_upper = (double*)malloc(GAMGdata[leveli].nFace*sizeof(double));
-                GAMGdata[leveli].h_diag  = (double*)malloc(GAMGdata[leveli].nCell*sizeof(double));
+            }
 
-                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].h_lower, GAMGdata[leveli].d_lower, 
-                                                GAMGdata[leveli].nFace*sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream));
-                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].h_upper, GAMGdata[leveli].d_upper, 
-                                                GAMGdata[leveli].nFace*sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream));
-                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].h_diag, GAMGdata[leveli].d_diag, 
-                                                GAMGdata[leveli].nCell*sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream));
-                // GAMGdata[leveli].upperAddr,  GAMGdata[leveli].lowerAddr
 
-                // write data to file ...
-                std::stringstream s_h_lower;
-                s_h_lower << "h_lower_" << leveli << ".txt";
-                std::string file_name_h_lower = s_h_lower.str();
-                std::vector<double> vectorh_lower(GAMGdata[leveli].h_lower, GAMGdata[leveli].h_lower + GAMGdata[leveli].nFace);
-                write_vector_to_file(vectorh_lower, file_name_h_lower);
+#ifdef PARALLEL_
+            if (leveli==0)
+            {
+                getInterfacesCoeffs(dataBase_.stream, dataBase_.num_patches, dataBase_.patch_size, 
+                                    dataBase_.interfaceFlag, dataBase_.patch_type_extropolated.data(), 
+                                    d_boundary_coeffs, d_internal_coeffs, 
+                                    GAMGdata[0].d_interfaceBouCoeffs, GAMGdata[0].d_interfaceIntCoeffs);
 
-                std::stringstream s_h_upper;
-                s_h_upper << "h_upper_" << leveli << ".txt";
-                std::string file_name_h_upper = s_h_upper.str();
-                std::vector<double> vectorh_upper(GAMGdata[leveli].h_upper, GAMGdata[leveli].h_upper + GAMGdata[leveli].nFace);
-                write_vector_to_file(vectorh_upper, file_name_h_upper);
+                bool loadCPUCoeffdata4test = false;
+                if (loadCPUCoeffdata4test){
+                    int mpirank = dataBase_.localRank;
+                    for(int patchi=0; patchi<GAMGdata[leveli].nPatchFaces.size(); patchi++)
+                    {
+                        if (GAMGdata[leveli].nPatchFaces[patchi] > 0)
+                        {
+                            std::stringstream filenameBouCoeff; 
+                            std::stringstream filenameIntCoeff; 
 
-                std::stringstream s_h_diag;
-                s_h_diag << "h_diag_" << leveli << ".txt";
-                std::string file_name_h_diag = s_h_diag.str();
-                std::vector<double> vectorh_diag(GAMGdata[leveli].h_diag, GAMGdata[leveli].h_diag + GAMGdata[leveli].nCell);
-                write_vector_to_file(vectorh_diag, file_name_h_diag);
+                            filenameBouCoeff << "/root/0427/deepflame-dev/examples/dfLowMachFoam/cvodeIntegrator_64/h_bouCoeff_0_" << patchi << "_" << mpirank << "_Ref.txt";
+                            filenameIntCoeff << "/root/0427/deepflame-dev/examples/dfLowMachFoam/cvodeIntegrator_64/h_intCoeff_0_" << patchi << "_" << mpirank << "_Ref.txt";
 
-#ifndef PARALLEL_
-                int mpirank = dataBase_.localRank;
+                            std::string filename_bouCoeff = filenameBouCoeff.str();
+                            std::string filename_intCoeff = filenameIntCoeff.str();
 
-                GAMGdata[leveli].h_interfaceBouCoeffs = new double*[GAMGdata[leveli].nPatchFaces.size()]();
-                GAMGdata[leveli].h_interfaceIntCoeffs = new double*[GAMGdata[leveli].nPatchFaces.size()]();
+                            std::vector<double> data_bouCoeff, data_intCoeff;
 
+                            int offset = 0;
+                            std::ifstream file_bouCoeff(filename_bouCoeff);
+                            if (!file_bouCoeff.is_open()) {
+                                    std::cerr << "error open filename_bouCoeff : " << filename_bouCoeff << std::endl;
+                            }
+                            double number_bouCoeff;
+                            while (file_bouCoeff >> std::setprecision(10) >> number_bouCoeff){
+                                if(offset < GAMGdata[leveli].nPatchFaces[patchi]){
+                                    data_bouCoeff.push_back(number_bouCoeff);
+                                }
+                                offset++;
+                            }
+                            file_bouCoeff.close();
+
+                            offset = 0;
+                            std::ifstream file_intCoeff(filename_intCoeff);
+                            if (!file_intCoeff.is_open()) {
+                                    std::cerr << "error open filename_intCoeff : " << filename_intCoeff << std::endl;
+                            }
+                            double number_intCoeff;
+                            while (file_intCoeff >> std::setprecision(10) >> number_intCoeff){
+                                if(offset < GAMGdata[leveli].nPatchFaces[patchi]){
+                                    data_intCoeff.push_back(number_intCoeff);
+                                }
+                                offset++;
+                            }
+                            file_intCoeff.close();
+
+                            cudaMemcpy(GAMGdata[0].d_interfaceBouCoeffs[patchi], &data_bouCoeff[0], sizeof(double)*GAMGdata[leveli].nPatchFaces[patchi], cudaMemcpyHostToDevice);
+                            cudaMemcpy(GAMGdata[0].d_interfaceIntCoeffs[patchi], &data_intCoeff[0], sizeof(double)*GAMGdata[leveli].nPatchFaces[patchi], cudaMemcpyHostToDevice);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Set interface coef data
                 for(int patchi=0; patchi<GAMGdata[leveli].nPatchFaces.size(); patchi++)
                 {
                     if (GAMGdata[leveli].nPatchFaces[patchi] > 0)
                     {
-                        GAMGdata[leveli].h_interfaceBouCoeffs[patchi] = (double*) malloc(GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double));
-                        GAMGdata[leveli].h_interfaceIntCoeffs[patchi] = (double*) malloc(GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double));
+                        std::cout << "memset 0 in patch: " << patchi << std::endl;
 
-                        checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].h_interfaceBouCoeffs[patchi], GAMGdata[leveli].d_interfaceBouCoeffs[patchi], 
-                                                        GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream));
-                        checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].h_interfaceIntCoeffs[patchi], GAMGdata[leveli].d_interfaceIntCoeffs[patchi], 
-                                                        GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream));
+                        checkCudaErrors(cudaMemset(GAMGdata[leveli].d_interfaceBouCoeffs[patchi], 0, GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double)));
+                        checkCudaErrors(cudaMemset(GAMGdata[leveli].d_interfaceIntCoeffs[patchi], 0, GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double)));
+                    
                     }
                 }
-
-                for (int patchi=0; patchi<GAMGdata[leveli].nPatchFaces.size(); patchi++)
-                {
-                    if (GAMGdata[leveli].nPatchFaces[patchi] > 0)
-                    {
-                        std::stringstream s_h_bouCoeff;
-                        s_h_bouCoeff << "h_bouCoeff_" << leveli << "_" << patchi << "_" << mpirank  << ".txt";
-                        std::string file_name_h_bouCoeff = s_h_bouCoeff.str();
-                        std::vector<double> vectorh_bouCoeff(GAMGdata[leveli].h_interfaceBouCoeffs[patchi], GAMGdata[leveli].h_interfaceBouCoeffs[patchi] + GAMGdata[leveli].nPatchFaces[patchi]);
-                        write_vector_to_file(vectorh_bouCoeff, file_name_h_bouCoeff);
-
-                        std::stringstream s_h_intCoeff;
-                        s_h_intCoeff << "h_intCoeff_" << leveli << "_" << patchi << "_" << mpirank   << ".txt";
-                        std::string file_name_h_intCoeff = s_h_intCoeff.str();
-                        std::vector<double> vectorh_intCoeff(GAMGdata[leveli].h_interfaceIntCoeffs[patchi], GAMGdata[leveli].h_interfaceIntCoeffs[patchi] + GAMGdata[leveli].nPatchFaces[patchi]);
-                        write_vector_to_file(vectorh_intCoeff, file_name_h_intCoeff);
-                    }
-                }
-#endif
             }
+#endif
         }
-        // endif
-        // ========================================================================================
+
+        std::cout << "=============================================" << std::endl;
+        std::cout << "====== call pELLSolver->initGAMGMatrix ======" << std::endl;
+        pELLSolver->initGAMGMatrix(dataBase_, GAMGdata, agglomeration_level);
+        std::cout << "====== end pELLSolver->initGAMGMatrix =======" << std::endl;
+        std::cout << "=============================================" << std::endl;
+
+        // coarse level ldu to ell
+        for(int leveli=0; leveli<agglomeration_level; leveli++)
+        {
+
+            // ldu2ell
+            checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_lowerAddr, &GAMGdata[leveli].lowerAddr[0], GAMGdata[leveli].nFace * sizeof(int), cudaMemcpyHostToDevice, dataBase_.stream));
+            checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_upperAddr, &GAMGdata[leveli].upperAddr[0], GAMGdata[leveli].nFace * sizeof(int), cudaMemcpyHostToDevice, dataBase_.stream));
+            // TODO
+
+        }
+
 #endif
 
 #ifdef USE_GRAPH
@@ -1028,13 +1080,13 @@ void dfpEqn::solve(GAMGStruct *GAMGdata, int agglomeration_level)
     if (useGAMG)
     {
         pCSRSolver -> solve_useGAMG(dataBase_, d_internal_coeffs, d_boundary_coeffs, dataBase_.patch_type_extropolated.data(), 
-                        d_diag_tmp, d_off_diag, d_source, dataBase_.d_p,
+                        d_diag, GAMGdata[0].d_off_diag_value, d_source, dataBase_.d_p,
                         GAMGdata, agglomeration_level);
     }
     else
     {
         pCSRSolver -> solve(dataBase_, d_internal_coeffs, d_boundary_coeffs, dataBase_.patch_type_extropolated.data(), 
-                        d_diag_tmp, d_off_diag, d_source, dataBase_.d_p);
+                        d_diag, GAMGdata[0].d_off_diag_value, d_source, dataBase_.d_p);
     }
     printf("peqn PCG solve end\n");
 #endif
@@ -1197,30 +1249,31 @@ void dfpEqn::compareResult(const double *lower, const double *upper, const doubl
     DEBUG_TRACE;
 }
 
-void dfpEqn::peqn_ldu_to_csr_no_diag
-(int row_, int num_surfaces, int *off_diag_rowptr_, double *lower, double *upper, int *lowerAddr, int *upperAddr, double *off_diag_value_)
-{
-    std::vector<int> off_diag_current_index(row_ + 1);
-    off_diag_current_index[0] = 0;
-    for(int i = 0; i < row_; ++i){
-        off_diag_current_index[i + 1] = off_diag_rowptr_[i + 1];
-    }
-    // fill non-zero value
-    for(int i = 0; i < num_surfaces; ++i){
-        int row = upperAddr[i];
-        if(row > row_)printf("overflow\n");
-        int index = off_diag_current_index[row];
-        if(index > num_surfaces * 2)printf("index overflow! index = %d\n",index);
-        off_diag_value_[index] = lower[i]; 
-        off_diag_current_index[row] += 1;
-    }
-    for(int i = 0; i < num_surfaces; ++i){
-        int row = lowerAddr[i];
-        int index = off_diag_current_index[row];
-        off_diag_value_[index] = upper[i];
-        off_diag_current_index[row] += 1;
-    }
-}
+// cpu version : ldu2csr
+// void dfpEqn::peqn_ldu_to_csr_no_diag
+// (int row_, int num_surfaces, int *off_diag_rowptr_, double *lower, double *upper, int *lowerAddr, int *upperAddr, double *off_diag_value_)
+// {
+//     std::vector<int> off_diag_current_index(row_ + 1);
+//     off_diag_current_index[0] = 0;
+//     for(int i = 0; i < row_; ++i){
+//         off_diag_current_index[i + 1] = off_diag_rowptr_[i + 1];
+//     }
+//     // fill non-zero value
+//     for(int i = 0; i < num_surfaces; ++i){
+//         int row = upperAddr[i];
+//         if(row > row_)printf("overflow\n");
+//         int index = off_diag_current_index[row];
+//         if(index > num_surfaces * 2)printf("index overflow! index = %d\n",index);
+//         off_diag_value_[index] = lower[i]; 
+//         off_diag_current_index[row] += 1;
+//     }
+//     for(int i = 0; i < num_surfaces; ++i){
+//         int row = lowerAddr[i];
+//         int index = off_diag_current_index[row];
+//         off_diag_value_[index] = upper[i];
+//         off_diag_current_index[row] += 1;
+//     }
+// }
 
 __global__ void compute_row_count(cudaStream_t stream, int num_surfaces, int* d_off_diag_count, int* d_lower_count, int* d_upper_count, int* d_lowerAddr, int* d_upperAddr)
 {
@@ -1384,6 +1437,10 @@ void dfpEqn::peqn_ldu2csr(
     cudaFree(d_upper_count);
     cudaFree(d_csr_lower_index);
     cudaFree(d_csr_upper_index);
+    cudaFree(d_resortColIndex);
+    cudaFree(d_resortColValue);
+    cudaFree(d_resortRowIndex);
+    cudaFree(d_resortRowValue);
 }
 
 __global__ void kernel_getInterfacesCoeffs
@@ -1433,4 +1490,47 @@ void dfpEqn::getInterfacesCoeffs(
             offset += 2 * patch_size[i] : offset += patch_size[i];
     }
 
+}
+
+
+__global__ void ldu2csr_p(int num_surfaces, int* index, double* value, double* result){
+    
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i >= num_surfaces)
+        return;
+
+    result[i] = value[index[i]];
+}
+void dfpEqn::peqn_ldu_to_csr_no_diag
+(int num_surfaces, int* index, double* value, double* result)
+{
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (num_surfaces + threads_per_block - 1) / threads_per_block;
+
+    ldu2csr_p<<<blocks_per_grid, threads_per_block, 0 ,dataBase_.stream>>>
+        (num_surfaces, index, value, result);
+}
+
+
+__global__ void ldu2ell_p(int num_surfaces, int* index, double* ldu, double* result){
+    
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i >= num_surfaces)
+        return;
+
+    result[index[i]] = ldu[i];
+}
+void dfpEqn::peqn_ldu_to_ell_no_diag
+(
+    int num_surfaces,
+    int *ldu2ellIndex,
+    double *ldu,
+    double *result
+)
+{
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (num_surfaces + threads_per_block - 1) / threads_per_block;
+
+    ldu2ell_p<<<blocks_per_grid, threads_per_block, 0 ,dataBase_.stream>>>
+        (num_surfaces, ldu2ellIndex, ldu, result);
 }

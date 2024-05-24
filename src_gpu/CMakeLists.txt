@@ -46,7 +46,10 @@ add_library(${PROJECT_NAME}
         dfLinearSolver/CSRMatrix/dfGAMGCSRPreconditioner.cu
         dfLinearSolver/CSRMatrix/dfCSRJacobiSmoother.cu
 
-        dfLinearSolver/ELLMatrix/dfPBiCGStabELLSolver.cu)
+        dfLinearSolver/ELLMatrix/dfPBiCGStabELLSolver.cu
+        dfLinearSolver/ELLMatrix/dfPCGELLSolver.cu
+        dfLinearSolver/ELLMatrix/dfGAMGELLPreconditioner.cu
+        dfLinearSolver/ELLMatrix/dfELLJacobiSmoother.cu)
 
 set_target_properties(dfMatrix PROPERTIES CUDA_ARCHITECTURES "60;61;62;70;72;75")
 

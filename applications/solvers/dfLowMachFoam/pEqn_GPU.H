@@ -7,6 +7,10 @@
 // UEqn_GPU.getHbyA();
 // pEqn_GPU.process();
 // UEqn_GPU.sync();
+#include <mpi.h>
+#include <iostream>
+#include <vector>
+#include <fstream>
 
 #if defined DEBUG_
     if (!pimple.simpleRho())
@@ -110,6 +114,27 @@
         auto& internalCoeffs = pEqn.internalCoeffs();
         auto& boundaryCoeffs = pEqn.boundaryCoeffs();
         std::cout << "=== start call csr.solve " << std::endl;
+
+        // std::string filename1 = "diag.bin";
+        // // saveArrayToBinaryFile(filename1, &csr.diag()[0], dfDataBase.num_cells);
+        // std::ofstream outFile1(filename1, std::ios::binary);
+        // outFile1.write(reinterpret_cast<const char*>(&csr.diag()[0]), dfDataBase.num_cells * sizeof(double));
+        // outFile1.close();
+
+        // std::string filename2 = "lower.bin";
+        // // saveArrayToBinaryFile(filename2, &csr.ldu().lower()[0], dfDataBase.num_surfaces);
+        // std::ofstream outFile2(filename2, std::ios::binary);
+        // outFile2.write(reinterpret_cast<const char*>(&csr.ldu().lower()[0]), dfDataBase.num_surfaces * sizeof(double));
+        // outFile2.close();
+
+        // std::string filename3 = "upper.bin";
+        // // saveArrayToBinaryFile(filename3, &csr.ldu().upper()[0], dfDataBase.num_surfaces);
+        // std::ofstream outFile3(filename3, std::ios::binary);
+        // outFile3.write(reinterpret_cast<const char*>(&csr.ldu().upper()[0]), dfDataBase.num_surfaces * sizeof(double));
+        // outFile3.close();
+
+        // MPI_Abort(MPI_COMM_WORLD, 1);
+
         csr.solve(p_psi, source, internalCoeffs, boundaryCoeffs);
         std::cout << "=== end call csr.solve " << std::endl;
 

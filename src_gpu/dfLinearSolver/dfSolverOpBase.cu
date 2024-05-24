@@ -904,7 +904,7 @@ __global__ void kernel_updateSource
     if (index >= nCells)
         return;
     
-    atomicAdd(&field[index], -Acf[index]);
+    field[index] -= Acf[index];
 }
 
 __global__ void kernel_updateCorr
@@ -917,7 +917,7 @@ __global__ void kernel_updateCorr
     if (index >= nCells)
         return;
     
-    atomicAdd(&field[index], preSmooth[index]);
+    field[index] += preSmooth[index];
 }
 
 __global__ void kernel_directSolve1x1
@@ -977,6 +977,7 @@ void scaleFieldGPU( const dfMatrixDataBase& dataBase, int nCells,
                     double* d_scalingFactorNum, double* d_scalingFactorDenom )
 {
     double* reduce_result;
+    cudaMalloc(&reduce_result, sizeof(double));
 
     size_t threads_per_block = 1024;
     size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
@@ -1014,9 +1015,66 @@ void scaleFieldGPU( const dfMatrixDataBase& dataBase, int nCells,
     cudaStreamSynchronize(dataBase.stream);
     cudaMemcpyAsync(&sum_scalingFactorDenom, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
 #endif
+    // std::vector scalingVector(sum_scalingFactorNum, sum_scalingFactorDenom);
+    // scalingFactor = scalingVector[0]/(scalingVector[1] + 1e-20); // need test stabilise
+    scalingFactor = sum_scalingFactorNum/(sum_scalingFactorDenom + 1e-20);
 
-    std::vector scalingVector(sum_scalingFactorNum, sum_scalingFactorDenom);
-    scalingFactor = scalingVector[0]/(scalingVector[1] + 1e-20); // need test stabilise
+    kernel_scale<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
+        (nCells, scalingFactor, d_Field, d_Source, d_AcfField, diag);
+    checkCudaErrors(cudaStreamSynchronize(dataBase.stream));
+
+}
+
+void scaleFieldGPU_ell( const dfMatrixDataBase& dataBase, int nCells, 
+                    double* d_Field, double* d_Source, double* d_AcfField, 
+                    double* diag, int ell_row_maxcount,
+                    int* d_ell_cols, double* d_ell_values, 
+                    double** interfaceIntCoeffs, double** interfaceBouCoeffs,
+                    int** faceCells, std::vector<int> nPatchFaces, 
+                    double* d_scalingFactorNum, double* d_scalingFactorDenom )
+{
+    double* reduce_result;
+    cudaMalloc(&reduce_result, sizeof(double));
+
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
+
+    //Purpose: A.Amul get Acf
+    AmulGPU_ell(dataBase, d_AcfField, d_Field,
+            diag, ell_row_maxcount, d_ell_cols, d_ell_values, 
+            interfaceIntCoeffs, interfaceBouCoeffs,
+            faceCells, nPatchFaces, nCells);
+
+    double scalingFactor = 0.0;
+    double sum_scalingFactorNum = 0.0, sum_scalingFactorDenom = 0.0;
+
+    checkCudaErrors(cudaMemset(d_scalingFactorNum,   0, nCells*sizeof(double)));
+    checkCudaErrors(cudaMemset(d_scalingFactorDenom, 0, nCells*sizeof(double)));
+
+    kernel_calcNumDenom<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
+        (nCells, d_Field, d_Source, d_AcfField, d_scalingFactorNum, d_scalingFactorDenom);
+    checkCudaErrors(cudaStreamSynchronize(dataBase.stream));
+
+    reduce(nCells, threads_per_block, blocks_per_grid, d_scalingFactorNum, reduce_result, dataBase.stream, false);
+#ifndef PARALLEL_
+    cudaMemcpyAsync(&sum_scalingFactorNum, &reduce_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+#else
+    ncclAllReduce(&reduce_result[0], &reduce_result[0], 1, ncclDouble, ncclSum, dataBase.nccl_comm, dataBase.stream);
+    cudaStreamSynchronize(dataBase.stream);
+    cudaMemcpyAsync(&sum_scalingFactorNum, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+#endif
+
+    reduce(nCells, threads_per_block, blocks_per_grid, d_scalingFactorDenom, reduce_result, dataBase.stream, false);
+#ifndef PARALLEL_
+    cudaMemcpyAsync(&sum_scalingFactorDenom, &reduce_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+#else
+    ncclAllReduce(&reduce_result[0], &reduce_result[0], 1, ncclDouble, ncclSum, dataBase.nccl_comm, dataBase.stream);
+    cudaStreamSynchronize(dataBase.stream);
+    cudaMemcpyAsync(&sum_scalingFactorDenom, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+#endif
+    // std::vector scalingVector(sum_scalingFactorNum, sum_scalingFactorDenom);
+    // scalingFactor = scalingVector[0]/(scalingVector[1] + 1e-20); // need test stabilise
+    scalingFactor = sum_scalingFactorNum/(sum_scalingFactorDenom + 1e-20);
 
     kernel_scale<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
         (nCells, scalingFactor, d_Field, d_Source, d_AcfField, diag);
@@ -1043,6 +1101,27 @@ void updateSourceFieldGPU(const dfMatrixDataBase& dataBase, int nCells,
         (nCells, d_Sources, d_AcfField);
     checkCudaErrors(cudaStreamSynchronize(dataBase.stream));
 }
+
+void updateSourceFieldGPU_ell(const dfMatrixDataBase& dataBase, int nCells, 
+                        double* d_Sources, double* d_AcfField, double* d_CorrFields,
+                        double* diag, int ell_row_maxcount,
+                        int* d_ell_cols, double* d_ell_values,  
+                        double** interfaceIntCoeffs, double** interfaceBouCoeffs,
+                        int** faceCells, std::vector<int> nPatchFaces)
+{
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
+
+    //Purpose: spmv to get Acf = A * Corr
+    AmulGPU_ell(dataBase, d_AcfField, d_CorrFields,
+            diag, ell_row_maxcount, d_ell_cols, d_ell_values, 
+            interfaceIntCoeffs, interfaceBouCoeffs, faceCells, nPatchFaces, nCells);
+
+    kernel_updateSource<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
+        (nCells, d_Sources, d_AcfField);
+    checkCudaErrors(cudaStreamSynchronize(dataBase.stream));
+}
+
 
 void updateCorrFieldGPU(cudaStream_t stream, int nCells, 
                         double* d_Field, double* d_preSmoothField)
@@ -1119,7 +1198,9 @@ void AmulGPU(const dfMatrixDataBase& dataBase, double* result, double* input,
             int** faceCells, std::vector<int> nPatchFaces, int nCells)
 {
     // --- addInternalInterfaceCoeffs ---
+#ifdef PARALLEL_
     addInternalInterfaceCoeffs(dataBase.stream, nPatchFaces, interfaceIntCoeffs, faceCells, diag);
+#endif
 
     // --- SpMV ---
     SpMV4CSR(dataBase.stream, nCells, diag, off_diag_value, csr_row_index_no_diag, csr_col_index_no_diag, input, result); 
@@ -1133,6 +1214,31 @@ void AmulGPU(const dfMatrixDataBase& dataBase, double* result, double* input,
         interfaceBouCoeffs, faceCells);
 #endif
 }
+
+void AmulGPU_ell(const dfMatrixDataBase& dataBase, double* result, double* input,
+            double* diag, int ell_row_maxcount,
+            int* d_ell_cols, double* d_ell_values,
+            double** interfaceIntCoeffs, double** interfaceBouCoeffs,
+            int** faceCells, std::vector<int> nPatchFaces, int nCells)
+{
+    // --- addInternalInterfaceCoeffs ---
+#ifdef PARALLEL_
+    addInternalInterfaceCoeffs(dataBase.stream, nPatchFaces, interfaceIntCoeffs, faceCells, diag);
+#endif
+
+    // --- SpMV ---
+    SpMV4ELL(dataBase.stream, nCells, diag, d_ell_values, d_ell_cols, ell_row_maxcount, input, result); 
+
+#ifdef PARALLEL_      
+    // --- initMatrixInterfaces & updateMatrixInterfaces ---
+    updateMatrixInterfaceCoeffs(
+        dataBase.stream, dataBase.neighbProcNo, dataBase.nccl_comm,
+        nPatchFaces, input, result, 
+        scalarSendBufList_, scalarRecvBufList_,
+        interfaceBouCoeffs, faceCells);
+#endif
+}
+
 
 void addInternalInterfaceCoeffs(
         cudaStream_t stream, std::vector<int> patchSize, 
@@ -1272,6 +1378,54 @@ void interpolateFieldGPU(const dfMatrixDataBase& dataBase, int nCells, int nCCel
     checkCudaErrors(cudaFreeAsync(corrC, dataBase.stream));
     checkCudaErrors(cudaFreeAsync(diagC, dataBase.stream));
 }
+
+void interpolateFieldGPU_ell(const dfMatrixDataBase& dataBase, int nCells, int nCCells, 
+                    double* psi, double* Apsi, 
+                    double* diag, int ell_row_maxcount,
+                    int* d_ell_cols, double* d_ell_values,  
+                    double** interfaceIntCoeffs, double** interfaceBouCoeffs, 
+                    int** faceCells, std::vector<int> nPatchFaces,
+                    int* restrictAddressing, double* psiC)
+{
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
+
+    // Purpose: m.Amul(Apsi, psi, interfaceBouCoeffs, interfaces, cmpt);
+    AmulGPU_ell(dataBase, Apsi, psi,
+            diag, ell_row_maxcount, d_ell_cols, d_ell_values, 
+            interfaceIntCoeffs, interfaceBouCoeffs,
+            faceCells, nPatchFaces, nCells);
+
+    kernel_interpolate<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
+        (nCells, Apsi, diag, psi);
+    checkCudaErrors(cudaStreamSynchronize(dataBase.stream));
+
+    // tmp data for interpolate can remove to init
+    double* corrC;
+    double* diagC;
+
+    checkCudaErrors(cudaMalloc(&corrC, nCCells*sizeof(double)));
+    checkCudaErrors(cudaMalloc(&diagC, nCCells*sizeof(double)));
+
+    checkCudaErrors(cudaMemset(corrC, 0, nCCells*sizeof(double)));
+    checkCudaErrors(cudaMemset(diagC, 0, nCCells*sizeof(double)));
+
+    kernel_interpolateUpdateCoarseLevel<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
+        (nCells, restrictAddressing, corrC, diagC, diag, psi);
+    checkCudaErrors(cudaStreamSynchronize(dataBase.stream));
+
+    kernel_interpolateCoarseCorr<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
+        (nCCells, corrC, diagC, psiC);
+    checkCudaErrors(cudaStreamSynchronize(dataBase.stream));
+
+    kernel_interpolateFineLevel<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
+        (nCells, restrictAddressing, psi, corrC);
+    checkCudaErrors(cudaStreamSynchronize(dataBase.stream));
+
+    checkCudaErrors(cudaFreeAsync(corrC, dataBase.stream));
+    checkCudaErrors(cudaFreeAsync(diagC, dataBase.stream));
+}
+
 
 // gaussianElimination4by4 using ldu matrix
 __global__ void gaussianElimination4by4(double* diag, double* upper, double* lower,

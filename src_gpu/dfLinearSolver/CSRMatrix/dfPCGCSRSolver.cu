@@ -50,6 +50,19 @@ void PCGCSRSolver::freeInit()
     cudaFree(scalarRecvBufList_);
 }
 
+void PCGCSRSolver::freeInitStream(cudaStream_t stream)
+{
+    cudaFreeAsync(d_wA, stream);
+    cudaFreeAsync(d_rA, stream);
+    cudaFreeAsync(d_pA, stream);
+    cudaFreeAsync(d_normFactors_tmp, stream);
+    cudaFreeAsync(d_wArA_tmp, stream);
+    cudaFreeAsync(d_wApA_tmp, stream);
+    cudaFreeAsync(reduce_result, stream);
+    cudaFreeAsync(scalarSendBufList_, stream);
+    cudaFreeAsync(scalarRecvBufList_, stream);
+}
+
 void PCGCSRSolver::initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
                     GAMGStruct *GAMGdata_, int agglomeration_level)
 {
@@ -316,7 +329,7 @@ void PCGCSRSolver::solve_useGAMG
     int agglomeration_level
 )
 {
-    printf("GPU-CSR-PCGStab::solve start --------------------------------------------\n");
+    printf("GPU-CSR-PCG(GAMG)::solve start --------------------------------------------\n");
 
     int nIterations = 0;
  

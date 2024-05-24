@@ -301,7 +301,7 @@ void Foam::CSRGAMGSolver::Vcycle
 
     scalarField dummyField(0);
 
-    for (label leveli = coarsestLevel - 1; leveli >= 0; leveli--)
+    for (label leveli = coarsestLevel - 2; leveli >= 0; leveli--)
     {
         if (coarseCorrFields.set(leveli))
         {
@@ -384,7 +384,7 @@ void Foam::CSRGAMGSolver::Vcycle
             if
             (
                 scaleCorrection_
-             && (interpolateCorrection_ || leveli < coarsestLevel - 1)
+             && (interpolateCorrection_ || leveli < coarsestLevel - 2)
             )
             {
                 scale

@@ -1,34 +1,34 @@
-#include "dfCSRPreconditioner.H"
+#include "dfELLPreconditioner.H"
 #include "dfSolverOpBase.H"
 
 #define nSweeps 2
 
 // kernel functions for PCG solver
 
-void GAMGCSRPreconditioner::initCycle
+void GAMGELLPreconditioner::initCycle
 (
     GAMGStruct *GAMGdata, int agglomeration_level                                                                
 )
 {
-    std::cout << "*** call in GAMGCSRPreconditioner::initCycle " << std::endl;
+    std::cout << "*** call in GAMGELLPreconditioner::initCycle " << std::endl;
     for(int leveli=0; leveli<agglomeration_level; leveli++)
     {                                 
         checkCudaErrors(cudaMemset(GAMGdata[leveli].d_CorrFields, 0, GAMGdata[leveli].nCell*sizeof(double)));
         checkCudaErrors(cudaMemset(GAMGdata[leveli].d_Sources, 0, GAMGdata[leveli].nCell*sizeof(double)));
     }
-    std::cout << "*** end in GAMGCSRPreconditioner::initCycle " << std::endl;
+    std::cout << "*** end in GAMGELLPreconditioner::initCycle " << std::endl;
     std::cout << "*********************************************************** " << std::endl;
 };
 
-void GAMGCSRPreconditioner::initialize
+void GAMGELLPreconditioner::initialize
 (
     GAMGStruct *GAMGdata, int agglomeration_level
 )
 {
-    std::cout << "*** call in GAMGCSRPreconditioner::initialize(): init Vcycle " << std::endl;
+    std::cout << "*** call in GAMGELLPreconditioner::initialize(): init Vcycle " << std::endl;
 
     // Jacobi Smoother
-    smoother = new CSRJacobiSmoother();
+    smoother = new ELLJacobiSmoother();
 
     for(int leveli=0; leveli<agglomeration_level; leveli++)
     {
@@ -39,9 +39,8 @@ void GAMGCSRPreconditioner::initialize
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_diag,  GAMGdata[leveli].nCell * sizeof(double)));
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_lowerAddr, GAMGdata[leveli].nFace * sizeof(int)));
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_upperAddr, GAMGdata[leveli].nFace * sizeof(int)));
-        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_off_diag_value, GAMGdata[leveli].nFace * 2 * sizeof(double)));
-        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_csr_row_index_no_diag, (GAMGdata[leveli].nCell + 1) * sizeof(int)));
-        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_csr_col_index_no_diag, GAMGdata[leveli].nFace * 2 * sizeof(int)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_ell_cols, GAMGdata[leveli].nCell * GAMGdata[leveli].ell_row_maxcount * sizeof(int)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_ell_values, GAMGdata[leveli].nCell * GAMGdata[leveli].ell_row_maxcount * sizeof(double)));
 
         // iteration data
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_CorrFields, GAMGdata[leveli].nCell*sizeof(double)));
@@ -53,16 +52,16 @@ void GAMGCSRPreconditioner::initialize
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_scalingFactorNum,   GAMGdata[leveli].nCell*sizeof(double)));
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_scalingFactorDenom, GAMGdata[leveli].nCell*sizeof(double)));
     }
-    std::cout << "*** end in GAMGCSRPreconditioner::initialize(): init Vcycle " << std::endl;
+    std::cout << "*** end in GAMGELLPreconditioner::initialize(): init Vcycle " << std::endl;
     std::cout << "*********************************************************** " << std::endl;
 };
 
-void GAMGCSRPreconditioner::freeInitialize
+void GAMGELLPreconditioner::freeInitialize
 (
     GAMGStruct *GAMGdata, int agglomeration_level
 )
 {
-    std::cout << "*** call in GAMGCSRPreconditioner::initialize(): init Vcycle " << std::endl;
+    std::cout << "*** call in GAMGELLPreconditioner::initialize(): init Vcycle " << std::endl;
     for(int leveli=0; leveli<agglomeration_level; leveli++)
     {
         std::cout << "   malloc leveli: " << leveli << std::endl;
@@ -81,17 +80,17 @@ void GAMGCSRPreconditioner::freeInitialize
         checkCudaErrors(cudaFree(GAMGdata[leveli].d_scalingFactorNum));
         checkCudaErrors(cudaFree(GAMGdata[leveli].d_scalingFactorDenom));
     }
-    std::cout << "*** end in GAMGCSRPreconditioner::initialize(): init Vcycle " << std::endl;
+    std::cout << "*** end in GAMGELLPreconditioner::initialize(): init Vcycle " << std::endl;
     std::cout << "*********************************************************** " << std::endl;
 };
 
-void GAMGCSRPreconditioner::agglomerateMatrix
+void GAMGELLPreconditioner::agglomerateMatrix
 (
     const dfMatrixDataBase& dataBase,
     GAMGStruct *GAMGdata_, int agglomeration_level
 )
 {
-    std::cout << "********* call in GAMGCSRPreconditioner::agglomerateMatrix " << std::endl;
+    std::cout << "********* call in GAMGELLPreconditioner::agglomerateMatrix " << std::endl;
     for(int leveli=0; leveli<agglomeration_level-1; leveli++)
     {
         std::cout << "  level: " << leveli << ", in cell: " << GAMGdata_[leveli].nCell
@@ -127,7 +126,7 @@ void GAMGCSRPreconditioner::agglomerateMatrix
     }
 };
 
-void GAMGCSRPreconditioner::fine2coarse
+void GAMGELLPreconditioner::fine2coarse
 (
     const dfMatrixDataBase& dataBase,
     GAMGStruct *GAMGdata_, int agglomeration_level,
@@ -136,7 +135,7 @@ void GAMGCSRPreconditioner::fine2coarse
 {
     bool scaleCorrection = true;
 
-    std::cout << "   ****** call in GAMGCSRPreconditioner::fine2coarse " << std::endl;
+    std::cout << "   ****** call in GAMGELLPreconditioner::fine2coarse " << std::endl;
     for(int leveli=startLevel; leveli<endLevel; leveli++)
     {
         std::cout << "  this level: " << leveli << ", restrict source for coarser level " << std::endl;
@@ -152,35 +151,35 @@ void GAMGCSRPreconditioner::fine2coarse
         //Purpose: Smooth [ A * Corr = Source ] to get d_CorrFields for leveli+1
         //TODO: write nSweeps 
         smoother->smooth(dataBase.stream, nSweeps, GAMGdata_[leveli+1].nCell, GAMGdata_[leveli+1].d_CorrFields, 
-                            GAMGdata_[leveli+1].d_Sources, GAMGdata_[leveli+1].d_off_diag_value, GAMGdata_[leveli+1].d_csr_row_index_no_diag,
-                            GAMGdata_[leveli+1].d_csr_col_index_no_diag, GAMGdata_[leveli+1].d_diag);
+                            GAMGdata_[leveli+1].d_Sources, GAMGdata_[leveli+1].ell_row_maxcount, GAMGdata_[leveli+1].d_ell_cols,
+                            GAMGdata_[leveli+1].d_ell_values, GAMGdata_[leveli+1].d_diag);
 
         if (leveli < endLevel - 1)
         {
             //Purpose: scale d_CorrFields leveli+1, if (matrix.symmetric())
             if (scaleCorrection) 
             {
-                scaleFieldGPU( dataBase, GAMGdata_[leveli+1].nCell, 
+                scaleFieldGPU_ell( dataBase, GAMGdata_[leveli+1].nCell, 
                     GAMGdata_[leveli+1].d_CorrFields, GAMGdata_[leveli+1].d_Sources, GAMGdata_[leveli+1].d_AcfField, 
-                    GAMGdata_[leveli+1].d_diag, GAMGdata_[leveli+1].d_off_diag_value,
-                    GAMGdata_[leveli+1].d_csr_row_index_no_diag, GAMGdata_[leveli+1].d_csr_col_index_no_diag, 
+                    GAMGdata_[leveli+1].d_diag, GAMGdata_[leveli+1].ell_row_maxcount,
+                    GAMGdata_[leveli+1].d_ell_cols, GAMGdata_[leveli+1].d_ell_values, 
                     GAMGdata_[leveli+1].d_interfaceIntCoeffs, GAMGdata_[leveli+1].d_interfaceBouCoeffs,
                     GAMGdata_[leveli+1].d_faceCells, GAMGdata_[leveli+1].nPatchFaces, 
                     GAMGdata_[leveli+1].d_scalingFactorNum, GAMGdata_[leveli+1].d_scalingFactorDenom );
             }
 
             //Purpose: get Acf = A * Corr & GAMGdata_[leveli+1].d_Sources -= Acf
-            updateSourceFieldGPU( dataBase, GAMGdata_[leveli+1].nCell, 
+            updateSourceFieldGPU_ell( dataBase, GAMGdata_[leveli+1].nCell, 
                                 GAMGdata_[leveli+1].d_Sources, GAMGdata_[leveli+1].d_AcfField, GAMGdata_[leveli+1].d_CorrFields,
-                                GAMGdata_[leveli+1].d_diag, GAMGdata_[leveli+1].d_off_diag_value, 
-                                GAMGdata_[leveli+1].d_csr_row_index_no_diag, GAMGdata_[leveli+1].d_csr_col_index_no_diag, 
+                                GAMGdata_[leveli+1].d_diag, GAMGdata_[leveli+1].ell_row_maxcount,
+                                GAMGdata_[leveli+1].d_ell_cols, GAMGdata_[leveli+1].d_ell_values, 
                                 GAMGdata_[leveli+1].d_interfaceIntCoeffs, GAMGdata_[leveli+1].d_interfaceBouCoeffs,
                                 GAMGdata_[leveli+1].d_faceCells, GAMGdata_[leveli+1].nPatchFaces);
         }    
     }
 };
 
-void GAMGCSRPreconditioner::coarse2fine
+void GAMGELLPreconditioner::coarse2fine
 (
     const dfMatrixDataBase& dataBase,
     GAMGStruct *GAMGdata_, int agglomeration_level,
@@ -190,7 +189,7 @@ void GAMGCSRPreconditioner::coarse2fine
     bool interpolateCorrection = false;
     bool scaleCorrection = true;
 
-    std::cout << "   ****** call in GAMGCSRPreconditioner::coarse2fine " << std::endl;
+    std::cout << "   ****** call in GAMGELLPreconditioner::coarse2fine " << std::endl;
     for(int leveli=startLevel; leveli>endLevel; leveli--)
     {
         std::cout << "  this level: " << leveli << ", prolong correct for finer level " << std::endl;
@@ -203,14 +202,14 @@ void GAMGCSRPreconditioner::coarse2fine
         prolongFieldGPU(dataBase.stream, GAMGdata_[leveli-1].nCell, 
                         GAMGdata_[leveli-1].d_restrictMap, 
                         GAMGdata_[leveli-1].d_CorrFields, GAMGdata_[leveli].d_CorrFields);
-        
+
         if (interpolateCorrection)
         {
             //Purpose: interpolate correctionField for next level (leveli-1)
-            interpolateFieldGPU(dataBase, GAMGdata_[leveli-1].nCell, GAMGdata_[leveli].nCell, 
+            interpolateFieldGPU_ell(dataBase, GAMGdata_[leveli-1].nCell, GAMGdata_[leveli].nCell, 
                     GAMGdata_[leveli-1].d_CorrFields, GAMGdata_[leveli-1].d_AcfField, 
-                    GAMGdata_[leveli-1].d_diag, GAMGdata_[leveli-1].d_off_diag_value,
-                    GAMGdata_[leveli-1].d_csr_row_index_no_diag, GAMGdata_[leveli-1].d_csr_col_index_no_diag,  
+                    GAMGdata_[leveli-1].d_diag, GAMGdata_[leveli-1].ell_row_maxcount,
+                    GAMGdata_[leveli-1].d_ell_cols, GAMGdata_[leveli-1].d_ell_values,  
                     GAMGdata_[leveli-1].d_interfaceIntCoeffs, GAMGdata_[leveli-1].d_interfaceBouCoeffs, 
                     GAMGdata_[leveli-1].d_faceCells, GAMGdata_[leveli-1].nPatchFaces,
                     GAMGdata_[leveli-1].d_restrictMap, GAMGdata_[leveli].d_CorrFields);
@@ -219,10 +218,10 @@ void GAMGCSRPreconditioner::coarse2fine
         if (leveli < startLevel && scaleCorrection)
         {
             //Purpose: scale d_CorrFields leveli-1, if (matrix.symmetric())
-            scaleFieldGPU( dataBase, GAMGdata_[leveli-1].nCell, 
+            scaleFieldGPU_ell( dataBase, GAMGdata_[leveli-1].nCell, 
                 GAMGdata_[leveli-1].d_CorrFields, GAMGdata_[leveli-1].d_Sources, GAMGdata_[leveli-1].d_AcfField, 
-                GAMGdata_[leveli-1].d_diag, GAMGdata_[leveli-1].d_off_diag_value,
-                GAMGdata_[leveli-1].d_csr_row_index_no_diag, GAMGdata_[leveli-1].d_csr_col_index_no_diag, 
+                GAMGdata_[leveli-1].d_diag, GAMGdata_[leveli-1].ell_row_maxcount,
+                GAMGdata_[leveli-1].d_ell_cols, GAMGdata_[leveli-1].d_ell_values,
                 GAMGdata_[leveli-1].d_interfaceIntCoeffs, GAMGdata_[leveli-1].d_interfaceBouCoeffs,
                 GAMGdata_[leveli-1].d_faceCells, GAMGdata_[leveli-1].nPatchFaces, 
                 GAMGdata_[leveli-1].d_scalingFactorNum, GAMGdata_[leveli-1].d_scalingFactorDenom );
@@ -237,14 +236,14 @@ void GAMGCSRPreconditioner::coarse2fine
             //Purpose: Smooth [ A * Corr = Source ] to get d_CorrFields for leveli-1
             //TODO: write nSweeps
             smoother->smooth(dataBase.stream, nSweeps, GAMGdata_[leveli-1].nCell, GAMGdata_[leveli-1].d_CorrFields, 
-                    GAMGdata_[leveli-1].d_Sources, GAMGdata_[leveli-1].d_off_diag_value, GAMGdata_[leveli-1].d_csr_row_index_no_diag,
-                    GAMGdata_[leveli-1].d_csr_col_index_no_diag, GAMGdata_[leveli-1].d_diag);
+                    GAMGdata_[leveli-1].d_Sources, GAMGdata_[leveli-1].ell_row_maxcount, GAMGdata_[leveli-1].d_ell_cols,
+                    GAMGdata_[leveli-1].d_ell_values, GAMGdata_[leveli-1].d_diag);
 
         }
     }
 };
 
-void GAMGCSRPreconditioner::directSolveCoarsest
+void GAMGELLPreconditioner::directSolveCoarsest
 (
     const dfMatrixDataBase& dataBase,
     GAMGStruct *GAMGdata_, int agglomeration_level
@@ -253,7 +252,7 @@ void GAMGCSRPreconditioner::directSolveCoarsest
     bool solveCoarsest = false;
     if (solveCoarsest)
     {
-        std::cout << "   ****** call in GAMGCSRPreconditioner::directSolveCoarsest " << std::endl;
+        std::cout << "   ****** call in GAMGELLPreconditioner::directSolveCoarsest " << std::endl;
         if (GAMGdata_[agglomeration_level-1].nCell == 1)
         {
             //directSolve1x1
@@ -279,7 +278,7 @@ void GAMGCSRPreconditioner::directSolveCoarsest
     }
 };
 
-void GAMGCSRPreconditioner::Vcycle
+void GAMGELLPreconditioner::Vcycle
 (
     const dfMatrixDataBase& dataBase,
     GAMGStruct *GAMGdata_, int agglomeration_level
@@ -292,38 +291,7 @@ void GAMGCSRPreconditioner::Vcycle
     coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 0);
 };
 
-void GAMGCSRPreconditioner::Wcycle
-(
-    const dfMatrixDataBase& dataBase,
-    GAMGStruct *GAMGdata_, int agglomeration_level
-)
-{
-    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 0, agglomeration_level-1);
-
-    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
-
-    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, agglomeration_level-2);
-
-    fine2coarse(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-2, agglomeration_level-1);
-
-    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
-
-    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 1);
-
-    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 1, agglomeration_level-1);
-
-    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
-
-    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, agglomeration_level-2);
-
-    fine2coarse(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-2, agglomeration_level-1);
-
-    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
-
-    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 0);
-};
-
-void GAMGCSRPreconditioner::Fcycle
+void GAMGELLPreconditioner::Wcycle
 (
     const dfMatrixDataBase& dataBase,
     GAMGStruct *GAMGdata_, int agglomeration_level
@@ -345,10 +313,41 @@ void GAMGCSRPreconditioner::Fcycle
 
     directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
 
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, agglomeration_level-2);
+
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-2, agglomeration_level-1);
+
+    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
+
     coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 0);
 };
 
-void GAMGCSRPreconditioner::precondition
+void GAMGELLPreconditioner::Fcycle
+(
+    const dfMatrixDataBase& dataBase,
+    GAMGStruct *GAMGdata_, int agglomeration_level
+)
+{
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 0, agglomeration_level-1);
+
+    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
+
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, agglomeration_level-2);
+
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-2, agglomeration_level-1);
+
+    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
+
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 1);
+
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 1, agglomeration_level-1);
+
+    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
+
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 0);
+};
+
+void GAMGELLPreconditioner::precondition
 (
     double *psi,
     const double *finestResidual,
@@ -358,7 +357,7 @@ void GAMGCSRPreconditioner::precondition
 {
 
     std::cout << "******************************************************" << std::endl;
-    std::cout << "********* call in GAMGCSRPreconditioner::precondition " << std::endl;
+    std::cout << "********* call in GAMGELLPreconditioner::precondition " << std::endl;
 
     //TODO: get nVcycles from control files
     int nVcycles_ = 1; 
@@ -381,21 +380,22 @@ void GAMGCSRPreconditioner::precondition
         //add smoother for leveli=0, nFinestSweeps_
         //TODO: write nSweeps 
         smoother->smooth(dataBase.stream, nSweeps, GAMGdata_[0].nCell, psi, 
-                    GAMGdata_[0].d_Sources, GAMGdata_[0].d_off_diag_value, GAMGdata_[0].d_csr_row_index_no_diag,
-                    GAMGdata_[0].d_csr_col_index_no_diag, GAMGdata_[0].d_diag);
+                    GAMGdata_[0].d_Sources, GAMGdata_[0].ell_row_maxcount, GAMGdata_[0].d_ell_cols,
+                    GAMGdata_[0].d_ell_values, GAMGdata_[0].d_diag);
 
 
         if (cycle < nVcycles_-1)
         {
             // Purpose: Calculate finest level residual field to update finestResidual
-            updateSourceFieldGPU( dataBase, GAMGdata_[0].nCell, 
+            updateSourceFieldGPU_ell( dataBase, GAMGdata_[0].nCell, 
                                 GAMGdata_[0].d_Sources, GAMGdata_[0].d_AcfField, psi,
-                                GAMGdata_[0].d_diag, GAMGdata_[0].d_off_diag_value, 
-                                GAMGdata_[0].d_csr_row_index_no_diag, GAMGdata_[0].d_csr_col_index_no_diag, 
+                                GAMGdata_[0].d_diag, GAMGdata_[0].ell_row_maxcount, 
+                                GAMGdata_[0].d_ell_cols, GAMGdata_[0].d_ell_values, 
                                 GAMGdata_[0].d_interfaceIntCoeffs, GAMGdata_[0].d_interfaceBouCoeffs,
                                 GAMGdata_[0].d_faceCells, GAMGdata_[0].nPatchFaces);
         }
     }
-    std::cout << "********** end in GAMGCSRPreconditioner::precondition " << std::endl;
+    std::cout << "********** end in GAMGELLPreconditioner::precondition " << std::endl;
     std::cout << "******************************************************" << std::endl;
 };
+
