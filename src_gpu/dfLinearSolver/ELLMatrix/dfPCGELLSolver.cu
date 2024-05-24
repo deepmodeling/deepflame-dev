@@ -67,7 +67,7 @@ void PCGELLSolver::freeInitStream(cudaStream_t stream)
     cudaFreeAsync(scalarRecvBufList_, stream);
 }
 
-void PCGELLSolver::initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
+void PCGELLSolver::initializeGAMG(const dfMatrixDataBase& dataBase, const int nCells, const size_t boundary_surface_value_bytes,
                     GAMGStruct *GAMGdata_, int agglomeration_level)
 {
     // cudamalloc variables related to PCGSolver
@@ -84,7 +84,7 @@ void PCGELLSolver::initializeGAMG(const int nCells, const size_t boundary_surfac
 
     // preconditioner
     precond_ = new GAMGELLPreconditioner();
-    precond_->initialize(GAMGdata_, agglomeration_level);
+    precond_->initialize(dataBase, GAMGdata_, agglomeration_level);
 }
 
 void PCGELLSolver::initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level)

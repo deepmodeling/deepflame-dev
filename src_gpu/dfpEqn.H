@@ -29,9 +29,10 @@ private:
 	// constant values -- amgx solvers
 	AmgXSolver *pSolver = nullptr;
     CSRSolver *pCSRSolver = nullptr;
+    ELLSolver *pELLSolver = nullptr;
     std::vector<double*> GAMGlduPtr;
     std::vector<int*> GAMGldu2csrPtr;
-    ELLSolver *pELLSolver = nullptr;
+    std::vector<int*> GAMGldu2ellPtr;
     int num_iteration = 0;
 
 	// constant fields - internal
@@ -97,7 +98,7 @@ public:
 	void createNonConstantLduAndCsrFields();
 	// dfUEqn has no internal non-constant fields to be init
 	//void initNonConstantFieldsInternal(xxx);
-    void GAMGpEqnldu(GAMGStruct *GAMGdata_, int agglomeration_level);
+    void GAMGpEqnldu(GAMGStruct *GAMGdata_, int agglomeration_level, int type);
 
     void cleanCudaResources();
 

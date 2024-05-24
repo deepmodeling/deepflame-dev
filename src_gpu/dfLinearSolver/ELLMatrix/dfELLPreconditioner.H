@@ -9,7 +9,7 @@ public:
     ELLPreconditioner(){}
     virtual ~ELLPreconditioner() {}
 
-    virtual void initialize(GAMGStruct *GAMGdata_, int agglomeration_level) = 0;
+    virtual void initialize(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) = 0;
 
     virtual void precondition
     (
@@ -32,7 +32,7 @@ public:
 
     virtual void initialize(
         /* init variables related to GAMG preconditioner */
-        GAMGStruct *GAMGdata_, int agglomeration_level
+        const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level
     ) override;
 
     virtual void precondition

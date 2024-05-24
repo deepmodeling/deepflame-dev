@@ -1,7 +1,7 @@
 #include "dfpEqn.H"
 // #define AMGX_
-#define CSR_
-// #define ELL_
+// #define CSR_
+#define ELL_
 
 // Start if write vector to file ...
 #include <fstream>
@@ -361,7 +361,7 @@ void dfpEqn::setConstantValues(const std::string &mode_string, const std::string
     );
     if (useGAMG)
     {
-        pELLSolver->initializeGAMG(dataBase_.num_cells, dataBase_.boundary_surface_value_bytes,
+        pELLSolver->initializeGAMG(dataBase_, dataBase_.num_cells, dataBase_.boundary_surface_value_bytes,
                             GAMGdata_, agglomeration_level);
     }
     else 
@@ -426,14 +426,27 @@ void dfpEqn::createNonConstantLduAndCsrFields() {
 #endif
 }
 
-void dfpEqn::GAMGpEqnldu(GAMGStruct *GAMGdata_, int agglomeration_level){
+void dfpEqn::GAMGpEqnldu(GAMGStruct *GAMGdata_, int agglomeration_level, int type){
     GAMGlduPtr.resize(agglomeration_level);
-    GAMGldu2csrPtr.resize(agglomeration_level);
-    for(int i = 0; i < agglomeration_level; i++){
-        checkCudaErrors(cudaMalloc((void**)&GAMGlduPtr[i], GAMGdata_[i].nFace * 2 * sizeof(double)));
-        checkCudaErrors(cudaMalloc((void**)&GAMGldu2csrPtr[i], GAMGdata_[i].nFace * 2 * sizeof(int)));
-        checkCudaErrors(cudaMemcpy(GAMGldu2csrPtr[i], dataBase_.h_ldu_to_csr_no_diag[i], GAMGdata_[i].nFace * 2 * sizeof(int), cudaMemcpyHostToDevice));
+    //csr
+    if(type ==1){
+        GAMGldu2csrPtr.resize(agglomeration_level);
+        for(int i = 0; i < agglomeration_level; i++){
+            checkCudaErrors(cudaMalloc((void**)&GAMGlduPtr[i], GAMGdata_[i].nFace * 2 * sizeof(double)));
+            checkCudaErrors(cudaMalloc((void**)&GAMGldu2csrPtr[i], GAMGdata_[i].nFace * 2 * sizeof(int)));
+            checkCudaErrors(cudaMemcpy(GAMGldu2csrPtr[i], dataBase_.h_ldu_to_csr_no_diag[i], GAMGdata_[i].nFace * 2 * sizeof(int), cudaMemcpyHostToDevice));
+        }
     }
+    //ell
+    if(type==2){
+        GAMGldu2ellPtr.resize(agglomeration_level);
+        for(int i = 0; i < agglomeration_level; i++){
+            checkCudaErrors(cudaMalloc((void**)&GAMGlduPtr[i], GAMGdata_[i].nFace * 2 * sizeof(double)));
+            checkCudaErrors(cudaMalloc((void**)&GAMGldu2ellPtr[i], GAMGdata_[i].nFace * 2 * sizeof(int)));
+            checkCudaErrors(cudaMemcpy(GAMGldu2ellPtr[i], dataBase_.h_ldu2ellIndex[i], GAMGdata_[i].nFace * 2 * sizeof(int), cudaMemcpyHostToDevice));
+        }
+    }
+
 }
 
 void dfpEqn::initNonConstantFields(const double *p, const double *boundary_p){
@@ -837,9 +850,13 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
         {
 
             // ldu2ell
+            GAMGdata[leveli].ell_row_maxcount = dataBase_.h_ell_row_maxcount[leveli];
+            checkCudaErrors(cudaMemcpy(GAMGdata[leveli].d_ell_cols, dataBase_.h_ellCols[leveli], GAMGdata[leveli].nCell * GAMGdata[leveli].ell_row_maxcount * sizeof(int), cudaMemcpyHostToDevice));
             checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_lowerAddr, &GAMGdata[leveli].lowerAddr[0], GAMGdata[leveli].nFace * sizeof(int), cudaMemcpyHostToDevice, dataBase_.stream));
             checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_upperAddr, &GAMGdata[leveli].upperAddr[0], GAMGdata[leveli].nFace * sizeof(int), cudaMemcpyHostToDevice, dataBase_.stream));
-            // TODO
+            checkCudaErrors(cudaMemcpy(GAMGlduPtr[leveli], GAMGdata[leveli].d_lower, GAMGdata[leveli].nFace * sizeof(double), cudaMemcpyDeviceToDevice));
+            checkCudaErrors(cudaMemcpy(GAMGlduPtr[leveli] + GAMGdata[leveli].nFace, GAMGdata[leveli].d_upper, GAMGdata[leveli].nFace * sizeof(double), cudaMemcpyDeviceToDevice));
+            peqn_ldu_to_ell_no_diag(GAMGdata[leveli].nFace * 2, GAMGldu2ellPtr[leveli], GAMGlduPtr[leveli], GAMGdata[leveli].d_ell_values);
 
         }
 
@@ -1087,6 +1104,25 @@ void dfpEqn::solve(GAMGStruct *GAMGdata, int agglomeration_level)
     {
         pCSRSolver -> solve(dataBase_, d_internal_coeffs, d_boundary_coeffs, dataBase_.patch_type_extropolated.data(), 
                         d_diag, GAMGdata[0].d_off_diag_value, d_source, dataBase_.d_p);
+    }
+    printf("peqn PCG solve end\n");
+#endif
+#ifdef ELL_
+    bool useGAMG = true;
+    std::cout << "*** call in dfpEqn::solve() for ELL " << std::endl;
+    double* d_diag_tmp;
+    cudaMallocAsync((void**)&d_diag_tmp, dataBase_.num_cells * sizeof(double), dataBase_.stream);
+    cudaMemcpyAsync(d_diag_tmp, d_diag, dataBase_.num_cells * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream);
+    if (useGAMG)
+    {
+        pELLSolver -> solve_useGAMG(dataBase_, d_internal_coeffs, d_boundary_coeffs, dataBase_.patch_type_extropolated.data(), 
+                        d_diag, GAMGdata[0].d_ell_values, GAMGdata[0].d_ell_cols, GAMGdata[0].ell_row_maxcount, d_source, dataBase_.d_p,
+                        GAMGdata, agglomeration_level);
+    }
+    else
+    {
+        pELLSolver -> solve(dataBase_, d_internal_coeffs, d_boundary_coeffs, dataBase_.patch_type_extropolated.data(), 
+                        d_diag, GAMGdata[0].d_ell_values, GAMGdata[0].d_ell_cols, GAMGdata[0].ell_row_maxcount, d_source, dataBase_.d_p);
     }
     printf("peqn PCG solve end\n");
 #endif

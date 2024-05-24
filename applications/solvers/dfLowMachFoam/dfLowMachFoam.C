@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
     //============================================================================
     // startif use GAMG Solver ... 
     
-#define iscsr // true -> csr, false -> ell
+// #define iscsr // true -> csr, false -> ell
 #ifdef iscsr
     #include "CSRGAMGAgglomeration.H"
 #else

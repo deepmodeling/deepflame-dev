@@ -22,7 +22,7 @@ void GAMGELLPreconditioner::initCycle
 
 void GAMGELLPreconditioner::initialize
 (
-    GAMGStruct *GAMGdata, int agglomeration_level
+    const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata, int agglomeration_level
 )
 {
     std::cout << "*** call in GAMGELLPreconditioner::initialize(): init Vcycle " << std::endl;
@@ -39,8 +39,8 @@ void GAMGELLPreconditioner::initialize
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_diag,  GAMGdata[leveli].nCell * sizeof(double)));
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_lowerAddr, GAMGdata[leveli].nFace * sizeof(int)));
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_upperAddr, GAMGdata[leveli].nFace * sizeof(int)));
-        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_ell_cols, GAMGdata[leveli].nCell * GAMGdata[leveli].ell_row_maxcount * sizeof(int)));
-        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_ell_values, GAMGdata[leveli].nCell * GAMGdata[leveli].ell_row_maxcount * sizeof(double)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_ell_cols, GAMGdata[leveli].nCell * dataBase.h_ell_row_maxcount[leveli] * sizeof(int)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_ell_values, GAMGdata[leveli].nCell * dataBase.h_ell_row_maxcount[leveli] * sizeof(double)));
 
         // iteration data
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_CorrFields, GAMGdata[leveli].nCell*sizeof(double)));
