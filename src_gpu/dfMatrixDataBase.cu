@@ -183,6 +183,116 @@ void dfMatrixDataBase::setCyclicInfo(std::vector<int> &cyclicNeighbor)
     this->cyclicNeighbor = cyclicNeighbor;
 }
 
+void dfMatrixDataBase::setConstantIndexes_GAMG(int nCells, int nFaces, int *owner, int *neighbor, int leveli, int type){
+//csr
+if(type == 1){
+    /**
+     * @brief ldu2csr with no diagonal
+     * 
+     */
+    std::vector<int> permTmp(2 * nFaces);
+    std::iota(permTmp.begin(), permTmp.end(), 0);
+
+    // rowIndex of: low, upp
+    std::vector<int> rowIndicesTmp(2 * nFaces);
+    std::copy(neighbor, neighbor + nFaces, rowIndicesTmp.begin()); // row index of lower entry
+    std::copy(owner, owner + nFaces, rowIndicesTmp.begin() + nFaces); // row index of upper entry
+
+    // colIndex of: low, diag, upp, proc
+    std::vector<int> colIndicesTmp(2 * nFaces);
+    std::copy(owner, owner + nFaces, colIndicesTmp.begin()); // col index of lower entry
+    std::copy(neighbor, neighbor + nFaces, colIndicesTmp.begin() + nFaces); // col index of upper entry
+
+    // premute rowIndicesTmp, get CSRRowIndex and ldu2csrPerm
+    std::multimap<int,int> rowIndicesPermutation;
+    for (int i = 0; i < 2 * nFaces; ++i){
+        rowIndicesPermutation.insert(std::make_pair(rowIndicesTmp[i], permTmp[i]));
+    }
+    std::vector<std::pair<int, int>> rowIndicesPermPair(rowIndicesPermutation.size());
+    std::copy(rowIndicesPermutation.begin(), rowIndicesPermutation.end(), rowIndicesPermPair.begin());
+
+    std::sort(rowIndicesPermPair.begin(), rowIndicesPermPair.end(), []
+    (const std::pair<int, int>& pair1, const std::pair<int, int>& pair2){
+        if (pair1.first != pair2.first) {
+            return pair1.first < pair2.first;
+        } else {
+            return pair1.second < pair2.second;
+        }
+    });
+    std::vector<int> permRowIndex;
+    std::transform(rowIndicesPermPair.begin(), rowIndicesPermPair.end(), std::back_inserter(permRowIndex), []
+        (const std::pair<int, int>& pair) {
+        return pair.first;
+    });
+    std::vector<int> CSRRowIndexNoDiag(nCells + 1, 0);
+    for (int i = 0; i < 2 * nFaces; i++) {
+        CSRRowIndexNoDiag[permRowIndex[i] + 1]++;
+    }
+    std::partial_sum(CSRRowIndexNoDiag.begin(), CSRRowIndexNoDiag.end(), CSRRowIndexNoDiag.begin());
+
+    std::vector<int> lduCSRNoDiagIndex_GAMG;
+    std::transform(rowIndicesPermPair.begin(), rowIndicesPermPair.end(), std::back_inserter(lduCSRNoDiagIndex_GAMG), []
+        (const std::pair<int, int>& pair) {
+        return pair.second;
+    });
+
+    // get CSRColNoDiagIndex
+    std::vector<int> CSRColIndexNoDiag(2 * nFaces);
+    for (int i = 0; i < 2 * nFaces; ++i) {
+        CSRColIndexNoDiag[i] = colIndicesTmp[lduCSRNoDiagIndex_GAMG[i]];
+    }
+
+    h_ldu_to_csr_no_diag[leveli] = (int*)malloc(2 * nFaces * sizeof(int));
+    h_csr_row_index_no_diag[leveli] = (int*)malloc((nCells + 1) * sizeof(int));
+    h_csr_col_index_no_diag[leveli] = (int*)malloc(2 * nFaces * sizeof(int));
+    memcpy(h_ldu_to_csr_no_diag[leveli], lduCSRNoDiagIndex_GAMG.data(), 2 * nFaces * sizeof(int));
+    memcpy(h_csr_row_index_no_diag[leveli], CSRRowIndexNoDiag.data(), (nCells + 1) * sizeof(int));
+    memcpy(h_csr_col_index_no_diag[leveli], CSRColIndexNoDiag.data(), 2 * nFaces * sizeof(int));
+}
+// ell
+else if (type == 2)
+{
+    h_ell_row_maxcount[leveli] = 0;
+    int* ellColsperRow;
+    ellColsperRow = (int*)malloc(sizeof(int) * nCells);
+    memset(ellColsperRow, 0, sizeof(int) * nCells);
+    for(int i = 0; i < nFaces; i++){
+        int lowerRow = neighbor[i];
+        int upperRow = owner[i];
+        ellColsperRow[lowerRow] += 1;
+        ellColsperRow[upperRow] += 1;
+    }
+    for(int i = 0; i < nCells; i++){
+        h_ell_row_maxcount[leveli] = std::max(h_ell_row_maxcount[leveli], ellColsperRow[i]);
+    }
+
+    h_ellCols[leveli] = (int*)malloc(nCells * h_ell_row_maxcount[leveli] * sizeof(int));
+    h_ldu2ellIndex[leveli] = (int*)malloc(nFaces * 2 * sizeof(int));
+
+    memset(h_ellCols[leveli], 0, nCells * h_ell_row_maxcount[leveli] * sizeof(int));
+    memset(h_ldu2ellIndex, 0, sizeof(int) * nFaces * 2);
+    std::vector<int> rowOffset(nCells, 0);
+    // lower
+    for(int i = 0; i < nFaces; i++){
+        int row = neighbor[i];
+        int index = h_ell_row_maxcount[leveli] * row + rowOffset[row];
+        h_ldu2ellIndex[leveli][i] = index;
+        h_ellCols[leveli][index] = owner[i];
+        rowOffset[row] += 1;
+    }
+    // upper
+    for(int i = 0; i < num_surfaces; i++){
+        int row = owner[i];
+        int index = ell_row_maxcount * row + rowOffset[row];
+        h_ldu2ellIndex[leveli][i + num_surfaces] = index;
+        h_ellCols[leveli][index] = neighbor[i];
+        rowOffset[row] += 1;
+    }
+
+    free(ellColsperRow);
+}
+}
+
 void dfMatrixDataBase::setConstantIndexes(const int *owner, const int *neighbor, const int *procRows, 
         const int *procCols, int globalOffset) {
     // build d_owner, d_neighbor
@@ -342,6 +452,56 @@ void dfMatrixDataBase::setConstantIndexes(const int *owner, const int *neighbor,
     checkCudaErrors(cudaMemcpy(d_ldu_to_csr_no_diag, lduCSRNoDiagIndex.data(), csr_col_index_bytes_no_diag, cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemcpy(d_csr_row_index_no_diag, CSRRowIndexNoDiag.data(), csr_row_index_bytes, cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemcpy(d_csr_col_index_no_diag, CSRColIndexNoDiag.data(), csr_col_index_bytes_no_diag, cudaMemcpyHostToDevice));
+
+    // ell
+    ell_row_maxcount = 0;
+    int* ellColsperRow;
+    ellColsperRow = (int*)malloc(sizeof(int) * num_cells);
+    memset(ellColsperRow, 0, sizeof(int) * num_cells);
+    for(int i = 0; i < num_surfaces; i++){
+        int lowerRow = neighbor[i];
+        int upperRow = owner[i];
+        ellColsperRow[lowerRow] += 1;
+        ellColsperRow[upperRow] += 1;
+    }
+    for(int i = 0; i < num_cells; i++){
+        ell_row_maxcount = std::max(ell_row_maxcount, ellColsperRow[i]);
+    }
+
+    checkCudaErrors(cudaMalloc((void**)&d_ellCols, num_cells * ell_row_maxcount * sizeof(int)));
+    checkCudaErrors(cudaMemset(d_ellCols, -1, num_cells * ell_row_maxcount * sizeof(int)));
+    checkCudaErrors(cudaMalloc((void**)&d_ldu2ellIndex, num_surfaces * 2 * sizeof(int)));
+    int *ellCols;
+    ellCols = (int*)malloc(sizeof(int) * num_cells * ell_row_maxcount);
+    memset(ellCols, 0, sizeof(int) * num_cells * ell_row_maxcount);
+
+    int *ldu2ellIndex;
+    ldu2ellIndex = (int*)malloc(sizeof(int) * num_surfaces * 2);
+    memset(ldu2ellIndex, 0, sizeof(int) * num_surfaces * 2);
+    std::vector<int> rowOffset(num_cells, 0);
+    // lower
+    for(int i = 0; i < num_surfaces; i++){
+        int row = neighbor[i];
+        int index = ell_row_maxcount * row + rowOffset[row];
+        ldu2ellIndex[i] = index;
+        ellCols[index] = owner[i];
+        rowOffset[row] += 1;
+    }
+    // upper
+    for(int i = 0; i < num_surfaces; i++){
+        int row = owner[i];
+        int index = ell_row_maxcount * row + rowOffset[row];
+        ldu2ellIndex[i + num_surfaces] = index;
+        ellCols[index] = neighbor[i];
+        rowOffset[row] += 1;
+    }
+
+    checkCudaErrors(cudaMemcpy(d_ellCols, ellCols, sizeof(int) * num_cells * ell_row_maxcount, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_ldu2ellIndex, ldu2ellIndex, sizeof(int) * num_surfaces * 2, cudaMemcpyHostToDevice));
+
+    free(ellColsperRow);
+    free(ellCols);
+    free(ldu2ellIndex);
 }
 
 void dfMatrixDataBase::createConstantFieldsInternal() {

@@ -21,6 +21,8 @@ public:
 
     virtual void freeInit() = 0;
 
+    virtual void freeInitStream(cudaStream_t stream) = 0;
+
     virtual void initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) = 0;
 
     virtual bool checkSingularity(double input){
@@ -122,6 +124,8 @@ public:
     virtual void initializeStream(const int nCells, const size_t boundary_surface_value_bytes, cudaStream_t stream) override;
 
     void freeInit() override;
+
+    virtual void freeInitStream(cudaStream_t stream) override;
     
     virtual void initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) override;
 
@@ -182,6 +186,8 @@ public:
 
     void freeInit() override;
 
+    virtual void freeInitStream(cudaStream_t stream) override;
+
     void solve
     (
         const dfMatrixDataBase& dataBase,
@@ -209,5 +215,5 @@ public:
         double *psi,
         GAMGStruct *GAMGdata_, 
         int agglomeration_level
-    );
+    )override;
 };

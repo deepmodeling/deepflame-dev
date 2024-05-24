@@ -1,5 +1,6 @@
 #pragma once
 #include "dfMatrixDataBase.H"
+#include "dfELLPreconditioner.H"
 
 class ELLSolver {
 protected:
@@ -18,6 +19,12 @@ public:
 
     virtual void initializeStream(const int, const size_t, cudaStream_t) = 0;
 
+    virtual void freeInit() = 0;
+
+    virtual void freeInitStream(cudaStream_t stream) = 0;
+
+    virtual void initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) = 0;
+    
     virtual bool checkSingularity(double input){
         return (input < vsmall_);
     }
@@ -73,6 +80,25 @@ public:
         tolerance_ = tolerance;
         relTol_ = relTol;
     }
+
+    virtual void initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
+                GAMGStruct *GAMGdata_, int agglomeration_level) = 0;
+
+    virtual void solve_useGAMG
+    (
+        const dfMatrixDataBase& dataBase,
+        const double* d_internal_coeffs,
+        const double* d_boundary_coeffs,
+        int* patch_type,
+        double* diagPtr,
+        double* ellValues,
+        int* ellCols,
+        int ell_max_count,
+        const double *rhs, 
+        double *psi,
+        GAMGStruct *GAMGdata_, 
+        int agglomeration_level
+    ) = 0;
 };
 
 class PBiCGStabELLSolver : public ELLSolver {
@@ -101,6 +127,12 @@ public:
 
     virtual void initializeStream(const int nCells, const size_t boundary_surface_value_bytes, cudaStream_t stream) override;
 
+    void freeInit() override;
+
+    virtual void freeInitStream(cudaStream_t stream) override;
+
+    virtual void initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) override;
+
     virtual void solve
     (
         const dfMatrixDataBase& dataBase,
@@ -113,6 +145,25 @@ public:
         int ell_max_count,
         const double *rhs, 
         double *psi
+    ) override;
+
+    void initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
+                GAMGStruct *GAMGdata_, int agglomeration_level) override;
+
+    virtual void solve_useGAMG
+    (
+        const dfMatrixDataBase& dataBase,
+        const double* d_internal_coeffs,
+        const double* d_boundary_coeffs,
+        int* patch_type,
+        double* diagPtr,
+        double* ellValues,
+        int* ellCols,
+        int ell_max_count,
+        const double *rhs, 
+        double *psi,
+        GAMGStruct *GAMGdata_, 
+        int agglomeration_level
     ) override;
 };
 
@@ -130,6 +181,10 @@ public:
     double *scalarSendBufList_;
     double *scalarRecvBufList_;
 
+    // tmp
+    GAMGELLPreconditioner *precond_;
+    virtual void initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) override;
+
     PCGELLSolver() {}
     virtual ~PCGELLSolver() {}
 
@@ -137,6 +192,10 @@ public:
 
     virtual void initializeStream(const int nCells, const size_t boundary_surface_value_bytes, cudaStream_t stream) override;
 
+    void freeInit() override;
+
+    virtual void freeInitStream(cudaStream_t stream) override;
+    
     virtual void solve
     (
         const dfMatrixDataBase& dataBase,
@@ -149,5 +208,24 @@ public:
         int ell_max_count,
         const double *rhs, 
         double *psi
+    ) override;
+
+    void initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
+                GAMGStruct *GAMGdata_, int agglomeration_level);
+
+    virtual void solve_useGAMG
+    (
+        const dfMatrixDataBase& dataBase,
+        const double* d_internal_coeffs,
+        const double* d_boundary_coeffs,
+        int* patch_type,
+        double* diagPtr,
+        double* ellValues,
+        int* ellCols,
+        int ell_max_count,
+        const double *rhs, 
+        double *psi,
+        GAMGStruct *GAMGdata_, 
+        int agglomeration_level
     ) override;
 };

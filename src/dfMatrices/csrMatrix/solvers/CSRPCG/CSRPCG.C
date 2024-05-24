@@ -1,6 +1,22 @@
 #include "CSRPCG.H"
 #include <mpi.h>
 
+#include <iostream>
+#include <vector>
+#include <fstream>
+#include <cstdlib>
+
+void saveArrayToBinaryFile(const std::string& filename, const double* array, std::size_t size) {
+    std::ofstream outFile(filename, std::ios::binary);
+    if (!outFile) {
+        std::cerr << "Error opening file for writing: " << filename << std::endl;
+        return;
+    }
+
+    outFile.write(reinterpret_cast<const char*>(array), size * sizeof(double));
+    outFile.close();
+}
+
 namespace Foam
 {
     defineTypeNameAndDebug(CSRPCG, 0);
@@ -68,6 +84,11 @@ Foam::solverPerformance Foam::CSRPCG::solve
     );
 
     label nCells = psi.size();
+
+    // std::string filename = "source.bin";
+    // saveArrayToBinaryFile(filename, &source[0], nCells);
+
+    // MPI_Abort(MPI_COMM_WORLD, 1);
 
     scalar* __restrict__ psiPtr = psi.begin();
 

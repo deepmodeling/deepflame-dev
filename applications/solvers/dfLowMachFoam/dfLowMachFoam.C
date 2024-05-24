@@ -38,6 +38,7 @@ Description
 // #include "hePsiThermo.H"
 #include "heRhoThermo.H"
 #include "csrMatrix.H"
+#include "ellMatrix.H"
 
 #ifdef USE_PYTORCH
 #include <pybind11/embed.h>
@@ -216,8 +217,13 @@ int main(int argc, char *argv[])
 #ifdef GPUSolverNew_
     //============================================================================
     // startif use GAMG Solver ... 
-    #include "dfCSRPreconditioner.H" // use GAMGStruct
+    
+#define iscsr // true -> csr, false -> ell
+#ifdef iscsr
     #include "CSRGAMGAgglomeration.H"
+#else
+    #include "ELLGAMGAgglomeration.H"
+#endif
     // map coeffs for GAMG solver
     const dictionary solverControls = p.mesh().solverDict
     (
@@ -227,7 +233,11 @@ int main(int argc, char *argv[])
             ("finalIteration", false)
         )
     );
+#ifdef iscsr
     const CSRGAMGAgglomeration& agglomeration(CSRGAMGAgglomeration::New(p.mesh(), solverControls));
+#else
+    const ELLGAMGAgglomeration& agglomeration(ELLGAMGAgglomeration::New(p.mesh(), solverControls));
+#endif
     std::cout << "=== get agglomeration in createGPUGAMGMaps " << std::endl;
 
     int agglomeration_level = agglomeration.size();

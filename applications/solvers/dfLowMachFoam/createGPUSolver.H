@@ -1,5 +1,6 @@
 #include <queue>
 #include "CSRGAMGAgglomeration.H"
+#include "ELLGAMGAgglomeration.H"
 
 ncclUniqueId nccl_id;
 ncclComm_t nccl_comm;
@@ -595,6 +596,7 @@ void createGPUpEqn(const IOdictionary& CanteraTorchProperties, volScalarField& p
     pEqn_GPU.createNonConstantFieldsInternal();
     pEqn_GPU.createNonConstantFieldsBoundary();
     pEqn_GPU.createNonConstantLduAndCsrFields();
+    pEqn_GPU.GAMGpEqnldu(GAMGdata_, agglomeration_level);
 }
 
 void createGPUThermo(const IOdictionary& CanteraTorchProperties, volScalarField& T, volScalarField& he, 
@@ -713,15 +715,131 @@ void createGPUThermo(const IOdictionary& CanteraTorchProperties, volScalarField&
 void createGPUGAMGMaps(GAMGStruct *GAMGdata, const CSRGAMGAgglomeration& agglomeration) {
     DEBUG_TRACE;
 
-    #include "dfCSRPreconditioner.H" // use GAMGStruct
-    std::cout << "====== start in createGPUGAMGMaps ======" << std::endl;
+    std::cout << "====== start in createGPUGAMGMaps (CSR) ======" << std::endl;
+
+    int agglomeration_level = agglomeration.size();
+
+    dfDataBase.h_ldu_to_csr_no_diag = (int**)malloc(sizeof(int*)*agglomeration_level);
+    dfDataBase.h_csr_row_index_no_diag = (int**)malloc(sizeof(int*)*agglomeration_level);
+    dfDataBase.h_csr_col_index_no_diag = (int**)malloc(sizeof(int*)*agglomeration_level);
 
     forAll(agglomeration, leveli)
     {
-        std::vector<int> upperAddrVector( agglomeration.restrictAddressing(leveli).begin(), 
-                                          agglomeration.restrictAddressing(leveli).end());
-        std::vector<int> lowerAddrVector( agglomeration.restrictAddressing(leveli).begin(), 
-                                          agglomeration.restrictAddressing(leveli).end());
+        std::vector<int> upperAddrVector( agglomeration.meshLevel(leveli).lduAddr().upperAddr().begin(), 
+                                          agglomeration.meshLevel(leveli).lduAddr().upperAddr().end());
+        std::vector<int> lowerAddrVector( agglomeration.meshLevel(leveli).lduAddr().lowerAddr().begin(), 
+                                          agglomeration.meshLevel(leveli).lduAddr().lowerAddr().end());
+
+        std::vector<int> restrictMapVector( agglomeration.restrictAddressing(leveli).begin(), 
+                                            agglomeration.restrictAddressing(leveli).end());
+        std::vector<int> faceRestrictMapVector( agglomeration.faceRestrictAddressing(leveli).begin(), 
+                                                agglomeration.faceRestrictAddressing(leveli).end());
+        std::vector<bool> faceFlipMapVector( agglomeration.faceFlipMap(leveli).begin(), 
+                                             agglomeration.faceFlipMap(leveli).end());
+
+        GAMGdata[leveli].curLevel = leveli;
+        GAMGdata[leveli].nCell = restrictMapVector.size();
+        GAMGdata[leveli].nFace = faceRestrictMapVector.size();
+
+        GAMGdata[leveli].upperAddr = upperAddrVector;
+        GAMGdata[leveli].lowerAddr = lowerAddrVector;
+
+        GAMGdata[leveli].restrictMap = restrictMapVector;
+        GAMGdata[leveli].faceRestrictMap = faceRestrictMapVector;
+
+        // TODO: bool2int needtest: all false in this case
+        std::transform(faceFlipMapVector.begin(), faceFlipMapVector.end(), 
+                        std::back_inserter(GAMGdata[leveli].faceFlipMap), [](bool b) { return static_cast<int>(b); });
+
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_restrictMap, GAMGdata[leveli].restrictMap.size() * sizeof(int)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_faceRestrictMap, GAMGdata[leveli].faceRestrictMap.size() * sizeof(int)));
+        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_faceFlipMap, GAMGdata[leveli].faceFlipMap.size() * sizeof(int)));
+
+        checkCudaErrors(cudaMemcpyAsync( GAMGdata[leveli].d_restrictMap, GAMGdata[leveli].restrictMap.data(), 
+                                         GAMGdata[leveli].restrictMap.size() * sizeof(int), cudaMemcpyHostToDevice));
+        checkCudaErrors(cudaMemcpyAsync( GAMGdata[leveli].d_faceRestrictMap, GAMGdata[leveli].faceRestrictMap.data(), 
+                                         GAMGdata[leveli].faceRestrictMap.size() * sizeof(int), cudaMemcpyHostToDevice));
+        checkCudaErrors(cudaMemcpyAsync( GAMGdata[leveli].d_faceFlipMap, GAMGdata[leveli].faceFlipMap.data(), 
+                                         GAMGdata[leveli].faceFlipMap.size() * sizeof(int), cudaMemcpyHostToDevice));
+
+        // ldu2csr index
+        dfDataBase.setConstantIndexes_GAMG
+                (GAMGdata[leveli].nCell, GAMGdata[leveli].nFace, &GAMGdata[leveli].lowerAddr[0], 
+                &GAMGdata[leveli].upperAddr[0], leveli, 1);
+    
+        std::cout << "  == level: " << leveli << ", cell: " << GAMGdata[leveli].restrictMap.size()
+                                              << ", face: " << GAMGdata[leveli].faceRestrictMap.size() << std::endl;
+
+#ifdef PARALLEL_
+
+        int patchSize = agglomeration.nPatchFaces(0).size();
+
+        if(leveli == 0)
+        {
+            std::vector<int> nPatchFacesVector( agglomeration.nPatchFaces(leveli).begin(), 
+                                                agglomeration.nPatchFaces(leveli).end());
+            GAMGdata[leveli].nPatchFaces = nPatchFacesVector;
+        }
+        else
+        {
+            std::vector<int> nPatchFacesVector( agglomeration.nPatchFaces(leveli-1).begin(), 
+                                                agglomeration.nPatchFaces(leveli-1).end());
+            GAMGdata[leveli].nPatchFaces = nPatchFacesVector;
+        }
+
+        GAMGdata[leveli].d_faceCells = new int*[patchSize]();
+        GAMGdata[leveli].d_patchFaceRestrictMap = new int*[patchSize]();
+        GAMGdata[leveli].d_interfaceBouCoeffs = new double*[patchSize]();
+        GAMGdata[leveli].d_interfaceIntCoeffs = new double*[patchSize]();
+
+        for(int patchi=0; patchi < patchSize; patchi++)
+        {
+            if (GAMGdata[leveli].nPatchFaces[patchi] > 0)
+            {
+                std::vector<int> faceCellsVector (  agglomeration.interfaceLevel(leveli)[patchi].faceCells().begin(),
+                                                    agglomeration.interfaceLevel(leveli)[patchi].faceCells().end());
+                std::vector<int> patchFaceRestrictMapVector(agglomeration.patchFaceRestrictAddressing(leveli)[patchi].begin(), 
+                                                            agglomeration.patchFaceRestrictAddressing(leveli)[patchi].end());
+                if (leveli == 0)
+                {
+                    GAMGdata[leveli].nPatchFaces[patchi] = patchFaceRestrictMapVector.size();
+                }
+
+                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_faceCells[patchi], faceCellsVector.size()*sizeof(int)));
+                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_patchFaceRestrictMap[patchi], patchFaceRestrictMapVector.size()*sizeof(int)));
+                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_interfaceBouCoeffs[patchi], patchFaceRestrictMapVector.size()*sizeof(double)));
+                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_interfaceIntCoeffs[patchi], patchFaceRestrictMapVector.size()*sizeof(double)));
+
+                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_faceCells[patchi], faceCellsVector.data(), 
+                                                faceCellsVector.size()*sizeof(int), cudaMemcpyHostToDevice));
+                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_patchFaceRestrictMap[patchi], patchFaceRestrictMapVector.data(), 
+                                                patchFaceRestrictMapVector.size()*sizeof(int), cudaMemcpyHostToDevice));
+                
+            }
+        }
+#endif
+    }
+    std::cout << "======= end in createGPUGAMGMaps =======" << std::endl;
+    
+}
+
+void createGPUGAMGMaps(GAMGStruct *GAMGdata, const ELLGAMGAgglomeration& agglomeration) {
+    DEBUG_TRACE;
+
+    std::cout << "====== start in createGPUGAMGMaps (ELL) ======" << std::endl;
+
+    int agglomeration_level = agglomeration.size();
+
+    dfDataBase.h_ell_row_maxcount = (int*)malloc(sizeof(int)*agglomeration_level);
+    dfDataBase.h_ellCols = (int**)malloc(sizeof(int*)*agglomeration_level);
+    dfDataBase.h_ldu2ellIndex = (int**)malloc(sizeof(int*)*agglomeration_level);
+
+    forAll(agglomeration, leveli)
+    {
+        std::vector<int> upperAddrVector( agglomeration.meshLevel(leveli).lduAddr().upperAddr().begin(), 
+                                          agglomeration.meshLevel(leveli).lduAddr().upperAddr().end());
+        std::vector<int> lowerAddrVector( agglomeration.meshLevel(leveli).lduAddr().lowerAddr().begin(), 
+                                          agglomeration.meshLevel(leveli).lduAddr().lowerAddr().end());
 
         std::vector<int> restrictMapVector( agglomeration.restrictAddressing(leveli).begin(), 
                                             agglomeration.restrictAddressing(leveli).end());
@@ -755,10 +873,15 @@ void createGPUGAMGMaps(GAMGStruct *GAMGdata, const CSRGAMGAgglomeration& agglome
         checkCudaErrors(cudaMemcpyAsync( GAMGdata[leveli].d_faceFlipMap, GAMGdata[leveli].faceFlipMap.data(), 
                                          GAMGdata[leveli].faceFlipMap.size() * sizeof(int), cudaMemcpyHostToDevice));
     
+        // ldu2ell index
+        dfDataBase.setConstantIndexes_GAMG
+                (GAMGdata[leveli].nCell, GAMGdata[leveli].nFace, &GAMGdata[leveli].lowerAddr[0], 
+                &GAMGdata[leveli].upperAddr[0], leveli, 2);
+    
         std::cout << "  == level: " << leveli << ", cell: " << GAMGdata[leveli].restrictMap.size()
                                               << ", face: " << GAMGdata[leveli].faceRestrictMap.size() << std::endl;
 
-#ifndef PARALLEL_
+#ifdef PARALLEL_
 
         int patchSize = agglomeration.nPatchFaces(0).size();
 

@@ -94,6 +94,72 @@ enum boundaryConditions{
 
 void constructBoundarySelectorPerPatch(int *patchTypeSelector, const std::string& patchTypeStr);
 
+struct GAMGStruct
+{
+    int curLevel = -100; // current level && flag to save data 
+    int nCell;
+    int nFace;
+
+    // === host data get from agglomeration
+    std::vector<int> upperAddr;
+    std::vector<int> lowerAddr;
+
+    std::vector<int> restrictMap;
+    std::vector<int> faceRestrictMap;
+    std::vector<int> faceFlipMap;   // bool2int
+
+    // === host data for multigpu parallel
+    std::vector<int> nPatchFaces;
+
+    // === d2h matrix data for verify
+    double* h_lower = nullptr;
+    double* h_upper = nullptr;
+    double* h_diag = nullptr;
+
+    // === d2h interface data for verify
+    double** h_interfaceBouCoeffs = nullptr;
+    double** h_interfaceIntCoeffs = nullptr;
+
+    // === device map data
+    int* d_restrictMap = nullptr;
+    int* d_faceRestrictMap = nullptr;
+    int* d_faceFlipMap = nullptr;   // bool2int
+
+    // === device data for multigpu parallel
+    int** d_faceCells = nullptr;
+    int** d_patchFaceRestrictMap = nullptr;
+    double** d_interfaceBouCoeffs = nullptr;
+    double** d_interfaceIntCoeffs = nullptr;
+  
+    // === device matrix data
+    double* d_lower = nullptr;
+    double* d_upper = nullptr;
+    double* d_diag = nullptr;
+    int* d_lowerAddr = nullptr;
+    int* d_upperAddr = nullptr;
+
+    // === device csr matrix data
+    double* d_off_diag_value = nullptr;
+    int* d_csr_row_index_no_diag = nullptr;
+    int* d_csr_col_index_no_diag = nullptr;
+
+    // === device ell matrix data
+    int ell_row_maxcount = 0;
+    int *d_ell_cols = nullptr;
+    double *d_ell_values = nullptr;
+
+    // === device iteration data
+    double* d_CorrFields = nullptr;
+    double* d_Sources = nullptr;
+
+    // === device temp data
+    double* d_AcfField = nullptr;
+    double* d_preSmoothField = nullptr;
+    double* d_scalingFactorNum = nullptr;
+    double* d_scalingFactorDenom = nullptr;
+};
+
+
 struct dfMatrixDataBase
 {
     // cuda resource
@@ -160,6 +226,19 @@ struct dfMatrixDataBase
     int *d_ldu_to_csr_no_diag = nullptr;
     int *d_csr_row_index_no_diag= nullptr;
     int *d_csr_col_index_no_diag= nullptr;
+
+    int ell_row_maxcount = 0;
+    int *d_ellCols = nullptr;
+    int *d_ldu2ellIndex = nullptr;
+
+    // GAMG constant indexes
+    int **h_ldu_to_csr_no_diag = nullptr;
+    int **h_csr_row_index_no_diag= nullptr;
+    int **h_csr_col_index_no_diag= nullptr;
+
+    int *h_ell_row_maxcount = nullptr;
+    int **h_ellCols = nullptr;
+    int **h_ldu2ellIndex = nullptr;
 
     // amgx solvers
 	AmgXSolver *u_setting_solver = nullptr;
@@ -301,7 +380,8 @@ struct dfMatrixDataBase
             int nRanks, int myRank, int localRank, std::vector<int> &neighbProcNo);
     void setConstantValues(int num_cells, int num_total_cells, int num_surfaces, 
         int num_boundary_surfaces, int num_patches, int num_proc_surfaces, 
-        std::vector<int> patch_size, int num_species, double rdelta_t);             
+        std::vector<int> patch_size, int num_species, double rdelta_t);  
+    void setConstantIndexes_GAMG(int nCells, int nFaces, int *owner, int *neighbor, int leveli, int type);           
     void setConstantIndexes(const int *owner, const int *neighbor, const int *procRows, 
             const int *procCols, int globalOffset);
     void setAmgxSolvers(const std::string &mode_string, const std::string &u_setting_path, const std::string &p_setting_path);

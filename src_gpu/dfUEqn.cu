@@ -355,13 +355,15 @@ void dfUEqn::setConstantValues(const std::string &mode_string, const std::string
   this->stream = dataBase_.stream;
   this->mode_string = mode_string;
   this->setting_path = setting_path;
+#ifdef AMGXSolver_
   UxSolver = new AmgXSolver(mode_string, setting_path, dataBase_.localRank);
   UySolver = new AmgXSolver(mode_string, setting_path, dataBase_.localRank);
   UzSolver = new AmgXSolver(mode_string, setting_path, dataBase_.localRank);
-  
+#endif
+
 #ifdef CSRPBiCGSolver_
-  USolver = new PBiCGStabCSRSolver();
-  USolver->initSolvePerformance
+  UCSRSolver = new PBiCGStabCSRSolver();
+  UCSRSolver->initSolvePerformance
     (     
         1e-20, //small_
         2.22507e-308, //vsmall_
@@ -371,9 +373,9 @@ void dfUEqn::setConstantValues(const std::string &mode_string, const std::string
         0.01 //relTol_
     );
 #ifndef STREAM_ALLOCATOR
-  USolver->initialize(dataBase_.num_cells, dataBase_.boundary_surface_value_bytes);
+  UCSRSolver->initialize(dataBase_.num_cells, dataBase_.boundary_surface_value_bytes);
 #else 
-  USolver->initializeStream(dataBase_.num_cells, dataBase_.boundary_surface_value_bytes, dataBase_.stream);
+  UCSRSolver->initializeStream(dataBase_.num_cells, dataBase_.boundary_surface_value_bytes, dataBase_.stream);
 #endif
 #endif
 
@@ -460,7 +462,7 @@ void dfUEqn::createNonConstantFieldsBoundary() {
 
 void dfUEqn::createNonConstantLduAndCsrFields() {
   checkCudaErrors(cudaMalloc((void**)&d_ldu, dataBase_.csr_value_bytes));
-#ifdef AMGX_
+#ifdef AMGXSolver_
   d_lower = d_ldu;
   d_diag = d_ldu + dataBase_.num_surfaces;
   d_upper = d_ldu + dataBase_.num_cells + dataBase_.num_surfaces;
@@ -471,10 +473,9 @@ void dfUEqn::createNonConstantLduAndCsrFields() {
   d_diag = d_ldu + 2 * dataBase_.num_surfaces;
 #endif
 #ifdef ELLPBiCGSolver_
-// TODO
   d_lower = d_ldu;
-  d_diag = d_ldu + dataBase_.num_surfaces;
-  d_upper = d_ldu + dataBase_.num_cells + dataBase_.num_surfaces;
+  d_upper = d_ldu + dataBase_.num_surfaces;
+  d_diag = d_ldu + 2 * dataBase_.num_surfaces;
 #endif
   d_extern = d_ldu + dataBase_.num_cells + 2 * dataBase_.num_surfaces;
   checkCudaErrors(cudaMalloc((void**)&d_source, dataBase_.cell_value_vec_bytes));
@@ -670,38 +671,23 @@ void dfUEqn::process() {
             dataBase_.patchSizeOffset.data(), d_A, d_b);
 #endif
 #ifdef CSRPBiCGSolver_
-        checkCudaErrors(cudaMallocAsync((void**)&d_off_diag, dataBase_.num_surfaces * 2 * sizeof(double), dataBase_.stream));        
+#ifdef STREAM_ALLOCATOR
+        checkCudaErrors(cudaMallocAsync((void**)&d_off_diag, dataBase_.num_surfaces * 2 * sizeof(double), dataBase_.stream));     
+#else
+        checkCudaErrors(cudaMalloc((void**)&d_off_diag, dataBase_.num_surfaces * 2 * sizeof(double)));  
+#endif
         ueqn_ldu_to_csr_no_diag(dataBase_.num_surfaces * 2, dataBase_.d_ldu_to_csr_no_diag, d_ldu, d_off_diag);
 #endif
 #ifdef ELLPBiCGSolver_
-// TODO
-        double *h_lower;
-        double *h_upper;
-        int *h_owner;
-        int *h_neighbor;
-        h_lower = (double*)malloc(dataBase_.num_surfaces * sizeof(double));
-        h_upper = (double*)malloc(dataBase_.num_surfaces * sizeof(double));
-        h_owner = (int*)malloc(dataBase_.num_surfaces * sizeof(int));
-        h_neighbor = (int*)malloc(dataBase_.num_surfaces * sizeof(int));
-        cudaMemcpyAsync(h_lower, d_lower, dataBase_.num_surfaces * sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream);
-        cudaMemcpyAsync(h_upper, d_upper, dataBase_.num_surfaces * sizeof(double), cudaMemcpyDeviceToHost, dataBase_.stream);
-        cudaMemcpyAsync(h_owner, dataBase_.d_owner, dataBase_.num_surfaces * sizeof(int), cudaMemcpyDeviceToHost, dataBase_.stream);
-        cudaMemcpyAsync(h_neighbor, dataBase_.d_neighbor, dataBase_.num_surfaces * sizeof(int), cudaMemcpyDeviceToHost, dataBase_.stream);
-        
-        maxcount = get_ell_row_maxcount(dataBase_.num_cells, dataBase_.num_surfaces, h_owner, h_neighbor);
-        double* ellValues;
-        int* ellCols;
-        ellValues = (double*)malloc(sizeof(double) * dataBase_.num_cells * maxcount);
-        ellCols = (int*)malloc(sizeof(int) * dataBase_.num_cells * maxcount);
-        for(int i = 0; i < dataBase_.num_cells * maxcount; i++){
-            ellValues[i] = 0;
-            ellCols[i] = -1;
-        }
-        ueqn_ldu_to_ell_no_diag(dataBase_.num_cells, dataBase_.num_surfaces, h_lower, h_upper, h_owner, h_neighbor, ellValues, ellCols, maxcount);
-        cudaMallocAsync((void**)&d_ellValues, dataBase_.num_cells * maxcount * sizeof(double), dataBase_.stream);
-        cudaMallocAsync((void**)&d_ellCols, dataBase_.num_cells * maxcount * sizeof(int), dataBase_.stream);
-        cudaMemcpyAsync(d_ellValues, ellValues, dataBase_.num_cells * maxcount * sizeof(double), cudaMemcpyHostToDevice);
-        cudaMemcpyAsync(d_ellCols, ellCols, dataBase_.num_cells * maxcount * sizeof(int), cudaMemcpyHostToDevice);
+#ifdef STREAM_ALLOCATOR
+        checkCudaErrors(cudaMallocAsync((void**)&d_ellValues, dataBase_.num_cells * dataBase_.ell_row_maxcount * sizeof(double), dataBase_.stream));
+        checkCudaErrors(cudaMemsetAsync(d_ellValues, 0, dataBase_.num_cells * dataBase_.ell_row_maxcount * sizeof(double), dataBase_.stream));
+
+#else  
+        checkCudaErrors(cudaMalloc((void**)&d_ellValues, dataBase_.num_cells * dataBase_.ell_row_maxcount * sizeof(double)));
+        checkCudaErrors(cudaMemset(d_ellValues, 0, dataBase_.num_cells * dataBase_.ell_row_maxcount * sizeof(double)));
+#endif        
+        ueqn_ldu_to_ell_no_diag(dataBase_.num_surfaces * 2, dataBase_.d_ldu2ellIndex, d_ldu, d_ellValues);
 #endif
 #endif
 #ifdef USE_GRAPH
@@ -762,11 +748,27 @@ void dfUEqn::process() {
         checkCudaErrors(cudaFreeAsync(d_source_solve, dataBase_.stream));
         checkCudaErrors(cudaFreeAsync(d_internal_coeffs_solve, dataBase_.stream));
         checkCudaErrors(cudaFreeAsync(d_boundary_coeffs_solve, dataBase_.stream));
+#ifdef CSRPBiCGSolver_
+        checkCudaErrors(cudaFreeAsync(d_off_diag, dataBase_.stream));
+        UCSRSolver->freeInitStream(dataBase_.stream);
+#endif
+#ifdef ELLPBiCGSolver_
+        checkCudaErrors(cudaFreeAsync(d_ellValues, dataBase_.stream));
+        UELLSolver->freeInitStream(dataBase_.stream);
+#endif
+
+#else
+#ifdef CSRPBiCGSolver_
+        checkCudaErrors(cudaFree(d_off_diag));
+        UCSRSolver->freeInit();
+#endif
+#ifdef ELLPBiCGSolver_
+        checkCudaErrors(cudaFree(d_ellValues));
+        UELLSolver->freeInit();
+#endif
+
 #endif
         TICK_END_EVENT(UEqn post process free);
-
-#ifdef CSRPBiCGSolver_
-        USolver->freeInit();
 
 #ifdef USE_GRAPH
         checkCudaErrors(cudaStreamEndCapture(dataBase_.stream, &graph_post));
@@ -797,33 +799,31 @@ void dfUEqn::solve() {
 #endif
 #ifdef CSRPBiCGSolver_
     double* d_diag_tmp;
+#ifdef STREAM_ALLOCATOR
     cudaMallocAsync((void**)&d_diag_tmp, dataBase_.num_cells * sizeof(double), dataBase_.stream);
+#else
+    cudaMalloc((void**)&d_diag_tmp, dataBase_.num_cells * sizeof(double));
+#endif
     cudaMemcpyAsync(d_diag_tmp, d_diag, dataBase_.num_cells * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream);
-    TICK_INIT_EVENT;
-    TICK_START_EVENT;
-    // nvtxRangePushA("CSR PBiCGStab solve x");
-    USolver->solve(dataBase_, d_internal_coeffs_solve, d_boundary_coeffs_solve, &patch_type[0], d_diag_tmp, d_off_diag, d_source_solve, dataBase_.d_u);
-    // nvtxRangePop();
+    UCSRSolver->solve(dataBase_, d_internal_coeffs_solve, d_boundary_coeffs_solve, &patch_type[0], d_diag_tmp, d_off_diag, d_source_solve, dataBase_.d_u);
     cudaMemcpyAsync(d_diag_tmp, d_diag, dataBase_.num_cells * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream);
-    USolver->solve(dataBase_, d_internal_coeffs_solve + dataBase_.num_boundary_surfaces, d_boundary_coeffs_solve + dataBase_.num_boundary_surfaces, &patch_type[0], d_diag_tmp, d_off_diag, d_source_solve + dataBase_.num_cells, dataBase_.d_u + dataBase_.num_cells);
+    UCSRSolver->solve(dataBase_, d_internal_coeffs_solve + dataBase_.num_boundary_surfaces, d_boundary_coeffs_solve + dataBase_.num_boundary_surfaces, &patch_type[0], d_diag_tmp, d_off_diag, d_source_solve + dataBase_.num_cells, dataBase_.d_u + dataBase_.num_cells);
     cudaMemcpyAsync(d_diag_tmp, d_diag, dataBase_.num_cells * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream);
-    USolver->solve(dataBase_, d_internal_coeffs_solve + 2 * dataBase_.num_boundary_surfaces, d_boundary_coeffs_solve + 2 * dataBase_.num_boundary_surfaces, &patch_type[0], d_diag_tmp, d_off_diag, d_source_solve + 2 * dataBase_.num_cells, dataBase_.d_u + 2 * dataBase_.num_cells);
-    TICK_END_EVENT(CSR PBiCGStab solve);
+    UCSRSolver->solve(dataBase_, d_internal_coeffs_solve + 2 * dataBase_.num_boundary_surfaces, d_boundary_coeffs_solve + 2 * dataBase_.num_boundary_surfaces, &patch_type[0], d_diag_tmp, d_off_diag, d_source_solve + 2 * dataBase_.num_cells, dataBase_.d_u + 2 * dataBase_.num_cells);
 #endif
 #ifdef ELLPBiCGSolver_
     double* d_diag_tmp;
+#ifdef STREAM_ALLOCATOR
     cudaMallocAsync((void**)&d_diag_tmp, dataBase_.num_cells * sizeof(double), dataBase_.stream);
+#else
+    cudaMalloc((void**)&d_diag_tmp, dataBase_.num_cells * sizeof(double));
+#endif
     cudaMemcpyAsync(d_diag_tmp, d_diag, dataBase_.num_cells * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream);
-    TICK_INIT_EVENT;
-    TICK_START_EVENT;
-    // nvtxRangePushA("ELL PBiCGStab solve x");
-    UELLSolver->solve(dataBase_, d_internal_coeffs_solve, d_boundary_coeffs_solve, &patch_type[0], d_diag_tmp, d_ellValues, d_ellCols, maxcount, d_source_solve, dataBase_.d_u);
-    // nvtxRangePop();
+    UELLSolver->solve(dataBase_, d_internal_coeffs_solve, d_boundary_coeffs_solve, &patch_type[0], d_diag_tmp, d_ellValues, dataBase_.d_ellCols, dataBase_.ell_row_maxcount, d_source_solve, dataBase_.d_u);
     cudaMemcpyAsync(d_diag_tmp, d_diag, dataBase_.num_cells * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream);
-    UELLSolver->solve(dataBase_, d_internal_coeffs_solve + dataBase_.num_boundary_surfaces, d_boundary_coeffs_solve + dataBase_.num_boundary_surfaces, &patch_type[0], d_diag_tmp, d_ellValues, d_ellCols, maxcount,  d_source_solve + dataBase_.num_cells, dataBase_.d_u + dataBase_.num_cells);
+    UELLSolver->solve(dataBase_, d_internal_coeffs_solve + dataBase_.num_boundary_surfaces, d_boundary_coeffs_solve + dataBase_.num_boundary_surfaces, &patch_type[0], d_diag_tmp, d_ellValues, dataBase_.d_ellCols, dataBase_.ell_row_maxcount,  d_source_solve + dataBase_.num_cells, dataBase_.d_u + dataBase_.num_cells);
     cudaMemcpyAsync(d_diag_tmp, d_diag, dataBase_.num_cells * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream);
-    UELLSolver->solve(dataBase_, d_internal_coeffs_solve + 2 * dataBase_.num_boundary_surfaces, d_boundary_coeffs_solve + 2 * dataBase_.num_boundary_surfaces, &patch_type[0], d_diag_tmp, d_ellValues, d_ellCols, maxcount, d_source_solve + 2 * dataBase_.num_cells, dataBase_.d_u + 2 * dataBase_.num_cells);
-    TICK_END_EVENT(ELL PBiCGStab solve);
+    UELLSolver->solve(dataBase_, d_internal_coeffs_solve + 2 * dataBase_.num_boundary_surfaces, d_boundary_coeffs_solve + 2 * dataBase_.num_boundary_surfaces, &patch_type[0], d_diag_tmp, d_ellValues, dataBase_.d_ellCols, dataBase_.ell_row_maxcount, d_source_solve + 2 * dataBase_.num_cells, dataBase_.d_u + 2 * dataBase_.num_cells);
 #endif
     num_iteration++;
 }
@@ -1039,62 +1039,27 @@ void dfUEqn::ueqn_ldu_to_csr_no_diag
         (num_surfaces, index, value, result);
 }
 
-int dfUEqn::get_ell_row_maxcount
-(
-    int row_,
-    int num_surfaces,
-    int* lowerAddr,
-    int* upperAddr
-)
-{
-    int maxcount = 0;
-    int* ellColsperRow;
-    ellColsperRow = (int*)malloc(sizeof(int) * row_);
-    for(int i = 0; i < row_; i++){
-        ellColsperRow[i] = 0;
-    }
-    for(int i = 0; i < num_surfaces; i++){
-        int lowerRow = upperAddr[i];
-        int upperRow = lowerAddr[i];
-        ellColsperRow[lowerRow] += 1;
-        ellColsperRow[upperRow] += 1;
-    }
-    for(int i = 0; i < row_; i++){
-        maxcount = std::max(maxcount, ellColsperRow[i]);
-    }
-    return maxcount;
-}
+__global__ void ldu2ell(int num_surfaces, int* index, double* ldu, double* result){
+    
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i >= num_surfaces)
+        return;
 
+    result[index[i]] = ldu[i];
+}
 void dfUEqn::ueqn_ldu_to_ell_no_diag
 (
-    int row_,
     int num_surfaces,
-    double* lower,
-    double* upper,
-    int* lowerAddr,
-    int* upperAddr,
-    double* ellValues,
-    int* ellCols,
-    int maxcount
+    int *ldu2ellIndex,
+    double *ldu,
+    double *result
 )
 {
-    std::vector<int> rowOffset(row_, 0);
-    // lower
-    for(int i = 0; i < num_surfaces; i++){
-        int row = upperAddr[i];
-        int index = maxcount * row + rowOffset[row];
-        ellValues[index] = lower[i];
-        ellCols[index] = lowerAddr[i];
-        rowOffset[row] += 1;
-    }
-    // upper
-    for(int i = 0; i < num_surfaces; i++){
-        int row = lowerAddr[i];
-        int index = maxcount * row + rowOffset[row];
-        ellValues[index] = upper[i];
-        ellCols[index] = upperAddr[i];    
-        rowOffset[row] += 1;
-    }
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (num_surfaces + threads_per_block - 1) / threads_per_block;
+
+    ldu2ell<<<blocks_per_grid, threads_per_block, 0 ,dataBase_.stream>>>
+        (num_surfaces, ldu2ellIndex, ldu, result);
 }
 
 void dfUEqn::H(double *Psi) {

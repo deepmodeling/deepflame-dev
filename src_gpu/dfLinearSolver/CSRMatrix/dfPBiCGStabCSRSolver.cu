@@ -71,6 +71,25 @@ void PBiCGStabCSRSolver::freeInit(){
     cudaFree(scalarRecvBufList_);
 }
 
+void PBiCGStabCSRSolver::freeInitStream(cudaStream_t stream){
+    cudaFreeAsync(d_yA, stream);
+    cudaFreeAsync(d_rA, stream);
+    cudaFreeAsync(d_pA, stream);
+    cudaFreeAsync(d_normFactors_tmp, stream);
+    cudaFreeAsync(d_AyA, stream);
+    cudaFreeAsync(d_sA, stream);
+    cudaFreeAsync(d_zA, stream);
+    cudaFreeAsync(d_tA, stream);
+    cudaFreeAsync(d_rA0, stream);
+    cudaFreeAsync(d_rA0rA_tmp, stream);
+    cudaFreeAsync(d_rA0AyA_tmp, stream);
+    cudaFreeAsync(d_tAtA_tmp, stream);
+    cudaFreeAsync(d_sAtA_tmp, stream);
+    cudaFreeAsync(reduce_result, stream);
+    cudaFreeAsync(scalarSendBufList_, stream);
+    cudaFreeAsync(scalarRecvBufList_, stream);
+}
+
 void PBiCGStabCSRSolver::initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level)
 {
     // preconditioner
