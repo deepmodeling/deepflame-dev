@@ -18,7 +18,13 @@ public:
         double* off_diag_value_Ptr,
         int* off_diag_rowptr_Ptr, 
         int* off_diag_colidx_Ptr,
-        double* diagPtr
+        double* diagPtr,
+        // for parallel
+        const dfMatrixDataBase& dataBase,
+        double* scalarSendBufList_, 
+        double* scalarRecvBufList_,
+        double** interfaceBouCoeffs,
+        int** faceCells, std::vector<int> nPatchFaces
     ) = 0;
 };
 
@@ -37,6 +43,12 @@ public:
         double* off_diag_value_Ptr,
         int* off_diag_rowptr_Ptr, 
         int* off_diag_colidx_Ptr,
-        double* diagPtr
+        double* diagPtr,
+        // for parallel
+        const dfMatrixDataBase& dataBase,
+        double* scalarSendBufList_, 
+        double* scalarRecvBufList_,
+        double** interfaceBouCoeffs,
+        int** faceCells, std::vector<int> nPatchFaces
     )override;
 };

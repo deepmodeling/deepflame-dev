@@ -1,5 +1,6 @@
 #include "dfCSRPreconditioner.H"
 #include "dfSolverOpBase.H"
+#include <nvtx3/nvToolsExt.h>
 
 #define nSweeps 2
 
@@ -22,7 +23,7 @@ void GAMGCSRPreconditioner::initCycle
 
 void GAMGCSRPreconditioner::initialize
 (
-    GAMGStruct *GAMGdata, int agglomeration_level
+    const dfMatrixDataBase &dataBase, GAMGStruct *GAMGdata, int agglomeration_level
 )
 {
     std::cout << "*** call in GAMGCSRPreconditioner::initialize(): init Vcycle " << std::endl;
@@ -42,6 +43,10 @@ void GAMGCSRPreconditioner::initialize
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_off_diag_value, GAMGdata[leveli].nFace * 2 * sizeof(double)));
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_csr_row_index_no_diag, (GAMGdata[leveli].nCell + 1) * sizeof(int)));
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_csr_col_index_no_diag, GAMGdata[leveli].nFace * 2 * sizeof(int)));
+        checkCudaErrors(cudaMemcpy(GAMGdata[leveli].d_csr_row_index_no_diag, dataBase.h_csr_row_index_no_diag[leveli], (GAMGdata[leveli].nCell + 1) * sizeof(int), cudaMemcpyHostToDevice));
+        checkCudaErrors(cudaMemcpy(GAMGdata[leveli].d_csr_col_index_no_diag, dataBase.h_csr_col_index_no_diag[leveli], GAMGdata[leveli].nFace * 2 * sizeof(int), cudaMemcpyHostToDevice));
+        checkCudaErrors(cudaMemcpy(GAMGdata[leveli].d_lowerAddr, &GAMGdata[leveli].lowerAddr[0], GAMGdata[leveli].nFace * sizeof(int), cudaMemcpyHostToDevice));
+        checkCudaErrors(cudaMemcpy(GAMGdata[leveli].d_upperAddr, &GAMGdata[leveli].upperAddr[0], GAMGdata[leveli].nFace * sizeof(int), cudaMemcpyHostToDevice));
 
         // iteration data
         checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_CorrFields, GAMGdata[leveli].nCell*sizeof(double)));
@@ -97,14 +102,18 @@ void GAMGCSRPreconditioner::agglomerateMatrix
         std::cout << "  level: " << leveli << ", in cell: " << GAMGdata_[leveli].nCell
                                            << ", out cell: " << GAMGdata_[leveli+1].nCell << std::endl;
 
+        nvtxRangePushA("restrictFieldGPU()");
         restrictFieldGPU(dataBase.stream, GAMGdata_[leveli].nCell, 
                         GAMGdata_[leveli].d_restrictMap, 
                         GAMGdata_[leveli].d_diag, GAMGdata_[leveli+1].d_diag);
+        nvtxRangePop();
 
+        nvtxRangePushA("restrictMatrixGPU()");
         restrictMatrixGPU(dataBase.stream, GAMGdata_[leveli].nFace, 
                         GAMGdata_[leveli].d_faceRestrictMap, GAMGdata_[leveli].d_faceFlipMap,
                         GAMGdata_[leveli].d_upper, GAMGdata_[leveli].d_lower,
                         GAMGdata_[leveli+1].d_upper, GAMGdata_[leveli+1].d_lower, GAMGdata_[leveli+1].d_diag);
+        nvtxRangePop();
 
 #ifdef PARALLEL_
         // agglomerateInterfaceCoefficients
@@ -131,7 +140,8 @@ void GAMGCSRPreconditioner::fine2coarse
 (
     const dfMatrixDataBase& dataBase,
     GAMGStruct *GAMGdata_, int agglomeration_level,
-    int startLevel, int endLevel
+    int startLevel, int endLevel,
+    double *scalarSendBufList_, double *scalarRecvBufList_
 )
 {
     bool scaleCorrection = true;
@@ -142,40 +152,87 @@ void GAMGCSRPreconditioner::fine2coarse
         std::cout << "  this level: " << leveli << ", restrict source for coarser level " << std::endl;
 
         //Purpose: get next level (leveli+1) source
+        nvtxRangePushA("fine2coarse::restrictFieldGPU()");
         restrictFieldGPU(dataBase.stream, GAMGdata_[leveli].nCell, 
                         GAMGdata_[leveli].d_restrictMap, 
                         GAMGdata_[leveli].d_Sources, GAMGdata_[leveli+1].d_Sources);
+        nvtxRangePop();
 
         //Purpose: coarseCorrFields[leveli] = 0.0;
         checkCudaErrors(cudaMemset(GAMGdata_[leveli+1].d_CorrFields, 0, GAMGdata_[leveli+1].nCell*sizeof(double)));
 
+        // // for debug start
+        // size_t threads_per_block = 1024;
+        // size_t blocks_per_grid = (GAMGdata_[leveli+1].nCell + threads_per_block - 1) / threads_per_block;
+        // double source_sum = 0.0;
+        // double* test_result;
+        // cudaMalloc(&test_result, sizeof(double));
+        // reduce(GAMGdata_[leveli+1].nCell, threads_per_block, blocks_per_grid, GAMGdata_[leveli+1].d_Sources, test_result, dataBase.stream, false);
+        // #ifndef PARALLEL_
+        //     cudaMemcpyAsync(&source_sum, &test_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+        // #else
+        //     ncclAllReduce(&test_result[0], &test_result[0], 1, ncclDouble, ncclSum, dataBase.nccl_comm, dataBase.stream);
+        //     cudaStreamSynchronize(dataBase.stream);
+        //     cudaMemcpyAsync(&source_sum, &test_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+        // #endif
+        // std::cout << leveli << " **gpu source_sum: " << source_sum << std::endl;
+        // // for debug end
+
         //Purpose: Smooth [ A * Corr = Source ] to get d_CorrFields for leveli+1
         //TODO: write nSweeps 
+        nvtxRangePushA("fine2coarse::smooth()");
         smoother->smooth(dataBase.stream, nSweeps, GAMGdata_[leveli+1].nCell, GAMGdata_[leveli+1].d_CorrFields, 
                             GAMGdata_[leveli+1].d_Sources, GAMGdata_[leveli+1].d_off_diag_value, GAMGdata_[leveli+1].d_csr_row_index_no_diag,
-                            GAMGdata_[leveli+1].d_csr_col_index_no_diag, GAMGdata_[leveli+1].d_diag);
+                            GAMGdata_[leveli+1].d_csr_col_index_no_diag, GAMGdata_[leveli+1].d_diag, 
+                            dataBase, scalarSendBufList_, scalarRecvBufList_, 
+                            GAMGdata_[leveli+1].d_interfaceBouCoeffs, GAMGdata_[leveli+1].d_faceCells, 
+                            GAMGdata_[leveli+1].nPatchFaces);
+
+        // // for debug start
+        // // size_t threads_per_block = 1024;
+        // // size_t blocks_per_grid = (GAMGdata_[leveli+1].nCell + threads_per_block - 1) / threads_per_block;
+        // // double source_sum = 0.0;
+        // // double* test_result;
+        // // cudaMalloc(&test_result, sizeof(double));
+        // reduce(GAMGdata_[leveli+1].nCell, threads_per_block, blocks_per_grid, GAMGdata_[leveli+1].d_CorrFields, test_result, dataBase.stream, false);
+        // #ifndef PARALLEL_
+        //     cudaMemcpyAsync(&source_sum, &test_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+        // #else
+        //     ncclAllReduce(&test_result[0], &test_result[0], 1, ncclDouble, ncclSum, dataBase.nccl_comm, dataBase.stream);
+        //     cudaStreamSynchronize(dataBase.stream);
+        //     cudaMemcpyAsync(&source_sum, &test_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+        // #endif
+        // std::cout << leveli << " **gpu corr_sum smooth: " << source_sum << std::endl;
+        // // for debug end
+        nvtxRangePop();
 
         if (leveli < endLevel - 1)
         {
             //Purpose: scale d_CorrFields leveli+1, if (matrix.symmetric())
             if (scaleCorrection) 
             {
+                nvtxRangePushA("fine2coarse::scaleFieldGPU()");
                 scaleFieldGPU( dataBase, GAMGdata_[leveli+1].nCell, 
                     GAMGdata_[leveli+1].d_CorrFields, GAMGdata_[leveli+1].d_Sources, GAMGdata_[leveli+1].d_AcfField, 
                     GAMGdata_[leveli+1].d_diag, GAMGdata_[leveli+1].d_off_diag_value,
                     GAMGdata_[leveli+1].d_csr_row_index_no_diag, GAMGdata_[leveli+1].d_csr_col_index_no_diag, 
                     GAMGdata_[leveli+1].d_interfaceIntCoeffs, GAMGdata_[leveli+1].d_interfaceBouCoeffs,
                     GAMGdata_[leveli+1].d_faceCells, GAMGdata_[leveli+1].nPatchFaces, 
-                    GAMGdata_[leveli+1].d_scalingFactorNum, GAMGdata_[leveli+1].d_scalingFactorDenom );
+                    GAMGdata_[leveli+1].d_scalingFactorNum, GAMGdata_[leveli+1].d_scalingFactorDenom,
+                    scalarSendBufList_, scalarRecvBufList_ );
+                nvtxRangePop();
             }
 
             //Purpose: get Acf = A * Corr & GAMGdata_[leveli+1].d_Sources -= Acf
+            nvtxRangePushA("fine2coarse::updateSourceFieldGPU()");
             updateSourceFieldGPU( dataBase, GAMGdata_[leveli+1].nCell, 
                                 GAMGdata_[leveli+1].d_Sources, GAMGdata_[leveli+1].d_AcfField, GAMGdata_[leveli+1].d_CorrFields,
                                 GAMGdata_[leveli+1].d_diag, GAMGdata_[leveli+1].d_off_diag_value, 
                                 GAMGdata_[leveli+1].d_csr_row_index_no_diag, GAMGdata_[leveli+1].d_csr_col_index_no_diag, 
                                 GAMGdata_[leveli+1].d_interfaceIntCoeffs, GAMGdata_[leveli+1].d_interfaceBouCoeffs,
-                                GAMGdata_[leveli+1].d_faceCells, GAMGdata_[leveli+1].nPatchFaces);
+                                GAMGdata_[leveli+1].d_faceCells, GAMGdata_[leveli+1].nPatchFaces,
+                                scalarSendBufList_, scalarRecvBufList_);
+            nvtxRangePop();
         }    
     }
 };
@@ -184,7 +241,8 @@ void GAMGCSRPreconditioner::coarse2fine
 (
     const dfMatrixDataBase& dataBase,
     GAMGStruct *GAMGdata_, int agglomeration_level,
-    int startLevel, int endLevel
+    int startLevel, int endLevel,
+    double *scalarSendBufList_, double *scalarRecvBufList_
 )
 {
     bool interpolateCorrection = false;
@@ -200,45 +258,60 @@ void GAMGCSRPreconditioner::coarse2fine
                                         GAMGdata_[leveli-1].nCell*sizeof(double), cudaMemcpyDeviceToDevice, dataBase.stream));
 
         //Purpose: get next level (leveli-1) corr
+        nvtxRangePushA("fine2coarse::prolongFieldGPU()");
         prolongFieldGPU(dataBase.stream, GAMGdata_[leveli-1].nCell, 
                         GAMGdata_[leveli-1].d_restrictMap, 
                         GAMGdata_[leveli-1].d_CorrFields, GAMGdata_[leveli].d_CorrFields);
+        nvtxRangePop();
         
         if (interpolateCorrection)
         {
             //Purpose: interpolate correctionField for next level (leveli-1)
+            nvtxRangePushA("fine2coarse::interpolateFieldGPU()");
             interpolateFieldGPU(dataBase, GAMGdata_[leveli-1].nCell, GAMGdata_[leveli].nCell, 
                     GAMGdata_[leveli-1].d_CorrFields, GAMGdata_[leveli-1].d_AcfField, 
                     GAMGdata_[leveli-1].d_diag, GAMGdata_[leveli-1].d_off_diag_value,
                     GAMGdata_[leveli-1].d_csr_row_index_no_diag, GAMGdata_[leveli-1].d_csr_col_index_no_diag,  
                     GAMGdata_[leveli-1].d_interfaceIntCoeffs, GAMGdata_[leveli-1].d_interfaceBouCoeffs, 
                     GAMGdata_[leveli-1].d_faceCells, GAMGdata_[leveli-1].nPatchFaces,
-                    GAMGdata_[leveli-1].d_restrictMap, GAMGdata_[leveli].d_CorrFields);
+                    GAMGdata_[leveli-1].d_restrictMap, GAMGdata_[leveli].d_CorrFields,
+                    scalarSendBufList_, scalarRecvBufList_);
+            nvtxRangePop();
         }
 
         if (leveli < startLevel && scaleCorrection)
         {
             //Purpose: scale d_CorrFields leveli-1, if (matrix.symmetric())
+            nvtxRangePushA("fine2coarse::scaleFieldGPU()");
             scaleFieldGPU( dataBase, GAMGdata_[leveli-1].nCell, 
                 GAMGdata_[leveli-1].d_CorrFields, GAMGdata_[leveli-1].d_Sources, GAMGdata_[leveli-1].d_AcfField, 
                 GAMGdata_[leveli-1].d_diag, GAMGdata_[leveli-1].d_off_diag_value,
                 GAMGdata_[leveli-1].d_csr_row_index_no_diag, GAMGdata_[leveli-1].d_csr_col_index_no_diag, 
                 GAMGdata_[leveli-1].d_interfaceIntCoeffs, GAMGdata_[leveli-1].d_interfaceBouCoeffs,
                 GAMGdata_[leveli-1].d_faceCells, GAMGdata_[leveli-1].nPatchFaces, 
-                GAMGdata_[leveli-1].d_scalingFactorNum, GAMGdata_[leveli-1].d_scalingFactorDenom );
+                GAMGdata_[leveli-1].d_scalingFactorNum, GAMGdata_[leveli-1].d_scalingFactorDenom,
+                scalarSendBufList_, scalarRecvBufList_ );
+            nvtxRangePop();
         }
         
         if (leveli > endLevel + 1)
         {
             //Purpose: MGCorrFields[leveli] += preSmoothedCoarseCorrField;
+            nvtxRangePushA("fine2coarse::updateCorrFieldGPU()");
             updateCorrFieldGPU( dataBase.stream, GAMGdata_[leveli-1].nCell, 
                                 GAMGdata_[leveli-1].d_CorrFields, GAMGdata_[leveli-1].d_preSmoothField);
+            nvtxRangePop();
 
             //Purpose: Smooth [ A * Corr = Source ] to get d_CorrFields for leveli-1
             //TODO: write nSweeps
+            nvtxRangePushA("fine2coarse::smooth()");
             smoother->smooth(dataBase.stream, nSweeps, GAMGdata_[leveli-1].nCell, GAMGdata_[leveli-1].d_CorrFields, 
                     GAMGdata_[leveli-1].d_Sources, GAMGdata_[leveli-1].d_off_diag_value, GAMGdata_[leveli-1].d_csr_row_index_no_diag,
-                    GAMGdata_[leveli-1].d_csr_col_index_no_diag, GAMGdata_[leveli-1].d_diag);
+                    GAMGdata_[leveli-1].d_csr_col_index_no_diag, GAMGdata_[leveli-1].d_diag, 
+                    dataBase, scalarSendBufList_, scalarRecvBufList_, 
+                    GAMGdata_[leveli-1].d_interfaceBouCoeffs, GAMGdata_[leveli-1].d_faceCells, 
+                    GAMGdata_[leveli-1].nPatchFaces);
+            nvtxRangePop();
 
         }
     }
@@ -282,70 +355,79 @@ void GAMGCSRPreconditioner::directSolveCoarsest
 void GAMGCSRPreconditioner::Vcycle
 (
     const dfMatrixDataBase& dataBase,
-    GAMGStruct *GAMGdata_, int agglomeration_level
+    GAMGStruct *GAMGdata_, int agglomeration_level,
+    double *scalarSendBufList_, double *scalarRecvBufList_
 )
 {
-    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 0, agglomeration_level-1);
+    nvtxRangePushA("Vcycle::fine2coarse()");
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 0, agglomeration_level-1, scalarSendBufList_, scalarRecvBufList_);
+    nvtxRangePop();
 
+    nvtxRangePushA("Vcycle::directSolveCoarsest()");
     directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
+    nvtxRangePop();
 
-    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 0);
+    nvtxRangePushA("Vcycle::coarse2fine()");
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 0, scalarSendBufList_, scalarRecvBufList_);
+    nvtxRangePop();
 };
 
 void GAMGCSRPreconditioner::Wcycle
 (
     const dfMatrixDataBase& dataBase,
-    GAMGStruct *GAMGdata_, int agglomeration_level
+    GAMGStruct *GAMGdata_, int agglomeration_level,
+    double *scalarSendBufList_, double *scalarRecvBufList_
 )
 {
-    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 0, agglomeration_level-1);
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 0, agglomeration_level-1, scalarSendBufList_, scalarRecvBufList_);
 
     directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
 
-    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, agglomeration_level-2);
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, agglomeration_level-2, scalarSendBufList_, scalarRecvBufList_);
 
-    fine2coarse(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-2, agglomeration_level-1);
-
-    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
-
-    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 1);
-
-    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 1, agglomeration_level-1);
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-2, agglomeration_level-1, scalarSendBufList_, scalarRecvBufList_);
 
     directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
 
-    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, agglomeration_level-2);
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 1, scalarSendBufList_, scalarRecvBufList_);
 
-    fine2coarse(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-2, agglomeration_level-1);
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 1, agglomeration_level-1, scalarSendBufList_, scalarRecvBufList_);
 
     directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
 
-    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 0);
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, agglomeration_level-2, scalarSendBufList_, scalarRecvBufList_);
+
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-2, agglomeration_level-1, scalarSendBufList_, scalarRecvBufList_);
+
+    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
+
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 0, scalarSendBufList_, scalarRecvBufList_);
 };
 
 void GAMGCSRPreconditioner::Fcycle
 (
     const dfMatrixDataBase& dataBase,
-    GAMGStruct *GAMGdata_, int agglomeration_level
+    GAMGStruct *GAMGdata_, int agglomeration_level,
+    double *scalarSendBufList_, double *scalarRecvBufList_
 )
 {
-    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 0, agglomeration_level-1);
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 0, agglomeration_level-1, scalarSendBufList_, scalarRecvBufList_);
 
     directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
 
-    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, agglomeration_level-2);
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, agglomeration_level-2, scalarSendBufList_, scalarRecvBufList_);
 
-    fine2coarse(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-2, agglomeration_level-1);
-
-    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
-
-    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 1);
-
-    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 1, agglomeration_level-1);
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-2, agglomeration_level-1, scalarSendBufList_, scalarRecvBufList_);
 
     directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
 
-    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 0);
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 1, scalarSendBufList_, scalarRecvBufList_);
+
+    fine2coarse(dataBase, GAMGdata_, agglomeration_level, 1, agglomeration_level-1, scalarSendBufList_, scalarRecvBufList_);
+
+    directSolveCoarsest(dataBase, GAMGdata_, agglomeration_level);
+
+    coarse2fine(dataBase, GAMGdata_, agglomeration_level, agglomeration_level-1, 0, scalarSendBufList_, scalarRecvBufList_);
 };
 
 void GAMGCSRPreconditioner::precondition
@@ -353,7 +435,8 @@ void GAMGCSRPreconditioner::precondition
     double *psi,
     const double *finestResidual,
     const dfMatrixDataBase& dataBase,
-    GAMGStruct *GAMGdata_, int agglomeration_level
+    GAMGStruct *GAMGdata_, int agglomeration_level,
+    double *scalarSendBufList_, double *scalarRecvBufList_
 )
 {
 
@@ -362,7 +445,9 @@ void GAMGCSRPreconditioner::precondition
 
     //TODO: get nVcycles from control files
     int nVcycles_ = 1; 
+    nvtxRangePushA("Precondition::initCycle()");
     initCycle(GAMGdata_, agglomeration_level);
+    nvtxRangePop();
 
     // Purpose: wA = 0.0;
     checkCudaErrors(cudaMemset(psi, 0, GAMGdata_[0].nCell*sizeof(double)));
@@ -373,27 +458,39 @@ void GAMGCSRPreconditioner::precondition
     for (int cycle=0; cycle<nVcycles_; cycle++)
     {
         // Purpose: do Vcycle calculation
-        Vcycle(dataBase, GAMGdata_, agglomeration_level);
+        nvtxRangePushA("Precondition::Vcycle()");
+        Vcycle(dataBase, GAMGdata_, agglomeration_level, scalarSendBufList_, scalarRecvBufList_);
+        nvtxRangePop();
 
         // Purpose: use GAMGdata_[0].d_CorrFields to update psi
+        nvtxRangePushA("Precondition::updateCorrFieldGPU()");
         updateCorrFieldGPU( dataBase.stream, GAMGdata_[0].nCell, psi, GAMGdata_[0].d_CorrFields);
+        nvtxRangePop();
 
         //add smoother for leveli=0, nFinestSweeps_
         //TODO: write nSweeps 
+        nvtxRangePushA("Precondition::smooth()");
         smoother->smooth(dataBase.stream, nSweeps, GAMGdata_[0].nCell, psi, 
                     GAMGdata_[0].d_Sources, GAMGdata_[0].d_off_diag_value, GAMGdata_[0].d_csr_row_index_no_diag,
-                    GAMGdata_[0].d_csr_col_index_no_diag, GAMGdata_[0].d_diag);
+                    GAMGdata_[0].d_csr_col_index_no_diag, GAMGdata_[0].d_diag, 
+                    dataBase, scalarSendBufList_, scalarRecvBufList_, 
+                    GAMGdata_[0].d_interfaceBouCoeffs, GAMGdata_[0].d_faceCells, 
+                    GAMGdata_[0].nPatchFaces);
+        nvtxRangePop();
 
 
         if (cycle < nVcycles_-1)
         {
             // Purpose: Calculate finest level residual field to update finestResidual
+            nvtxRangePushA("Precondition::updateSourceFieldGPU()");
             updateSourceFieldGPU( dataBase, GAMGdata_[0].nCell, 
                                 GAMGdata_[0].d_Sources, GAMGdata_[0].d_AcfField, psi,
                                 GAMGdata_[0].d_diag, GAMGdata_[0].d_off_diag_value, 
                                 GAMGdata_[0].d_csr_row_index_no_diag, GAMGdata_[0].d_csr_col_index_no_diag, 
                                 GAMGdata_[0].d_interfaceIntCoeffs, GAMGdata_[0].d_interfaceBouCoeffs,
-                                GAMGdata_[0].d_faceCells, GAMGdata_[0].nPatchFaces);
+                                GAMGdata_[0].d_faceCells, GAMGdata_[0].nPatchFaces,
+                                scalarSendBufList_, scalarRecvBufList_);
+            nvtxRangePop();
         }
     }
     std::cout << "********** end in GAMGCSRPreconditioner::precondition " << std::endl;

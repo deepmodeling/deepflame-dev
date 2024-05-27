@@ -974,7 +974,8 @@ void scaleFieldGPU( const dfMatrixDataBase& dataBase, int nCells,
                     int* csr_row_index_no_diag, int* csr_col_index_no_diag, 
                     double** interfaceIntCoeffs, double** interfaceBouCoeffs,
                     int** faceCells, std::vector<int> nPatchFaces, 
-                    double* d_scalingFactorNum, double* d_scalingFactorDenom )
+                    double* d_scalingFactorNum, double* d_scalingFactorDenom,
+                    double *scalarSendBufList_, double *scalarRecvBufList_ )
 {
     double* reduce_result;
     cudaMalloc(&reduce_result, sizeof(double));
@@ -986,7 +987,8 @@ void scaleFieldGPU( const dfMatrixDataBase& dataBase, int nCells,
     AmulGPU(dataBase, d_AcfField, d_Field,
             diag, off_diag_value, csr_row_index_no_diag, csr_col_index_no_diag, 
             interfaceIntCoeffs, interfaceBouCoeffs,
-            faceCells, nPatchFaces, nCells);
+            faceCells, nPatchFaces, nCells,
+            scalarSendBufList_, scalarRecvBufList_);
 
     double scalingFactor = 0.0;
     double sum_scalingFactorNum = 0.0, sum_scalingFactorDenom = 0.0;
@@ -1015,9 +1017,8 @@ void scaleFieldGPU( const dfMatrixDataBase& dataBase, int nCells,
     cudaStreamSynchronize(dataBase.stream);
     cudaMemcpyAsync(&sum_scalingFactorDenom, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
 #endif
-    // std::vector scalingVector(sum_scalingFactorNum, sum_scalingFactorDenom);
-    // scalingFactor = scalingVector[0]/(scalingVector[1] + 1e-20); // need test stabilise
     scalingFactor = sum_scalingFactorNum/(sum_scalingFactorDenom + 1e-20);
+    // std::cout << "**gpu sum: " << sum_scalingFactorNum << ", Denom: " << sum_scalingFactorDenom << std::endl;
 
     kernel_scale<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
         (nCells, scalingFactor, d_Field, d_Source, d_AcfField, diag);
@@ -1031,7 +1032,8 @@ void scaleFieldGPU_ell( const dfMatrixDataBase& dataBase, int nCells,
                     int* d_ell_cols, double* d_ell_values, 
                     double** interfaceIntCoeffs, double** interfaceBouCoeffs,
                     int** faceCells, std::vector<int> nPatchFaces, 
-                    double* d_scalingFactorNum, double* d_scalingFactorDenom )
+                    double* d_scalingFactorNum, double* d_scalingFactorDenom,
+                    double *scalarSendBufList_, double *scalarRecvBufList_ )
 {
     double* reduce_result;
     cudaMalloc(&reduce_result, sizeof(double));
@@ -1043,7 +1045,8 @@ void scaleFieldGPU_ell( const dfMatrixDataBase& dataBase, int nCells,
     AmulGPU_ell(dataBase, d_AcfField, d_Field,
             diag, ell_row_maxcount, d_ell_cols, d_ell_values, 
             interfaceIntCoeffs, interfaceBouCoeffs,
-            faceCells, nPatchFaces, nCells);
+            faceCells, nPatchFaces, nCells,
+            scalarSendBufList_, scalarRecvBufList_);
 
     double scalingFactor = 0.0;
     double sum_scalingFactorNum = 0.0, sum_scalingFactorDenom = 0.0;
@@ -1075,6 +1078,7 @@ void scaleFieldGPU_ell( const dfMatrixDataBase& dataBase, int nCells,
     // std::vector scalingVector(sum_scalingFactorNum, sum_scalingFactorDenom);
     // scalingFactor = scalingVector[0]/(scalingVector[1] + 1e-20); // need test stabilise
     scalingFactor = sum_scalingFactorNum/(sum_scalingFactorDenom + 1e-20);
+    // std::cout << "**gpu sum: " << sum_scalingFactorNum << ", Denom: " << sum_scalingFactorDenom << std::endl;
 
     kernel_scale<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
         (nCells, scalingFactor, d_Field, d_Source, d_AcfField, diag);
@@ -1087,7 +1091,8 @@ void updateSourceFieldGPU(const dfMatrixDataBase& dataBase, int nCells,
                         double* diag, double* off_diag_value,
                         int* csr_row_index_no_diag, int* csr_col_index_no_diag, 
                         double** interfaceIntCoeffs, double** interfaceBouCoeffs,
-                        int** faceCells, std::vector<int> nPatchFaces)
+                        int** faceCells, std::vector<int> nPatchFaces,
+                        double *scalarSendBufList_, double *scalarRecvBufList_)
 {
     size_t threads_per_block = 1024;
     size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
@@ -1095,7 +1100,8 @@ void updateSourceFieldGPU(const dfMatrixDataBase& dataBase, int nCells,
     //Purpose: spmv to get Acf = A * Corr
     AmulGPU(dataBase, d_AcfField, d_CorrFields,
             diag, off_diag_value, csr_row_index_no_diag, csr_col_index_no_diag, 
-            interfaceIntCoeffs, interfaceBouCoeffs, faceCells, nPatchFaces, nCells);
+            interfaceIntCoeffs, interfaceBouCoeffs, faceCells, nPatchFaces, nCells,
+            scalarSendBufList_, scalarRecvBufList_);
 
     kernel_updateSource<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
         (nCells, d_Sources, d_AcfField);
@@ -1107,7 +1113,8 @@ void updateSourceFieldGPU_ell(const dfMatrixDataBase& dataBase, int nCells,
                         double* diag, int ell_row_maxcount,
                         int* d_ell_cols, double* d_ell_values,  
                         double** interfaceIntCoeffs, double** interfaceBouCoeffs,
-                        int** faceCells, std::vector<int> nPatchFaces)
+                        int** faceCells, std::vector<int> nPatchFaces,
+                        double *scalarSendBufList_, double *scalarRecvBufList_)
 {
     size_t threads_per_block = 1024;
     size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
@@ -1115,7 +1122,8 @@ void updateSourceFieldGPU_ell(const dfMatrixDataBase& dataBase, int nCells,
     //Purpose: spmv to get Acf = A * Corr
     AmulGPU_ell(dataBase, d_AcfField, d_CorrFields,
             diag, ell_row_maxcount, d_ell_cols, d_ell_values, 
-            interfaceIntCoeffs, interfaceBouCoeffs, faceCells, nPatchFaces, nCells);
+            interfaceIntCoeffs, interfaceBouCoeffs, faceCells, nPatchFaces, nCells,
+            scalarSendBufList_, scalarRecvBufList_);
 
     kernel_updateSource<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
         (nCells, d_Sources, d_AcfField);
@@ -1180,7 +1188,8 @@ __global__ void kernel_updateMatrixInterfacesCoeffs
     int interfaceiSize,
     double* scalarRecvBufList_,
     int* face2Cells,
-    double* output
+    double* output,
+    double sign = 1.
 )
 {
     int index = blockDim.x * blockIdx.x + threadIdx.x;
@@ -1188,14 +1197,15 @@ __global__ void kernel_updateMatrixInterfacesCoeffs
         return;
 
     int cellIndex = face2Cells[index];
-    output[cellIndex] -= interfaceBouCoeffs[index] * scalarRecvBufList_[index];
+    output[cellIndex] -= (sign * interfaceBouCoeffs[index]) * scalarRecvBufList_[index];
 }
 
 void AmulGPU(const dfMatrixDataBase& dataBase, double* result, double* input,
             double* diag, double* off_diag_value,
             int* csr_row_index_no_diag, int* csr_col_index_no_diag, 
             double** interfaceIntCoeffs, double** interfaceBouCoeffs,
-            int** faceCells, std::vector<int> nPatchFaces, int nCells)
+            int** faceCells, std::vector<int> nPatchFaces, int nCells,
+            double *scalarSendBufList_, double *scalarRecvBufList_)
 {
     // --- addInternalInterfaceCoeffs ---
 #ifdef PARALLEL_
@@ -1219,7 +1229,8 @@ void AmulGPU_ell(const dfMatrixDataBase& dataBase, double* result, double* input
             double* diag, int ell_row_maxcount,
             int* d_ell_cols, double* d_ell_values,
             double** interfaceIntCoeffs, double** interfaceBouCoeffs,
-            int** faceCells, std::vector<int> nPatchFaces, int nCells)
+            int** faceCells, std::vector<int> nPatchFaces, int nCells,
+            double *scalarSendBufList_, double *scalarRecvBufList_)
 {
     // --- addInternalInterfaceCoeffs ---
 #ifdef PARALLEL_
@@ -1258,23 +1269,26 @@ void updateMatrixInterfaceCoeffs(
     cudaStream_t stream, std::vector<int> neighbProcNo,  ncclComm_t nccl_comm,
     std::vector<int> patchSize, double *input, double *output, 
     double *scalarSendBufList_, double *scalarRecvBufList_,
-    double **interfaceBouCoeffs, int **boundaryFaceCell)
+    double **interfaceBouCoeffs, int **boundaryFaceCell, double sign)
 {
     for (int patchi = 0; patchi < patchSize.size(); patchi++) 
     {
-        size_t threads_per_block = 1024;
-        size_t blocks_per_grid = (patchSize[patchi] + threads_per_block - 1) / threads_per_block;
+        if (patchSize[patchi] > 0)
+        {
+            size_t threads_per_block = 1024;
+            size_t blocks_per_grid = (patchSize[patchi] + threads_per_block - 1) / threads_per_block;
 
-        kernel_initMatrixInterfacesCoeffs<<<blocks_per_grid, threads_per_block, 0, stream>>>
-            (input, patchSize[patchi], scalarSendBufList_, boundaryFaceCell[patchi]);
+            kernel_initMatrixInterfacesCoeffs<<<blocks_per_grid, threads_per_block, 0, stream>>>
+                (input, patchSize[patchi], scalarSendBufList_, boundaryFaceCell[patchi]);
 
-        ncclGroupStart();
-        ncclSend(scalarSendBufList_, patchSize[patchi], ncclDouble, neighbProcNo[patchi], nccl_comm, stream);
-        ncclRecv(scalarRecvBufList_, patchSize[patchi], ncclDouble, neighbProcNo[patchi], nccl_comm, stream);
-        ncclGroupEnd();
+            ncclGroupStart();
+            ncclSend(scalarSendBufList_, patchSize[patchi], ncclDouble, neighbProcNo[patchi], nccl_comm, stream);
+            ncclRecv(scalarRecvBufList_, patchSize[patchi], ncclDouble, neighbProcNo[patchi], nccl_comm, stream);
+            ncclGroupEnd();
 
-        kernel_updateMatrixInterfacesCoeffs<<<blocks_per_grid, threads_per_block, 0, stream>>>
-            (interfaceBouCoeffs[patchi], patchSize[patchi], scalarRecvBufList_, boundaryFaceCell[patchi], output);
+            kernel_updateMatrixInterfacesCoeffs<<<blocks_per_grid, threads_per_block, 0, stream>>>
+                (interfaceBouCoeffs[patchi], patchSize[patchi], scalarRecvBufList_, boundaryFaceCell[patchi], output, sign);
+        }
     }
 }
 
@@ -1338,7 +1352,8 @@ void interpolateFieldGPU(const dfMatrixDataBase& dataBase, int nCells, int nCCel
                     int* csr_row_index_no_diag, int* csr_col_index_no_diag,  
                     double** interfaceIntCoeffs, double** interfaceBouCoeffs, 
                     int** faceCells, std::vector<int> nPatchFaces,
-                    int* restrictAddressing, double* psiC)
+                    int* restrictAddressing, double* psiC,
+                    double *scalarSendBufList_, double *scalarRecvBufList_)
 {
     size_t threads_per_block = 1024;
     size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
@@ -1347,7 +1362,7 @@ void interpolateFieldGPU(const dfMatrixDataBase& dataBase, int nCells, int nCCel
     AmulGPU(dataBase, Apsi, psi,
             diag, off_diag_value, csr_row_index_no_diag, csr_col_index_no_diag, 
             interfaceIntCoeffs, interfaceBouCoeffs,
-            faceCells, nPatchFaces, nCells);
+            faceCells, nPatchFaces, nCells, scalarSendBufList_, scalarRecvBufList_);
 
     kernel_interpolate<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
         (nCells, Apsi, diag, psi);
@@ -1385,7 +1400,8 @@ void interpolateFieldGPU_ell(const dfMatrixDataBase& dataBase, int nCells, int n
                     int* d_ell_cols, double* d_ell_values,  
                     double** interfaceIntCoeffs, double** interfaceBouCoeffs, 
                     int** faceCells, std::vector<int> nPatchFaces,
-                    int* restrictAddressing, double* psiC)
+                    int* restrictAddressing, double* psiC,
+                    double *scalarSendBufList_, double *scalarRecvBufList_)
 {
     size_t threads_per_block = 1024;
     size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
@@ -1394,7 +1410,7 @@ void interpolateFieldGPU_ell(const dfMatrixDataBase& dataBase, int nCells, int n
     AmulGPU_ell(dataBase, Apsi, psi,
             diag, ell_row_maxcount, d_ell_cols, d_ell_values, 
             interfaceIntCoeffs, interfaceBouCoeffs,
-            faceCells, nPatchFaces, nCells);
+            faceCells, nPatchFaces, nCells, scalarSendBufList_, scalarRecvBufList_);
 
     kernel_interpolate<<<blocks_per_grid, threads_per_block, 0, dataBase.stream>>>
         (nCells, Apsi, diag, psi);
