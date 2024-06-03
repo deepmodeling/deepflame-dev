@@ -2,6 +2,9 @@
 #include "CSRGAMGAgglomeration.H"
 #include "ELLGAMGAgglomeration.H"
 
+#define PARALLEL_
+#define iscsr
+
 ncclUniqueId nccl_id;
 ncclComm_t nccl_comm;
 int nRanks, myRank, localRank, mpi_init_flag = 0;
@@ -597,7 +600,6 @@ void createGPUpEqn(const IOdictionary& CanteraTorchProperties, volScalarField& p
     pEqn_GPU.createNonConstantFieldsBoundary();
     pEqn_GPU.createNonConstantLduAndCsrFields();
 
-// #define iscsr
 #ifdef iscsr
     pEqn_GPU.GAMGpEqnldu(GAMGdata_, agglomeration_level, 1);
 #else

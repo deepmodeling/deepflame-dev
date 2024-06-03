@@ -3,7 +3,7 @@
 #include "dfMatrixDataBase.H"
 #include <nvtx3/nvToolsExt.h>
 
-// #define PARALLEL_
+#define PARALLEL_
 #define PRINT_
 
 // kernel functions for PCG solver
@@ -372,10 +372,10 @@ void PCGCSRSolver::solve_useGAMG
 
     // --- addInternalCoeffs : diag ---
     // input : d_internal_coeffs
-    nvtxRangePushA("addInternalCoeffs()");
-    addInternalCoeffs(dataBase.stream, dataBase.num_patches, dataBase.patch_size, 
-        d_internal_coeffs, dataBase.d_boundary_face_cell, diagPtr, patch_type);
-    nvtxRangePop();
+    // nvtxRangePushA("addInternalCoeffs()");
+    // addInternalCoeffs(dataBase.stream, dataBase.num_patches, dataBase.patch_size, 
+    //     d_internal_coeffs, dataBase.d_boundary_face_cell, diagPtr, patch_type);
+    // nvtxRangePop();
     
     // --- SpMV : wA ---
     // input : psi, diag

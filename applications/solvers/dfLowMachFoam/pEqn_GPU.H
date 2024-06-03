@@ -115,23 +115,71 @@
         auto& boundaryCoeffs = pEqn.boundaryCoeffs();
         std::cout << "=== start call csr.solve " << std::endl;
 
-        // std::string filename1 = "diag.bin";
+        // int mpirank;
+        // MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
+        // std::string c = std::to_string(mpirank);        
+        // std::string a1 = "diag";
+        // std::string b1 = ".bin";
+        // std::string filename1 = a1 + c + b1;
         // // saveArrayToBinaryFile(filename1, &csr.diag()[0], dfDataBase.num_cells);
         // std::ofstream outFile1(filename1, std::ios::binary);
         // outFile1.write(reinterpret_cast<const char*>(&csr.diag()[0]), dfDataBase.num_cells * sizeof(double));
         // outFile1.close();
 
-        // std::string filename2 = "lower.bin";
+        // std::string a2 = "lower";
+        // std::string b2 = ".bin";
+        // std::string filename2 = a2 + c + b2;
         // // saveArrayToBinaryFile(filename2, &csr.ldu().lower()[0], dfDataBase.num_surfaces);
         // std::ofstream outFile2(filename2, std::ios::binary);
         // outFile2.write(reinterpret_cast<const char*>(&csr.ldu().lower()[0]), dfDataBase.num_surfaces * sizeof(double));
         // outFile2.close();
 
-        // std::string filename3 = "upper.bin";
+        // std::string a3 = "upper";
+        // std::string b3 = ".bin";
+        // std::string filename3 = a3 + c + b3;
         // // saveArrayToBinaryFile(filename3, &csr.ldu().upper()[0], dfDataBase.num_surfaces);
         // std::ofstream outFile3(filename3, std::ios::binary);
         // outFile3.write(reinterpret_cast<const char*>(&csr.ldu().upper()[0]), dfDataBase.num_surfaces * sizeof(double));
         // outFile3.close();
+
+        // int toffset = 0;
+        // std::vector<double> vecInt;
+        // std::vector<double> vecBou;
+        // forAll(p.boundaryField(), patchi)
+        // {
+        //     const fvPatchScalarField& patchPi = p.boundaryField()[patchi];
+        //     int patchsize = patchPi.size();
+        //     const double* internal_coeff_ptr = &pEqn.internalCoeffs()[patchi][0];
+        //     const double* boundary_coeff_ptr = &pEqn.boundaryCoeffs()[patchi][0];
+        //     if (dfDataBase.patch_type_extropolated.data()[patchi] == boundaryConditions::processor
+        //         || dfDataBase.patch_type_extropolated.data()[patchi] == boundaryConditions::processorCyclic) {
+        //         vecInt.insert(vecInt.end(), internal_coeff_ptr, internal_coeff_ptr + patchsize);
+        //         vecInt.insert(vecInt.end(), internal_coeff_ptr, internal_coeff_ptr + patchsize);
+        //         vecBou.insert(vecBou.end(), boundary_coeff_ptr, boundary_coeff_ptr + patchsize);
+        //         vecBou.insert(vecBou.end(), boundary_coeff_ptr, boundary_coeff_ptr + patchsize);
+        //         toffset += patchsize * 2;
+        //     } else {
+        //         vecInt.insert(vecInt.end(), internal_coeff_ptr, internal_coeff_ptr + patchsize);
+        //         vecBou.insert(vecBou.end(), boundary_coeff_ptr, boundary_coeff_ptr + patchsize);
+        //         toffset += patchsize;
+        //     }
+        // }
+
+        // std::string a1 = "IntCoef";
+        // std::string b1 = ".bin";
+        // std::string filename1 = a1 + c + b1;
+        // // saveArrayToBinaryFile(filename1, &csr.diag()[0], dfDataBase.num_cells);
+        // std::ofstream outFile1(filename1, std::ios::binary);
+        // outFile1.write(reinterpret_cast<const char*>(&vecInt[0]), toffset * sizeof(double));
+        // outFile1.close();
+
+        // std::string a2 = "BouCoef";
+        // std::string b2 = ".bin";
+        // std::string filename2 = a2 + c + b2;
+        // // saveArrayToBinaryFile(filename1, &csr.diag()[0], dfDataBase.num_cells);
+        // std::ofstream outFile2(filename2, std::ios::binary);
+        // outFile2.write(reinterpret_cast<const char*>(&vecBou[0]), toffset * sizeof(double));
+        // outFile2.close();
 
         // MPI_Abort(MPI_COMM_WORLD, 1);
 

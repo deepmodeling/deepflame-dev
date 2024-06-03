@@ -2,6 +2,8 @@
 #include "dfSolverOpBase.H"
 #include <nvtx3/nvToolsExt.h>
 
+#define PARALLEL_
+
 #define nSweeps 2
 
 // kernel functions for PCG solver
@@ -11,14 +13,14 @@ void GAMGELLPreconditioner::initCycle
     GAMGStruct *GAMGdata, int agglomeration_level                                                                
 )
 {
-    std::cout << "*** call in GAMGELLPreconditioner::initCycle " << std::endl;
+    // std::cout << "*** call in GAMGELLPreconditioner::initCycle " << std::endl;
     for(int leveli=0; leveli<agglomeration_level; leveli++)
     {                                 
         checkCudaErrors(cudaMemset(GAMGdata[leveli].d_CorrFields, 0, GAMGdata[leveli].nCell*sizeof(double)));
         checkCudaErrors(cudaMemset(GAMGdata[leveli].d_Sources, 0, GAMGdata[leveli].nCell*sizeof(double)));
     }
-    std::cout << "*** end in GAMGELLPreconditioner::initCycle " << std::endl;
-    std::cout << "*********************************************************** " << std::endl;
+    // std::cout << "*** end in GAMGELLPreconditioner::initCycle " << std::endl;
+    // std::cout << "*********************************************************** " << std::endl;
 };
 
 void GAMGELLPreconditioner::initialize
@@ -160,23 +162,6 @@ void GAMGELLPreconditioner::fine2coarse
         //Purpose: coarseCorrFields[leveli] = 0.0;
         checkCudaErrors(cudaMemset(GAMGdata_[leveli+1].d_CorrFields, 0, GAMGdata_[leveli+1].nCell*sizeof(double)));
 
-        // // for debug start
-        // size_t threads_per_block = 1024;
-        // size_t blocks_per_grid = (GAMGdata_[leveli+1].nCell + threads_per_block - 1) / threads_per_block;
-        // double source_sum = 0.0;
-        // double* test_result;
-        // cudaMalloc(&test_result, sizeof(double));
-        // reduce(GAMGdata_[leveli+1].nCell, threads_per_block, blocks_per_grid, GAMGdata_[leveli+1].d_Sources, test_result, dataBase.stream, false);
-        // #ifndef PARALLEL_
-        //     cudaMemcpyAsync(&source_sum, &test_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
-        // #else
-        //     ncclAllReduce(&test_result[0], &test_result[0], 1, ncclDouble, ncclSum, dataBase.nccl_comm, dataBase.stream);
-        //     cudaStreamSynchronize(dataBase.stream);
-        //     cudaMemcpyAsync(&source_sum, &test_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
-        // #endif
-        // std::cout << leveli << " **gpu source_sum: " << source_sum << std::endl;
-        // // for debug end
-
         //Purpose: Smooth [ A * Corr = Source ] to get d_CorrFields for leveli+1
         //TODO: write nSweeps 
         nvtxRangePushA("fine2coarse::smooth()");
@@ -186,23 +171,6 @@ void GAMGELLPreconditioner::fine2coarse
                             dataBase, scalarSendBufList_, scalarRecvBufList_, 
                             GAMGdata_[leveli+1].d_interfaceBouCoeffs, GAMGdata_[leveli+1].d_faceCells, 
                             GAMGdata_[leveli+1].nPatchFaces);
-
-        // // for debug start
-        // // size_t threads_per_block = 1024;
-        // // size_t blocks_per_grid = (GAMGdata_[leveli+1].nCell + threads_per_block - 1) / threads_per_block;
-        // // double source_sum = 0.0;
-        // // double* test_result;
-        // // cudaMalloc(&test_result, sizeof(double));
-        // reduce(GAMGdata_[leveli+1].nCell, threads_per_block, blocks_per_grid, GAMGdata_[leveli+1].d_CorrFields, test_result, dataBase.stream, false);
-        // #ifndef PARALLEL_
-        //     cudaMemcpyAsync(&source_sum, &test_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
-        // #else
-        //     ncclAllReduce(&test_result[0], &test_result[0], 1, ncclDouble, ncclSum, dataBase.nccl_comm, dataBase.stream);
-        //     cudaStreamSynchronize(dataBase.stream);
-        //     cudaMemcpyAsync(&source_sum, &test_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
-        // #endif
-        // std::cout << leveli << " **gpu corr_sum smooth: " << source_sum << std::endl;
-        // // for debug end
         nvtxRangePop();
 
         if (leveli < endLevel - 1)

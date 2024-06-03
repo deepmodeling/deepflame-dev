@@ -2,6 +2,8 @@
 #include "dfMatrixDataBase.H"
 #include "dfNcclBase.H"
 
+#define PARALLEL_
+
 bool isPow2(int n) {
     if (n <= 0) {
         return false;
@@ -27,7 +29,8 @@ __global__ void kernel_addInternalCoeffs
 
     int start_index = offset + index;
     int cellIndex = face2Cells[start_index];
-    diagPtr[cellIndex] += internal_coeffs[start_index];
+    // diagPtr[cellIndex] += internal_coeffs[start_index];
+    atomicAdd(&(diagPtr[cellIndex]), internal_coeffs[start_index]);
 }
 
 __global__ void kernel_SpMV_csr
@@ -142,7 +145,8 @@ __global__ void kernel_subBoundaryCoeffs
 
     int start_index = offset + index;
     int cellIndex = face2Cells[start_index];
-    pAPtr[cellIndex] -= boundary_coeffs[start_index];
+    // pAPtr[cellIndex] -= boundary_coeffs[start_index];
+    atomicAdd(&(pAPtr[cellIndex]), -boundary_coeffs[start_index]);
 }
 
 __global__ void kernel_4
@@ -288,7 +292,9 @@ __global__ void kernel_updateMatrixInterfaces
 
     int start_index = offset + index;
     int cellIndex = face2Cells[start_index];
-    output[cellIndex] -= d_boundary_coeffs[start_index] * scalarRecvBufList_[start_index];
+    // output[cellIndex] -= d_boundary_coeffs[start_index] * scalarRecvBufList_[start_index];
+    atomicAdd(&(output[cellIndex]), -(d_boundary_coeffs[start_index] * scalarRecvBufList_[start_index]));
+
 }
 
 // PCG
@@ -335,6 +341,12 @@ void addInternalCoeffs(
     int offset = 0;
     for (int i = 0; i < num_patches; i++) {
         if (patch_size[i] == 0) continue;
+        // else if (interfaceFlag[i] == 0){
+        //     (patch_type[i] == boundaryConditions::processor
+        //         || patch_type[i] == boundaryConditions::processorCyclic) ?
+        //         offset += 2 * patch_size[i] : offset += patch_size[i];
+        //     continue;
+        // }
         size_t threads_per_block = 1024;
         size_t blocks_per_grid = (patch_size[i] + threads_per_block - 1) / threads_per_block;
         kernel_addInternalCoeffs<<<blocks_per_grid, threads_per_block, 0, stream>>>
@@ -1163,7 +1175,8 @@ __global__ void kernel_addInternalInterfaceCoeffs
         return;
 
     int cellIndex = face2Cells[index];
-    diag[cellIndex] += interfaceIntCoeffs[index];
+    // diag[cellIndex] += interfaceIntCoeffs[index];
+    atomicAdd(&(diag[cellIndex]), interfaceIntCoeffs[index]);
 }
 
 __global__ void kernel_initMatrixInterfacesCoeffs
@@ -1189,7 +1202,7 @@ __global__ void kernel_updateMatrixInterfacesCoeffs
     double* scalarRecvBufList_,
     int* face2Cells,
     double* output,
-    double sign = 1.
+    double sign
 )
 {
     int index = blockDim.x * blockIdx.x + threadIdx.x;
@@ -1197,7 +1210,8 @@ __global__ void kernel_updateMatrixInterfacesCoeffs
         return;
 
     int cellIndex = face2Cells[index];
-    output[cellIndex] -= (sign * interfaceBouCoeffs[index]) * scalarRecvBufList_[index];
+    // output[cellIndex] -= (sign * interfaceBouCoeffs[index]) * scalarRecvBufList_[index];
+    atomicAdd(&(output[cellIndex]), -((sign * interfaceBouCoeffs[index]) * scalarRecvBufList_[index]));
 }
 
 void AmulGPU(const dfMatrixDataBase& dataBase, double* result, double* input,
@@ -1207,10 +1221,6 @@ void AmulGPU(const dfMatrixDataBase& dataBase, double* result, double* input,
             int** faceCells, std::vector<int> nPatchFaces, int nCells,
             double *scalarSendBufList_, double *scalarRecvBufList_)
 {
-    // --- addInternalInterfaceCoeffs ---
-#ifdef PARALLEL_
-    addInternalInterfaceCoeffs(dataBase.stream, nPatchFaces, interfaceIntCoeffs, faceCells, diag);
-#endif
 
     // --- SpMV ---
     SpMV4CSR(dataBase.stream, nCells, diag, off_diag_value, csr_row_index_no_diag, csr_col_index_no_diag, input, result); 
@@ -1232,10 +1242,6 @@ void AmulGPU_ell(const dfMatrixDataBase& dataBase, double* result, double* input
             int** faceCells, std::vector<int> nPatchFaces, int nCells,
             double *scalarSendBufList_, double *scalarRecvBufList_)
 {
-    // --- addInternalInterfaceCoeffs ---
-#ifdef PARALLEL_
-    addInternalInterfaceCoeffs(dataBase.stream, nPatchFaces, interfaceIntCoeffs, faceCells, diag);
-#endif
 
     // --- SpMV ---
     SpMV4ELL(dataBase.stream, nCells, diag, d_ell_values, d_ell_cols, ell_row_maxcount, input, result); 
@@ -1536,4 +1542,25 @@ void directSolve4x4GPU(cudaStream_t stream,
     checkCudaErrors(cudaFreeAsync(diag_tmp, stream));
     checkCudaErrors(cudaFreeAsync(upper_tmp, stream));
     checkCudaErrors(cudaFreeAsync(lower_tmp, stream));
+}
+
+double debug4gpu_sum(const dfMatrixDataBase& dataBase, int nCell, double* var)
+{
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (nCell + threads_per_block - 1) / threads_per_block;
+
+    double sum = 0.0;
+    double* test_result;
+    cudaMalloc(&test_result, sizeof(double));
+    
+    reduce(nCell, threads_per_block, blocks_per_grid, var, test_result, dataBase.stream, false);
+    #ifndef PARALLEL_
+        cudaMemcpyAsync(&sum, &test_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+    #else
+        ncclAllReduce(&test_result[0], &test_result[0], 1, ncclDouble, ncclSum, dataBase.nccl_comm, dataBase.stream);
+        cudaStreamSynchronize(dataBase.stream);
+        cudaMemcpyAsync(&sum, &test_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
+    #endif
+
+    return sum;
 }

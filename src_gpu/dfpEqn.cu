@@ -1,7 +1,10 @@
 #include "dfpEqn.H"
+#include "dfSolverOpBase.H"
 // #define AMGX_
-// #define CSR_
-#define ELL_
+#define CSR_
+// #define ELL_
+
+// #define PARALLEL_
 
 // Start if write vector to file ...
 #include <fstream>
@@ -569,32 +572,58 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
     nvtxRangePop();
 #endif
 
-    // load CPU data for test ---start
-    bool loadCPUdata4test = true;
-    if (loadCPUdata4test){
-        printf("*** LOADing data from files ***\n");
-        std::string filename_diag = "/root/gpuversion0417/tmp0418/test0514/cvodeIntegrator_64/diag.bin";
-        std::string filename_upper = "/root/gpuversion0417/tmp0418/test0514/cvodeIntegrator_64/upper.bin";
-        std::string filename_lower = "/root/gpuversion0417/tmp0418/test0514/cvodeIntegrator_64/lower.bin";
-        std::string filename_source = "/root/gpuversion0417/tmp0418/test0514/cvodeIntegrator_64/source.bin";
-        double* data_diag;
-        double* data_upper;
-        double* data_lower;
-        double* data_source;
-        data_diag = (double*)malloc(sizeof(double)*dataBase_.num_cells);
-        data_upper = (double*)malloc(sizeof(double)*dataBase_.num_surfaces);
-        data_lower = (double*)malloc(sizeof(double)*dataBase_.num_surfaces);
-        data_source = (double*)malloc(sizeof(double)*dataBase_.num_cells);
-        readArrayFromBinaryFile(filename_diag, data_diag, dataBase_.num_cells);
-        readArrayFromBinaryFile(filename_upper, data_upper, dataBase_.num_surfaces);
-        readArrayFromBinaryFile(filename_lower, data_lower, dataBase_.num_surfaces);
-        readArrayFromBinaryFile(filename_source, data_source, dataBase_.num_cells);
+    // // load CPU data for test ---start
+    // std::string abPath = "/root/gpuversion0417/tmp0418/test0514/cvodeIntegrator_64/";
+    // int mpirank;
+    // MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
+    // std::string c = std::to_string(mpirank);        
+    // std::string sdiag = "diag";
+    // std::string supper = "upper";
+    // std::string slower = "lower";
+    // std::string ssource = "source";
+    // std::string sIntCoef = "IntCoef";
+    // std::string sBouCoef = "BouCoef";
+    // std::string b = ".bin";
+    
+    // bool loadCPUdata4test = true;
+    // if (loadCPUdata4test){
+    //     printf("*** LOADing data from files ***\n");
+    //     // std::string filename_diag = "/root/gpuversion0417/tmp0418/test0514/cvodeIntegrator_64/diag.bin";
+    //     // std::string filename_upper = "/root/gpuversion0417/tmp0418/test0514/cvodeIntegrator_64/upper.bin";
+    //     // std::string filename_lower = "/root/gpuversion0417/tmp0418/test0514/cvodeIntegrator_64/lower.bin";
+    //     // std::string filename_source = "/root/gpuversion0417/tmp0418/test0514/cvodeIntegrator_64/source.bin";
+    //     std::string filename_diag = abPath + sdiag + c + b;
+    //     std::string filename_upper = abPath + supper + c + b;
+    //     std::string filename_lower = abPath + slower + c + b;
+    //     std::string filename_source = abPath + ssource + c + b;
+    //     std::string filename_IntCoef = abPath + sIntCoef + c + b;
+    //     std::string filename_BouCoef = abPath + sBouCoef + c + b;
+    //     double* data_diag;
+    //     double* data_upper;
+    //     double* data_lower;
+    //     double* data_source;
+    //     double* data_IntCoef;
+    //     double* data_BouCoef;
+    //     data_diag = (double*)malloc(sizeof(double)*dataBase_.num_cells);
+    //     data_upper = (double*)malloc(sizeof(double)*dataBase_.num_surfaces);
+    //     data_lower = (double*)malloc(sizeof(double)*dataBase_.num_surfaces);
+    //     data_source = (double*)malloc(sizeof(double)*dataBase_.num_cells);
+    //     data_IntCoef = (double*)malloc(sizeof(double)*dataBase_.num_boundary_surfaces);
+    //     data_BouCoef = (double*)malloc(sizeof(double)*dataBase_.num_boundary_surfaces);;
+    //     readArrayFromBinaryFile(filename_diag, data_diag, dataBase_.num_cells);
+    //     readArrayFromBinaryFile(filename_upper, data_upper, dataBase_.num_surfaces);
+    //     readArrayFromBinaryFile(filename_lower, data_lower, dataBase_.num_surfaces);
+    //     readArrayFromBinaryFile(filename_source, data_source, dataBase_.num_cells);
+    //     readArrayFromBinaryFile(filename_IntCoef, data_IntCoef, dataBase_.num_boundary_surfaces);
+    //     readArrayFromBinaryFile(filename_BouCoef, data_BouCoef, dataBase_.num_boundary_surfaces);
 
-        cudaMemcpy(d_diag,  &data_diag[0],  sizeof(double)*dataBase_.num_cells,    cudaMemcpyHostToDevice);
-        cudaMemcpy(d_lower, &data_lower[0], sizeof(double)*dataBase_.num_surfaces, cudaMemcpyHostToDevice);
-        cudaMemcpy(d_upper, &data_upper[0], sizeof(double)*dataBase_.num_surfaces, cudaMemcpyHostToDevice);
-        cudaMemcpy(d_source, &data_source[0], sizeof(double)*dataBase_.num_cells, cudaMemcpyHostToDevice);
-    }
+    //     cudaMemcpy(d_diag,  &data_diag[0],  sizeof(double)*dataBase_.num_cells,    cudaMemcpyHostToDevice);
+    //     cudaMemcpy(d_lower, &data_lower[0], sizeof(double)*dataBase_.num_surfaces, cudaMemcpyHostToDevice);
+    //     cudaMemcpy(d_upper, &data_upper[0], sizeof(double)*dataBase_.num_surfaces, cudaMemcpyHostToDevice);
+    //     cudaMemcpy(d_source, &data_source[0], sizeof(double)*dataBase_.num_cells, cudaMemcpyHostToDevice);
+    //     cudaMemcpy(d_internal_coeffs, &data_IntCoef[0], sizeof(double)*dataBase_.num_boundary_surfaces, cudaMemcpyHostToDevice);
+    //     cudaMemcpy(d_boundary_coeffs, &data_BouCoef[0], sizeof(double)*dataBase_.num_boundary_surfaces, cudaMemcpyHostToDevice);
+    // }
 
 #ifdef CSR_
 
@@ -613,6 +642,12 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
             // Set matrix data
             if(leveli==0)
             {
+
+                // --- addInternalCoeffs : diag ---
+                // input : d_internal_coeffs
+                addInternalCoeffs(dataBase_.stream, dataBase_.num_patches, dataBase_.patch_size, 
+                    d_internal_coeffs, dataBase_.d_boundary_face_cell, d_diag, dataBase_.patch_type_extropolated.data());
+                
                 checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_lower, d_lower, GAMGdata[leveli].nFace * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
                 checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_upper, d_upper, GAMGdata[leveli].nFace * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
                 checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_diag, d_diag, GAMGdata[leveli].nCell * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
@@ -698,8 +733,6 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
                 {
                     if (GAMGdata[leveli].nPatchFaces[patchi] > 0)
                     {
-                        std::cout << "memset 0 in patch: " << patchi << std::endl;
-
                         checkCudaErrors(cudaMemset(GAMGdata[leveli].d_interfaceBouCoeffs[patchi], 0, GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double)));
                         checkCudaErrors(cudaMemset(GAMGdata[leveli].d_interfaceIntCoeffs[patchi], 0, GAMGdata[leveli].nPatchFaces[patchi]*sizeof(double)));
                     
@@ -754,6 +787,12 @@ void dfpEqn::process(GAMGStruct *GAMGdata, int agglomeration_level) {
             // Set matrix data
             if(leveli==0)
             {
+
+                // --- addInternalCoeffs : diag ---
+                // input : d_internal_coeffs
+                addInternalCoeffs(dataBase_.stream, dataBase_.num_patches, dataBase_.patch_size, 
+                    d_internal_coeffs, dataBase_.d_boundary_face_cell, d_diag, dataBase_.patch_type_extropolated.data());
+                
                 checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_lower, d_lower, GAMGdata[leveli].nFace * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
                 checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_upper, d_upper, GAMGdata[leveli].nFace * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
                 checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_diag, d_diag, GAMGdata[leveli].nCell * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream));
@@ -1103,9 +1142,14 @@ void dfpEqn::sync()
 void dfpEqn::solve(GAMGStruct *GAMGdata, int agglomeration_level)
 {
 #ifdef AMGX_
+    double amgx_starttime , amgx_endtime;
+    amgx_starttime = MPI_Wtime();
     nvtxRangePushA("AMGX::solve()");
     dataBase_.solve(num_iteration, AMGXSetting::p_setting, d_A, dataBase_.d_p, d_source);
     nvtxRangePop();
+    amgx_endtime = MPI_Wtime();
+    double amgx_totaltime = amgx_endtime - amgx_starttime;
+    printf("amgx_totaltime = %.5f\n", amgx_totaltime);
 #endif
 #ifdef CSR_
     bool useGAMG = true;
@@ -1113,13 +1157,20 @@ void dfpEqn::solve(GAMGStruct *GAMGdata, int agglomeration_level)
     double* d_diag_tmp;
     cudaMallocAsync((void**)&d_diag_tmp, dataBase_.num_cells * sizeof(double), dataBase_.stream);
     cudaMemcpyAsync(d_diag_tmp, d_diag, dataBase_.num_cells * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream);
+    // cudaMemcpy(dataBase_.d_csr_row_index_no_diag, GAMGdata[0].d_csr_row_index_no_diag, sizeof(int) * (GAMGdata[0].nCell+1), cudaMemcpyDeviceToDevice);
+    // cudaMemcpy(dataBase_.d_csr_col_index_no_diag, GAMGdata[0].d_csr_col_index_no_diag, sizeof(int) * GAMGdata[0].nFace * 2, cudaMemcpyDeviceToDevice);
     if (useGAMG)
     {
+        double csr_starttime , csr_endtime;
+        csr_starttime = MPI_Wtime();
         nvtxRangePushA("solve_useGAMG()");
         pCSRSolver -> solve_useGAMG(dataBase_, d_internal_coeffs, d_boundary_coeffs, dataBase_.patch_type_extropolated.data(), 
                         d_diag, GAMGdata[0].d_off_diag_value, d_source, dataBase_.d_p,
                         GAMGdata, agglomeration_level);
         nvtxRangePop();
+        csr_endtime = MPI_Wtime();
+        double csr_totaltime = csr_endtime - csr_starttime;
+        printf("csr_totaltime = %.5f\n", csr_totaltime);
     }
     else
     {
@@ -1136,11 +1187,16 @@ void dfpEqn::solve(GAMGStruct *GAMGdata, int agglomeration_level)
     cudaMemcpyAsync(d_diag_tmp, d_diag, dataBase_.num_cells * sizeof(double), cudaMemcpyDeviceToDevice, dataBase_.stream);
     if (useGAMG)
     {
+        double ell_starttime , ell_endtime;
+        ell_starttime = MPI_Wtime();
         nvtxRangePushA("solve_useGAMG()");
         pELLSolver -> solve_useGAMG(dataBase_, d_internal_coeffs, d_boundary_coeffs, dataBase_.patch_type_extropolated.data(), 
                         d_diag, GAMGdata[0].d_ell_values, GAMGdata[0].d_ell_cols, GAMGdata[0].ell_row_maxcount, d_source, dataBase_.d_p,
                         GAMGdata, agglomeration_level);
         nvtxRangePop();
+        ell_endtime = MPI_Wtime();
+        double ell_totaltime = ell_endtime - ell_starttime;
+        printf("ell_totaltime = %.5f\n", ell_totaltime);
     }
     else
     {

@@ -179,3 +179,5 @@ void interpolateFieldGPU_ell(const dfMatrixDataBase& dataBase, int nCells, int n
                     int** faceCells, std::vector<int> nPatchFaces,
                     int* restrictAddressing, double* psiC,
                     double *scalarSendBufList_, double *scalarRecvBufList_);
+
+double debug4gpu_sum(const dfMatrixDataBase& dataBase, int nCell, double* var);
