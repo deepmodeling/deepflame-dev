@@ -29,9 +29,10 @@ private:
 	// constant values -- amgx solvers
 	AmgXSolver *pSolver = nullptr;
     CSRSolver *pCSRSolver = nullptr;
+    ELLSolver *pELLSolver = nullptr;
     std::vector<double*> GAMGlduPtr;
     std::vector<int*> GAMGldu2csrPtr;
-    ELLSolver *pELLSolver = nullptr;
+    std::vector<int*> GAMGldu2ellPtr;
     int num_iteration = 0;
 
 	// constant fields - internal
@@ -97,7 +98,7 @@ public:
 	void createNonConstantLduAndCsrFields();
 	// dfUEqn has no internal non-constant fields to be init
 	//void initNonConstantFieldsInternal(xxx);
-    void GAMGpEqnldu(GAMGStruct *GAMGdata_, int agglomeration_level);
+    void GAMGpEqnldu(GAMGStruct *GAMGdata_, int agglomeration_level, int type);
 
     void cleanCudaResources();
 
@@ -142,8 +143,11 @@ public:
 
     // void peqn_ldu_to_csr_no_diag(int row_, int num_surfaces, int *off_diag_rowptr_, double *lower, double *upper, int *lowerAddr, int *upperAddr, double *off_diag_value_);
     void peqn_ldu2csr(cudaStream_t stream, int row_, int num_surfaces, double *d_lower, double *d_upper, int *d_lowerAddr, int *d_upperAddr, double *d_off_diag_value, int *d_csr_row_index_no_diag, int *d_csr_col_index_no_diag);
-    void peqn_ldu_to_csr_no_diag(int num_surfaces, int* index, double* value, double* result);
-    void peqn_ldu_to_ell_no_diag(int num_surfaces, int* ldu2ellIndex, double* ldu, double* result);
+    // void peqn_ldu_to_csr_no_diag(int num_surfaces, int* index, double* value, double* result);
+    void peqn_ldu_to_csr_no_diag(int num_surfaces, int* index, double* value1, double* value2, double* result);
+    // void peqn_ldu_to_ell_no_diag(int num_surfaces, int* ldu2ellIndex, double* ldu, double* result);
+    void peqn_ldu_to_ell_no_diag(int num_surfaces, int* ldu2ellIndex, double* value1, double* value2, double* result);
+
 
 
     // add for GAMG

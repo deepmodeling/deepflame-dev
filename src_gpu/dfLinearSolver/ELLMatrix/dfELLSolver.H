@@ -81,7 +81,7 @@ public:
         relTol_ = relTol;
     }
 
-    virtual void initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
+    virtual void initializeGAMG(const dfMatrixDataBase& dataBase, const int nCells, const size_t boundary_surface_value_bytes,
                 GAMGStruct *GAMGdata_, int agglomeration_level) = 0;
 
     virtual void solve_useGAMG
@@ -147,7 +147,7 @@ public:
         double *psi
     ) override;
 
-    void initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
+    void initializeGAMG(const dfMatrixDataBase& dataBase, const int nCells, const size_t boundary_surface_value_bytes,
                 GAMGStruct *GAMGdata_, int agglomeration_level) override;
 
     virtual void solve_useGAMG
@@ -210,7 +210,7 @@ public:
         double *psi
     ) override;
 
-    void initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
+    void initializeGAMG(const dfMatrixDataBase& dataBase, const int nCells, const size_t boundary_surface_value_bytes,
                 GAMGStruct *GAMGdata_, int agglomeration_level);
 
     virtual void solve_useGAMG

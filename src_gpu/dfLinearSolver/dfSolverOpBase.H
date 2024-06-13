@@ -100,7 +100,8 @@ void scaleFieldGPU( const dfMatrixDataBase& dataBase,int nCells,
                     int* csr_row_index_no_diag, int* csr_col_index_no_diag, 
                     double** interfaceIntCoeffs, double** interfaceBouCoeffs,
                     int** faceCells, std::vector<int> nPatchFaces, 
-                    double* d_scalingFactorNum, double* d_scalingFactorDenom );
+                    double* d_scalingFactorNum, double* d_scalingFactorDenom,
+                    double *scalarSendBufList_, double *scalarRecvBufList_ );
 
 void scaleFieldGPU_ell( const dfMatrixDataBase& dataBase,int nCells, 
                     double* d_Field, double* d_Source, double* d_AcfField, 
@@ -108,21 +109,24 @@ void scaleFieldGPU_ell( const dfMatrixDataBase& dataBase,int nCells,
                     int* d_ell_cols, double* d_ell_values, 
                     double** interfaceIntCoeffs, double** interfaceBouCoeffs,
                     int** faceCells, std::vector<int> nPatchFaces, 
-                    double* d_scalingFactorNum, double* d_scalingFactorDenom );
+                    double* d_scalingFactorNum, double* d_scalingFactorDenom,
+                    double *scalarSendBufList_, double *scalarRecvBufList_ );
 
 void updateSourceFieldGPU(const dfMatrixDataBase& dataBase, int nCells, 
                         double* d_Sources, double* d_AcfField, double* d_CorrFields,
                         double* diag, double* off_diag_value,
                         int* csr_row_index_no_diag, int* csr_col_index_no_diag, 
                         double** interfaceIntCoeffs, double** interfaceBouCoeffs,
-                        int** faceCells, std::vector<int> nPatchFaces);
+                        int** faceCells, std::vector<int> nPatchFaces,
+                        double *scalarSendBufList_, double *scalarRecvBufList_);
 
 void updateSourceFieldGPU_ell(const dfMatrixDataBase& dataBase, int nCells, 
                         double* d_Sources, double* d_AcfField, double* d_CorrFields,
                         double* diag, int ell_row_maxcount,
                         int* d_ell_cols, double* d_ell_values,
                         double** interfaceIntCoeffs, double** interfaceBouCoeffs,
-                        int** faceCells, std::vector<int> nPatchFaces);
+                        int** faceCells, std::vector<int> nPatchFaces,
+                        double *scalarSendBufList_, double *scalarRecvBufList_);
 
 void updateCorrFieldGPU(cudaStream_t stream, int nCells, 
                         double* d_Field, double* d_preSmoothField);
@@ -138,13 +142,15 @@ void AmulGPU(const dfMatrixDataBase& dataBase, double* result, double* input,
             double* diag, double* off_diag_value,
             int* csr_row_index_no_diag, int* csr_col_index_no_diag, 
             double** interfaceIntCoeffs, double** interfaceBouCoeffs,
-            int** faceCells, std::vector<int> nPatchFaces, int nCells);
+            int** faceCells, std::vector<int> nPatchFaces, int nCells,
+            double *scalarSendBufList_, double *scalarRecvBufList_);
 
 void AmulGPU_ell(const dfMatrixDataBase& dataBase, double* result, double* input,
             double* diag, int ell_row_maxcount,
             int* d_ell_cols, double* d_ell_values, 
             double** interfaceIntCoeffs, double** interfaceBouCoeffs,
-            int** faceCells, std::vector<int> nPatchFaces, int nCells);
+            int** faceCells, std::vector<int> nPatchFaces, int nCells,
+            double *scalarSendBufList_, double *scalarRecvBufList_);
 
 void addInternalInterfaceCoeffs(
         cudaStream_t stream, std::vector<int> patchSize, 
@@ -154,7 +160,7 @@ void updateMatrixInterfaceCoeffs(
     cudaStream_t stream, std::vector<int> neighbProcNo,  ncclComm_t nccl_comm,
     std::vector<int> patchSize, double *input, double *output, 
     double *scalarSendBufList_, double *scalarRecvBufList_,
-    double **interfaceBouCoeffs, int **boundaryFaceCell);
+    double **interfaceBouCoeffs, int **boundaryFaceCell, double sign = 1.);
 
 void interpolateFieldGPU(const dfMatrixDataBase& dataBase, int nCells, int nCCells, 
                     double* psi, double* Apsi, 
@@ -162,7 +168,8 @@ void interpolateFieldGPU(const dfMatrixDataBase& dataBase, int nCells, int nCCel
                     int* csr_row_index_no_diag, int* csr_col_index_no_diag,  
                     double** interfaceIntCoeffs, double** interfaceBouCoeffs, 
                     int** faceCells, std::vector<int> nPatchFaces,
-                    int* restrictAddressing, double* psiC);
+                    int* restrictAddressing, double* psiC,
+                    double *scalarSendBufList_, double *scalarRecvBufList_);
 
 void interpolateFieldGPU_ell(const dfMatrixDataBase& dataBase, int nCells, int nCCells, 
                     double* psi, double* Apsi, 
@@ -170,4 +177,7 @@ void interpolateFieldGPU_ell(const dfMatrixDataBase& dataBase, int nCells, int n
                     int* d_ell_cols, double* d_ell_values,
                     double** interfaceIntCoeffs, double** interfaceBouCoeffs, 
                     int** faceCells, std::vector<int> nPatchFaces,
-                    int* restrictAddressing, double* psiC);
+                    int* restrictAddressing, double* psiC,
+                    double *scalarSendBufList_, double *scalarRecvBufList_);
+
+double debug4gpu_sum(const dfMatrixDataBase& dataBase, int nCell, double* var);

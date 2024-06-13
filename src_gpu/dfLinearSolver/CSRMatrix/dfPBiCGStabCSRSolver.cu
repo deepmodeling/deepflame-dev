@@ -96,7 +96,7 @@ void PBiCGStabCSRSolver::initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGSt
     std::cout << "********* call in PBiCGStabCSRSolver::initGAMGMatrix() " << std::endl;
 }
 
-void PBiCGStabCSRSolver::initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
+void PBiCGStabCSRSolver::initializeGAMG(const dfMatrixDataBase& dataBase, const int nCells, const size_t boundary_surface_value_bytes,
             GAMGStruct *GAMGdata_, int agglomeration_level) {};
             
 void PBiCGStabCSRSolver::solve_useGAMG

@@ -1,8 +1,9 @@
 #include "dfELLSolver.H"
 #include "dfSolverOpBase.H"
 #include "dfMatrixDataBase.H"
+#include <nvtx3/nvToolsExt.h>
 
-// #define PARALLEL_
+#define PARALLEL_
 #define PRINT_
 
 // kernel functions for PCG solver
@@ -67,7 +68,7 @@ void PCGELLSolver::freeInitStream(cudaStream_t stream)
     cudaFreeAsync(scalarRecvBufList_, stream);
 }
 
-void PCGELLSolver::initializeGAMG(const int nCells, const size_t boundary_surface_value_bytes,
+void PCGELLSolver::initializeGAMG(const dfMatrixDataBase& dataBase, const int nCells, const size_t boundary_surface_value_bytes,
                     GAMGStruct *GAMGdata_, int agglomeration_level)
 {
     // cudamalloc variables related to PCGSolver
@@ -84,7 +85,7 @@ void PCGELLSolver::initializeGAMG(const int nCells, const size_t boundary_surfac
 
     // preconditioner
     precond_ = new GAMGELLPreconditioner();
-    precond_->initialize(GAMGdata_, agglomeration_level);
+    precond_->initialize(dataBase, GAMGdata_, agglomeration_level);
 }
 
 void PCGELLSolver::initGAMGMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level)
@@ -361,6 +362,7 @@ void PCGELLSolver::solve_useGAMG
     double finalResidual = 0.;
 
     // --- reduce psi to get : psi_ave ---
+    nvtxRangePushA("reduce()");
     reduce(nCells, threads_per_block, blocks_per_grid, psi, reduce_result, dataBase.stream, false);
 #ifndef PARALLEL_
     cudaMemcpyAsync(&psi_ave, &reduce_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
@@ -369,20 +371,25 @@ void PCGELLSolver::solve_useGAMG
     cudaStreamSynchronize(dataBase.stream);
     cudaMemcpyAsync(&psi_ave, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
 #endif
+    nvtxRangePop();
     psi_ave = psi_ave / row_;
 
 #ifdef PRINT_
     printf("psi_ave = %.10e\n",psi_ave);
 #endif
 
-    // --- addInternalCoeffs : diag ---
-    // input : d_internal_coeffs
-    addInternalCoeffs(dataBase.stream, dataBase.num_patches, dataBase.patch_size, 
-        d_internal_coeffs, dataBase.d_boundary_face_cell, diagPtr, patch_type);
-    
+    // // --- addInternalCoeffs : diag ---
+    // // input : d_internal_coeffs
+    // nvtxRangePushA("addInternalCoeffs()");
+    // addInternalCoeffs(dataBase.stream, dataBase.num_patches, dataBase.patch_size, 
+    //     d_internal_coeffs, dataBase.d_boundary_face_cell, diagPtr, patch_type);
+    // nvtxRangePop();
+
     // --- SpMV : wA ---
     // input : psi, diag
+    nvtxRangePushA("SpMV4ELL");
     SpMV4ELL(dataBase.stream, nCells, diagPtr, ellValues, ellCols, ell_max_count_, psi, d_wA);
+    nvtxRangePop();
 
 #ifdef PARALLEL_
     // --- initMatrixInterfaces & updateMatrixInterfaces : wA ---
@@ -397,18 +404,25 @@ void PCGELLSolver::solve_useGAMG
 
     // --- calculate : rA and pA ---
     // input : rhs, wA and diag
+    nvtxRangePushA("calrAandpA4ELL()");
     calrAandpA4ELL(dataBase.stream, nCells, d_rA, rhs, d_wA, diagPtr, ellValues, ell_max_count_, d_pA);
+    nvtxRangePop();
 
         // --- subBoundaryCoeffs : pA ---
     // input : d_boundary_coeffs
+    nvtxRangePushA("subBoundaryCoeffs()");
     subBoundaryCoeffs(dataBase.stream, dataBase.num_patches, dataBase.patch_size,
         d_boundary_coeffs, dataBase.d_boundary_face_cell, d_pA, patch_type);
+    nvtxRangePop();
 
     // --- calculate : pA and d_normFactors_tmp ---
     // input : psi_ave and wA, pA, rhs
+    nvtxRangePushA("calpAandnormFactor()");
     calpAandnormFactor(dataBase.stream, nCells, psi_ave, d_pA, d_normFactors_tmp, d_wA, rhs);
-    
+    nvtxRangePop();
+
     // --- reduce d_normFactors_tmp to get : normFactor ---
+    nvtxRangePushA("reduce()");
     reduce(nCells, threads_per_block, blocks_per_grid, d_normFactors_tmp, reduce_result, dataBase.stream, false);
 #ifndef PARALLEL_
     cudaMemcpyAsync(&normFactor, &reduce_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
@@ -417,6 +431,7 @@ void PCGELLSolver::solve_useGAMG
     cudaStreamSynchronize(dataBase.stream);
     cudaMemcpyAsync(&normFactor, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
 #endif
+    nvtxRangePop();
 
     normFactor += small_;
 
@@ -425,6 +440,7 @@ void PCGELLSolver::solve_useGAMG
 #endif
 
     // --- reduce abs(rA) to get : initialResidual ---
+    nvtxRangePushA("reduce()");
     reduce(nCells, threads_per_block, blocks_per_grid, d_rA, reduce_result, dataBase.stream, true);
 #ifndef PARALLEL_
     cudaMemcpyAsync(&initialResidual, &reduce_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
@@ -433,7 +449,7 @@ void PCGELLSolver::solve_useGAMG
     cudaStreamSynchronize(dataBase.stream);
     cudaMemcpyAsync(&initialResidual, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
 #endif
-        
+    nvtxRangePop();      
     initialResidual = initialResidual / normFactor;
 
     finalResidual = initialResidual;
@@ -450,15 +466,20 @@ void PCGELLSolver::solve_useGAMG
 
         do{
 
-            precond_->precondition(d_wA, d_rA, dataBase, GAMGdata_, agglomeration_level);
+            nvtxRangePushA("precondition()");
+            precond_->precondition(d_wA, d_rA, dataBase, GAMGdata_, agglomeration_level, scalarSendBufList_, scalarRecvBufList_);
+            nvtxRangePop();
 
             wArAold = wArA;
 
             // --- calculate : d_wArA_tmp ---
             // input : wA, rA
+            nvtxRangePushA("AmulBtoC()");
             AmulBtoC(dataBase.stream, nCells, d_wA, d_rA, d_wArA_tmp);
+            nvtxRangePop();
 
             // --- reduce d_wArA_tmp to get : wArA ---
+            nvtxRangePushA("reduce()");
             reduce(nCells, threads_per_block, blocks_per_grid, d_wArA_tmp, reduce_result, dataBase.stream, false);
 #ifndef PARALLEL_
             cudaMemcpyAsync(&wArA, &reduce_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
@@ -467,6 +488,7 @@ void PCGELLSolver::solve_useGAMG
             cudaStreamSynchronize(dataBase.stream);
             cudaMemcpyAsync(&wArA, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
 #endif
+            nvtxRangePop();
 
 #ifdef PRINT_
             printf("wArA = %.10e\n",wArA);
@@ -479,12 +501,16 @@ void PCGELLSolver::solve_useGAMG
                 double beta = wArA/wArAold;
                 // --- calculate : d_pA ---
                 // input : wA, beta, d_pA
+                nvtxRangePushA("calpA()");
                 calpA(dataBase.stream, nCells, d_pA, d_wA, beta);
+                nvtxRangePop();
             }
 
             // --- SpMV : wA ---
             // input : pA, diag
+            nvtxRangePushA("SpMV4ELL()");
             SpMV4ELL(dataBase.stream, nCells, diagPtr, ellValues, ellCols, ell_max_count_, d_pA, d_wA);
+            nvtxRangePop();
 
 #ifdef PARALLEL_
             // --- initMatrixInterfaces & updateMatrixInterfaces wA ---
@@ -500,9 +526,12 @@ void PCGELLSolver::solve_useGAMG
             double wApA = 0.;
             // --- calculate : d_wApA_tmp ---
             // input : wA, pA
+            nvtxRangePushA("AmulBtoC()");
             AmulBtoC(dataBase.stream, nCells, d_wA, d_pA, d_wApA_tmp);
+            nvtxRangePop();
 
             // --- reduce d_wApA_tmp to get : wApA ---
+            nvtxRangePushA("reduce()");
             reduce(nCells, threads_per_block, blocks_per_grid, d_wApA_tmp, reduce_result, dataBase.stream, false);
 #ifndef PARALLEL_
             cudaMemcpyAsync(&wApA, &reduce_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
@@ -511,6 +540,7 @@ void PCGELLSolver::solve_useGAMG
             cudaStreamSynchronize(dataBase.stream);
             cudaMemcpyAsync(&wApA, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
 #endif
+            nvtxRangePop();
 
 #ifdef PRINT_
             printf("wApA = %.10e\n",wApA);
@@ -521,9 +551,12 @@ void PCGELLSolver::solve_useGAMG
             double alpha = wArA/wApA;
             // --- calculate : psi and d_rA ---
             // input : alpha, d_pA and alpha, d_wA
+            nvtxRangePushA("calpsiandrA()");
             calpsiandrA(dataBase.stream, nCells, psi, d_pA, d_rA, d_wA, alpha);
+            nvtxRangePop();
 
             // --- reduce abs(rA) to get : finalResidual ---
+            nvtxRangePushA("reduce()");
             reduce(nCells, threads_per_block, blocks_per_grid, d_rA, reduce_result, dataBase.stream, true);
 #ifndef PARALLEL_
             cudaMemcpyAsync(&finalResidual, &reduce_result[0] , sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
@@ -532,6 +565,7 @@ void PCGELLSolver::solve_useGAMG
             cudaStreamSynchronize(dataBase.stream);
             cudaMemcpyAsync(&finalResidual, &reduce_result[0], sizeof(double), cudaMemcpyDeviceToHost, dataBase.stream);
 #endif
+            nvtxRangePop();
 
             finalResidual = finalResidual / normFactor;
 

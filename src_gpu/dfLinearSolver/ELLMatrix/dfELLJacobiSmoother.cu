@@ -1,4 +1,7 @@
 #include "dfELLSmoother.H"
+#include "dfSolverOpBase.H"
+
+#define PARALLEL_
 
 __global__ void ellJacobiSmooth
 (
@@ -34,20 +37,42 @@ void ELLJacobiSmoother::smooth
     int ell_row_maxcount,
     int* d_ell_cols, 
     double* d_ell_values,
-    double* diagPtr
+    double* diagPtr,
+    // PARALLEL_
+    const dfMatrixDataBase& dataBase,
+    double* scalarSendBufList_, 
+    double* scalarRecvBufList_,
+    double** interfaceBouCoeffs,
+    int** faceCells, std::vector<int> nPatchFaces
 )
 {
+    size_t threads_per_block = 1024;
+    size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
+    
+    double* bPrime;
+    cudaMalloc(&bPrime, nCells * sizeof(double));
+
     for (int sweep=0; sweep<nSweeps; sweep++)
     {
+        cudaMemcpyAsync(bPrime, source, nCells * sizeof(double), cudaMemcpyDeviceToDevice, stream);
+
+#ifdef PARALLEL_   
+        // sign = -1 for negate()
+        // --- initMatrixInterfaces & updateMatrixInterfaces ---
+        updateMatrixInterfaceCoeffs(
+            dataBase.stream, dataBase.neighbProcNo, dataBase.nccl_comm,
+            nPatchFaces, psi, bPrime, 
+            scalarSendBufList_, scalarRecvBufList_,
+            interfaceBouCoeffs, faceCells, -1.0);
+#endif
 
         double* psiCopyPtr;
-        cudaMalloc(&psiCopyPtr, nCells * sizeof(double));
+        cudaMallocAsync(&psiCopyPtr, nCells * sizeof(double), stream);
         cudaMemcpyAsync(psiCopyPtr, psi, nCells * sizeof(double), cudaMemcpyDeviceToDevice, stream);
     
-        size_t threads_per_block = 1024;
-        size_t blocks_per_grid = (nCells + threads_per_block - 1) / threads_per_block;
         ellJacobiSmooth<<<blocks_per_grid, threads_per_block, 0, stream>>>
-            (nCells, psi, psiCopyPtr, source, ell_row_maxcount, d_ell_cols, d_ell_values, diagPtr);
+            (nCells, psi, psiCopyPtr, bPrime, ell_row_maxcount, d_ell_cols, d_ell_values, diagPtr);
+        checkCudaErrors(cudaStreamSynchronize(stream));
 
     }
 };

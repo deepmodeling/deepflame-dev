@@ -18,7 +18,13 @@ public:
         int ell_row_maxcount,
         int* d_ell_cols, 
         double* d_ell_values,
-        double* diagPtr
+        double* diagPtr,
+        // for parallel
+        const dfMatrixDataBase& dataBase,
+        double* scalarSendBufList_, 
+        double* scalarRecvBufList_,
+        double** interfaceBouCoeffs,
+        int** faceCells, std::vector<int> nPatchFaces
     ) = 0;
 };
     
@@ -37,6 +43,12 @@ public:
         int ell_row_maxcount,
         int* d_ell_cols, 
         double* d_ell_values,
-        double* diagPtr
+        double* diagPtr,
+        // for parallel
+        const dfMatrixDataBase& dataBase,
+        double* scalarSendBufList_, 
+        double* scalarRecvBufList_,
+        double** interfaceBouCoeffs,
+        int** faceCells, std::vector<int> nPatchFaces
     )override;
 };

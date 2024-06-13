@@ -9,14 +9,15 @@ public:
     ELLPreconditioner(){}
     virtual ~ELLPreconditioner() {}
 
-    virtual void initialize(GAMGStruct *GAMGdata_, int agglomeration_level) = 0;
+    virtual void initialize(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level) = 0;
 
     virtual void precondition
     (
         double *wA,
         const double *rA,
         const dfMatrixDataBase& dataBase,
-        GAMGStruct *GAMGdata_, int agglomeration_level
+        GAMGStruct *GAMGdata_, int agglomeration_level,
+        double *scalarSendBufList_, double *scalarRecvBufList_
     ) = 0;
 };
 
@@ -32,7 +33,7 @@ public:
 
     virtual void initialize(
         /* init variables related to GAMG preconditioner */
-        GAMGStruct *GAMGdata_, int agglomeration_level
+        const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level
     ) override;
 
     virtual void precondition
@@ -40,18 +41,19 @@ public:
         double *wA,
         const double *rA,
         const dfMatrixDataBase& dataBase,
-        GAMGStruct *GAMGdata_, int agglomeration_level
+        GAMGStruct *GAMGdata_, int agglomeration_level,
+        double *scalarSendBufList_, double *scalarRecvBufList_
     ) override;
 
     virtual void agglomerateMatrix(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level);
 
-    virtual void fine2coarse(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level, int startLevel, int endLevel);
-    virtual void coarse2fine(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level, int startLevel, int endLevel);
+    virtual void fine2coarse(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level, int startLevel, int endLevel, double *scalarSendBufList_, double *scalarRecvBufList_);
+    virtual void coarse2fine(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level, int startLevel, int endLevel, double *scalarSendBufList_, double *scalarRecvBufList_);
     virtual void directSolveCoarsest(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level);
 
-    virtual void Vcycle(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level);
-    virtual void Wcycle(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level);
-    virtual void Fcycle(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level);
+    virtual void Vcycle(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level, double *scalarSendBufList_, double *scalarRecvBufList_);
+    virtual void Wcycle(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level, double *scalarSendBufList_, double *scalarRecvBufList_);
+    virtual void Fcycle(const dfMatrixDataBase& dataBase, GAMGStruct *GAMGdata_, int agglomeration_level, double *scalarSendBufList_, double *scalarRecvBufList_);
 
     virtual void freeInitialize(GAMGStruct *GAMGdata, int agglomeration_level);
 

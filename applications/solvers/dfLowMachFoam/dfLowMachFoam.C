@@ -67,6 +67,8 @@ Description
 #define DEBUG_
 // #define SHOW_MEMINFO
 
+#define iscsr // true -> csr, false -> ell
+
 #include "dfMatrixDataBase.H"
 
 #ifdef GPUSolverNew_
@@ -218,7 +220,6 @@ int main(int argc, char *argv[])
     //============================================================================
     // startif use GAMG Solver ... 
     
-#define iscsr // true -> csr, false -> ell
 #ifdef iscsr
     #include "CSRGAMGAgglomeration.H"
 #else

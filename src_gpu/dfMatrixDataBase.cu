@@ -270,7 +270,7 @@ else if (type == 2)
     h_ldu2ellIndex[leveli] = (int*)malloc(nFaces * 2 * sizeof(int));
 
     memset(h_ellCols[leveli], 0, nCells * h_ell_row_maxcount[leveli] * sizeof(int));
-    memset(h_ldu2ellIndex, 0, sizeof(int) * nFaces * 2);
+    memset(h_ldu2ellIndex[leveli], 0, sizeof(int) * nFaces * 2);
     std::vector<int> rowOffset(nCells, 0);
     // lower
     for(int i = 0; i < nFaces; i++){
@@ -281,10 +281,10 @@ else if (type == 2)
         rowOffset[row] += 1;
     }
     // upper
-    for(int i = 0; i < num_surfaces; i++){
+    for(int i = 0; i < nFaces; i++){
         int row = owner[i];
         int index = ell_row_maxcount * row + rowOffset[row];
-        h_ldu2ellIndex[leveli][i + num_surfaces] = index;
+        h_ldu2ellIndex[leveli][i + nFaces] = index;
         h_ellCols[leveli][index] = neighbor[i];
         rowOffset[row] += 1;
     }
