@@ -63,8 +63,8 @@ Description
 #include "CombustionModel.H"
 
 /* For DeepFlame_Academic */
-#include "/root/0628/DeepFlame_Academic/include/dfgamg.h"
-#include "/root/0628/DeepFlame_Academic/include/dfacademic.h"
+#include "dfgamg.h"
+#include "dfacademic.h"
 
 #define GPUSolverNew_
 // #define TIME
