@@ -62,6 +62,10 @@ Description
 #include "basicThermo.H"
 #include "CombustionModel.H"
 
+/* For DeepFlame_Academic */
+#include "/root/0628/DeepFlame_Academic/include/dfgamg.h"
+#include "/root/0628/DeepFlame_Academic/include/dfacademic.h"
+
 #define GPUSolverNew_
 // #define TIME
 #define DEBUG_
@@ -266,6 +270,13 @@ int main(int argc, char *argv[])
 
     end1 = std::clock();
     time_monitor_init += double(end1 - start1) / double(CLOCKS_PER_SEC);
+
+    std::cout << "*********************************************" << std::endl;
+    std::cout << "NOTICE:" << std::endl;
+    std::cout << "  The above code has been modified to call dfAcademic library; " << std::endl;
+    std::cout << "  it has been confirmed in pEqn solver, preconditioner, and smoother can be correctly set." << std::endl;
+    std::cout << "*********************************************" << std::endl;
+    abort();
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
