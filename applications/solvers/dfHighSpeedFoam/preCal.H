@@ -1,9 +1,11 @@
+surfaceVectorField normal(mesh.Sf()/mesh.magSf());
 // --- Directed interpolation of primitive fields onto faces
 surfaceScalarField rho_pos(interpolate(rho, pos));
 surfaceScalarField rho_neg(interpolate(rho, neg));
 
 PtrList<surfaceScalarField> rhoYi_pos(nspecies);
 PtrList<surfaceScalarField> rhoYi_neg(nspecies);
+
 forAll(rhoYi_pos,i)
 {
   rhoYi_pos.set
@@ -47,6 +49,9 @@ forAll(rhoYi_neg,i)
 surfaceVectorField rhoU_pos(interpolate(rhoU, pos, U.name()));
 surfaceVectorField rhoU_neg(interpolate(rhoU, neg, U.name()));
 
+surfaceScalarField rhoE_pos(interpolate(rhoE, pos, T.name()));
+surfaceScalarField rhoE_neg(interpolate(rhoE, neg, T.name()));
+
 volScalarField rPsi("rPsi", 1.0/psi);
 surfaceScalarField rPsi_pos(interpolate(rPsi, pos, T.name()));
 surfaceScalarField rPsi_neg(interpolate(rPsi, neg, T.name()));
@@ -60,59 +65,42 @@ surfaceVectorField U_neg("U_neg", rhoU_neg/rho_neg);
 surfaceScalarField p_pos("p_pos", rho_pos*rPsi_pos);
 surfaceScalarField p_neg("p_neg", rho_neg*rPsi_neg);
 
-surfaceScalarField phiv_pos("phiv_pos", U_pos & mesh.Sf());
-surfaceScalarField phiv_neg("phiv_neg", U_neg & mesh.Sf());
 
-// Make fluxes relative to mesh-motion
-if (mesh.moving())
-{
-  phiv_pos -= mesh.phi();
-  phiv_neg -= mesh.phi();
-}
+surfaceScalarField E_pos("E_pos", ea_pos + 0.5*magSqr(U_pos));//rhoE_pos/rho_pos);
+surfaceScalarField E_neg("E_neg", ea_neg + 0.5*magSqr(U_neg));//rhoE_neg/rho_neg);
+
+surfaceScalarField H_pos("H_pos", (rhoE_pos + p_pos)/rho_pos);
+surfaceScalarField H_neg("H_neg", (rhoE_neg + p_neg)/rho_neg);
+
+volScalarField gamma_("gamma_", thermo.Cp()/thermo.Cv());
+surfaceScalarField gamma_pos
+(
+  "gamma_pos",
+   interpolate(gamma_, pos, T.name())
+);
+surfaceScalarField gamma_neg
+(
+  "gamma_neg",
+   interpolate(gamma_, neg, T.name())
+);
 
 volScalarField c("c", sqrt(thermo.Cp()/thermo.Cv()*rPsi));
-surfaceScalarField cSf_pos
+surfaceScalarField a_pos
 (
-  "cSf_pos",
-  interpolate(c, pos, T.name())*mesh.magSf()
+  "a_pos",
+  interpolate(c, pos, T.name())
 );
-surfaceScalarField cSf_neg
+surfaceScalarField a_neg
 (
-  "cSf_neg",
-  interpolate(c, neg, T.name())*mesh.magSf()
-);
-
-surfaceScalarField ap
-(
-  "ap",
-  max(max(phiv_pos + cSf_pos, phiv_neg + cSf_neg), v_zero)
-);
-surfaceScalarField am
-(
-  "am",
-  min(min(phiv_pos - cSf_pos, phiv_neg - cSf_neg), v_zero)
+  "a_neg",
+  interpolate(c, neg, T.name())
 );
 
-surfaceScalarField a_pos("a_pos", ap/(ap - am));
+surfaceScalarField amaxSf("amaxSf",
+    0.5 * mag((U_pos + U_neg) & mesh.Sf()) 
+    + 0.5 * (a_pos + a_neg) * mesh.magSf()
+);
 
-surfaceScalarField amaxSf("amaxSf", max(mag(am), mag(ap)));
-
-surfaceScalarField aSf("aSf", am*a_pos);
-
-if (fluxScheme == "Tadmor")
-{
-  aSf = -0.5*amaxSf;
-  a_pos = 0.5;
+if(mesh.moving()){
+  amaxSf -= mesh.phi();
 }
-
-surfaceScalarField a_neg("a_neg", 1.0 - a_pos);
-
-phiv_pos *= a_pos;
-phiv_neg *= a_neg;
-
-surfaceScalarField aphiv_pos("aphiv_pos", phiv_pos - aSf);
-surfaceScalarField aphiv_neg("aphiv_neg", phiv_neg + aSf);
-
-// Reuse amaxSf for the maximum positive and negative fluxes
-// estimated by the central scheme
-amaxSf = max(mag(aphiv_pos), mag(aphiv_neg));
