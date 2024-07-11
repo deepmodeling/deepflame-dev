@@ -58,6 +58,9 @@ Description
 #include "PstreamGlobals.H"
 #include "CombustionModel.H"
 
+#include "fluxSchemes/AUSMDVFlux.H"
+#include "fluxSchemes/KNPFlux.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 int main(int argc, char *argv[])
@@ -104,6 +107,8 @@ int main(int argc, char *argv[])
 
     while (runTime.run())
     {
+        pMax = max(p, pMax);
+
         #include "readTimeControls.H"
 
         //used for AMR

@@ -5,7 +5,7 @@ surfaceScalarField sigmaDotU
         fvc::interpolate(turbulence->muEff())*mesh.magSf()*fvc::snGrad(U)
       + (mesh.Sf() & fvc::interpolate(tauMC))
     )
-    & (a_pos*U_pos + a_neg*U_neg)
+    & u12
 );
 
 if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
@@ -30,6 +30,7 @@ ea = rhoE/rho - 0.5*magSqr(U);
 ea.correctBoundaryConditions();
 
 ha = ea + p/rho;
+Info << "begin correct thermo" << endl;
 chemistry->correctThermo(); // before this, we must update ha = e + p/rho
 
 rhoE.boundaryFieldRef() == rho.boundaryField()*(ea.boundaryField() + 0.5*magSqr(U.boundaryField()));
