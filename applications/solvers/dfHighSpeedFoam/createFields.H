@@ -103,6 +103,19 @@ volScalarField rho
     thermo.rho()
 );
 
+volScalarField pMax
+(
+    IOobject
+    (
+        "pMax",
+        runTime.timeName(),
+        mesh,
+        IOobject::READ_IF_PRESENT,
+        IOobject::AUTO_WRITE
+    ),
+    thermo.p()
+);
+
 volVectorField rhoU
 (
     IOobject
@@ -190,7 +203,7 @@ const word combModelName(mesh.objectRegistry::lookupObject<IOdictionary>("combus
 Info << "Combustion Model Name is confirmed as "<< combModelName << endl;
 
 
-if(combModelName!="ESF" && combModelName!="flareFGM"  && combModelName!="DeePFGM" && combModelName!="FSD")
+if (combModelName != "flareFGM")
 {
     chemistry->correctThermo();
     Info<< "At initial time, min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
