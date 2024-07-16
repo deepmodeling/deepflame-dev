@@ -22,6 +22,9 @@ dfpEqn pEqn_GPU(dfDataBase);
 void createGPUBaseInput();
 void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, std::vector<int> patch_type, MATRIX_EQUATION EqnID);
 void createGPUGAMGInput(const lduMesh& mesh, volScalarField& eqn);
+void createMatrixNoDiag();
+void createGAMGMatrixNoDiag();
+
 
 #if defined(DEBUG_)
 template <typename T>
@@ -251,6 +254,8 @@ void createGPUBase(const IOdictionary& CanteraTorchProperties, fvMesh& mesh, Ptr
     }
     label globalOffset = globalNumbering.toGlobal(0);
     dfDataBase.setConstantIndexes(&owner[0], &neighbour[0], &procRows[0], &procCols[0], globalOffset);
+    /* For DeepFlame_Academic */
+    createMatrixNoDiag();
 
     // prepare internal and boundary of sf, mag_sf, weights, delta_coeffs, volume
     double *boundary_sf = new double[3 * num_boundary_surfaces];
@@ -794,6 +799,9 @@ void createGPUGAMGMaps(GAMGStruct *GAMGdata, const CSRGAMGAgglomeration& agglome
         dfDataBase.setConstantIndexes_GAMG
                 (GAMGdata[leveli].nCell, GAMGdata[leveli].nFace, &GAMGdata[leveli].lowerAddr[0], 
                 &GAMGdata[leveli].upperAddr[0], leveli, 1);
+        /* For DeepFlame_Academic */
+        createGAMGMatrixNoDiag();
+
     
         std::cout << "  == level: " << leveli << ", cell: " << GAMGdata[leveli].restrictMap.size()
                                               << ", face: " << GAMGdata[leveli].faceRestrictMap.size() << std::endl;
@@ -1208,6 +1216,7 @@ void createGPUBaseInput()
     mesh_paras.num_cells             = dfDataBase.num_cells;
     mesh_paras.num_total_cells       = dfDataBase.num_total_cells;
     mesh_paras.num_patches           = dfDataBase.num_patches;
+    mesh_paras.num_surfaces          = dfDataBase.num_surfaces;
     mesh_paras.num_boundary_surfaces = dfDataBase.num_boundary_surfaces;
 
     mesh_paras.neighbProcNo  = (int*)malloc(sizeof(int)*mesh_paras.num_patches);
@@ -1226,4 +1235,28 @@ void createGPUBaseInput()
                 dfDataBase.boundary_surface_index_bytes, cudaMemcpyDeviceToDevice); 
     
     set_mesh_info(mesh_paras);
+}
+
+void createMatrixNoDiag(){
+    std::cout << "========================================================" << std::endl;
+    std::cout << "   Set matrix info variables for DeepFlame_Academic   " << std::endl;
+
+    // TODO: if CSR;
+#ifdef iscsr
+    set_matrix_format_csr(dfDataBase.d_ldu_to_csr_no_diag, dfDataBase.d_csr_row_index_no_diag, dfDataBase.d_csr_col_index_no_diag);
+#else
+    set_matrix_format_ell(dfDataBase.ell_row_maxcount, dfDataBase.d_ellCols, dfDataBase.d_ldu2ellIndex);
+#endif
+}
+
+void createGAMGMatrixNoDiag(){
+    std::cout << "========================================================" << std::endl;
+    std::cout << "   Set GAMG matrix info variables for DeepFlame_Academic   " << std::endl;
+
+    // TODO: if CSR;
+#ifdef iscsr
+    set_GAMG_matrix_format_csr(dfDataBase.h_ldu_to_csr_no_diag, dfDataBase.h_csr_row_index_no_diag, dfDataBase.h_csr_col_index_no_diag);
+#else
+    set_GAMG_matrix_format_ell(dfDataBase.h_ell_row_maxcount, dfDataBase.h_ellCols, dfDataBase.h_ldu2ellIndex);
+#endif
 }
