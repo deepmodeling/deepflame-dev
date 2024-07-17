@@ -89,8 +89,7 @@ public:
     double* getFieldPointer(const char* fieldAlias, location loc, position pos);
 
 	// initialization
-	void setConstantValues(const std::string &mode_string, const std::string &setting_path,
-                        GAMGStruct *GAMGdata_, int agglomeration_level); 
+	void setConstantValues(const std::string &mode_string, const std::string &setting_path); 
 	void setConstantFields(const std::vector<int> patch_type_U, const std::vector<int> patch_type_p);
     void initNonConstantFields(const double *p, const double *boundary_p);
     void createNonConstantFieldsInternal();
@@ -107,7 +106,7 @@ public:
     void correctPsi(const double *h_thermoPsi, double *h_boundary_thermoPsi); // tmp
     void correctP(const double *h_p, double *h_boundary_p); // tmp
     //void getFlux();
-	void process(GAMGStruct *GAMGdata, int agglomeration_level);
+	void process();
 	void postProcess();
 
     // get intermediate variable
@@ -126,7 +125,7 @@ public:
         const double *boundary_weight, double *boundary_output, double sign = 1.);
     void correctionDiagMtxMultiTPsi(cudaStream_t stream, int num_cells, const double *psi, const double *thermo_psi, double *diag, double *source);
 
-    void solve(GAMGStruct *GAMGdata, int agglomeration_level);
+    void solve();
     void sync();
 
 // #if defined DEBUG_

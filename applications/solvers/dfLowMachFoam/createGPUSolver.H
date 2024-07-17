@@ -573,15 +573,14 @@ void createGPUEEqn(const IOdictionary& CanteraTorchProperties, volScalarField& h
     EEqn_GPU.initNonConstantFields(h_he, h_boundary_he);
 }
 
-void createGPUpEqn(const IOdictionary& CanteraTorchProperties, volScalarField& p, const volVectorField& U,
-                    GAMGStruct *GAMGdata_, int agglomeration_level) {
+void createGPUpEqn(const IOdictionary& CanteraTorchProperties, volScalarField& p, const volVectorField& U) {
     DEBUG_TRACE;
     // TODO need remove amgx solver setting
     // prepare mode_string and setting_path
     string mode_string = "dDDI";
     string settingPath;
     settingPath = CanteraTorchProperties.subDict("AmgxSettings").lookupOrDefault("pEqnSettingPath", string(""));
-    pEqn_GPU.setConstantValues(mode_string, settingPath, GAMGdata_, agglomeration_level);
+    pEqn_GPU.setConstantValues(mode_string, settingPath);
     
     // prepare patch_type
     std::vector<int> patch_type_p(dfDataBase.num_patches);
@@ -619,16 +618,12 @@ void createGPUpEqn(const IOdictionary& CanteraTorchProperties, volScalarField& p
     pEqn_GPU.createNonConstantFieldsBoundary();
     pEqn_GPU.createNonConstantLduAndCsrFields();
 
-#ifdef iscsr
-    pEqn_GPU.GAMGpEqnldu(GAMGdata_, agglomeration_level, 1);
-#else
-    pEqn_GPU.GAMGpEqnldu(GAMGdata_, agglomeration_level, 2);
-#endif
-
     /* For DeepFlame_Academic */
     const dictionary solverControls = p.mesh().solverDict(
         p.select(p.mesh().data::template lookupOrDefault<bool>("finalIteration", false))); 
+ 
     createGPUSolverInput(p.mesh(), solverControls, patch_type_p, MATRIX_EQUATION::pEqn); 
+
     initialize_matrix(MATRIX_EQUATION::pEqn);
 }
 
@@ -1230,9 +1225,9 @@ void createGPUBaseInput()
 
     mesh_paras.interfaceFlag = dfDataBase.interfaceFlag;
 
-    cudaMalloc((void**)&mesh_paras.d_boundary_face_cell, dfDataBase.boundary_surface_index_bytes);
-    cudaMemcpy( mesh_paras.d_boundary_face_cell,  dfDataBase.d_boundary_face_cell,  
-                dfDataBase.boundary_surface_index_bytes, cudaMemcpyDeviceToDevice); 
+    // cudaMalloc((void**)&mesh_paras.boundary_face_cell, dfDataBase.boundary_surface_index_bytes);
+    // cudaMemcpy( mesh_paras.boundary_face_cell,  dfDataBase.d_boundary_face_cell,  
+    //             dfDataBase.boundary_surface_index_bytes, cudaMemcpyDeviceToDevice); 
     
     set_mesh_info(mesh_paras);
 }

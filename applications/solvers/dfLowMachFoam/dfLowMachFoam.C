@@ -221,42 +221,10 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef GPUSolverNew_
-    //============================================================================
-    // startif use GAMG Solver ... 
-    
-#ifdef iscsr
-    #include "CSRGAMGAgglomeration.H"
-#else
-    #include "ELLGAMGAgglomeration.H"
-#endif
-    // map coeffs for GAMG solver
-    const dictionary solverControls = p.mesh().solverDict
-    (
-        p.select
-        (
-            p.mesh().data::template lookupOrDefault<bool>
-            ("finalIteration", false)
-        )
-    );
-#ifdef iscsr
-    const CSRGAMGAgglomeration& agglomeration(CSRGAMGAgglomeration::New(p.mesh(), solverControls));
-#else
-    const ELLGAMGAgglomeration& agglomeration(ELLGAMGAgglomeration::New(p.mesh(), solverControls));
-#endif
-    std::cout << "=== get agglomeration in createGPUGAMGMaps " << std::endl;
-
-    int agglomeration_level = agglomeration.size();
-    std::cout << "=== agglomeration level: " << agglomeration_level << std::endl;
-
-    GAMGStruct GAMGdata[agglomeration_level]; 
-    createGPUGAMGMaps(GAMGdata, agglomeration);
-    // endif ...
-    //============================================================================
-
     createGPUUEqn(CanteraTorchProperties, U);
     createGPUYEqn(CanteraTorchProperties, Y, inertIndex);
     createGPUEEqn(CanteraTorchProperties, thermo.he(), K);
-    createGPUpEqn(CanteraTorchProperties, p, U, GAMGdata, agglomeration_level);
+    createGPUpEqn(CanteraTorchProperties, p, U);
     createGPURhoEqn(rho, phi);
 
     const volScalarField& mu = thermo.mu();
@@ -505,7 +473,7 @@ int main(int argc, char *argv[])
                     thermo_GPU.psip0();
 
                     UEqn_GPU.getHbyA();
-                    pEqn_GPU.process(GAMGdata, agglomeration_level);
+                    pEqn_GPU.process();
                     UEqn_GPU.sync();
                     #include "pEqn_GPU.H"
                 #else
