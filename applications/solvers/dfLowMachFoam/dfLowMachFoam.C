@@ -216,7 +216,6 @@ int main(int argc, char *argv[])
     if(mpi_init_flag) {
         initNccl();
     }
-    createGPUBase(CanteraTorchProperties, mesh, Y);
 
     /* For DeepFlame_Academic */
     mesh_info_para mesh_paras;    
