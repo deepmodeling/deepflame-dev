@@ -249,13 +249,6 @@ int main(int argc, char *argv[])
     end1 = std::clock();
     time_monitor_init += double(end1 - start1) / double(CLOCKS_PER_SEC);
 
-    std::cout << "*********************************************" << std::endl;
-    std::cout << "NOTICE:" << std::endl;
-    std::cout << "  The above code has been modified to call dfAcademic library; " << std::endl;
-    std::cout << "  it has been confirmed in pEqn solver, preconditioner, and smoother can be correctly set." << std::endl;
-    std::cout << "*********************************************" << std::endl;
-    abort();
-
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     Info<< "\nStarting time loop\n" << endl;
@@ -309,10 +302,19 @@ int main(int argc, char *argv[])
             if (pimple.firstPimpleIter() && !pimple.simpleRho())
             {
                 // #include "rhoEqn.H"
+                #ifdef GPUSolverNew_
+                process_equation(MATRIX_EQUATION::rhoEqn);
+                #endif
             }
             end = std::clock();
             time_monitor_rho += double(end - start) / double(CLOCKS_PER_SEC);
-            
+
+            std::cout << "*************************************************" << std::endl;
+            std::cout << "NOTICE:" << std::endl;
+            std::cout << "  The subsequent code has not been modified yet. " << std::endl;
+            std::cout << "*************************************************" << std::endl;
+            abort();            
+
             start = std::clock();
             // #include "UEqn.H"
             end = std::clock();

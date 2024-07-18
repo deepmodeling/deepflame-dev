@@ -572,7 +572,7 @@ void createGPUYEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     // prepare patch_type
     std::vector<int> patch_type;
     patch_type.resize(mesh_paras.num_patches);
-    fprintf(stderr, "num_species: %d\n", init_data.num_species);
+
     forAll(Y[0].boundaryField(), patchi)
     {
         constructBoundarySelectorPerPatch(&(patch_type[patchi]), Y[0].boundaryField()[patchi].type());
