@@ -10,21 +10,106 @@ ncclComm_t nccl_comm;
 int nRanks, myRank, localRank, mpi_init_flag = 0;
 
 dfMatrixDataBase dfDataBase;
-dfThermo thermo_GPU(dfDataBase);
-dfChemistrySolver chemistrySolver_GPU(dfDataBase);
-dfRhoEqn rhoEqn_GPU(dfDataBase);
-dfUEqn UEqn_GPU(dfDataBase);
-dfYEqn YEqn_GPU(dfDataBase, chemistrySolver_GPU);
-dfEEqn EEqn_GPU(dfDataBase, thermo_GPU);
-dfpEqn pEqn_GPU(dfDataBase);
 
 /* For DeepFlame_Academic */
-void createGPUBaseInput();
-void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, std::vector<int> patch_type, MATRIX_EQUATION EqnID);
+void createGPUSolverInput(mesh_info_para &mesh_paras, const lduMesh& mesh, const dictionary solverControls, std::vector<int> patch_type, MATRIX_EQUATION EqnID);
 void createGPUGAMGInput(const lduMesh& mesh, volScalarField& eqn);
 void createMatrixNoDiag();
 void createGAMGMatrixNoDiag();
 
+
+void permuteVector(double *new_order, const double *old_order, int num) 
+{
+    for (int i = 0; i < num; i++) 
+    {
+        new_order[num * 0 + i] = old_order[i * 3 + 0];
+        new_order[num * 1 + i] = old_order[i * 3 + 1];
+        new_order[num * 2 + i] = old_order[i * 3 + 2];
+    }
+}
+
+void constructBoundarySelectorPerPatch(int *patchTypeSelector, const std::string& patchTypeStr)
+{
+    boundaryConditions patchCondition;
+    std::vector<int> tmpSelector;
+    static std::map<std::string, boundaryConditions> BCMap = {
+        {"zeroGradient", zeroGradient},
+        {"fixedValue", fixedValue},
+        {"empty", empty},
+        {"gradientEnergy", gradientEnergy},
+        {"calculated", calculated},
+        {"coupled", coupled},
+        {"cyclic", cyclic},
+        {"processor", processor},
+        {"extrapolated", extrapolated},
+        {"fixedEnergy", fixedEnergy},
+        {"processorCyclic", processorCyclic}
+    };
+    auto iter = BCMap.find(patchTypeStr);
+    if (iter != BCMap.end()) {
+        patchCondition = iter->second;
+    } else {
+        throw std::runtime_error("Unknown boundary condition: " + patchTypeStr);
+    }
+    // zeroGradient labeled as 0, fixedValue labeled as 1, coupled labeled as 2
+    switch (patchCondition){
+        case zeroGradient:
+        {
+            *patchTypeSelector = 0;
+            break;
+        }
+        case fixedValue:
+        {
+            *patchTypeSelector = 1;
+            break;
+        }
+        case coupled:
+        {
+            *patchTypeSelector = 2;
+            break;
+        }
+        case empty:
+        {
+            *patchTypeSelector = 3;
+            break;
+        }
+        case gradientEnergy:
+        {
+            *patchTypeSelector = 4;
+            break;
+        }
+        case calculated:
+        {
+            *patchTypeSelector = 5;
+            break;
+        }
+        case cyclic:
+        {
+            *patchTypeSelector = 6;
+            break;
+        }
+        case processor:
+        {
+            *patchTypeSelector = 7;
+            break;
+        }
+        case extrapolated:
+        {
+            *patchTypeSelector = 8;
+            break;
+        }
+        case fixedEnergy:
+        {
+            *patchTypeSelector = 9;
+            break;
+        }
+        case processorCyclic:
+        {
+            *patchTypeSelector = 10;
+            break;
+        }
+    }
+}
 
 #if defined(DEBUG_)
 template <typename T>
@@ -254,8 +339,6 @@ void createGPUBase(const IOdictionary& CanteraTorchProperties, fvMesh& mesh, Ptr
     }
     label globalOffset = globalNumbering.toGlobal(0);
     dfDataBase.setConstantIndexes(&owner[0], &neighbour[0], &procRows[0], &procCols[0], globalOffset);
-    /* For DeepFlame_Academic */
-    createMatrixNoDiag();
 
     // prepare internal and boundary of sf, mag_sf, weights, delta_coeffs, volume
     double *boundary_sf = new double[3 * num_boundary_surfaces];
@@ -363,22 +446,19 @@ void createGPUBase(const IOdictionary& CanteraTorchProperties, fvMesh& mesh, Ptr
     delete boundary_delta_coeffs;
     delete boundary_weights;
     delete boundary_face_cell;
-
-    /* For DeepFlame_Academic */
-    createGPUBaseInput(); 
 }
 
-void createGPURhoEqn(const volScalarField& rho, const surfaceScalarField& phi) {
+void createGPURhoEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const volScalarField& rho, const surfaceScalarField& phi) {
     DEBUG_TRACE;
     std::vector<int> patch_type;
-    patch_type.resize(dfDataBase.num_patches);
+    patch_type.resize(mesh_paras.num_patches);
 
-    double *h_rho = dfDataBase.getFieldPointer("rho", location::cpu, position::internal);
-    double *h_phi = dfDataBase.getFieldPointer("phi", location::cpu, position::internal);
-    double *h_boundary_phi = dfDataBase.getFieldPointer("phi", location::cpu, position::boundary);
-    double *h_boundary_rho = dfDataBase.getFieldPointer("rho", location::cpu, position::boundary);
-    memcpy(h_phi, &phi[0], dfDataBase.surface_value_bytes);
-    memcpy(h_rho, &rho[0], dfDataBase.cell_value_bytes);
+    double h_rho[mesh_paras.num_cells];
+    double h_phi[mesh_paras.num_surfaces];
+    double h_boundary_phi[mesh_paras.num_boundary_surfaces];
+    double h_boundary_rho[mesh_paras.num_boundary_surfaces];
+    memcpy(h_phi, &phi[0], mesh_paras.num_surfaces*sizeof(double));
+    memcpy(h_rho, &rho[0], mesh_paras.num_cells*sizeof(double));
 
     int offset = 0;
     forAll(rho.boundaryField(), patchi)
@@ -411,27 +491,33 @@ void createGPURhoEqn(const volScalarField& rho, const surfaceScalarField& phi) {
             offset += patchsize;
         }
     }
-    rhoEqn_GPU.setConstantValues();
-    rhoEqn_GPU.setConstantFields(patch_type);
-    rhoEqn_GPU.initNonConstantFields(h_rho, h_phi, h_boundary_rho, h_boundary_phi);
-    rhoEqn_GPU.createNonConstantLduAndCsrFields();
+
+    init_data.rho = &h_rho[0];
+    init_data.phi = &h_phi[0];
+    init_data.boundary_rho = &h_boundary_rho[0];
+    init_data.boundary_phi = &h_boundary_phi[0];
+
+    /* For DeepFlame_Academic */
+    const dictionary solverControls = rho.mesh().solverDict(
+        rho.select(rho.mesh().data::template lookupOrDefault<bool>("finalIteration", false))); 
+ 
+    createGPUSolverInput(mesh_paras, rho.mesh(), solverControls, patch_type, MATRIX_EQUATION::rhoEqn); 
+
+    initialize_matrix(MATRIX_EQUATION::rhoEqn);
 }
 
-void createGPUUEqn(const IOdictionary& CanteraTorchProperties, const volVectorField& U) {
+void createGPUUEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const IOdictionary& CanteraTorchProperties, const volVectorField& U) {
     // TODO need remove amgx solver setting
     // prepare mode_string and setting_path
     string mode_string = "dDDI";
     string settingPath;
     settingPath = CanteraTorchProperties.subDict("AmgxSettings").lookupOrDefault("UEqnSettingPath", string(""));
-    UEqn_GPU.setConstantValues(mode_string, settingPath);
+    // UEqn_GPU.setConstantValues(mode_string, settingPath);
 
     // prepare patch_type
     std::vector<int> patch_type;
-    patch_type.resize(dfDataBase.num_patches);
-
-    double *h_u = dfDataBase.getFieldPointer("u", location::cpu, position::internal);
-    double *h_boundary_u = dfDataBase.getFieldPointer("u", location::cpu, position::boundary);
-    memcpy(h_u, &U[0][0], dfDataBase.cell_value_vec_bytes);
+    patch_type.resize(mesh_paras.num_patches);
+    double h_boundary_u[mesh_paras.num_boundary_surfaces*3];
     
     int offset = 0;
     forAll(U.boundaryField(), patchi)
@@ -458,54 +544,49 @@ void createGPUUEqn(const IOdictionary& CanteraTorchProperties, const volVectorFi
             offset += patchsize;
         }
     }
-    UEqn_GPU.setConstantFields(patch_type);
 
-    // prepare internal and boundary of xxx
-    UEqn_GPU.createNonConstantFieldsInternal();
-    UEqn_GPU.createNonConstantFieldsBoundary();
-    UEqn_GPU.createNonConstantLduAndCsrFields();
-    // UEqn_GPU has no internal non-constant fields to be init
-    UEqn_GPU.initNonConstantFieldsInternal(h_u, h_boundary_u);
-    UEqn_GPU.initNonConstantFieldsBoundary();
+    double u_newOrder[mesh_paras.num_cells*3];
+    double boundary_u_newOrder[mesh_paras.num_boundary_surfaces*3];
+    permuteVector(u_newOrder, &U[0][0], mesh_paras.num_cells);
+    permuteVector(boundary_u_newOrder, h_boundary_u, mesh_paras.num_boundary_surfaces);
+
+    init_data.u = &u_newOrder[0];
+    init_data.boundary_u = &boundary_u_newOrder[0];
 
     /* For DeepFlame_Academic */
     const dictionary solverControls = U.mesh().solverDict(
         U.select(U.mesh().data::template lookupOrDefault<bool>("finalIteration", false)));
-    createGPUSolverInput(U.mesh(), solverControls, patch_type, MATRIX_EQUATION::UEqn); 
+    createGPUSolverInput(mesh_paras, U.mesh(), solverControls, patch_type, MATRIX_EQUATION::UEqn); 
     initialize_matrix(MATRIX_EQUATION::UEqn);    
 }
 
-void createGPUYEqn(const IOdictionary& CanteraTorchProperties, PtrList<volScalarField>& Y, const int inertIndex) {
+void createGPUYEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const IOdictionary& CanteraTorchProperties, PtrList<volScalarField>& Y, const int inertIndex) {
     DEBUG_TRACE;
     // TODO need remove amgx solver setting
     // prepare mode_string and setting_path
     string mode_string = "dDDI";
     string settingPath;
     settingPath = CanteraTorchProperties.subDict("AmgxSettings").lookupOrDefault("UEqnSettingPath", string(""));
-    YEqn_GPU.setConstantValues(mode_string, settingPath, inertIndex);
+    // YEqn_GPU.setConstantValues(mode_string, settingPath, inertIndex);
 
     // prepare patch_type
     std::vector<int> patch_type;
-    patch_type.resize(dfDataBase.num_patches);
-    fprintf(stderr, "num_species: %d\n", dfDataBase.num_species);
+    patch_type.resize(mesh_paras.num_patches);
+    fprintf(stderr, "num_species: %d\n", init_data.num_species);
     forAll(Y[0].boundaryField(), patchi)
     {
         constructBoundarySelectorPerPatch(&(patch_type[patchi]), Y[0].boundaryField()[patchi].type());
     }
     // set lewis number
-    std::vector<double> lewis_number(dfDataBase.num_species, 1.); // unity lewis
-    YEqn_GPU.setConstantFields(patch_type, lewis_number);
-
-    // prepare internal and boundary of xxx
-    YEqn_GPU.createNonConstantFieldsInternal();
-    YEqn_GPU.createNonConstantFieldsBoundary();
-    YEqn_GPU.createNonConstantLduAndCsrFields();
+    std::vector<double> lewis_number(init_data.num_species, 1.); // unity lewis
+    double h_y[init_data.num_species*mesh_paras.num_cells];
+    double h_boundary_y[init_data.num_species*mesh_paras.num_boundary_surfaces];
 
     // prepare internal and boundary of Y
     int offset = 0;
     forAll(Y, speciesI) {
         volScalarField& Yi = Y[speciesI];
-        memcpy(dfDataBase.h_y + speciesI * dfDataBase.num_cells, &Yi[0], dfDataBase.num_cells * sizeof(double));
+        memcpy(h_y + speciesI * mesh_paras.num_cells, &Yi[0], mesh_paras.num_cells * sizeof(double));
         forAll(Yi.boundaryField(), patchi) {
             const fvPatchScalarField& patchYi = Yi.boundaryField()[patchi];
             int patchsize = patchYi.size();
@@ -513,45 +594,41 @@ void createGPUYEqn(const IOdictionary& CanteraTorchProperties, PtrList<volScalar
                 || patchYi.type() == "processorCyclic") {
                 scalarField patchYiInternal =
                     dynamic_cast<const processorFvPatchField<scalar>&>(patchYi).patchInternalField()();
-                memcpy(dfDataBase.h_boundary_y + offset, &patchYi[0], patchsize * sizeof(double));
-                memcpy(dfDataBase.h_boundary_y + offset + patchsize, &patchYiInternal[0], patchsize * sizeof(double));
+                memcpy(h_boundary_y + offset, &patchYi[0], patchsize * sizeof(double));
+                memcpy(h_boundary_y + offset + patchsize, &patchYiInternal[0], patchsize * sizeof(double));
                 offset += patchsize * 2;
             } else {
-                memcpy(dfDataBase.h_boundary_y + offset, &patchYi[0], patchsize*sizeof(double));
+                memcpy(h_boundary_y + offset, &patchYi[0], patchsize*sizeof(double));
                 offset += patchsize;
             }
         }
     }
-    YEqn_GPU.initNonConstantFieldsInternal(dfDataBase.h_y);
-    YEqn_GPU.initNonConstantFieldsBoundary(dfDataBase.h_boundary_y);
+
+    init_data.y = &h_y[0];
+    init_data.boundary_y = &h_boundary_y[0];
 }
 
-void createGPUEEqn(const IOdictionary& CanteraTorchProperties, volScalarField& he, volScalarField& K) {
+void createGPUEEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const IOdictionary& CanteraTorchProperties, volScalarField& he, volScalarField& K) {
     DEBUG_TRACE;
     // TODO need remove amgx solver setting
     // prepare mode_string and setting_path
     string mode_string = "dDDI";
     string settingPath;
     settingPath = CanteraTorchProperties.subDict("AmgxSettings").lookupOrDefault("UEqnSettingPath", string(""));
-    EEqn_GPU.setConstantValues(mode_string, settingPath);
+    // EEqn_GPU.setConstantValues(mode_string, settingPath);
 
     // prepare patch_type
-    std::vector<int> patch_type_he(dfDataBase.num_patches), patch_type_k(dfDataBase.num_patches);
+    std::vector<int> patch_type_he(mesh_paras.num_patches), patch_type_k(mesh_paras.num_patches);
     forAll(he.boundaryField(), patchi)
     {
         constructBoundarySelectorPerPatch(&(patch_type_he[patchi]), he.boundaryField()[patchi].type());
         constructBoundarySelectorPerPatch(&(patch_type_k[patchi]), K.boundaryField()[patchi].type());
     }
-    EEqn_GPU.setConstantFields(patch_type_he, patch_type_k);
+    // EEqn_GPU.setConstantFields(patch_type_he, patch_type_k);
 
-    // prepare internal and boundary of xxx
-    EEqn_GPU.createNonConstantFieldsInternal();
-    EEqn_GPU.createNonConstantFieldsBoundary();
-    EEqn_GPU.createNonConstantLduAndCsrFields();
-
-    double *h_he = dfDataBase.getFieldPointer("he", location::cpu, position::internal);
-    double *h_boundary_he = dfDataBase.getFieldPointer("he", location::cpu, position::boundary);
-    memcpy(h_he, &he[0], dfDataBase.cell_value_bytes);
+    double h_he[mesh_paras.num_cells];
+    double h_boundary_he[mesh_paras.num_boundary_surfaces];
+    memcpy(h_he, &he[0], mesh_paras.num_cells*sizeof(double));
     int offset = 0;
     forAll(he.boundaryField(), patchi)
     {
@@ -570,25 +647,26 @@ void createGPUEEqn(const IOdictionary& CanteraTorchProperties, volScalarField& h
         }
     }
 
-    EEqn_GPU.initNonConstantFields(h_he, h_boundary_he);
+    init_data.he = &h_he[0];
+    init_data.boundary_he = &h_boundary_he[0];
 }
 
-void createGPUpEqn(const IOdictionary& CanteraTorchProperties, volScalarField& p, const volVectorField& U) {
+void createGPUpEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const IOdictionary& CanteraTorchProperties, volScalarField& p, const volVectorField& U) {
     DEBUG_TRACE;
     // TODO need remove amgx solver setting
     // prepare mode_string and setting_path
     string mode_string = "dDDI";
     string settingPath;
     settingPath = CanteraTorchProperties.subDict("AmgxSettings").lookupOrDefault("pEqnSettingPath", string(""));
-    pEqn_GPU.setConstantValues(mode_string, settingPath);
+    // pEqn_GPU.setConstantValues(mode_string, settingPath);
     
     // prepare patch_type
-    std::vector<int> patch_type_p(dfDataBase.num_patches);
-    std::vector<int> patch_type_U(dfDataBase.num_patches);
+    std::vector<int> patch_type_p(mesh_paras.num_patches);
+    std::vector<int> patch_type_U(mesh_paras.num_patches);
 
-    double *h_p = dfDataBase.getFieldPointer("p", location::cpu, position::internal);
-    double *h_boundary_p = dfDataBase.getFieldPointer("p", location::cpu, position::boundary);
-    memcpy(h_p, &p[0], dfDataBase.cell_value_bytes);
+    double h_p[mesh_paras.num_cells];
+    double h_boundary_p[mesh_paras.num_boundary_surfaces];
+    memcpy(h_p, &p[0], mesh_paras.num_cells*sizeof(double));
 
     int offset = 0;
     forAll(p.boundaryField(), patchi)
@@ -610,24 +688,21 @@ void createGPUpEqn(const IOdictionary& CanteraTorchProperties, volScalarField& p
             offset += patchsize;
         }
     }
-    pEqn_GPU.setConstantFields(patch_type_U, patch_type_p);
-    pEqn_GPU.initNonConstantFields(h_p, h_boundary_p);
+    // pEqn_GPU.setConstantFields(patch_type_U, patch_type_p);
 
-    // prepare internal and boundary of xxx
-    pEqn_GPU.createNonConstantFieldsInternal();
-    pEqn_GPU.createNonConstantFieldsBoundary();
-    pEqn_GPU.createNonConstantLduAndCsrFields();
+    init_data.p = &h_p[0];
+    init_data.boundary_p = &h_boundary_p[0];
 
     /* For DeepFlame_Academic */
     const dictionary solverControls = p.mesh().solverDict(
         p.select(p.mesh().data::template lookupOrDefault<bool>("finalIteration", false))); 
  
-    createGPUSolverInput(p.mesh(), solverControls, patch_type_p, MATRIX_EQUATION::pEqn); 
+    createGPUSolverInput(mesh_paras, p.mesh(), solverControls, patch_type_p, MATRIX_EQUATION::pEqn); 
 
     initialize_matrix(MATRIX_EQUATION::pEqn);
 }
 
-void createGPUThermo(const IOdictionary& CanteraTorchProperties, volScalarField& T, volScalarField& he, 
+void createGPUThermo(mesh_info_para &mesh_paras, init_data_para &init_data, const IOdictionary& CanteraTorchProperties, volScalarField& T, volScalarField& he, 
         const volScalarField& psi, const volScalarField& alpha, const volScalarField& mu,
         const volScalarField& K, const volScalarField& dpdt, dfChemistryModel<basicThermo>* chemistry) {
     DEBUG_TRACE;
@@ -635,23 +710,23 @@ void createGPUThermo(const IOdictionary& CanteraTorchProperties, volScalarField&
     string mechanismFile;
     mechanismFile = CanteraTorchProperties.lookupOrDefault("CanteraMechanismFile", string(""));
 
-    thermo_GPU.setConstantValue(mechanismFile, dfDataBase.num_cells, dfDataBase.num_species);
-    init_const_coeff_ptr(thermo_GPU.nasa_coeffs, thermo_GPU.viscosity_coeffs, thermo_GPU.thermal_conductivity_coeffs, 
-            thermo_GPU.binary_diffusion_coeffs, thermo_GPU.molecular_weights);
+    // thermo_GPU.setConstantValue(mechanismFile, dfDataBase.num_cells, dfDataBase.num_species);
+    // init_const_coeff_ptr(thermo_GPU.nasa_coeffs, thermo_GPU.viscosity_coeffs, thermo_GPU.thermal_conductivity_coeffs, 
+    //         thermo_GPU.binary_diffusion_coeffs, thermo_GPU.molecular_weights);
 
     // thermal variables in dataBase
     // TODO: note that h_he & h_boundary_he are transfered to GPU in EEqn_GPU, too. We should delete one of them.
-    double *h_boundary_T = new double[dfDataBase.num_boundary_surfaces];
-    double *h_boundary_he = new double[dfDataBase.num_boundary_surfaces];
-    double *h_boundary_thermo_psi = new double[dfDataBase.num_boundary_surfaces];
-    double *h_boundary_thermo_alpha = new double[dfDataBase.num_boundary_surfaces];
-    double *h_boundary_mu = new double[dfDataBase.num_boundary_surfaces];
-    double *h_boundary_k = new double[dfDataBase.num_boundary_surfaces];
-    double *h_boundary_thermo_rhoD = new double[dfDataBase.num_boundary_surfaces * dfDataBase.num_species];
-    double *h_thermo_rhoD = new double[dfDataBase.num_cells * dfDataBase.num_species];
+    double *h_boundary_T = new double[mesh_paras.num_boundary_surfaces];
+    double *h_boundary_he = new double[mesh_paras.num_boundary_surfaces];
+    double *h_boundary_thermo_psi = new double[mesh_paras.num_boundary_surfaces];
+    double *h_boundary_thermo_alpha = new double[mesh_paras.num_boundary_surfaces];
+    double *h_boundary_mu = new double[mesh_paras.num_boundary_surfaces];
+    double *h_boundary_k = new double[mesh_paras.num_boundary_surfaces];
+    double *h_boundary_thermo_rhoD = new double[mesh_paras.num_boundary_surfaces * init_data.num_species];
+    double *h_thermo_rhoD = new double[mesh_paras.num_cells * init_data.num_species];
 
     // initialize thermo boundary
-    std::vector<int> patch_type_T(dfDataBase.num_patches);
+    std::vector<int> patch_type_T(mesh_paras.num_patches);
     int offset = 0;
     forAll(T.boundaryField(), patchi)
     {
@@ -696,12 +771,12 @@ void createGPUThermo(const IOdictionary& CanteraTorchProperties, volScalarField&
                     dynamic_cast<const processorFvPatchField<scalar>&>(patchK).patchInternalField()();
             memcpy(h_boundary_k + offset + patchsize, &patchKInternal[0], patchsize * sizeof(double));
 
-            for (int i = 0; i < dfDataBase.num_species; i++) {
+            for (int i = 0; i < init_data.num_species; i++) {
                 const fvPatchScalarField& patchRhoD = chemistry->rhoD(i).boundaryField()[patchi];
-                memcpy(h_boundary_thermo_rhoD + i * dfDataBase.num_boundary_surfaces + offset, &patchRhoD[0], patchsize * sizeof(double));
+                memcpy(h_boundary_thermo_rhoD + i * mesh_paras.num_boundary_surfaces + offset, &patchRhoD[0], patchsize * sizeof(double));
                 scalarField patchRhoDInternal = 
                         dynamic_cast<const processorFvPatchField<scalar>&>(patchRhoD).patchInternalField()();
-                memcpy(h_boundary_thermo_rhoD + i * dfDataBase.num_boundary_surfaces + offset + patchsize, &patchRhoDInternal[0], patchsize * sizeof(double));
+                memcpy(h_boundary_thermo_rhoD + i * mesh_paras.num_boundary_surfaces + offset + patchsize, &patchRhoDInternal[0], patchsize * sizeof(double));
             }
 
             offset += patchsize * 2;
@@ -713,22 +788,35 @@ void createGPUThermo(const IOdictionary& CanteraTorchProperties, volScalarField&
             memcpy(h_boundary_mu + offset, &patchMu[0], patchsize * sizeof(double));
             memcpy(h_boundary_k + offset, &patchK[0], patchsize * sizeof(double));
 
-            for (int i = 0; i < dfDataBase.num_species; i++) {
+            for (int i = 0; i < init_data.num_species; i++) {
                 const fvPatchScalarField& patchRhoD = chemistry->rhoD(i).boundaryField()[patchi];
-                memcpy(h_boundary_thermo_rhoD + i * dfDataBase.num_boundary_surfaces + offset, &patchRhoD[0], patchsize * sizeof(double));
+                memcpy(h_boundary_thermo_rhoD + i * mesh_paras.num_boundary_surfaces + offset, &patchRhoD[0], patchsize * sizeof(double));
             }
             offset += patchsize;
         }
     }
-    for (int i = 0; i < dfDataBase.num_species; i++) {
-        memcpy(h_thermo_rhoD + i * dfDataBase.num_cells, &chemistry->rhoD(i)[0], dfDataBase.num_cells * sizeof(double));
+    for (int i = 0; i < init_data.num_species; i++) {
+        memcpy(h_thermo_rhoD + i * mesh_paras.num_cells, &chemistry->rhoD(i)[0], mesh_paras.num_cells * sizeof(double));
     }
-    double *h_T = dfDataBase.getFieldPointer("T", location::cpu, position::internal);
-    memcpy(h_T, &T[0], dfDataBase.cell_value_bytes);
+    double h_T[mesh_paras.num_cells];
+    memcpy(h_T, &T[0], mesh_paras.num_cells*sizeof(double));
 
-    thermo_GPU.setConstantFields(patch_type_T);
-    thermo_GPU.initNonConstantFields(h_T, &he[0], &psi[0], &alpha[0], &mu[0], &K[0], &dpdt[0], h_thermo_rhoD,
-            h_boundary_T, h_boundary_he, h_boundary_thermo_psi, h_boundary_thermo_alpha, h_boundary_mu, h_boundary_k, h_boundary_thermo_rhoD);
+    // thermo_GPU.setConstantFields(patch_type_T);
+
+    init_data.T = &h_T[0];
+    init_data.thermo_psi = &psi[0];
+    init_data.thermo_alpha = &alpha[0];
+    init_data.mu = &mu[0];
+    init_data.k = &K[0];
+    init_data.dpdt = &dpdt[0];
+    init_data.thermo_rhoD = &h_thermo_rhoD[0];
+
+    init_data.boundary_T = &h_boundary_T[0];
+    init_data.boundary_thermo_psi = &h_boundary_thermo_psi[0];
+    init_data.boundary_thermo_alpha = &h_boundary_thermo_alpha[0];
+    init_data.boundary_mu = &h_boundary_mu[0];
+    init_data.boundary_k = &h_boundary_k[0];
+    init_data.boundary_thermo_rhoD = &h_boundary_thermo_rhoD[0];
 
     delete h_boundary_T;
     delete h_boundary_he;
@@ -738,231 +826,6 @@ void createGPUThermo(const IOdictionary& CanteraTorchProperties, volScalarField&
     delete h_boundary_k;
     delete h_boundary_thermo_rhoD;
     delete h_thermo_rhoD;
-}
-
-void createGPUGAMGMaps(GAMGStruct *GAMGdata, const CSRGAMGAgglomeration& agglomeration) {
-    DEBUG_TRACE;
-
-    std::cout << "====== start in createGPUGAMGMaps (CSR) ======" << std::endl;
-
-    int agglomeration_level = agglomeration.size();
-
-    dfDataBase.h_ldu_to_csr_no_diag = (int**)malloc(sizeof(int*)*agglomeration_level);
-    dfDataBase.h_csr_row_index_no_diag = (int**)malloc(sizeof(int*)*agglomeration_level);
-    dfDataBase.h_csr_col_index_no_diag = (int**)malloc(sizeof(int*)*agglomeration_level);
-
-    forAll(agglomeration, leveli)
-    {
-        std::vector<int> upperAddrVector( agglomeration.meshLevel(leveli).lduAddr().upperAddr().begin(), 
-                                          agglomeration.meshLevel(leveli).lduAddr().upperAddr().end());
-        std::vector<int> lowerAddrVector( agglomeration.meshLevel(leveli).lduAddr().lowerAddr().begin(), 
-                                          agglomeration.meshLevel(leveli).lduAddr().lowerAddr().end());
-
-        std::vector<int> restrictMapVector( agglomeration.restrictAddressing(leveli).begin(), 
-                                            agglomeration.restrictAddressing(leveli).end());
-        std::vector<int> faceRestrictMapVector( agglomeration.faceRestrictAddressing(leveli).begin(), 
-                                                agglomeration.faceRestrictAddressing(leveli).end());
-        std::vector<bool> faceFlipMapVector( agglomeration.faceFlipMap(leveli).begin(), 
-                                             agglomeration.faceFlipMap(leveli).end());
-
-        GAMGdata[leveli].curLevel = leveli;
-        GAMGdata[leveli].nCell = restrictMapVector.size();
-        GAMGdata[leveli].nFace = faceRestrictMapVector.size();
-
-        GAMGdata[leveli].upperAddr = upperAddrVector;
-        GAMGdata[leveli].lowerAddr = lowerAddrVector;
-
-        GAMGdata[leveli].restrictMap = restrictMapVector;
-        GAMGdata[leveli].faceRestrictMap = faceRestrictMapVector;
-
-        // TODO: bool2int needtest: all false in this case
-        std::transform(faceFlipMapVector.begin(), faceFlipMapVector.end(), 
-                        std::back_inserter(GAMGdata[leveli].faceFlipMap), [](bool b) { return static_cast<int>(b); });
-
-        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_restrictMap, GAMGdata[leveli].restrictMap.size() * sizeof(int)));
-        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_faceRestrictMap, GAMGdata[leveli].faceRestrictMap.size() * sizeof(int)));
-        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_faceFlipMap, GAMGdata[leveli].faceFlipMap.size() * sizeof(int)));
-
-        checkCudaErrors(cudaMemcpyAsync( GAMGdata[leveli].d_restrictMap, GAMGdata[leveli].restrictMap.data(), 
-                                         GAMGdata[leveli].restrictMap.size() * sizeof(int), cudaMemcpyHostToDevice));
-        checkCudaErrors(cudaMemcpyAsync( GAMGdata[leveli].d_faceRestrictMap, GAMGdata[leveli].faceRestrictMap.data(), 
-                                         GAMGdata[leveli].faceRestrictMap.size() * sizeof(int), cudaMemcpyHostToDevice));
-        checkCudaErrors(cudaMemcpyAsync( GAMGdata[leveli].d_faceFlipMap, GAMGdata[leveli].faceFlipMap.data(), 
-                                         GAMGdata[leveli].faceFlipMap.size() * sizeof(int), cudaMemcpyHostToDevice));
-
-        // ldu2csr index
-        dfDataBase.setConstantIndexes_GAMG
-                (GAMGdata[leveli].nCell, GAMGdata[leveli].nFace, &GAMGdata[leveli].lowerAddr[0], 
-                &GAMGdata[leveli].upperAddr[0], leveli, 1);
-        /* For DeepFlame_Academic */
-        createGAMGMatrixNoDiag();
-
-    
-        std::cout << "  == level: " << leveli << ", cell: " << GAMGdata[leveli].restrictMap.size()
-                                              << ", face: " << GAMGdata[leveli].faceRestrictMap.size() << std::endl;
-
-#ifdef PARALLEL_
-
-        int patchSize = agglomeration.nPatchFaces(0).size();
-
-        if(leveli == 0)
-        {
-            std::vector<int> nPatchFacesVector( agglomeration.nPatchFaces(leveli).begin(), 
-                                                agglomeration.nPatchFaces(leveli).end());
-            GAMGdata[leveli].nPatchFaces = nPatchFacesVector;
-        }
-        else
-        {
-            std::vector<int> nPatchFacesVector( agglomeration.nPatchFaces(leveli-1).begin(), 
-                                                agglomeration.nPatchFaces(leveli-1).end());
-            GAMGdata[leveli].nPatchFaces = nPatchFacesVector;
-        }
-
-        GAMGdata[leveli].d_faceCells = new int*[patchSize]();
-        GAMGdata[leveli].d_patchFaceRestrictMap = new int*[patchSize]();
-        GAMGdata[leveli].d_interfaceBouCoeffs = new double*[patchSize]();
-        GAMGdata[leveli].d_interfaceIntCoeffs = new double*[patchSize]();
-
-        for(int patchi=0; patchi < patchSize; patchi++)
-        {
-            if (GAMGdata[leveli].nPatchFaces[patchi] > 0)
-            {
-                std::vector<int> faceCellsVector (  agglomeration.interfaceLevel(leveli)[patchi].faceCells().begin(),
-                                                    agglomeration.interfaceLevel(leveli)[patchi].faceCells().end());
-                std::vector<int> patchFaceRestrictMapVector(agglomeration.patchFaceRestrictAddressing(leveli)[patchi].begin(), 
-                                                            agglomeration.patchFaceRestrictAddressing(leveli)[patchi].end());
-                if (leveli == 0)
-                {
-                    GAMGdata[leveli].nPatchFaces[patchi] = patchFaceRestrictMapVector.size();
-                }
-
-                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_faceCells[patchi], faceCellsVector.size()*sizeof(int)));
-                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_patchFaceRestrictMap[patchi], patchFaceRestrictMapVector.size()*sizeof(int)));
-                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_interfaceBouCoeffs[patchi], patchFaceRestrictMapVector.size()*sizeof(double)));
-                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_interfaceIntCoeffs[patchi], patchFaceRestrictMapVector.size()*sizeof(double)));
-
-                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_faceCells[patchi], faceCellsVector.data(), 
-                                                faceCellsVector.size()*sizeof(int), cudaMemcpyHostToDevice));
-                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_patchFaceRestrictMap[patchi], patchFaceRestrictMapVector.data(), 
-                                                patchFaceRestrictMapVector.size()*sizeof(int), cudaMemcpyHostToDevice));
-                
-            }
-        }
-#endif
-    }
-    std::cout << "======= end in createGPUGAMGMaps =======" << std::endl;
-    
-}
-
-void createGPUGAMGMaps(GAMGStruct *GAMGdata, const ELLGAMGAgglomeration& agglomeration) {
-    DEBUG_TRACE;
-
-    std::cout << "====== start in createGPUGAMGMaps (ELL) ======" << std::endl;
-
-    int agglomeration_level = agglomeration.size();
-
-    dfDataBase.h_ell_row_maxcount = (int*)malloc(sizeof(int)*agglomeration_level);
-    dfDataBase.h_ellCols = (int**)malloc(sizeof(int*)*agglomeration_level);
-    dfDataBase.h_ldu2ellIndex = (int**)malloc(sizeof(int*)*agglomeration_level);
-
-    forAll(agglomeration, leveli)
-    {
-        std::vector<int> upperAddrVector( agglomeration.meshLevel(leveli).lduAddr().upperAddr().begin(), 
-                                          agglomeration.meshLevel(leveli).lduAddr().upperAddr().end());
-        std::vector<int> lowerAddrVector( agglomeration.meshLevel(leveli).lduAddr().lowerAddr().begin(), 
-                                          agglomeration.meshLevel(leveli).lduAddr().lowerAddr().end());
-
-        std::vector<int> restrictMapVector( agglomeration.restrictAddressing(leveli).begin(), 
-                                            agglomeration.restrictAddressing(leveli).end());
-        std::vector<int> faceRestrictMapVector( agglomeration.faceRestrictAddressing(leveli).begin(), 
-                                                agglomeration.faceRestrictAddressing(leveli).end());
-        std::vector<bool> faceFlipMapVector( agglomeration.faceFlipMap(leveli).begin(), 
-                                             agglomeration.faceFlipMap(leveli).end());
-
-        GAMGdata[leveli].curLevel = leveli;
-        GAMGdata[leveli].nCell = restrictMapVector.size();
-        GAMGdata[leveli].nFace = faceRestrictMapVector.size();
-
-        GAMGdata[leveli].upperAddr = upperAddrVector;
-        GAMGdata[leveli].lowerAddr = lowerAddrVector;
-
-        GAMGdata[leveli].restrictMap = restrictMapVector;
-        GAMGdata[leveli].faceRestrictMap = faceRestrictMapVector;
-
-        // TODO: bool2int needtest: all false in this case
-        std::transform(faceFlipMapVector.begin(), faceFlipMapVector.end(), 
-                        std::back_inserter(GAMGdata[leveli].faceFlipMap), [](bool b) { return static_cast<int>(b); });
-
-        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_restrictMap, GAMGdata[leveli].restrictMap.size() * sizeof(int)));
-        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_faceRestrictMap, GAMGdata[leveli].faceRestrictMap.size() * sizeof(int)));
-        checkCudaErrors(cudaMalloc(&GAMGdata[leveli].d_faceFlipMap, GAMGdata[leveli].faceFlipMap.size() * sizeof(int)));
-
-        checkCudaErrors(cudaMemcpyAsync( GAMGdata[leveli].d_restrictMap, GAMGdata[leveli].restrictMap.data(), 
-                                         GAMGdata[leveli].restrictMap.size() * sizeof(int), cudaMemcpyHostToDevice));
-        checkCudaErrors(cudaMemcpyAsync( GAMGdata[leveli].d_faceRestrictMap, GAMGdata[leveli].faceRestrictMap.data(), 
-                                         GAMGdata[leveli].faceRestrictMap.size() * sizeof(int), cudaMemcpyHostToDevice));
-        checkCudaErrors(cudaMemcpyAsync( GAMGdata[leveli].d_faceFlipMap, GAMGdata[leveli].faceFlipMap.data(), 
-                                         GAMGdata[leveli].faceFlipMap.size() * sizeof(int), cudaMemcpyHostToDevice));
-    
-        // ldu2ell index
-        dfDataBase.setConstantIndexes_GAMG
-                (GAMGdata[leveli].nCell, GAMGdata[leveli].nFace, &GAMGdata[leveli].lowerAddr[0], 
-                &GAMGdata[leveli].upperAddr[0], leveli, 2);
-    
-        std::cout << "  == level: " << leveli << ", cell: " << GAMGdata[leveli].restrictMap.size()
-                                              << ", face: " << GAMGdata[leveli].faceRestrictMap.size() << std::endl;
-
-#ifdef PARALLEL_
-
-        int patchSize = agglomeration.nPatchFaces(0).size();
-
-        if(leveli == 0)
-        {
-            std::vector<int> nPatchFacesVector( agglomeration.nPatchFaces(leveli).begin(), 
-                                                agglomeration.nPatchFaces(leveli).end());
-            GAMGdata[leveli].nPatchFaces = nPatchFacesVector;
-        }
-        else
-        {
-            std::vector<int> nPatchFacesVector( agglomeration.nPatchFaces(leveli-1).begin(), 
-                                                agglomeration.nPatchFaces(leveli-1).end());
-            GAMGdata[leveli].nPatchFaces = nPatchFacesVector;
-        }
-
-        GAMGdata[leveli].d_faceCells = new int*[patchSize]();
-        GAMGdata[leveli].d_patchFaceRestrictMap = new int*[patchSize]();
-        GAMGdata[leveli].d_interfaceBouCoeffs = new double*[patchSize]();
-        GAMGdata[leveli].d_interfaceIntCoeffs = new double*[patchSize]();
-
-        for(int patchi=0; patchi < patchSize; patchi++)
-        {
-            if (GAMGdata[leveli].nPatchFaces[patchi] > 0)
-            {
-                std::vector<int> faceCellsVector (  agglomeration.interfaceLevel(leveli)[patchi].faceCells().begin(),
-                                                    agglomeration.interfaceLevel(leveli)[patchi].faceCells().end());
-                std::vector<int> patchFaceRestrictMapVector(agglomeration.patchFaceRestrictAddressing(leveli)[patchi].begin(), 
-                                                            agglomeration.patchFaceRestrictAddressing(leveli)[patchi].end());
-                if (leveli == 0)
-                {
-                    GAMGdata[leveli].nPatchFaces[patchi] = patchFaceRestrictMapVector.size();
-                }
-
-                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_faceCells[patchi], faceCellsVector.size()*sizeof(int)));
-                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_patchFaceRestrictMap[patchi], patchFaceRestrictMapVector.size()*sizeof(int)));
-                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_interfaceBouCoeffs[patchi], patchFaceRestrictMapVector.size()*sizeof(double)));
-                checkCudaErrors(cudaMalloc((void**)&GAMGdata[leveli].d_interfaceIntCoeffs[patchi], patchFaceRestrictMapVector.size()*sizeof(double)));
-
-                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_faceCells[patchi], faceCellsVector.data(), 
-                                                faceCellsVector.size()*sizeof(int), cudaMemcpyHostToDevice));
-                checkCudaErrors(cudaMemcpyAsync(GAMGdata[leveli].d_patchFaceRestrictMap[patchi], patchFaceRestrictMapVector.data(), 
-                                                patchFaceRestrictMapVector.size()*sizeof(int), cudaMemcpyHostToDevice));
-                
-            }
-        }
-#endif
-    }
-    std::cout << "======= end in createGPUGAMGMaps =======" << std::endl;
-    
 }
 
 /*=========================================================================*/
@@ -1119,10 +982,10 @@ void createGPUGAMGInput(const lduMesh& mesh, const dictionary solverControls)
 
 }
 
-void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, std::vector<int> patch_type, MATRIX_EQUATION EqnID)
+void createGPUSolverInput(mesh_info_para &mesh_paras, const lduMesh& mesh, const dictionary solverControls, std::vector<int> patch_type, MATRIX_EQUATION EqnID)
 {
-    std::cout << "========================================================" << std::endl;
-    std::cout << "   Set linear solver variables for DeepFlame_Academic   " << std::endl;    
+    std::cout << "==========================================================" << std::endl;
+    std::cout << "   Set linear solver variables for DeepFlame_Academic: " << EqnID << std::endl;    
     
     matrix_solver_para solver_configs;
 
@@ -1144,7 +1007,7 @@ void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, 
     if (tolerance > 0) solver_configs.tolerance = tolerance;
     if (relTol    > 0) solver_configs.reltol    = relTol;
 
-    solver_configs.patch_type = (int*)malloc(sizeof(int)*dfDataBase.num_patches);
+    solver_configs.patch_type = (int*)malloc(sizeof(int)*mesh_paras.num_patches);
     std::copy( patch_type.begin(), patch_type.end(), solver_configs.patch_type );   
 
     // Set solver
@@ -1153,18 +1016,21 @@ void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, 
 
     // read control files
     word preconditioner, smoother;
-    const entry& eP = solverControls.lookupEntry("preconditioner", false, false);
-    if (eP.isDict())
+    if (solver != "diagonal")
     {
-        eP.dict().lookup("preconditioner") >> preconditioner;
-        eP.dict().lookup("smoother") >> smoother;
+        const entry& eP = solverControls.lookupEntry("preconditioner", false, false);
+        if (eP.isDict())
+        {
+            eP.dict().lookup("preconditioner") >> preconditioner;
+            eP.dict().lookup("smoother") >> smoother;
+        }
+        else
+        {
+            eP.stream() >> preconditioner;
+        }
+        std::cout << "=== Solver config preconditioner: " << preconditioner << std::endl;
+        std::cout << "=== Solver config smoother: " << smoother << std::endl;
     }
-    else
-    {
-        eP.stream() >> preconditioner;
-    }
-    std::cout << "=== Solver config preconditioner: " << preconditioner << std::endl;
-    std::cout << "=== Solver config smoother: " << smoother << std::endl;
 
     // SET MATRIX_SOLVER
     int matrix_solver = -1;
@@ -1201,39 +1067,242 @@ void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, 
 
 }
 
-void createGPUBaseInput()
+void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data, 
+                        const IOdictionary& CanteraTorchProperties, fvMesh& mesh, PtrList<volScalarField>& Y)
 {
-    std::cout << "========================================================" << std::endl;
+    std::cout << "==========================================================" << std::endl;
     std::cout << "   Set mesh info variables for DeepFlame_Academic   " << std::endl;   
 
-    mesh_info_para mesh_paras;    
+    // prepare constant values: num_cells, num_surfaces, num_boundary_surfaces,
+    // num_patches, patch_size, num_species, rdelta_t
+    const labelUList& owner = mesh.owner();
+    const labelUList& neighbour = mesh.neighbour();
+    int num_cells = mesh.nCells();
+    int num_total_cells = Foam::returnReduce(num_cells, sumOp<label>());
+    int num_surfaces = neighbour.size();
+    int num_boundary_surfaces = 0;
+    int num_patches = 0;
+    std::vector<int> patch_size, patch_offset;
+    forAll(mesh.boundary(), patchi) 
+    {
+        patch_offset.push_back(num_boundary_surfaces);
 
-    mesh_paras.num_cells             = dfDataBase.num_cells;
-    mesh_paras.num_total_cells       = dfDataBase.num_total_cells;
-    mesh_paras.num_patches           = dfDataBase.num_patches;
-    mesh_paras.num_surfaces          = dfDataBase.num_surfaces;
-    mesh_paras.num_boundary_surfaces = dfDataBase.num_boundary_surfaces;
+        const fvPatchScalarField& patchY = Y[0].boundaryField()[patchi];
+        int patchsize = patchY.size();
+        patch_size.push_back(patchsize);
+        if (patchY.type() == "processor"
+            || patchY.type() == "processorCyclic") {
+            num_boundary_surfaces += patchsize * 2; // patchNeighbourfield and patchInternalfield
+        } else {
+            num_boundary_surfaces += patchsize;
+        }
+        num_patches++;
+    }
+    // prepare interface info
+    const globalIndex globalNumbering(num_cells);
+    const lduInterfacePtrsList interfaces(mesh.interfaces());
+    const lduAddressing& lduAddr = mesh.lduAddr();
+    labelList globalCells(num_cells);
+    forAll(globalCells, celli)
+    {
+        globalCells[celli] = globalNumbering.toGlobal(Pstream::myProcNo(), celli);
+    }
+    const label nReq = Pstream::nRequests();
+    label nProcValues = 0;
+    // send global cells
+    forAll(interfaces, patchi)
+    {
+        if (interfaces.set(patchi))
+        {
+            nProcValues += lduAddr.patchAddr(patchi).size();
 
-    mesh_paras.neighbProcNo  = (int*)malloc(sizeof(int)*mesh_paras.num_patches);
-    mesh_paras.patch_size    = (int*)malloc(sizeof(int)*mesh_paras.num_patches);
-    mesh_paras.interfaceFlag = (int*)malloc(sizeof(int)*mesh_paras.num_boundary_surfaces);
+            // send patchInternalField
+            interfaces[patchi].initInternalFieldTransfer
+            (
+                Pstream::commsTypes::nonBlocking,
+                globalCells
+            );
+        }
+    }
+    // TODO: get deltaT fomr time API
+    double rDeltaT = 1 / 1e-6;
 
-    std::copy(  dfDataBase.neighbProcNo.begin(), dfDataBase.neighbProcNo.end(), 
-                mesh_paras.neighbProcNo );
-    std::copy(  dfDataBase.patch_size.begin(), dfDataBase.patch_size.end(), 
-                mesh_paras.patch_size );
+    // wyr: now there is no other place to prepare nccl info, thus mpi must be initialized at beginning.
+    std::vector<int> GPUNeighbProcNo(num_patches, -1);
+    std::vector<int> patch_type(num_patches, -1), interfaceFlag(num_patches, -1);
+    // get basic communication info from of
+    forAll(Y[0].boundaryField(), patchi) {
+        if (Y[0].boundaryField()[patchi].type() == "processor"
+            || Y[0].boundaryField()[patchi].type() == "processorCyclic") {
+            GPUNeighbProcNo[patchi] = dynamic_cast<const processorFvPatchField<scalar>&>(Y[0].boundaryField()[patchi]).neighbProcNo();
+        }
+    }
 
-    mesh_paras.interfaceFlag = dfDataBase.interfaceFlag;
+    // get cyclic neighbor when has cyclic patch
+    // - get boundary Index
+    std::map<std::string, int> patchNameToIndex;
+    forAll(Y[0].boundaryField(), patchi) {
+        patchNameToIndex[Y[0].boundaryField()[patchi].patch().name()] = patchi;
+    }
+    // - get cyclic neighbor
+    std::vector<int> cyclicNeighbor(num_patches, -1);
+    forAll(Y[0].boundaryField(), patchi) {
+        if (Y[0].boundaryField()[patchi].type() == "cyclic") {
+            cyclicNeighbor[patchi] = patchNameToIndex[dynamic_cast<const cyclicFvPatchField<scalar>&>(Y[0].boundaryField()[patchi]).
+                    cyclicPatch().cyclicPatch().neighbPatch().name()];
+        }
+    }
 
-    // cudaMalloc((void**)&mesh_paras.boundary_face_cell, dfDataBase.boundary_surface_index_bytes);
-    // cudaMemcpy( mesh_paras.boundary_face_cell,  dfDataBase.d_boundary_face_cell,  
-    //             dfDataBase.boundary_surface_index_bytes, cudaMemcpyDeviceToDevice); 
+    /* For DeepFlame_Academic */
+    createMatrixNoDiag();
+
+    // prepare internal and boundary of sf, mag_sf, weights, delta_coeffs, volume
+    double *boundary_sf = new double[3 * num_boundary_surfaces];
+    double *boundary_mag_sf = new double[num_boundary_surfaces];
+    double *boundary_delta_coeffs = new double[num_boundary_surfaces];
+    double *boundary_weights = new double[num_boundary_surfaces];
+    int *boundary_face_cell = new int[num_boundary_surfaces];
+    std::vector<int> patch_type_calculated(num_patches, 5); // default patch type is calculated
+    std::vector<int> patch_type_extropolated(num_patches, 8); // default patch type is extrapolated
+
+    int offset = 0;
+    forAll(mesh.boundary(), patchi) {
+        const fvPatchScalarField& patchY = Y[0].boundaryField()[patchi];
+        const vectorField& pSf = mesh.Sf().boundaryField()[patchi];
+        const scalarField& pMagSf = mesh.magSf().boundaryField()[patchi];
+        const scalarField& pDeltaCoeffs = mesh.deltaCoeffs().boundaryField()[patchi];
+        const scalarField& pWeights = mesh.surfaceInterpolation::weights().boundaryField()[patchi];
+        const labelUList& pFaceCells = mesh.boundary()[patchi].faceCells();
+
+        int patchsize = pMagSf.size();
+
+        if (patchY.type() == "processor") {
+            patch_type[patchi] = 7;
+            interfaceFlag[patchi] = 1;
+            patch_type_calculated[patchi] = 7; // patchi type is processor
+            patch_type_extropolated[patchi] = 7; // patchi type is processor
+
+            memcpy(boundary_sf + 3*offset, &pSf[0][0], 3*patchsize*sizeof(double));
+            memcpy(boundary_sf + 3*offset + 3*patchsize, &pSf[0][0], 3*patchsize*sizeof(double));
+
+            memcpy(boundary_mag_sf + offset, &pMagSf[0], patchsize*sizeof(double));
+            memcpy(boundary_mag_sf + offset + patchsize, &pMagSf[0], patchsize*sizeof(double));
+
+            memcpy(boundary_delta_coeffs + offset, &pDeltaCoeffs[0], patchsize*sizeof(double));
+            memcpy(boundary_delta_coeffs + offset + patchsize, &pDeltaCoeffs[0], patchsize*sizeof(double));
+
+            memcpy(boundary_weights + offset, &pWeights[0], patchsize*sizeof(double));
+            memcpy(boundary_weights + offset + patchsize, &pWeights[0], patchsize*sizeof(double));
+
+            memcpy(boundary_face_cell + offset, &pFaceCells[0], patchsize * sizeof(int));
+            memcpy(boundary_face_cell + offset + patchsize, &pFaceCells[0], patchsize * sizeof(int));
+
+            offset += patchsize * 2;
+        } else if (patchY.type() == "processorCyclic") {
+            patch_type[patchi] = 10;
+            interfaceFlag[patchi] = 1;
+            patch_type_calculated[patchi] = 10; // patchi type is processorCyclic
+            patch_type_extropolated[patchi] = 10; // patchi type is processorCyclic
+
+            memcpy(boundary_sf + 3*offset, &pSf[0][0], 3*patchsize*sizeof(double));
+            memcpy(boundary_sf + 3*offset + 3*patchsize, &pSf[0][0], 3*patchsize*sizeof(double));
+
+            memcpy(boundary_mag_sf + offset, &pMagSf[0], patchsize*sizeof(double));
+            memcpy(boundary_mag_sf + offset + patchsize, &pMagSf[0], patchsize*sizeof(double));
+
+            memcpy(boundary_delta_coeffs + offset, &pDeltaCoeffs[0], patchsize*sizeof(double));
+            memcpy(boundary_delta_coeffs + offset + patchsize, &pDeltaCoeffs[0], patchsize*sizeof(double));
+
+            memcpy(boundary_weights + offset, &pWeights[0], patchsize*sizeof(double));
+            memcpy(boundary_weights + offset + patchsize, &pWeights[0], patchsize*sizeof(double));
+
+            memcpy(boundary_face_cell + offset, &pFaceCells[0], patchsize * sizeof(int));
+            memcpy(boundary_face_cell + offset + patchsize, &pFaceCells[0], patchsize * sizeof(int));
+
+            offset += patchsize * 2;
+        } else if (patchY.type() == "cyclic") {
+            patch_type[patchi] = 6;
+            patch_type_calculated[patchi] = 6; // patchi type is cyclic
+            patch_type_extropolated[patchi] = 6; // patchi type is cyclic
+
+            memcpy(boundary_sf + 3*offset, &pSf[0][0], 3*patchsize*sizeof(double));
+            memcpy(boundary_mag_sf + offset, &pMagSf[0], patchsize*sizeof(double));
+            memcpy(boundary_delta_coeffs + offset, &pDeltaCoeffs[0], patchsize*sizeof(double));
+            memcpy(boundary_weights + offset, &pWeights[0], patchsize*sizeof(double));
+            memcpy(boundary_face_cell + offset, &pFaceCells[0], patchsize * sizeof(int));
+
+            offset += patchsize;
+        } else {
+            memcpy(boundary_sf + 3*offset, &pSf[0][0], 3*patchsize*sizeof(double));
+            memcpy(boundary_mag_sf + offset, &pMagSf[0], patchsize*sizeof(double));
+            memcpy(boundary_delta_coeffs + offset, &pDeltaCoeffs[0], patchsize*sizeof(double));
+            memcpy(boundary_weights + offset, &pWeights[0], patchsize*sizeof(double));
+            memcpy(boundary_face_cell + offset, &pFaceCells[0], patchsize * sizeof(int));
+
+            offset += patchsize;
+        }
+    }
+
+    // construct mesh distance for limitedLinear scheme
+    vectorField meshDistance = mesh.Sf();
+    forAll(meshDistance, facei) {
+        label own = owner[facei];
+        label nei = neighbour[facei];
+        meshDistance[facei] = mesh.C()[nei] - mesh.C()[own];
+    }
+
+    double meshDistance_newOrder[num_surfaces*3];
+    double sf_newOrder[num_surfaces*3];
+    permuteVector(meshDistance_newOrder, &meshDistance[0][0], num_surfaces);
+    permuteVector(sf_newOrder, &mesh.Sf()[0][0], num_surfaces);
+
+    // SET CONSTANT VALUES
+    mesh_paras.num_cells             = num_cells;
+    mesh_paras.num_total_cells       = num_total_cells;
+    mesh_paras.num_patches           = num_patches;
+    mesh_paras.num_surfaces          = num_surfaces;
+    mesh_paras.num_boundary_surfaces = num_boundary_surfaces;
+
+    init_data.rDeltaT                = rDeltaT;
+    init_data.num_species            = Y.size();
     
-    set_mesh_info(mesh_paras);
+    mesh_paras.patch_size     = new int[num_patches]();
+    mesh_paras.patch_offset   = new int[num_patches]();
+    mesh_paras.neighbProcNo   = new int[num_patches]();
+    mesh_paras.cyclicNeighbor = new int[num_patches]();
+    mesh_paras.interfaceFlag  = new int[num_patches]();
+
+    std::copy( patch_size.begin(),      patch_size.end(),      mesh_paras.patch_size );
+    std::copy( patch_offset.begin(),    patch_offset.end(),    mesh_paras.patch_offset );
+    std::copy( GPUNeighbProcNo.begin(), GPUNeighbProcNo.end(), mesh_paras.neighbProcNo );
+    std::copy( cyclicNeighbor.begin(),  cyclicNeighbor.end(),  mesh_paras.cyclicNeighbor );   
+    std::copy( interfaceFlag.begin(),   interfaceFlag.end(),   mesh_paras.interfaceFlag ); 
+
+    mesh_paras.lowerAddr             = &owner[0];
+    mesh_paras.upperAddr             = &neighbour[0];   
+
+    mesh_paras.mesh_dis              = &meshDistance_newOrder[0];
+    mesh_paras.sf                    = &sf_newOrder[0];
+    mesh_paras.mag_sf                = &mesh.magSf()[0];
+    mesh_paras.delta_coeffs          = &mesh.deltaCoeffs()[0];
+    mesh_paras.weight                = &mesh.surfaceInterpolation::weights()[0];
+    mesh_paras.volume                = &mesh.V()[0];
+    
+    mesh_paras.boundary_face_cell    = &boundary_face_cell[0];
+    mesh_paras.boundary_sf           = &boundary_sf[0];
+    mesh_paras.boundary_mag_sf       = &boundary_mag_sf[0];
+    mesh_paras.boundary_delta_coeffs = &boundary_delta_coeffs[0];
+    mesh_paras.boundary_weight       = &boundary_weights[0];
+
+    delete boundary_sf;
+    delete boundary_mag_sf;
+    delete boundary_delta_coeffs;
+    delete boundary_weights;
+    delete boundary_face_cell;
 }
 
 void createMatrixNoDiag(){
-    std::cout << "========================================================" << std::endl;
+    std::cout << "==========================================================" << std::endl;
     std::cout << "   Set matrix info variables for DeepFlame_Academic   " << std::endl;
 
     // TODO: if CSR;
