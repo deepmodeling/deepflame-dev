@@ -29,20 +29,6 @@ Description
 
 \*---------------------------------------------------------------------------*/
 #ifdef GPUSolverNew_
-    double *h_rho = dfDataBase.getFieldPointer("rho", location::cpu, position::internal);
-    double *h_boundary_rho = dfDataBase.getFieldPointer("rho", location::cpu, position::boundary);
-
-    TICK_START;
-    rhoEqn_GPU.process();
-    rhoEqn_GPU.sync();
-    TICK_STOP(GPU process time);
-
-    // rhoEqn_GPU.postProcess(h_rho);
-    // rho.oldTime();
-    // memcpy(&rho[0], h_rho, dfDataBase.cell_value_bytes);
-    // rho.correctBoundaryConditions();
-
-
 #ifdef DEBUG_
     // checkValue
     TICK_START;
@@ -51,6 +37,19 @@ Description
         fvm::ddt(rho)
       + fvc::div(phi)
     );
+
+    // add for test
+    double *diag = &rhoEqn.diag()[0];
+    double *source = &rhoEqn.source()[0];
+    int num_cells = rho.mesh().nCells();
+    int num_surfaces = rho.mesh().neighbour().size();
+
+    writeDoubleArrayToFile(&rho[0], num_cells, "rho_rho_old.host");
+    writeDoubleArrayToFile(&phi[0], num_surfaces, "rho_phi.host");
+
+    writeDoubleArrayToFile(diag, num_cells, "rho_diag.host");
+    writeDoubleArrayToFile(source, num_cells, "rho_source.host");
+
     rhoEqn.solve();
     TICK_STOP(CPU process time);
 
@@ -59,30 +58,27 @@ Description
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     }
 
-    // if (!mpi_init_flag || rank == 0) {
-    //     rhoEqn_GPU.compareResult(&rhoEqn.diag()[0], &rhoEqn.source()[0], false);
+    writeDoubleArrayToFile(&rho[0], num_cells, "rho_rho_solved.host");
+
+
+    // offset = 0;
+    // forAll(rho.boundaryField(), patchi)
+    // {
+    //     const fvPatchScalarField& patchRho = rho.boundaryField()[patchi];
+    //     int patchsize = patchRho.size();
+    //     if (patchRho.type() == "processor"
+    //         || patchRho.type() == "processorCyclic") {
+    //         memcpy(h_boundary_rho + offset, &patchRho[0], patchsize * sizeof(double));
+    //         scalarField patchRhoInternal = 
+    //                 dynamic_cast<const processorFvPatchField<scalar>&>(patchRho).patchInternalField()();
+    //         memcpy(h_boundary_rho + offset + patchsize, &patchRhoInternal[0], patchsize * sizeof(double));
+    //         offset += patchsize * 2;
+    //     } else {
+    //         memcpy(h_boundary_rho + offset, &patchRho[0], patchsize * sizeof(double));
+    //         offset += patchsize;
+    //     }
     // }
 
-    offset = 0;
-    forAll(rho.boundaryField(), patchi)
-    {
-        const fvPatchScalarField& patchRho = rho.boundaryField()[patchi];
-        int patchsize = patchRho.size();
-        if (patchRho.type() == "processor"
-            || patchRho.type() == "processorCyclic") {
-            memcpy(h_boundary_rho + offset, &patchRho[0], patchsize * sizeof(double));
-            scalarField patchRhoInternal = 
-                    dynamic_cast<const processorFvPatchField<scalar>&>(patchRho).patchInternalField()();
-            memcpy(h_boundary_rho + offset + patchsize, &patchRhoInternal[0], patchsize * sizeof(double));
-            offset += patchsize * 2;
-        } else {
-            memcpy(h_boundary_rho + offset, &patchRho[0], patchsize * sizeof(double));
-            offset += patchsize;
-        }
-    }
-    // if (!mpi_init_flag || rank == 0) {
-    //     rhoEqn_GPU.compareRho(&rho[0], h_boundary_rho, false);
-    // }
 #endif
 #else
 {

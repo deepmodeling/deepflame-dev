@@ -68,21 +68,14 @@ Description
 
 #define GPUSolverNew_
 // #define TIME
-// #define DEBUG_
+#define DEBUG_
 // #define SHOW_MEMINFO
 
 #define iscsr // true -> csr, false -> ell
 
-#include "dfMatrixDataBase.H"
 
 #ifdef GPUSolverNew_
     #include "AmgXSolver.H"
-    #include "dfUEqn.H"
-    #include "dfYEqn.H"
-    #include "dfRhoEqn.H"
-    #include "dfEEqn.H"
-    #include "dfpEqn.H"
-    #include "dfMatrixOpBase.H"
     #include "dfNcclBase.H"
     #include "dfThermo.H"
     #include "dfChemistrySolver.H"
@@ -211,6 +204,7 @@ int main(int argc, char *argv[])
 
     start1 = std::clock();
 #ifdef GPUSolverNew_
+
     int mpi_init_flag;
     checkMpiErrors(MPI_Initialized(&mpi_init_flag));
     if(mpi_init_flag) {
@@ -236,12 +230,10 @@ int main(int argc, char *argv[])
     set_mesh_info(mesh_paras);
     set_data_info(init_data);
     DEBUG_TRACE;
-#endif
 
-#ifdef GPUSolverNew_
     // if (chemistry->ifChemstry())
     // {
-    //     chemistrySolver_GPU.setConstantValue(dfDataBase.num_cells, dfDataBase.num_species, 4096);
+    //     chemistrySolver_GPU.setConstantValue(mesh_paras.num_cells, init_data.num_species, 4096);
     // }
 #endif
 
@@ -300,7 +292,7 @@ int main(int argc, char *argv[])
             start = std::clock();
             if (pimple.firstPimpleIter() && !pimple.simpleRho())
             {
-                // #include "rhoEqn.H"
+                #include "rhoEqn.H"
                 #ifdef GPUSolverNew_
                 process_equation(MATRIX_EQUATION::rhoEqn);
                 #endif

@@ -28,6 +28,35 @@ void setConstantIndexes(mesh_info_para &mesh_paras, const int *owner, const int 
         const int *procCols, int globalOffset, int num_proc_surfaces);
 void setConstantIndexes_GAMG(int nCells, int nFaces, int *owner, int *neighbor, int leveli, int type);
 
+
+#include <fstream>
+#include <iostream>
+#include <iomanip> 
+void writeDoubleArrayToFile(const double* data, int num, const std::string& filename) {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open file: " << filename << std::endl;
+    }
+
+    file << std::fixed << std::setprecision(10);
+
+    for (int i = 0; i < num; ++i) {
+        file << data[i];
+        if (i != num - 1) {
+            file << "\n"; 
+        }
+    }
+
+    if (!file) {
+        std::cerr << "Failed to write to file: " << filename << std::endl;
+        file.close();
+    }
+
+    file.close();
+    std::cout << "--- DEBUG: Write " << filename << " successfully. " << std::endl;
+}
+
+
 void permuteVector(double *new_order, const double *old_order, int num) 
 {
     for (int i = 0; i < num; i++) 
@@ -164,8 +193,12 @@ void createGPURhoEqn(mesh_info_para &mesh_paras, init_data_para &init_data, cons
 
     init_data.rho = &rho[0];
     init_data.phi = &phi[0];
-    init_data.boundary_rho = &h_boundary_rho[0];
-    init_data.boundary_phi = &h_boundary_phi[0];
+
+    init_data.boundary_rho  = new double[mesh_paras.num_boundary_surfaces];
+    init_data.boundary_phi  = new double[mesh_paras.num_boundary_surfaces];
+
+    memcpy(init_data.boundary_rho, &h_boundary_rho[0], mesh_paras.num_boundary_surfaces * sizeof(double));
+    memcpy(init_data.boundary_phi, &h_boundary_phi[0], mesh_paras.num_boundary_surfaces * sizeof(double));
 
     /* For DeepFlame_Academic */
     const dictionary solverControls = rho.mesh().solverDict(
@@ -220,8 +253,11 @@ void createGPUUEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     permuteVector(u_newOrder, &U[0][0], mesh_paras.num_cells);
     permuteVector(boundary_u_newOrder, h_boundary_u, mesh_paras.num_boundary_surfaces);
 
-    init_data.u = &u_newOrder[0];
-    init_data.boundary_u = &boundary_u_newOrder[0];
+    init_data.u           = new double[mesh_paras.num_cells*3];
+    init_data.boundary_u  = new double[mesh_paras.num_boundary_surfaces*3];
+
+    memcpy(init_data.u,          &u_newOrder[0],          mesh_paras.num_cells * 3 * sizeof(double));
+    memcpy(init_data.boundary_u, &boundary_u_newOrder[0], mesh_paras.num_boundary_surfaces * 3 * sizeof(double));
 
     /* For DeepFlame_Academic */
     const dictionary solverControls = U.mesh().solverDict(
@@ -274,8 +310,11 @@ void createGPUYEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
         }
     }
 
-    init_data.y = &h_y[0];
-    init_data.boundary_y = &h_boundary_y[0];
+    init_data.y           = new double[mesh_paras.num_cells*init_data.num_species];
+    init_data.boundary_y  = new double[mesh_paras.num_boundary_surfaces*init_data.num_species];
+
+    memcpy(init_data.y,          &h_y[0],          mesh_paras.num_cells*init_data.num_species * sizeof(double));
+    memcpy(init_data.boundary_y, &h_boundary_y[0], mesh_paras.num_boundary_surfaces*init_data.num_species * sizeof(double));
 
     // /* For DeepFlame_Academic */
     // const dictionary solverControls = Y[0].mesh().solverDict(
@@ -325,7 +364,10 @@ void createGPUEEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     }
 
     init_data.he = &he[0];
-    init_data.boundary_he = &h_boundary_he[0];
+
+    init_data.boundary_he  = new double[mesh_paras.num_boundary_surfaces];
+
+    memcpy(init_data.boundary_he, &h_boundary_he[0], mesh_paras.num_boundary_surfaces * sizeof(double));
 
     // /* For DeepFlame_Academic */
     // const dictionary solverControls = he.mesh().solverDict(
@@ -374,7 +416,10 @@ void createGPUpEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     // pEqn_GPU.setConstantFields(patch_type_U, patch_type_p);
 
     init_data.p = &p[0];
-    init_data.boundary_p = &h_boundary_p[0];
+
+    init_data.boundary_p  = new double[mesh_paras.num_boundary_surfaces];
+
+    memcpy(init_data.boundary_p, &h_boundary_p[0], mesh_paras.num_boundary_surfaces * sizeof(double));
 
     /* For DeepFlame_Academic */
     const dictionary solverControls = p.mesh().solverDict(
@@ -492,12 +537,19 @@ void createGPUThermo(mesh_info_para &mesh_paras, init_data_para &init_data, cons
     init_data.dpdt = &dpdt[0];
     init_data.thermo_rhoD = &h_thermo_rhoD[0];
 
-    init_data.boundary_T = &h_boundary_T[0];
-    init_data.boundary_thermo_psi = &h_boundary_thermo_psi[0];
-    init_data.boundary_thermo_alpha = &h_boundary_thermo_alpha[0];
-    init_data.boundary_mu = &h_boundary_mu[0];
-    init_data.boundary_k = &h_boundary_k[0];
-    init_data.boundary_thermo_rhoD = &h_boundary_thermo_rhoD[0];
+    init_data.boundary_T  = new double[mesh_paras.num_boundary_surfaces];
+    init_data.boundary_thermo_psi  = new double[mesh_paras.num_boundary_surfaces];
+    init_data.boundary_thermo_alpha  = new double[mesh_paras.num_boundary_surfaces];
+    init_data.boundary_mu  = new double[mesh_paras.num_boundary_surfaces];
+    init_data.boundary_k  = new double[mesh_paras.num_boundary_surfaces];
+    init_data.boundary_thermo_rhoD  = new double[mesh_paras.num_boundary_surfaces * init_data.num_species];
+
+    memcpy(init_data.boundary_T, &h_boundary_T[0], mesh_paras.num_boundary_surfaces * sizeof(double));
+    memcpy(init_data.boundary_thermo_psi, &h_boundary_thermo_psi[0], mesh_paras.num_boundary_surfaces * sizeof(double));
+    memcpy(init_data.boundary_thermo_alpha, &h_boundary_thermo_alpha[0], mesh_paras.num_boundary_surfaces * sizeof(double));
+    memcpy(init_data.boundary_mu, &h_boundary_mu[0], mesh_paras.num_boundary_surfaces * sizeof(double));
+    memcpy(init_data.boundary_k, &h_boundary_k[0], mesh_paras.num_boundary_surfaces * sizeof(double));
+    memcpy(init_data.boundary_thermo_rhoD, &h_boundary_thermo_rhoD[0], mesh_paras.num_boundary_surfaces * init_data.num_species * sizeof(double));
 
     delete h_boundary_T;
     delete h_boundary_he;
@@ -789,6 +841,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     forAll(mesh.boundary(), patchi) 
     {
         patch_offset.push_back(num_boundary_surfaces);
+        std::cout << "patchi: " << patchi << ", " << num_boundary_surfaces << std::endl;
 
         const fvPatchScalarField& patchY = Y[0].boundaryField()[patchi];
         int patchsize = patchY.size();
@@ -1026,18 +1079,28 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     mesh_paras.lowerAddr             = &owner[0];
     mesh_paras.upperAddr             = &neighbour[0];   
 
-    mesh_paras.mesh_dis              = &meshDistance_newOrder[0];
-    mesh_paras.sf                    = &sf_newOrder[0];
     mesh_paras.mag_sf                = &mesh.magSf()[0];
     mesh_paras.delta_coeffs          = &mesh.deltaCoeffs()[0];
     mesh_paras.weight                = &mesh.surfaceInterpolation::weights()[0];
     mesh_paras.volume                = &mesh.V()[0];
-    
-    mesh_paras.boundary_face_cell    = &boundary_face_cell[0];
-    mesh_paras.boundary_sf           = &boundary_sf[0];
-    mesh_paras.boundary_mag_sf       = &boundary_mag_sf[0];
-    mesh_paras.boundary_delta_coeffs = &boundary_delta_coeffs[0];
-    mesh_paras.boundary_weight       = &boundary_weights[0];
+
+    mesh_paras.mesh_dis              = new double[num_surfaces*3];
+    mesh_paras.sf                    = new double[num_surfaces*3];
+
+    mesh_paras.boundary_face_cell    = new int[num_boundary_surfaces];
+    mesh_paras.boundary_sf           = new double[num_boundary_surfaces*3];
+    mesh_paras.boundary_mag_sf       = new double[num_boundary_surfaces];
+    mesh_paras.boundary_delta_coeffs = new double[num_boundary_surfaces];
+    mesh_paras.boundary_weight       = new double[num_boundary_surfaces];
+
+    memcpy(mesh_paras.mesh_dis, &meshDistance_newOrder[0], num_surfaces * 3 * sizeof(double));
+    memcpy(mesh_paras.sf,       &sf_newOrder[0],           num_surfaces * 3 * sizeof(double));
+
+    memcpy(mesh_paras.boundary_face_cell,    &boundary_face_cell[0],    num_boundary_surfaces * sizeof(int));
+    memcpy(mesh_paras.boundary_sf,           &boundary_sf[0],           num_boundary_surfaces * 3 * sizeof(double));
+    memcpy(mesh_paras.boundary_mag_sf,       &boundary_mag_sf[0],       num_boundary_surfaces * sizeof(double));
+    memcpy(mesh_paras.boundary_delta_coeffs, &boundary_delta_coeffs[0], num_boundary_surfaces * sizeof(double));
+    memcpy(mesh_paras.boundary_weight,       &boundary_weights[0],      num_boundary_surfaces * sizeof(double));
 
     delete boundary_sf;
     delete boundary_mag_sf;
