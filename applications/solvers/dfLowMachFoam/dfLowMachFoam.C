@@ -273,9 +273,9 @@ int main(int argc, char *argv[])
         Info<< "Time = " << runTime.timeName() << nl << endl;
         
         // store old time fields
-// #ifdef GPUSolverNew_
-//         dfDataBase.preTimeStep();
-// #endif
+        #ifdef GPUSolverNew_
+        preTimeStep();
+        #endif
         clock_t loop_start = std::clock();
         // --- Pressure-velocity PIMPLE corrector loop
         while (pimple.loop())

@@ -8,6 +8,10 @@
 ncclUniqueId nccl_id;
 ncclComm_t nccl_comm;
 int nRanks, myRank, localRank, mpi_init_flag = 0;
+void initNccl() {
+    ncclInit(PstreamGlobals::MPI_COMM_FOAM, nccl_comm, nccl_id, &nRanks, &myRank, &localRank, &mpi_init_flag);
+}
+
 
 int **h_ldu_to_csr_no_diag = nullptr;
 int **h_csr_row_index_no_diag= nullptr;
@@ -20,7 +24,7 @@ int **h_ldu2ellIndex = nullptr;
 /* For DeepFlame_Academic */
 void createGPUSolverInput(mesh_info_para &mesh_paras, const lduMesh& mesh, const dictionary solverControls, std::vector<int> patch_type, MATRIX_EQUATION EqnID);
 void createGPUGAMGInput(const lduMesh& mesh, volScalarField& eqn);
-void createMatrixNoDiag(mesh_info_para &mesh_paras, const int *owner, const int *neighbor, const int *procRows, 
+void setConstantIndexes(mesh_info_para &mesh_paras, const int *owner, const int *neighbor, const int *procRows, 
         const int *procCols, int globalOffset, int num_proc_surfaces);
 void setConstantIndexes_GAMG(int nCells, int nFaces, int *owner, int *neighbor, int leveli, int type);
 
@@ -117,21 +121,14 @@ void constructBoundarySelectorPerPatch(int *patchTypeSelector, const std::string
     }
 }
 
-void initNccl() {
-    ncclInit(PstreamGlobals::MPI_COMM_FOAM, nccl_comm, nccl_id, &nRanks, &myRank, &localRank, &mpi_init_flag);
-}
-
-void createGPURhoEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const volScalarField& rho, const surfaceScalarField& phi) {
+void createGPURhoEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const volScalarField& rho, const surfaceScalarField& phi) 
+{
     DEBUG_TRACE;
     std::vector<int> patch_type;
     patch_type.resize(mesh_paras.num_patches);
 
-    double h_rho[mesh_paras.num_cells];
-    double h_phi[mesh_paras.num_surfaces];
     double h_boundary_phi[mesh_paras.num_boundary_surfaces];
     double h_boundary_rho[mesh_paras.num_boundary_surfaces];
-    memcpy(h_phi, &phi[0], mesh_paras.num_surfaces*sizeof(double));
-    memcpy(h_rho, &rho[0], mesh_paras.num_cells*sizeof(double));
 
     int offset = 0;
     forAll(rho.boundaryField(), patchi)
@@ -165,8 +162,8 @@ void createGPURhoEqn(mesh_info_para &mesh_paras, init_data_para &init_data, cons
         }
     }
 
-    init_data.rho = &h_rho[0];
-    init_data.phi = &h_phi[0];
+    init_data.rho = &rho[0];
+    init_data.phi = &phi[0];
     init_data.boundary_rho = &h_boundary_rho[0];
     init_data.boundary_phi = &h_boundary_phi[0];
 
@@ -279,6 +276,14 @@ void createGPUYEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
 
     init_data.y = &h_y[0];
     init_data.boundary_y = &h_boundary_y[0];
+
+    // /* For DeepFlame_Academic */
+    // const dictionary solverControls = Y[0].mesh().solverDict(
+    //     Y[0].select(Y[0].mesh().data::template lookupOrDefault<bool>("finalIteration", false))); 
+ 
+    // createGPUSolverInput(mesh_paras, Y[0].mesh(), solverControls, patch_type, MATRIX_EQUATION::YEqn); 
+
+    // initialize_matrix(MATRIX_EQUATION::YEqn);
 }
 
 void createGPUEEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const IOdictionary& CanteraTorchProperties, volScalarField& he, volScalarField& K) {
@@ -299,9 +304,8 @@ void createGPUEEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     }
     // EEqn_GPU.setConstantFields(patch_type_he, patch_type_k);
 
-    double h_he[mesh_paras.num_cells];
     double h_boundary_he[mesh_paras.num_boundary_surfaces];
-    memcpy(h_he, &he[0], mesh_paras.num_cells*sizeof(double));
+
     int offset = 0;
     forAll(he.boundaryField(), patchi)
     {
@@ -320,8 +324,16 @@ void createGPUEEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
         }
     }
 
-    init_data.he = &h_he[0];
+    init_data.he = &he[0];
     init_data.boundary_he = &h_boundary_he[0];
+
+    // /* For DeepFlame_Academic */
+    // const dictionary solverControls = he.mesh().solverDict(
+    //     he.select(he.mesh().data::template lookupOrDefault<bool>("finalIteration", false))); 
+ 
+    // createGPUSolverInput(mesh_paras, he.mesh(), solverControls, patch_type_he, MATRIX_EQUATION::EEqn); 
+
+    // initialize_matrix(MATRIX_EQUATION::EEqn);
 }
 
 void createGPUpEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const IOdictionary& CanteraTorchProperties, volScalarField& p, const volVectorField& U) {
@@ -337,9 +349,7 @@ void createGPUpEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     std::vector<int> patch_type_p(mesh_paras.num_patches);
     std::vector<int> patch_type_U(mesh_paras.num_patches);
 
-    double h_p[mesh_paras.num_cells];
     double h_boundary_p[mesh_paras.num_boundary_surfaces];
-    memcpy(h_p, &p[0], mesh_paras.num_cells*sizeof(double));
 
     int offset = 0;
     forAll(p.boundaryField(), patchi)
@@ -363,7 +373,7 @@ void createGPUpEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     }
     // pEqn_GPU.setConstantFields(patch_type_U, patch_type_p);
 
-    init_data.p = &h_p[0];
+    init_data.p = &p[0];
     init_data.boundary_p = &h_boundary_p[0];
 
     /* For DeepFlame_Academic */
@@ -471,12 +481,10 @@ void createGPUThermo(mesh_info_para &mesh_paras, init_data_para &init_data, cons
     for (int i = 0; i < init_data.num_species; i++) {
         memcpy(h_thermo_rhoD + i * mesh_paras.num_cells, &chemistry->rhoD(i)[0], mesh_paras.num_cells * sizeof(double));
     }
-    double h_T[mesh_paras.num_cells];
-    memcpy(h_T, &T[0], mesh_paras.num_cells*sizeof(double));
 
     // thermo_GPU.setConstantFields(patch_type_T);
 
-    init_data.T = &h_T[0];
+    init_data.T = &T[0];
     init_data.thermo_psi = &psi[0];
     init_data.thermo_alpha = &alpha[0];
     init_data.mu = &mu[0];
@@ -891,7 +899,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     }
     label globalOffset = globalNumbering.toGlobal(0);
     /* For DeepFlame_Academic */
-    createMatrixNoDiag(mesh_paras, &owner[0], &neighbour[0], &procRows[0], &procCols[0], globalOffset, nProcValues);
+    setConstantIndexes(mesh_paras, &owner[0], &neighbour[0], &procRows[0], &procCols[0], globalOffset, nProcValues);
 
     // prepare internal and boundary of sf, mag_sf, weights, delta_coeffs, volume
     double *boundary_sf = new double[3 * num_boundary_surfaces];
@@ -1038,7 +1046,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     delete boundary_face_cell;
 }
 
-void createMatrixNoDiag(mesh_info_para &mesh_paras, const int *owner, const int *neighbor, const int *procRows, 
+void setConstantIndexes(mesh_info_para &mesh_paras, const int *owner, const int *neighbor, const int *procRows, 
         const int *procCols, int globalOffset, int num_proc_surfaces)
 {
     /**
