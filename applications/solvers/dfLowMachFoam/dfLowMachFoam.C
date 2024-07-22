@@ -298,18 +298,21 @@ int main(int argc, char *argv[])
                 #endif
             }
             end = std::clock();
-            time_monitor_rho += double(end - start) / double(CLOCKS_PER_SEC);
+            time_monitor_rho += double(end - start) / double(CLOCKS_PER_SEC);        
+
+            start = std::clock();
+            #include "UEqn.H"
+            #ifdef GPUSolverNew_
+            process_equation(MATRIX_EQUATION::UEqn);
+            #endif
+            end = std::clock();
+            time_monitor_U += double(end - start) / double(CLOCKS_PER_SEC);
 
             std::cout << "*************************************************" << std::endl;
             std::cout << "NOTICE:" << std::endl;
             std::cout << "  The subsequent code has not been modified yet. " << std::endl;
             std::cout << "*************************************************" << std::endl;
-            abort();            
-
-            start = std::clock();
-            // #include "UEqn.H"
-            end = std::clock();
-            time_monitor_U += double(end - start) / double(CLOCKS_PER_SEC);
+            abort();    
 
             if(combModelName!="ESF" && combModelName!="flareFGM" && combModelName!="DeePFGM")
             {

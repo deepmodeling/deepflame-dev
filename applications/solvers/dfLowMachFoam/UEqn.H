@@ -32,9 +32,23 @@
     fvVectorMatrix& UEqn = tUEqn.ref();
     TICK_STOP(CPU assembly time);
 
+    // add for test
+    double *diag = &UEqn.diag()[0];
+    double *lower = &UEqn.lower()[0];
+    double *upper = &UEqn.upper()[0];
+
+    double source_newOrder[mesh_paras.num_cells * 3];
+    permuteVector(source_newOrder, &UEqn.source()[0][0], mesh_paras.num_cells);
+
+    writeDoubleArrayToFile(diag, mesh_paras.num_cells, "U_diag.host");
+    writeDoubleArrayToFile(lower, mesh_paras.num_surfaces, "U_lower.host");
+    writeDoubleArrayToFile(upper, mesh_paras.num_surfaces, "U_upper.host");
+    writeDoubleArrayToFile(source_newOrder, mesh_paras.num_cells * 3, "U_source.host");
+
+
     volTensorField gradU = fvc::grad(U);
 
-    double *h_boundary_gradU = new double[dfDataBase.num_boundary_surfaces * 9];
+    double *h_boundary_gradU = new double[mesh_paras.num_boundary_surfaces * 9];
     offset = 0;
     forAll(U.boundaryField(), patchi)
     {
@@ -64,8 +78,8 @@
 
     // process
     TICK_START;
-    UEqn_GPU.process();
-    UEqn_GPU.sync();
+    // UEqn_GPU.process();
+    // UEqn_GPU.sync();
     TICK_STOP(GPU process time);
 
     // postProcess
@@ -86,14 +100,14 @@
     TICK_STOP(CPU solve time);
     // checkResult
     // TODO: for temp, now we compare ldu, finally we compare csr
-    std::vector<double> h_internal_coeffs(dfDataBase.num_boundary_surfaces * 3);
-    std::vector<double> h_boundary_coeffs(dfDataBase.num_boundary_surfaces * 3);
+    std::vector<double> h_internal_coeffs(mesh_paras.num_boundary_surfaces * 3);
+    std::vector<double> h_boundary_coeffs(mesh_paras.num_boundary_surfaces * 3);
 
     offset = 0;
-    for (int patchi = 0; patchi < dfDataBase.num_patches; patchi++)
+    for (int patchi = 0; patchi < mesh_paras.num_patches; patchi++)
     {
         const fvPatchVectorField& patchU = U.boundaryField()[patchi];
-        int patchsize = dfDataBase.patch_size[patchi];
+        int patchsize = mesh_paras.patch_size[patchi];
         const double* internal_coeff_ptr = &UEqn.internalCoeffs()[patchi][0][0];
         const double* boundary_coeff_ptr = &UEqn.boundaryCoeffs()[patchi][0][0];
         memcpy(h_internal_coeffs.data() + offset * 3, internal_coeff_ptr, patchsize * 3 * sizeof(double));
@@ -102,12 +116,12 @@
         else offset += patchsize;
     }
 
-    double *h_boundary_u_tmp = new double[dfDataBase.num_boundary_surfaces * 3];
+    double *h_boundary_u_tmp = new double[mesh_paras.num_boundary_surfaces * 3];
     offset = 0;
     forAll(U.boundaryField(), patchi)
     {
         const fvPatchVectorField& patchU = U.boundaryField()[patchi];
-        int patchsize = dfDataBase.patch_size[patchi];
+        int patchsize = mesh_paras.patch_size[patchi];
 
         if (patchU.type() == "processor"
             || patchU.type() == "processorCyclic") {

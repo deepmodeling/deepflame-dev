@@ -38,7 +38,7 @@ void writeDoubleArrayToFile(const double* data, int num, const std::string& file
         std::cerr << "Failed to open file: " << filename << std::endl;
     }
 
-    file << std::fixed << std::setprecision(10);
+    file << std::fixed << std::setprecision(15);
 
     for (int i = 0; i < num; ++i) {
         file << data[i];
@@ -200,6 +200,9 @@ void createGPURhoEqn(mesh_info_para &mesh_paras, init_data_para &init_data, cons
     memcpy(init_data.boundary_rho, &h_boundary_rho[0], mesh_paras.num_boundary_surfaces * sizeof(double));
     memcpy(init_data.boundary_phi, &h_boundary_phi[0], mesh_paras.num_boundary_surfaces * sizeof(double));
 
+    init_data.patch_type_rho   = new int[mesh_paras.num_patches]();
+    std::copy( patch_type.begin(), patch_type.end(), init_data.patch_type_rho ); 
+
     /* For DeepFlame_Academic */
     const dictionary solverControls = rho.mesh().solverDict(
         rho.select(rho.mesh().data::template lookupOrDefault<bool>("finalIteration", false))); 
@@ -259,6 +262,9 @@ void createGPUUEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     memcpy(init_data.u,          &u_newOrder[0],          mesh_paras.num_cells * 3 * sizeof(double));
     memcpy(init_data.boundary_u, &boundary_u_newOrder[0], mesh_paras.num_boundary_surfaces * 3 * sizeof(double));
 
+    init_data.patch_type_U   = new int[mesh_paras.num_patches]();
+    std::copy( patch_type.begin(), patch_type.end(), init_data.patch_type_U ); 
+
     /* For DeepFlame_Academic */
     const dictionary solverControls = U.mesh().solverDict(
         U.select(U.mesh().data::template lookupOrDefault<bool>("finalIteration", false)));
@@ -316,6 +322,9 @@ void createGPUYEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     memcpy(init_data.y,          &h_y[0],          mesh_paras.num_cells*init_data.num_species * sizeof(double));
     memcpy(init_data.boundary_y, &h_boundary_y[0], mesh_paras.num_boundary_surfaces*init_data.num_species * sizeof(double));
 
+    init_data.patch_type_Y   = new int[mesh_paras.num_patches]();
+    std::copy( patch_type.begin(), patch_type.end(), init_data.patch_type_Y ); 
+
     // /* For DeepFlame_Academic */
     // const dictionary solverControls = Y[0].mesh().solverDict(
     //     Y[0].select(Y[0].mesh().data::template lookupOrDefault<bool>("finalIteration", false))); 
@@ -369,6 +378,12 @@ void createGPUEEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
 
     memcpy(init_data.boundary_he, &h_boundary_he[0], mesh_paras.num_boundary_surfaces * sizeof(double));
 
+    init_data.patch_type_he   = new int[mesh_paras.num_patches]();
+    std::copy( patch_type_he.begin(), patch_type_he.end(), init_data.patch_type_he ); 
+
+    init_data.patch_type_k   = new int[mesh_paras.num_patches]();
+    std::copy( patch_type_k.begin(), patch_type_k.end(), init_data.patch_type_k ); 
+
     // /* For DeepFlame_Academic */
     // const dictionary solverControls = he.mesh().solverDict(
     //     he.select(he.mesh().data::template lookupOrDefault<bool>("finalIteration", false))); 
@@ -420,6 +435,9 @@ void createGPUpEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     init_data.boundary_p  = new double[mesh_paras.num_boundary_surfaces];
 
     memcpy(init_data.boundary_p, &h_boundary_p[0], mesh_paras.num_boundary_surfaces * sizeof(double));
+
+    init_data.patch_type_p   = new int[mesh_paras.num_patches]();
+    std::copy( patch_type_p.begin(), patch_type_p.end(), init_data.patch_type_p ); 
 
     /* For DeepFlame_Academic */
     const dictionary solverControls = p.mesh().solverDict(
@@ -550,6 +568,9 @@ void createGPUThermo(mesh_info_para &mesh_paras, init_data_para &init_data, cons
     memcpy(init_data.boundary_mu, &h_boundary_mu[0], mesh_paras.num_boundary_surfaces * sizeof(double));
     memcpy(init_data.boundary_k, &h_boundary_k[0], mesh_paras.num_boundary_surfaces * sizeof(double));
     memcpy(init_data.boundary_thermo_rhoD, &h_boundary_thermo_rhoD[0], mesh_paras.num_boundary_surfaces * init_data.num_species * sizeof(double));
+
+    init_data.patch_type_T   = new int[mesh_paras.num_patches]();
+    std::copy( patch_type_T.begin(), patch_type_T.end(), init_data.patch_type_T ); 
 
     delete h_boundary_T;
     delete h_boundary_he;
@@ -796,6 +817,7 @@ void createGPUSolverInput(mesh_info_para &mesh_paras, const lduMesh& mesh, const
     }
     if (solver == "PBiCGStab") matrix_solver = 2;
     if (solver == "PCG")       matrix_solver = 3;
+    if (solver == "diagonal")  matrix_solver = 0;
 
     // SET MATRIX_PRECONDITIONER
     int matrix_preconditioner = -1;
@@ -1063,6 +1085,11 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
 
     init_data.rDeltaT                = rDeltaT;
     init_data.num_species            = Y.size();
+    init_data.patch_type_calculated   = new int[num_patches]();
+    init_data.patch_type_extropolated = new int[num_patches]();
+
+    std::copy( patch_type_calculated.begin(), patch_type_calculated.end(), init_data.patch_type_calculated ); 
+    std::copy( patch_type_extropolated.begin(), patch_type_extropolated.end(), init_data.patch_type_extropolated ); 
     
     mesh_paras.patch_size     = new int[num_patches]();
     mesh_paras.patch_offset   = new int[num_patches]();

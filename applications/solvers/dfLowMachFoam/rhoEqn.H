@@ -44,9 +44,6 @@ Description
     int num_cells = rho.mesh().nCells();
     int num_surfaces = rho.mesh().neighbour().size();
 
-    writeDoubleArrayToFile(&rho[0], num_cells, "rho_rho_old.host");
-    writeDoubleArrayToFile(&phi[0], num_surfaces, "rho_phi.host");
-
     writeDoubleArrayToFile(diag, num_cells, "rho_diag.host");
     writeDoubleArrayToFile(source, num_cells, "rho_source.host");
 
@@ -60,24 +57,26 @@ Description
 
     writeDoubleArrayToFile(&rho[0], num_cells, "rho_rho_solved.host");
 
+    double *h_boundary_rho = (double*)calloc(mesh_paras.num_boundary_surfaces, sizeof(double));
+    offset = 0;
+    forAll(rho.boundaryField(), patchi)
+    {
+        const fvPatchScalarField& patchRho = rho.boundaryField()[patchi];
+        int patchsize = patchRho.size();
+        if (patchRho.type() == "processor"
+            || patchRho.type() == "processorCyclic") {
+            memcpy(h_boundary_rho + offset, &patchRho[0], patchsize * sizeof(double));
+            scalarField patchRhoInternal = 
+                    dynamic_cast<const processorFvPatchField<scalar>&>(patchRho).patchInternalField()();
+            memcpy(h_boundary_rho + offset + patchsize, &patchRhoInternal[0], patchsize * sizeof(double));
+            offset += patchsize * 2;
+        } else {
+            memcpy(h_boundary_rho + offset, &patchRho[0], patchsize * sizeof(double));
+            offset += patchsize;
+        }
+    }
 
-    // offset = 0;
-    // forAll(rho.boundaryField(), patchi)
-    // {
-    //     const fvPatchScalarField& patchRho = rho.boundaryField()[patchi];
-    //     int patchsize = patchRho.size();
-    //     if (patchRho.type() == "processor"
-    //         || patchRho.type() == "processorCyclic") {
-    //         memcpy(h_boundary_rho + offset, &patchRho[0], patchsize * sizeof(double));
-    //         scalarField patchRhoInternal = 
-    //                 dynamic_cast<const processorFvPatchField<scalar>&>(patchRho).patchInternalField()();
-    //         memcpy(h_boundary_rho + offset + patchsize, &patchRhoInternal[0], patchsize * sizeof(double));
-    //         offset += patchsize * 2;
-    //     } else {
-    //         memcpy(h_boundary_rho + offset, &patchRho[0], patchsize * sizeof(double));
-    //         offset += patchsize;
-    //     }
-    // }
+    writeDoubleArrayToFile(&h_boundary_rho[0], mesh_paras.num_boundary_surfaces, "rho_boundary_rho.host");
 
 #endif
 #else
