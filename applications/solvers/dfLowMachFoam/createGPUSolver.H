@@ -67,6 +67,22 @@ void permuteVector(double *new_order, const double *old_order, int num)
     }
 }
 
+void permuteTensor(double *new_order, const double *old_order, int num) 
+{
+    for (int i = 0; i < num; i++) 
+    {
+        new_order[num * 0 + i] = old_order[i * 9 + 0];
+        new_order[num * 1 + i] = old_order[i * 9 + 1];
+        new_order[num * 2 + i] = old_order[i * 9 + 2];
+        new_order[num * 3 + i] = old_order[i * 9 + 3];
+        new_order[num * 4 + i] = old_order[i * 9 + 4];
+        new_order[num * 5 + i] = old_order[i * 9 + 5];
+        new_order[num * 6 + i] = old_order[i * 9 + 6];
+        new_order[num * 7 + i] = old_order[i * 9 + 7];
+        new_order[num * 8 + i] = old_order[i * 9 + 8];
+    }
+}
+
 void constructBoundarySelectorPerPatch(int *patchTypeSelector, const std::string& patchTypeStr)
 {
     boundaryConditions patchCondition;
@@ -1120,11 +1136,14 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     mesh_paras.boundary_delta_coeffs = new double[num_boundary_surfaces];
     mesh_paras.boundary_weight       = new double[num_boundary_surfaces];
 
+    double boundary_sf_newOrder[num_boundary_surfaces*3];
+    permuteVector(boundary_sf_newOrder, &boundary_sf[0], num_boundary_surfaces);
+
     memcpy(mesh_paras.mesh_dis, &meshDistance_newOrder[0], num_surfaces * 3 * sizeof(double));
     memcpy(mesh_paras.sf,       &sf_newOrder[0],           num_surfaces * 3 * sizeof(double));
 
     memcpy(mesh_paras.boundary_face_cell,    &boundary_face_cell[0],    num_boundary_surfaces * sizeof(int));
-    memcpy(mesh_paras.boundary_sf,           &boundary_sf[0],           num_boundary_surfaces * 3 * sizeof(double));
+    memcpy(mesh_paras.boundary_sf,           &boundary_sf_newOrder[0],  num_boundary_surfaces * 3 * sizeof(double));
     memcpy(mesh_paras.boundary_mag_sf,       &boundary_mag_sf[0],       num_boundary_surfaces * sizeof(double));
     memcpy(mesh_paras.boundary_delta_coeffs, &boundary_delta_coeffs[0], num_boundary_surfaces * sizeof(double));
     memcpy(mesh_paras.boundary_weight,       &boundary_weights[0],      num_boundary_surfaces * sizeof(double));

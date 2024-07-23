@@ -48,6 +48,10 @@
 
     volTensorField gradU = fvc::grad(U);
 
+    double gradU_newOrder[mesh_paras.num_cells * 9];
+    permuteTensor(gradU_newOrder, &gradU[0][0], mesh_paras.num_cells);
+    writeDoubleArrayToFile(gradU_newOrder, mesh_paras.num_cells * 9, "U_grad_U.host");
+
     double *h_boundary_gradU = new double[mesh_paras.num_boundary_surfaces * 9];
     offset = 0;
     forAll(U.boundaryField(), patchi)
@@ -74,6 +78,11 @@
             offset += patchsize;
         }
     }
+
+    double boundary_gradU_newOrder[mesh_paras.num_boundary_surfaces * 9];
+    permuteTensor(boundary_gradU_newOrder, &h_boundary_gradU[0], mesh_paras.num_boundary_surfaces);
+    writeDoubleArrayToFile(boundary_gradU_newOrder, mesh_paras.num_boundary_surfaces * 9, "U_boundary_grad_u.host");
+
 #endif
 
     // process
@@ -98,6 +107,11 @@
     K.oldTime();
     K = 0.5*magSqr(U);
     TICK_STOP(CPU solve time);
+
+    double U_newOrder[mesh_paras.num_cells * 3];
+    permuteVector(U_newOrder, &U[0][0], mesh_paras.num_cells);
+    writeDoubleArrayToFile(U_newOrder, mesh_paras.num_cells * 3, "U_u_solved.host");
+
     // checkResult
     // TODO: for temp, now we compare ldu, finally we compare csr
     std::vector<double> h_internal_coeffs(mesh_paras.num_boundary_surfaces * 3);
@@ -115,6 +129,13 @@
         if (patchU.type() == "processor" || patchU.type() == "processorCyclic") offset += 2 * patchsize;
         else offset += patchsize;
     }
+
+    double h_internal_coeffs_newOrder[mesh_paras.num_boundary_surfaces * 3];
+    double h_boundary_coeffs_newOrder[mesh_paras.num_boundary_surfaces * 3];
+    permuteVector(h_internal_coeffs_newOrder, &h_internal_coeffs.data()[0], mesh_paras.num_boundary_surfaces);
+    permuteVector(h_boundary_coeffs_newOrder, &h_boundary_coeffs.data()[0], mesh_paras.num_boundary_surfaces);
+    writeDoubleArrayToFile(h_internal_coeffs_newOrder, mesh_paras.num_boundary_surfaces * 3, "U_internalCoeffs.host");
+    writeDoubleArrayToFile(h_boundary_coeffs_newOrder, mesh_paras.num_boundary_surfaces * 3, "U_boundaryCoeffs.host");
 
     double *h_boundary_u_tmp = new double[mesh_paras.num_boundary_surfaces * 3];
     offset = 0;
