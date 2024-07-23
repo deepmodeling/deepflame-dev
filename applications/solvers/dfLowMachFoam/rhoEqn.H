@@ -29,20 +29,6 @@ Description
 
 \*---------------------------------------------------------------------------*/
 #ifdef GPUSolverNew_
-    double *h_rho = dfDataBase.getFieldPointer("rho", location::cpu, position::internal);
-    double *h_boundary_rho = dfDataBase.getFieldPointer("rho", location::cpu, position::boundary);
-
-    TICK_START;
-    rhoEqn_GPU.process();
-    rhoEqn_GPU.sync();
-    TICK_STOP(GPU process time);
-
-    // rhoEqn_GPU.postProcess(h_rho);
-    // rho.oldTime();
-    // memcpy(&rho[0], h_rho, dfDataBase.cell_value_bytes);
-    // rho.correctBoundaryConditions();
-
-
 #ifdef DEBUG_
     // checkValue
     TICK_START;
@@ -51,6 +37,16 @@ Description
         fvm::ddt(rho)
       + fvc::div(phi)
     );
+
+    // add for test
+    double *diag = &rhoEqn.diag()[0];
+    double *source = &rhoEqn.source()[0];
+    int num_cells = rho.mesh().nCells();
+    int num_surfaces = rho.mesh().neighbour().size();
+
+    writeDoubleArrayToFile(diag, num_cells, "rho_diag.host");
+    writeDoubleArrayToFile(source, num_cells, "rho_source.host");
+
     rhoEqn.solve();
     TICK_STOP(CPU process time);
 
@@ -59,10 +55,9 @@ Description
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     }
 
-    // if (!mpi_init_flag || rank == 0) {
-    //     rhoEqn_GPU.compareResult(&rhoEqn.diag()[0], &rhoEqn.source()[0], false);
-    // }
+    writeDoubleArrayToFile(&rho[0], num_cells, "rho_rho_solved.host");
 
+    double *h_boundary_rho = (double*)calloc(mesh_paras.num_boundary_surfaces, sizeof(double));
     offset = 0;
     forAll(rho.boundaryField(), patchi)
     {
@@ -80,9 +75,9 @@ Description
             offset += patchsize;
         }
     }
-    // if (!mpi_init_flag || rank == 0) {
-    //     rhoEqn_GPU.compareRho(&rho[0], h_boundary_rho, false);
-    // }
+
+    writeDoubleArrayToFile(&h_boundary_rho[0], mesh_paras.num_boundary_surfaces, "rho_boundary_rho.host");
+
 #endif
 #else
 {

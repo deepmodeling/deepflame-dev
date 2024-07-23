@@ -73,16 +73,9 @@ Description
 
 #define iscsr // true -> csr, false -> ell
 
-#include "dfMatrixDataBase.H"
 
 #ifdef GPUSolverNew_
     #include "AmgXSolver.H"
-    #include "dfUEqn.H"
-    #include "dfYEqn.H"
-    #include "dfRhoEqn.H"
-    #include "dfEEqn.H"
-    #include "dfpEqn.H"
-    #include "dfMatrixOpBase.H"
     #include "dfNcclBase.H"
     #include "dfThermo.H"
     #include "dfChemistrySolver.H"
@@ -211,72 +204,41 @@ int main(int argc, char *argv[])
 
     start1 = std::clock();
 #ifdef GPUSolverNew_
+
     int mpi_init_flag;
     checkMpiErrors(MPI_Initialized(&mpi_init_flag));
     if(mpi_init_flag) {
         initNccl();
     }
-    createGPUBase(CanteraTorchProperties, mesh, Y);
+
+    /* For DeepFlame_Academic */
+    mesh_info_para mesh_paras;    
+    init_data_para init_data;
+
+    createGPUBaseInput(mesh_paras, init_data, CanteraTorchProperties, mesh, Y); 
+
+    createGPUUEqn(mesh_paras, init_data, CanteraTorchProperties, U);
+    createGPUYEqn(mesh_paras, init_data, CanteraTorchProperties, Y, inertIndex);
+
+    createGPUEEqn(mesh_paras, init_data, CanteraTorchProperties, thermo.he(), K);
+    createGPUpEqn(mesh_paras, init_data, CanteraTorchProperties, p, U);
+    createGPURhoEqn(mesh_paras, init_data, rho, phi);
+
+    createGPUThermo(mesh_paras, init_data, CanteraTorchProperties, T, thermo.he(), 
+                    psi, thermo.alpha(), thermo.mu(), K, dpdt, chemistry);
+
+    set_mesh_info(mesh_paras);
+    set_data_info(init_data);
     DEBUG_TRACE;
-#endif
 
-#ifdef GPUSolverNew_
-    //============================================================================
-    // startif use GAMG Solver ... 
-    
-#ifdef iscsr
-    #include "CSRGAMGAgglomeration.H"
-#else
-    #include "ELLGAMGAgglomeration.H"
-#endif
-    // map coeffs for GAMG solver
-    const dictionary solverControls = p.mesh().solverDict
-    (
-        p.select
-        (
-            p.mesh().data::template lookupOrDefault<bool>
-            ("finalIteration", false)
-        )
-    );
-#ifdef iscsr
-    const CSRGAMGAgglomeration& agglomeration(CSRGAMGAgglomeration::New(p.mesh(), solverControls));
-#else
-    const ELLGAMGAgglomeration& agglomeration(ELLGAMGAgglomeration::New(p.mesh(), solverControls));
-#endif
-    std::cout << "=== get agglomeration in createGPUGAMGMaps " << std::endl;
-
-    int agglomeration_level = agglomeration.size();
-    std::cout << "=== agglomeration level: " << agglomeration_level << std::endl;
-
-    GAMGStruct GAMGdata[agglomeration_level]; 
-    createGPUGAMGMaps(GAMGdata, agglomeration);
-    // endif ...
-    //============================================================================
-
-    createGPUUEqn(CanteraTorchProperties, U);
-    createGPUYEqn(CanteraTorchProperties, Y, inertIndex);
-    createGPUEEqn(CanteraTorchProperties, thermo.he(), K);
-    createGPUpEqn(CanteraTorchProperties, p, U, GAMGdata, agglomeration_level);
-    createGPURhoEqn(rho, phi);
-
-    const volScalarField& mu = thermo.mu();
-    const volScalarField& alpha = thermo.alpha();
-    createGPUThermo(CanteraTorchProperties, T, thermo.he(), psi, alpha, mu, K, dpdt, chemistry);
-    if (chemistry->ifChemstry())
-    {
-        chemistrySolver_GPU.setConstantValue(dfDataBase.num_cells, dfDataBase.num_species, 4096);
-    }
+    // if (chemistry->ifChemstry())
+    // {
+    //     chemistrySolver_GPU.setConstantValue(mesh_paras.num_cells, init_data.num_species, 4096);
+    // }
 #endif
 
     end1 = std::clock();
     time_monitor_init += double(end1 - start1) / double(CLOCKS_PER_SEC);
-
-    std::cout << "*********************************************" << std::endl;
-    std::cout << "NOTICE:" << std::endl;
-    std::cout << "  The above code has been modified to call dfAcademic library; " << std::endl;
-    std::cout << "  it has been confirmed in pEqn solver, preconditioner, and smoother can be correctly set." << std::endl;
-    std::cout << "*********************************************" << std::endl;
-    abort();
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -303,9 +265,9 @@ int main(int argc, char *argv[])
         Info<< "Time = " << runTime.timeName() << nl << endl;
         
         // store old time fields
-#ifdef GPUSolverNew_
-        dfDataBase.preTimeStep();
-#endif
+        #ifdef GPUSolverNew_
+        preTimeStep();
+        #endif
         clock_t loop_start = std::clock();
         // --- Pressure-velocity PIMPLE corrector loop
         while (pimple.loop())
@@ -331,125 +293,43 @@ int main(int argc, char *argv[])
             if (pimple.firstPimpleIter() && !pimple.simpleRho())
             {
                 #include "rhoEqn.H"
+                #ifdef GPUSolverNew_
+                process_equation(MATRIX_EQUATION::rhoEqn);
+                #endif
             }
             end = std::clock();
-            time_monitor_rho += double(end - start) / double(CLOCKS_PER_SEC);
-            
+            time_monitor_rho += double(end - start) / double(CLOCKS_PER_SEC);        
+
             start = std::clock();
             #include "UEqn.H"
+            #ifdef GPUSolverNew_
+            process_equation(MATRIX_EQUATION::UEqn);
+            #endif
             end = std::clock();
             time_monitor_U += double(end - start) / double(CLOCKS_PER_SEC);
+
+            std::cout << "*************************************************" << std::endl;
+            std::cout << "NOTICE:" << std::endl;
+            std::cout << "  The subsequent code has not been modified yet. " << std::endl;
+            std::cout << "*************************************************" << std::endl;
+            abort();    
 
             if(combModelName!="ESF" && combModelName!="flareFGM" && combModelName!="DeePFGM")
             {
                 start = std::clock();
-                #include "YEqn.H"
+                // #include "YEqn.H"
                 end = std::clock();
                 time_monitor_Y += double(end - start) / double(CLOCKS_PER_SEC);
 
                 start = std::clock();
-                #include "EEqn.H"
+                // #include "EEqn.H"
                 end = std::clock();
                 time_monitor_E += double(end - start) / double(CLOCKS_PER_SEC);
 
             start = std::clock();
             #ifdef GPUSolverNew_
-                thermo_GPU.correctThermo();
-                thermo_GPU.sync();
-            #if defined DEBUG_
-                // check correctThermo
-                int speciesIndex = 6;
-                chemistry->correctThermo(); // reference
-                double *h_boundary_T_tmp = new double[dfDataBase.num_boundary_surfaces];
-                double *h_boundary_he_tmp = new double[dfDataBase.num_boundary_surfaces];
-                double *h_boundary_mu_tmp = new double[dfDataBase.num_boundary_surfaces];
-                double *h_boundary_rho_tmp = new double[dfDataBase.num_boundary_surfaces];
-                double *h_boundary_thermo_alpha_tmp = new double[dfDataBase.num_boundary_surfaces];    
-                double *h_boundary_thermo_psi_tmp = new double[dfDataBase.num_boundary_surfaces];
-                double *h_boundary_thermo_rhoD_tmp = new double[dfDataBase.num_boundary_surfaces];
-                offset = 0;
-                forAll(T.boundaryField(), patchi)
-                {
-                    const fvPatchScalarField& patchHe = thermo.he().boundaryField()[patchi];
-                    const fvPatchScalarField& patchMu = mu.boundaryField()[patchi];
-                    const fvPatchScalarField& patchPsi = psi.boundaryField()[patchi];
-                    const fvPatchScalarField& patchAlpha = alpha.boundaryField()[patchi];
-                    const fvPatchScalarField& patchRho = thermo.rho()().boundaryField()[patchi];
-                    const fvPatchScalarField& patchT = T.boundaryField()[patchi];
-                    const fvPatchScalarField& patchRhoD = chemistry->rhoD(speciesIndex).boundaryField()[patchi];
-
-                    int patchsize = patchT.size();
-                    if (patchT.type() == "processor") {
-                        memcpy(h_boundary_T_tmp + offset, &patchT[0], patchsize * sizeof(double));
-                        scalarField patchTInternal = 
-                                dynamic_cast<const processorFvPatchField<scalar>&>(patchT).patchInternalField()();
-                        memcpy(h_boundary_T_tmp + offset + patchsize, &patchTInternal[0], patchsize * sizeof(double));
-
-                        memcpy(h_boundary_he_tmp + offset, &patchHe[0], patchsize * sizeof(double));
-                        scalarField patchHeInternal = 
-                                dynamic_cast<const processorFvPatchField<scalar>&>(patchHe).patchInternalField()();
-                        memcpy(h_boundary_he_tmp + offset + patchsize, &patchHeInternal[0], patchsize * sizeof(double));
-
-                        memcpy(h_boundary_thermo_psi_tmp + offset, &patchPsi[0], patchsize * sizeof(double));
-                        scalarField patchPsiInternal = 
-                                dynamic_cast<const processorFvPatchField<scalar>&>(patchPsi).patchInternalField()();
-                        memcpy(h_boundary_thermo_psi_tmp + offset + patchsize, &patchPsiInternal[0], patchsize * sizeof(double));
-
-                        memcpy(h_boundary_thermo_alpha_tmp + offset, &patchAlpha[0], patchsize * sizeof(double));
-                        scalarField patchAlphaInternal = 
-                                dynamic_cast<const processorFvPatchField<scalar>&>(patchAlpha).patchInternalField()();
-                        memcpy(h_boundary_thermo_alpha_tmp + offset + patchsize, &patchAlphaInternal[0], patchsize * sizeof(double));
-
-                        memcpy(h_boundary_mu_tmp + offset, &patchMu[0], patchsize * sizeof(double));
-                        scalarField patchMuInternal = 
-                                dynamic_cast<const processorFvPatchField<scalar>&>(patchMu).patchInternalField()();
-                        memcpy(h_boundary_mu_tmp + offset + patchsize, &patchMuInternal[0], patchsize * sizeof(double));
-
-                        memcpy(h_boundary_rho_tmp + offset, &patchRho[0], patchsize * sizeof(double));
-                        scalarField patchRhoInternal = 
-                                dynamic_cast<const processorFvPatchField<scalar>&>(patchRho).patchInternalField()();
-                        memcpy(h_boundary_rho_tmp + offset + patchsize, &patchRhoInternal[0], patchsize * sizeof(double));
-
-                        memcpy(h_boundary_thermo_rhoD_tmp + offset, &patchRhoD[0], patchsize * sizeof(double));
-                        scalarField patchRhoDInternal = 
-                                dynamic_cast<const processorFvPatchField<scalar>&>(patchRhoD).patchInternalField()();
-                        memcpy(h_boundary_thermo_rhoD_tmp + offset + patchsize, &patchRhoDInternal[0], patchsize * sizeof(double));
-
-                        offset += patchsize * 2;
-                    } else {
-                        memcpy(h_boundary_T_tmp + offset, &patchT[0], patchsize * sizeof(double));
-                        memcpy(h_boundary_he_tmp + offset, &patchHe[0], patchsize * sizeof(double));
-                        memcpy(h_boundary_thermo_psi_tmp + offset, &patchPsi[0], patchsize * sizeof(double));
-                        memcpy(h_boundary_thermo_alpha_tmp + offset, &patchAlpha[0], patchsize * sizeof(double));
-                        memcpy(h_boundary_mu_tmp + offset, &patchMu[0], patchsize * sizeof(double));
-                        memcpy(h_boundary_rho_tmp + offset, &patchRho[0], patchsize * sizeof(double));
-                        memcpy(h_boundary_thermo_rhoD_tmp + offset, &patchRhoD[0], patchsize * sizeof(double));
-
-                        offset += patchsize;
-                    }
-                }
-                bool printFlag = false;
-                int rank = -1;
-                if (mpi_init_flag) {
-                    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-                }
-                if (!mpi_init_flag || rank == 0) {
-                    // thermo_GPU.compareT(&T[0], h_boundary_T_tmp, printFlag);
-                    // thermo_GPU.compareHe(&thermo.he()[0], h_boundary_he_tmp, printFlag);
-                    // thermo_GPU.comparePsi(&psi[0], h_boundary_thermo_psi_tmp, printFlag);
-                    // thermo_GPU.compareAlpha(&alpha[0], h_boundary_thermo_alpha_tmp, printFlag);
-                    // thermo_GPU.compareMu(&mu[0], h_boundary_mu_tmp, printFlag);
-                    // thermo_GPU.compareRho(&thermo.rho()()[0], h_boundary_rho_tmp, printFlag);
-                    // thermo_GPU.compareRhoD(&chemistry->rhoD(speciesIndex)[0], h_boundary_thermo_rhoD_tmp, speciesIndex, printFlag);
-                }
-
-                delete h_boundary_T_tmp;
-                delete h_boundary_he_tmp;
-                delete h_boundary_thermo_psi_tmp;
-                delete h_boundary_thermo_alpha_tmp;
-                delete h_boundary_mu_tmp;
-                delete h_boundary_rho_tmp;
-            #endif
+                // thermo_GPU.correctThermo();
+                // thermo_GPU.sync();
             #else
                 chemistry->correctThermo();
             #endif
@@ -460,27 +340,27 @@ int main(int argc, char *argv[])
             {
                 combustion->correct();
             }
-            // update T for debug
-            #ifdef GPUSolverNew_
-            double *h_T = dfDataBase.getFieldPointer("T", location::cpu, position::internal);
-            double *h_boundary_T_tmp = new double[dfDataBase.num_boundary_surfaces];
-            thermo_GPU.updateCPUT(h_T, h_boundary_T_tmp);
-            memcpy(&T[0], h_T, T.size() * sizeof(double));
-            offset = 0;
-            forAll(T.boundaryField(), patchi) {
-                const fvPatchScalarField& const_patchT = T.boundaryField()[patchi];
-                fvPatchScalarField& patchT = const_cast<fvPatchScalarField&>(const_patchT);
-                int patchsize = patchT.size();
-                if (patchT.type() == "processor") {
-                    memcpy(&patchT[0], h_boundary_T_tmp + offset, patchsize * sizeof(double));
-                    offset += patchsize * 2;
-                } else {
-                    memcpy(&patchT[0], h_boundary_T_tmp + offset, patchsize * sizeof(double));
-                    offset += patchsize;
-                }
-            }
-            delete h_boundary_T_tmp;
-            #endif
+            // // update T for debug
+            // #ifdef GPUSolverNew_
+            // double *h_T = dfDataBase.getFieldPointer("T", location::cpu, position::internal);
+            // double *h_boundary_T_tmp = new double[dfDataBase.num_boundary_surfaces];
+            // thermo_GPU.updateCPUT(h_T, h_boundary_T_tmp);
+            // memcpy(&T[0], h_T, T.size() * sizeof(double));
+            // offset = 0;
+            // forAll(T.boundaryField(), patchi) {
+            //     const fvPatchScalarField& const_patchT = T.boundaryField()[patchi];
+            //     fvPatchScalarField& patchT = const_cast<fvPatchScalarField&>(const_patchT);
+            //     int patchsize = patchT.size();
+            //     if (patchT.type() == "processor") {
+            //         memcpy(&patchT[0], h_boundary_T_tmp + offset, patchsize * sizeof(double));
+            //         offset += patchsize * 2;
+            //     } else {
+            //         memcpy(&patchT[0], h_boundary_T_tmp + offset, patchsize * sizeof(double));
+            //         offset += patchsize;
+            //     }
+            // }
+            // delete h_boundary_T_tmp;
+            // #endif
 
             Info<< "min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
 
@@ -497,20 +377,20 @@ int main(int argc, char *argv[])
                 else
                 {
 
-                #if defined GPUSolverNew_
-                    thermo_GPU.updateRho();
+                // #if defined GPUSolverNew_
+                //     thermo_GPU.updateRho();
 
-                    // Thermodynamic density needs to be updated by psi*d(p) after the
-                    // pressure solution
-                    thermo_GPU.psip0();
+                //     // Thermodynamic density needs to be updated by psi*d(p) after the
+                //     // pressure solution
+                //     thermo_GPU.psip0();
 
-                    UEqn_GPU.getHbyA();
-                    pEqn_GPU.process(GAMGdata, agglomeration_level);
-                    UEqn_GPU.sync();
-                    #include "pEqn_GPU.H"
-                #else
-                    #include "pEqn_CPU.H"
-                #endif
+                //     UEqn_GPU.getHbyA();
+                //     pEqn_GPU.process();
+                //     UEqn_GPU.sync();
+                //     #include "pEqn_GPU.H"
+                // #else
+                //     #include "pEqn_CPU.H"
+                // #endif
                 
                 }
                 num_pimple_loop --;
@@ -529,22 +409,22 @@ int main(int argc, char *argv[])
         clock_t loop_end = std::clock();
         double loop_time = double(loop_end - loop_start) / double(CLOCKS_PER_SEC);
 
-#ifdef GPUSolverNew_
-        thermo_GPU.updateRho();
-        dfDataBase.postTimeStep();
-#if defined DEBUG_
-        rho = thermo.rho();
-#endif
-#else
-        rho = thermo.rho();
-#endif
+// #ifdef GPUSolverNew_
+//         thermo_GPU.updateRho();
+//         dfDataBase.postTimeStep();
+// #if defined DEBUG_
+//         rho = thermo.rho();
+// #endif
+// #else
+//         rho = thermo.rho();
+// #endif
 
-#ifdef GPUSolverNew_
-        // write U
-        UEqn_GPU.postProcess();
-        memcpy(&U[0][0], dfDataBase.h_u, dfDataBase.cell_value_vec_bytes);
-        U.correctBoundaryConditions();
-#endif
+// #ifdef GPUSolverNew_
+//         // write U
+//         UEqn_GPU.postProcess();
+//         memcpy(&U[0][0], dfDataBase.h_u, dfDataBase.cell_value_vec_bytes);
+//         U.correctBoundaryConditions();
+// #endif
 
         runTime.write();
         Info<< "========Time Spent in diffenet parts========"<< endl;
@@ -696,19 +576,6 @@ int main(int argc, char *argv[])
         }
 #endif
     }
-
-#ifdef GPUSolverNew_
-    // clean cuda resources before main() exit.
-    // the destruct order should be reversed from the creation order
-    pEqn_GPU.cleanCudaResources();
-    EEqn_GPU.cleanCudaResources();
-    YEqn_GPU.cleanCudaResources();
-    UEqn_GPU.cleanCudaResources();
-    rhoEqn_GPU.cleanCudaResources();
-    thermo_GPU.cleanCudaResources();
-    dfDataBase.resetAmgxSolvers();
-    dfDataBase.cleanCudaResources();
-#endif
 
     Info<< "End\n" << endl;
 
