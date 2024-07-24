@@ -205,6 +205,20 @@ int main(int argc, char *argv[])
     start1 = std::clock();
 #ifdef GPUSolverNew_
 
+    IOdictionary fvSolutionDict
+    (
+        IOobject
+        (
+            "fvSolution",          // Dictionary name
+            runTime.system(),      // Location within case
+            Y[0].mesh(),           // Mesh reference
+            IOobject::MUST_READ,   // Read if present
+            IOobject::NO_WRITE     // Do not write to disk
+        )
+    );
+    dictionary solversDict = fvSolutionDict.subDict("solvers");
+    createGPUSolver(solversDict, rho, U, p, Y, thermo.he());
+
     int mpi_init_flag;
     checkMpiErrors(MPI_Initialized(&mpi_init_flag));
     if(mpi_init_flag) {

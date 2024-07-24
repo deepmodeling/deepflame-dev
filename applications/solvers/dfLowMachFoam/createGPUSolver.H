@@ -22,7 +22,7 @@ int **h_ellCols = nullptr;
 int **h_ldu2ellIndex = nullptr;
 
 /* For DeepFlame_Academic */
-void createGPUSolverInput(mesh_info_para &mesh_paras, const lduMesh& mesh, const dictionary solverControls, std::vector<int> patch_type, MATRIX_EQUATION EqnID);
+void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, MATRIX_EQUATION EqnID);
 void createGPUGAMGInput(const lduMesh& mesh, volScalarField& eqn);
 void setConstantIndexes(mesh_info_para &mesh_paras, const int *owner, const int *neighbor, const int *procRows, 
         const int *procCols, int globalOffset, int num_proc_surfaces);
@@ -218,14 +218,6 @@ void createGPURhoEqn(mesh_info_para &mesh_paras, init_data_para &init_data, cons
 
     init_data.patch_type_rho   = new int[mesh_paras.num_patches]();
     std::copy( patch_type.begin(), patch_type.end(), init_data.patch_type_rho ); 
-
-    /* For DeepFlame_Academic */
-    const dictionary solverControls = rho.mesh().solverDict(
-        rho.select(rho.mesh().data::template lookupOrDefault<bool>("finalIteration", false))); 
- 
-    createGPUSolverInput(mesh_paras, rho.mesh(), solverControls, patch_type, MATRIX_EQUATION::rhoEqn); 
-
-    initialize_matrix(MATRIX_EQUATION::rhoEqn);
 }
 
 void createGPUUEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const IOdictionary& CanteraTorchProperties, const volVectorField& U) {
@@ -279,13 +271,7 @@ void createGPUUEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     memcpy(init_data.boundary_u, &boundary_u_newOrder[0], mesh_paras.num_boundary_surfaces * 3 * sizeof(double));
 
     init_data.patch_type_U   = new int[mesh_paras.num_patches]();
-    std::copy( patch_type.begin(), patch_type.end(), init_data.patch_type_U ); 
-
-    /* For DeepFlame_Academic */
-    const dictionary solverControls = U.mesh().solverDict(
-        U.select(U.mesh().data::template lookupOrDefault<bool>("finalIteration", false)));
-    createGPUSolverInput(mesh_paras, U.mesh(), solverControls, patch_type, MATRIX_EQUATION::UEqn); 
-    initialize_matrix(MATRIX_EQUATION::UEqn);    
+    std::copy( patch_type.begin(), patch_type.end(), init_data.patch_type_U );   
 }
 
 void createGPUYEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const IOdictionary& CanteraTorchProperties, PtrList<volScalarField>& Y, const int inertIndex) {
@@ -332,6 +318,7 @@ void createGPUYEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
         }
     }
 
+    init_data.inertIndex  = inertIndex;
     init_data.y           = new double[mesh_paras.num_cells*init_data.num_species];
     init_data.boundary_y  = new double[mesh_paras.num_boundary_surfaces*init_data.num_species];
 
@@ -340,14 +327,6 @@ void createGPUYEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
 
     init_data.patch_type_Y   = new int[mesh_paras.num_patches]();
     std::copy( patch_type.begin(), patch_type.end(), init_data.patch_type_Y ); 
-
-    // /* For DeepFlame_Academic */
-    // const dictionary solverControls = Y[0].mesh().solverDict(
-    //     Y[0].select(Y[0].mesh().data::template lookupOrDefault<bool>("finalIteration", false))); 
- 
-    // createGPUSolverInput(mesh_paras, Y[0].mesh(), solverControls, patch_type, MATRIX_EQUATION::YEqn); 
-
-    // initialize_matrix(MATRIX_EQUATION::YEqn);
 }
 
 void createGPUEEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const IOdictionary& CanteraTorchProperties, volScalarField& he, volScalarField& K) {
@@ -366,7 +345,6 @@ void createGPUEEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
         constructBoundarySelectorPerPatch(&(patch_type_he[patchi]), he.boundaryField()[patchi].type());
         constructBoundarySelectorPerPatch(&(patch_type_k[patchi]), K.boundaryField()[patchi].type());
     }
-    // EEqn_GPU.setConstantFields(patch_type_he, patch_type_k);
 
     double h_boundary_he[mesh_paras.num_boundary_surfaces];
 
@@ -399,14 +377,6 @@ void createGPUEEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
 
     init_data.patch_type_k   = new int[mesh_paras.num_patches]();
     std::copy( patch_type_k.begin(), patch_type_k.end(), init_data.patch_type_k ); 
-
-    // /* For DeepFlame_Academic */
-    // const dictionary solverControls = he.mesh().solverDict(
-    //     he.select(he.mesh().data::template lookupOrDefault<bool>("finalIteration", false))); 
- 
-    // createGPUSolverInput(mesh_paras, he.mesh(), solverControls, patch_type_he, MATRIX_EQUATION::EEqn); 
-
-    // initialize_matrix(MATRIX_EQUATION::EEqn);
 }
 
 void createGPUpEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const IOdictionary& CanteraTorchProperties, volScalarField& p, const volVectorField& U) {
@@ -444,7 +414,6 @@ void createGPUpEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
             offset += patchsize;
         }
     }
-    // pEqn_GPU.setConstantFields(patch_type_U, patch_type_p);
 
     init_data.p = &p[0];
 
@@ -454,14 +423,6 @@ void createGPUpEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
 
     init_data.patch_type_p   = new int[mesh_paras.num_patches]();
     std::copy( patch_type_p.begin(), patch_type_p.end(), init_data.patch_type_p ); 
-
-    /* For DeepFlame_Academic */
-    const dictionary solverControls = p.mesh().solverDict(
-        p.select(p.mesh().data::template lookupOrDefault<bool>("finalIteration", false))); 
- 
-    createGPUSolverInput(mesh_paras, p.mesh(), solverControls, patch_type_p, MATRIX_EQUATION::pEqn); 
-
-    initialize_matrix(MATRIX_EQUATION::pEqn);
 }
 
 void createGPUThermo(mesh_info_para &mesh_paras, init_data_para &init_data, const IOdictionary& CanteraTorchProperties, volScalarField& T, volScalarField& he, 
@@ -561,8 +522,6 @@ void createGPUThermo(mesh_info_para &mesh_paras, init_data_para &init_data, cons
         memcpy(h_thermo_rhoD + i * mesh_paras.num_cells, &chemistry->rhoD(i)[0], mesh_paras.num_cells * sizeof(double));
     }
 
-    // thermo_GPU.setConstantFields(patch_type_T);
-
     init_data.T = &T[0];
     init_data.thermo_psi = &psi[0];
     init_data.thermo_alpha = &alpha[0];
@@ -601,6 +560,33 @@ void createGPUThermo(mesh_info_para &mesh_paras, init_data_para &init_data, cons
 /*=========================================================================*/
 /*                          For DeepFlame_Academic                         */
 /*                                                                         */
+void createGPUSolver(const dictionary solversDict, 
+                     const volScalarField& rho, const volVectorField& U, volScalarField& p, 
+                     PtrList<volScalarField>& Y, volScalarField& he)
+{
+    dictionary rhoSolverDict = solversDict.subDict("rho"); 
+    dictionary USolverDict = solversDict.subDict("U"); 
+    dictionary pSolverDict = solversDict.subDict("p"); 
+    dictionary YSolverDict = solversDict.subDict("Yi"); 
+    dictionary ESolverDict = solversDict.subDict("ha"); 
+
+    /* For DeepFlame_Academic */
+    createGPUSolverInput(rho.mesh(), rhoSolverDict, MATRIX_EQUATION::rhoEqn); 
+    initialize_matrix(MATRIX_EQUATION::rhoEqn);
+
+    createGPUSolverInput(U.mesh(), USolverDict, MATRIX_EQUATION::UEqn); 
+    initialize_matrix(MATRIX_EQUATION::UEqn);  
+
+    createGPUSolverInput(Y[0].mesh(), YSolverDict, MATRIX_EQUATION::YEqn); 
+    initialize_matrix(MATRIX_EQUATION::YEqn);
+
+    createGPUSolverInput(he.mesh(), ESolverDict, MATRIX_EQUATION::EEqn); 
+    initialize_matrix(MATRIX_EQUATION::EEqn);
+
+    createGPUSolverInput(p.mesh(), pSolverDict, MATRIX_EQUATION::pEqn); 
+    initialize_matrix(MATRIX_EQUATION::pEqn);    
+}
+
 void createGPUGAMGInput(const lduMesh& mesh, const dictionary solverControls)
 {
     std::cout << "========================================================" << std::endl;
@@ -774,7 +760,7 @@ void createGPUGAMGInput(const lduMesh& mesh, const dictionary solverControls)
 
 }
 
-void createGPUSolverInput(mesh_info_para &mesh_paras, const lduMesh& mesh, const dictionary solverControls, std::vector<int> patch_type, MATRIX_EQUATION EqnID)
+void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, MATRIX_EQUATION EqnID)
 {
     std::cout << "==========================================================" << std::endl;
     std::cout << "   Set linear solver variables for DeepFlame_Academic: " << EqnID << std::endl;    
@@ -798,9 +784,6 @@ void createGPUSolverInput(mesh_info_para &mesh_paras, const lduMesh& mesh, const
     if (maxIter   > 0) solver_configs.maxIter   = maxIter;
     if (tolerance > 0) solver_configs.tolerance = tolerance;
     if (relTol    > 0) solver_configs.reltol    = relTol;
-
-    solver_configs.patch_type = (int*)malloc(sizeof(int)*mesh_paras.num_patches);
-    std::copy( patch_type.begin(), patch_type.end(), solver_configs.patch_type );   
 
     // Set solver
     const word solver(solverControls.lookup("solver"));
@@ -849,7 +832,11 @@ void createGPUSolverInput(mesh_info_para &mesh_paras, const lduMesh& mesh, const
     if (smoother == "SRJ")    matrix_smoother = 1;
 
     // SET MATRIX_SPARSE_FORMAT
+#ifdef iscsr
     int sparse_format = 0; // CSR
+#else
+    int sparse_format = 1; // ELL
+#endif    
 
     set_matrix_solver(  solver_configs, 
                         static_cast<MATRIX_SMOOTHER>(matrix_smoother),
@@ -879,7 +866,6 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     forAll(mesh.boundary(), patchi) 
     {
         patch_offset.push_back(num_boundary_surfaces);
-        std::cout << "patchi: " << patchi << ", " << num_boundary_surfaces << std::endl;
 
         const fvPatchScalarField& patchY = Y[0].boundaryField()[patchi];
         int patchsize = patchY.size();
