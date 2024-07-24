@@ -322,21 +322,21 @@ int main(int argc, char *argv[])
             end = std::clock();
             time_monitor_U += double(end - start) / double(CLOCKS_PER_SEC);
 
-            std::cout << "*************************************************" << std::endl;
-            std::cout << "NOTICE:" << std::endl;
-            std::cout << "  The subsequent code has not been modified yet. " << std::endl;
-            std::cout << "*************************************************" << std::endl;
-            abort();    
-
             if(combModelName!="ESF" && combModelName!="flareFGM" && combModelName!="DeePFGM")
             {
                 start = std::clock();
                 // #include "YEqn.H"
+                #ifdef GPUSolverNew_
+                process_equation(MATRIX_EQUATION::YEqn);
+                #endif
                 end = std::clock();
                 time_monitor_Y += double(end - start) / double(CLOCKS_PER_SEC);
 
                 start = std::clock();
                 // #include "EEqn.H"
+                #ifdef GPUSolverNew_
+                process_equation(MATRIX_EQUATION::EEqn);
+                #endif
                 end = std::clock();
                 time_monitor_E += double(end - start) / double(CLOCKS_PER_SEC);
 
@@ -391,20 +391,22 @@ int main(int argc, char *argv[])
                 else
                 {
 
-                // #if defined GPUSolverNew_
-                //     thermo_GPU.updateRho();
+                #ifdef GPUSolverNew_
+                    process_equation(MATRIX_EQUATION::pEqn); //include all "pEqn_GPU.H"
 
-                //     // Thermodynamic density needs to be updated by psi*d(p) after the
-                //     // pressure solution
-                //     thermo_GPU.psip0();
+                    // thermo_GPU.updateRho();
 
-                //     UEqn_GPU.getHbyA();
-                //     pEqn_GPU.process();
-                //     UEqn_GPU.sync();
-                //     #include "pEqn_GPU.H"
-                // #else
-                //     #include "pEqn_CPU.H"
-                // #endif
+                    // // Thermodynamic density needs to be updated by psi*d(p) after the
+                    // // pressure solution
+                    // thermo_GPU.psip0();
+
+                    // UEqn_GPU.getHbyA();
+                    // pEqn_GPU.process();
+                    // UEqn_GPU.sync();
+                    // #include "pEqn_GPU.H"
+                #else
+                    #include "pEqn_CPU.H"
+                #endif
                 
                 }
                 num_pimple_loop --;
@@ -439,6 +441,12 @@ int main(int argc, char *argv[])
 //         memcpy(&U[0][0], dfDataBase.h_u, dfDataBase.cell_value_vec_bytes);
 //         U.correctBoundaryConditions();
 // #endif
+
+        std::cout << "*************************************************" << std::endl;
+        std::cout << "NOTICE:" << std::endl;
+        std::cout << "  The subsequent code has not been modified yet. " << std::endl;
+        std::cout << "*************************************************" << std::endl;
+        abort();    
 
         runTime.write();
         Info<< "========Time Spent in diffenet parts========"<< endl;
