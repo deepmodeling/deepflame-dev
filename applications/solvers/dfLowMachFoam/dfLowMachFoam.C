@@ -204,21 +204,6 @@ int main(int argc, char *argv[])
 
     start1 = std::clock();
 #ifdef GPUSolverNew_
-
-    IOdictionary fvSolutionDict
-    (
-        IOobject
-        (
-            "fvSolution",          // Dictionary name
-            runTime.system(),      // Location within case
-            Y[0].mesh(),           // Mesh reference
-            IOobject::MUST_READ,   // Read if present
-            IOobject::NO_WRITE     // Do not write to disk
-        )
-    );
-    dictionary solversDict = fvSolutionDict.subDict("solvers");
-    createGPUSolver(solversDict, rho, U, p, Y, thermo.he());
-
     int mpi_init_flag;
     checkMpiErrors(MPI_Initialized(&mpi_init_flag));
     if(mpi_init_flag) {
@@ -243,6 +228,23 @@ int main(int argc, char *argv[])
 
     set_mesh_info(mesh_paras);
     set_data_info(init_data);
+    
+    createGPUSparseFormat(mesh_paras, mesh);
+
+    IOdictionary fvSolutionDict
+    (
+        IOobject
+        (
+            "fvSolution",          // Dictionary name
+            runTime.system(),      // Location within case
+            Y[0].mesh(),           // Mesh reference
+            IOobject::MUST_READ,   // Read if present
+            IOobject::NO_WRITE     // Do not write to disk
+        )
+    );
+    dictionary solversDict = fvSolutionDict.subDict("solvers");
+    createGPUSolver(solversDict, rho, U, p, Y, thermo.he());    
+    
     DEBUG_TRACE;
 
     // if (chemistry->ifChemstry())
@@ -325,7 +327,7 @@ int main(int argc, char *argv[])
             if(combModelName!="ESF" && combModelName!="flareFGM" && combModelName!="DeePFGM")
             {
                 start = std::clock();
-                // #include "YEqn.H"
+                #include "YEqn.H"
                 #ifdef GPUSolverNew_
                 process_equation(MATRIX_EQUATION::YEqn);
                 #endif

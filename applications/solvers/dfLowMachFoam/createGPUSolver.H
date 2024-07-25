@@ -270,6 +270,8 @@ void createGPUUEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     memcpy(init_data.u,          &u_newOrder[0],          mesh_paras.num_cells * 3 * sizeof(double));
     memcpy(init_data.boundary_u, &boundary_u_newOrder[0], mesh_paras.num_boundary_surfaces * 3 * sizeof(double));
 
+    writeDoubleArrayToFile(init_data.boundary_u, mesh_paras.num_boundary_surfaces * 3, "U_boundary_u.host");
+
     init_data.patch_type_U   = new int[mesh_paras.num_patches]();
     std::copy( patch_type.begin(), patch_type.end(), init_data.patch_type_U );   
 }
@@ -878,32 +880,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
         }
         num_patches++;
     }
-    // prepare interface info
-    const globalIndex globalNumbering(num_cells);
-    const lduInterfacePtrsList interfaces(mesh.interfaces());
-    const lduAddressing& lduAddr = mesh.lduAddr();
-    labelList globalCells(num_cells);
-    forAll(globalCells, celli)
-    {
-        globalCells[celli] = globalNumbering.toGlobal(Pstream::myProcNo(), celli);
-    }
-    const label nReq = Pstream::nRequests();
-    label nProcValues = 0;
-    // send global cells
-    forAll(interfaces, patchi)
-    {
-        if (interfaces.set(patchi))
-        {
-            nProcValues += lduAddr.patchAddr(patchi).size();
 
-            // send patchInternalField
-            interfaces[patchi].initInternalFieldTransfer
-            (
-                Pstream::commsTypes::nonBlocking,
-                globalCells
-            );
-        }
-    }
     // TODO: get deltaT fomr time API
     double rDeltaT = 1 / 1e-6;
 
@@ -932,51 +909,6 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
                     cyclicPatch().cyclicPatch().neighbPatch().name()];
         }
     }
-    // prepare constant indexes: owner, neighbor, procRows, procCols
-    if (Pstream::parRun())
-    {
-        Pstream::waitRequests(nReq);
-    }
-    labelField procRows(nProcValues, 0);
-    labelField procCols(nProcValues, 0);
-    nProcValues = 0;
-
-    forAll(interfaces, patchi)
-    {
-        if (interfaces.set(patchi))
-        {
-            // local cell index
-            const labelUList& faceCells = lduAddr.patchAddr(patchi);
-            const label len = faceCells.size();
-
-            // global col index
-            labelField nbrCells
-            (
-                interfaces[patchi].internalFieldTransfer
-                (
-                    Pstream::commsTypes::nonBlocking,
-                    globalCells
-                )
-            );
-
-            if (faceCells.size() != nbrCells.size())
-            {
-                FatalErrorInFunction
-                    << "Mismatch in interface sizes (AMI?)" << nl
-                    << "Have " << faceCells.size() << " != "
-                    << nbrCells.size() << nl
-                    << exit(FatalError);
-            }
-
-            // for AMGx: Local rows, Global columns
-            SubList<label>(procRows, len, nProcValues) = faceCells;
-            SubList<label>(procCols, len, nProcValues) = nbrCells;
-            nProcValues += len;
-        }
-    }
-    label globalOffset = globalNumbering.toGlobal(0);
-    /* For DeepFlame_Academic */
-    setConstantIndexes(mesh_paras, &owner[0], &neighbour[0], &procRows[0], &procCols[0], globalOffset, nProcValues);
 
     // prepare internal and boundary of sf, mag_sf, weights, delta_coeffs, volume
     double *boundary_sf = new double[3 * num_boundary_surfaces];
@@ -1140,6 +1072,92 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     delete boundary_weights;
     delete boundary_face_cell;
 }
+
+
+void createGPUSparseFormat(mesh_info_para &mesh_paras, fvMesh& mesh)
+{
+    std::cout << "==========================================================" << std::endl;
+    std::cout << "   Set mesh info variables for DeepFlame_Academic   " << std::endl;   
+
+    // prepare constant values: num_cells, num_surfaces, num_boundary_surfaces,
+    // num_patches, patch_size, num_species, rdelta_t
+    const labelUList& owner = mesh.owner();
+    const labelUList& neighbour = mesh.neighbour();
+
+    // prepare interface info
+    const globalIndex globalNumbering(mesh_paras.num_cells);
+    const lduInterfacePtrsList interfaces(mesh.interfaces());
+    const lduAddressing& lduAddr = mesh.lduAddr();
+    labelList globalCells(mesh_paras.num_cells);
+    forAll(globalCells, celli)
+    {
+        globalCells[celli] = globalNumbering.toGlobal(Pstream::myProcNo(), celli);
+    }
+    const label nReq = Pstream::nRequests();
+    label nProcValues = 0;
+    // send global cells
+    forAll(interfaces, patchi)
+    {
+        if (interfaces.set(patchi))
+        {
+            nProcValues += lduAddr.patchAddr(patchi).size();
+
+            // send patchInternalField
+            interfaces[patchi].initInternalFieldTransfer
+            (
+                Pstream::commsTypes::nonBlocking,
+                globalCells
+            );
+        }
+    }
+
+    // prepare constant indexes: owner, neighbor, procRows, procCols
+    if (Pstream::parRun())
+    {
+        Pstream::waitRequests(nReq);
+    }
+    labelField procRows(nProcValues, 0);
+    labelField procCols(nProcValues, 0);
+    nProcValues = 0;
+
+    forAll(interfaces, patchi)
+    {
+        if (interfaces.set(patchi))
+        {
+            // local cell index
+            const labelUList& faceCells = lduAddr.patchAddr(patchi);
+            const label len = faceCells.size();
+
+            // global col index
+            labelField nbrCells
+            (
+                interfaces[patchi].internalFieldTransfer
+                (
+                    Pstream::commsTypes::nonBlocking,
+                    globalCells
+                )
+            );
+
+            if (faceCells.size() != nbrCells.size())
+            {
+                FatalErrorInFunction
+                    << "Mismatch in interface sizes (AMI?)" << nl
+                    << "Have " << faceCells.size() << " != "
+                    << nbrCells.size() << nl
+                    << exit(FatalError);
+            }
+
+            // for AMGx: Local rows, Global columns
+            SubList<label>(procRows, len, nProcValues) = faceCells;
+            SubList<label>(procCols, len, nProcValues) = nbrCells;
+            nProcValues += len;
+        }
+    }
+    label globalOffset = globalNumbering.toGlobal(0);
+    /* For DeepFlame_Academic */
+    setConstantIndexes(mesh_paras, &owner[0], &neighbour[0], &procRows[0], &procCols[0], globalOffset, nProcValues);
+}
+
 
 void setConstantIndexes(mesh_info_para &mesh_paras, const int *owner, const int *neighbor, const int *procRows, 
         const int *procCols, int globalOffset, int num_proc_surfaces)
