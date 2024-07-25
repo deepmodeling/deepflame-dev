@@ -38,7 +38,7 @@ void writeDoubleArrayToFile(const double* data, int num, const std::string& file
         std::cerr << "Failed to open file: " << filename << std::endl;
     }
 
-    file << std::fixed << std::setprecision(15);
+    file << std::scientific << std::setprecision(15);
 
     for (int i = 0; i < num; ++i) {
         file << data[i];
@@ -695,12 +695,19 @@ void createGPUGAMGInput(const lduMesh& mesh, const dictionary solverControls)
         GAMG_maps[leveli].nCell = restrictMapVector.size();
         GAMG_maps[leveli].nFace = faceRestrictMapVector.size();
 
-        GAMG_maps[leveli].upperAddr = upperAddrVector.data();
-        GAMG_maps[leveli].lowerAddr = lowerAddrVector.data();
+        GAMG_maps[leveli].upperAddr  = new int[GAMG_maps[leveli].nFace];
+        GAMG_maps[leveli].lowerAddr  = new int[GAMG_maps[leveli].nFace];
 
-        GAMG_maps[leveli].restrictMap = restrictMapVector.data();
-        GAMG_maps[leveli].faceRestrictMap = faceRestrictMapVector.data();
-        GAMG_maps[leveli].faceFlipMap = faceFlipMapVector_int.data();
+        GAMG_maps[leveli].restrictMap = new int[GAMG_maps[leveli].nCell];
+        GAMG_maps[leveli].faceRestrictMap = new int[GAMG_maps[leveli].nFace];
+        GAMG_maps[leveli].faceFlipMap  = new int[GAMG_maps[leveli].nFace];
+
+        memcpy(GAMG_maps[leveli].upperAddr, upperAddrVector.data(), GAMG_maps[leveli].nFace * sizeof(int));
+        memcpy(GAMG_maps[leveli].lowerAddr, lowerAddrVector.data(), GAMG_maps[leveli].nFace * sizeof(int));
+
+        memcpy(GAMG_maps[leveli].restrictMap, restrictMapVector.data(), GAMG_maps[leveli].nCell * sizeof(int));
+        memcpy(GAMG_maps[leveli].faceRestrictMap, faceRestrictMapVector.data(), GAMG_maps[leveli].nFace * sizeof(int));
+        memcpy(GAMG_maps[leveli].faceFlipMap, faceFlipMapVector_int.data(), GAMG_maps[leveli].nFace * sizeof(int));
 
         setConstantIndexes_GAMG(GAMG_maps[leveli].nCell, GAMG_maps[leveli].nFace, &GAMG_maps[leveli].lowerAddr[0], 
                 &GAMG_maps[leveli].upperAddr[0], leveli, sparse_type);
