@@ -28,6 +28,11 @@ Description
     Solve the continuity for density.
 
 \*---------------------------------------------------------------------------*/
+/* FOR DEEPFLAME-ACADEMIC */
+#ifdef GPUSolverNew_
+    process_equation(MATRIX_EQUATION::rhoEqn);
+#endif
+
 #ifdef GPUSolverNew_
 #ifdef DEBUG_
     // checkValue

@@ -1,3 +1,8 @@
+/* FOR DEEPFLAME-ACADEMIC */
+#ifdef GPUSolverNew_
+    process_equation(MATRIX_EQUATION::UEqn);
+#endif
+
 // Solve the Momentum equation
 #ifdef GPUSolverNew_
 
@@ -111,6 +116,7 @@
     double U_newOrder[mesh_paras.num_cells * 3];
     permuteVector(U_newOrder, &U[0][0], mesh_paras.num_cells);
     writeDoubleArrayToFile(U_newOrder, mesh_paras.num_cells * 3, "U_u_solved.host");
+    writeDoubleArrayToFile(&K[0], mesh_paras.num_cells, "U_k.host");
 
     // checkResult
     // TODO: for temp, now we compare ldu, finally we compare csr

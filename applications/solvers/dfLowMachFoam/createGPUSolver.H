@@ -530,7 +530,9 @@ void createGPUThermo(mesh_info_para &mesh_paras, init_data_para &init_data, cons
     init_data.mu = &mu[0];
     init_data.k = &K[0];
     init_data.dpdt = &dpdt[0];
-    init_data.thermo_rhoD = &h_thermo_rhoD[0];
+
+    init_data.thermo_rhoD  = new double[mesh_paras.num_cells * init_data.num_species];
+    memcpy(init_data.thermo_rhoD, &h_thermo_rhoD[0], mesh_paras.num_cells * init_data.num_species * sizeof(double));
 
     init_data.boundary_T  = new double[mesh_paras.num_boundary_surfaces];
     init_data.boundary_thermo_psi  = new double[mesh_paras.num_boundary_surfaces];

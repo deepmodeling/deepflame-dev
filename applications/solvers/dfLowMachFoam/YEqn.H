@@ -1,3 +1,8 @@
+/* FOR DEEPFLAME-ACADEMIC */
+#ifdef GPUSolverNew_
+    process_equation(MATRIX_EQUATION::YEqn);
+#endif
+
 #ifdef GPUSolverNew_
 #if defined DEBUG_
     hDiffCorrFlux = Zero;
@@ -115,7 +120,7 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
             // YiEqn.relax();
 
             start1 = std::clock();
-            YiEqn.solve("Yi");
+            // YiEqn.solve("Yi");
             end1 = std::clock();
             time_monitor_YEqn_solve += double(end1 - start1) / double(CLOCKS_PER_SEC);
 
@@ -131,6 +136,11 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
 
     // should compute grad_yi before YiEqn.solve()
     const volVectorField grad_yi = fvc::grad(Y[specie_index]);
+    double grad_y_newOrder[mesh_paras.num_cells * 3];
+    permuteVector(grad_y_newOrder, &grad_yi[0][0], mesh_paras.num_cells);
+
+    writeDoubleArrayToFile(&Y[0][0], mesh_paras.num_cells, "Y_y.host");
+    writeDoubleArrayToFile(&grad_y_newOrder[0], mesh_paras.num_cells * 3, "Y_grad_y.host");
 
     tmp<volScalarField> DEff = chemistry->rhoD(specie_index) + turbulence->mut()/Sct;
     fvScalarMatrix YiEqn
@@ -138,8 +148,8 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
          fvm::ddt(rho, Y[specie_index])
          + mvConvection->fvmDiv(phi, Y[specie_index])
          + mvConvection->fvmDiv(phiUc, Y[specie_index])
-         ==
-         fvm::laplacian(DEff(), Y[specie_index])
+        //  ==
+        //  fvm::laplacian(DEff(), Y[specie_index])
         );
     // YiEqn.relax();
     // YiEqn.solve("Yi");
@@ -244,6 +254,17 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
         // YEqn_GPU.compareResult(&YiEqn.lower()[0], &YiEqn.upper()[0], &YiEqn.diag()[0], &YiEqn.source()[0],
         //         yeqn_h_internal_coeffs.data(), yeqn_h_boundary_coeffs.data(), printFlag);
     }
+    double diffAlphaD_newOrder[mesh_paras.num_cells * 3];
+    double hDiffCorrFlux_newOrder[mesh_paras.num_cells * 3];
+    double sumYDiffError_newOrder[mesh_paras.num_cells * 3];
+    permuteVector(diffAlphaD_newOrder, &diffAlphaD[0], mesh_paras.num_cells);
+    permuteVector(hDiffCorrFlux_newOrder, &hDiffCorrFlux[0][0], mesh_paras.num_cells);
+    permuteVector(sumYDiffError_newOrder, &sumYDiffError[0][0], mesh_paras.num_cells);
+
+    writeDoubleArrayToFile(&diffAlphaD_newOrder[0], mesh_paras.num_cells * 3, "Y_diffAlphaD.host");
+    writeDoubleArrayToFile(&hDiffCorrFlux_newOrder[0], mesh_paras.num_cells * 3, "Y_hDiffCorrFlux.host");
+    writeDoubleArrayToFile(&sumYDiffError_newOrder[0], mesh_paras.num_cells * 3, "Y_sumYDiffError.host");
+    writeDoubleArrayToFile(&phiUc[0], mesh_paras.num_surfaces, "Y_phiUc.host");
 
     writeDoubleArrayToFile(&YiEqn.lower()[0], mesh_paras.num_surfaces, "Y_lower0.host");
     writeDoubleArrayToFile(&YiEqn.upper()[0], mesh_paras.num_surfaces, "Y_upper0.host");

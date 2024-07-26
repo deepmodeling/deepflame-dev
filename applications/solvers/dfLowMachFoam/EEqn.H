@@ -1,11 +1,16 @@
+/* FOR DEEPFLAME-ACADEMIC */
+#ifdef GPUSolverNew_
+    process_equation(MATRIX_EQUATION::EEqn);
+#endif
+
 {
     volScalarField& he = thermo.he();
 #if defined GPUSolverNew_
-    double *h_he = dfDataBase.getFieldPointer("he", location::cpu, position::internal);
-    double *h_boundary_he = dfDataBase.getFieldPointer("he", location::cpu, position::boundary);
+    // double *h_he = dfDataBase.getFieldPointer("he", location::cpu, position::internal);
+    // double *h_boundary_he = dfDataBase.getFieldPointer("he", location::cpu, position::boundary);
 
-    EEqn_GPU.process();
-    EEqn_GPU.sync();
+    // EEqn_GPU.process();
+    // EEqn_GPU.sync();
     // EEqn_GPU.postProcess(h_he, h_boundary_he);
 
     // copy h_he to he(cpu)
@@ -41,8 +46,8 @@
     EEqn.solve("ha");
     // checkResult
     // TODO: for temp, now we compare ldu, finally we compare csr
-    std::vector<double> h_internal_coeffs(dfDataBase.num_boundary_surfaces);
-    std::vector<double> h_boundary_coeffs(dfDataBase.num_boundary_surfaces);
+    std::vector<double> h_internal_coeffs(mesh_paras.num_boundary_surfaces);
+    std::vector<double> h_boundary_coeffs(mesh_paras.num_boundary_surfaces);
 
     offset = 0;
     forAll(he.boundaryField(), patchi)
@@ -65,7 +70,7 @@
         }
     }
 
-    double *h_boundary_he_tmp = new double[dfDataBase.num_boundary_surfaces];
+    double *h_boundary_he_tmp = new double[mesh_paras.num_boundary_surfaces];
     offset = 0;
     forAll(he.boundaryField(), patchi)
     {
