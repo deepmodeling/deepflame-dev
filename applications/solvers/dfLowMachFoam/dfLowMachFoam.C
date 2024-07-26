@@ -212,7 +212,11 @@ int main(int argc, char *argv[])
         initNccl();
     }
 
-    /* FOR DEEPFLAME-ACADEMIC */
+    std::cout << "                                                          " << std::endl;
+    std::cout << "==========================================================" << std::endl;
+    std::cout << "              SETDATA FOR DEEPFLAME-ACADEMIC              " << std::endl;
+    std::cout << "                                                          " << std::endl; 
+    
     mesh_info_para mesh_paras;    
     init_data_para init_data;
 
@@ -251,8 +255,12 @@ int main(int argc, char *argv[])
     dictionary solversDict = fvSolutionDict.subDict("solvers");
 
     // DF-A: SET LINEAR SOLVER CONFIGS
-    createGPUSolver(solversDict, rho, U, p, Y, thermo.he());    
-    
+    createGPUSolver(solversDict, rho, U, p, Y, thermo.he()); 
+
+    std::cout << "                                                          " << std::endl;
+    std::cout << "!!!  All data has been set done for deepflame academic.   " << std::endl; 
+    std::cout << "==========================================================" << std::endl;
+
     DEBUG_TRACE;
 
     // if (chemistry->ifChemstry())

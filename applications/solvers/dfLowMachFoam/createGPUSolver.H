@@ -270,8 +270,6 @@ void createGPUUEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     memcpy(init_data.u,          &u_newOrder[0],          mesh_paras.num_cells * 3 * sizeof(double));
     memcpy(init_data.boundary_u, &boundary_u_newOrder[0], mesh_paras.num_boundary_surfaces * 3 * sizeof(double));
 
-    writeDoubleArrayToFile(init_data.boundary_u, mesh_paras.num_boundary_surfaces * 3, "U_boundary_u.host");
-
     init_data.patch_type_U   = new int[mesh_paras.num_patches]();
     std::copy( patch_type.begin(), patch_type.end(), init_data.patch_type_U );   
 }
@@ -593,8 +591,7 @@ void createGPUSolver(const dictionary solversDict,
 
 void createGPUGAMGInput(const lduMesh& mesh, const dictionary solverControls)
 {
-    std::cout << "========================================================" << std::endl;
-    std::cout << "   Set GAMG variables for DeepFlame_Academic " << std::endl;    
+    std::cout << " -- Set GAMG variables for DeepFlame_Academic " << std::endl;    
 
     // read control files
     word preconditioner, smoother;
@@ -622,18 +619,18 @@ void createGPUGAMGInput(const lduMesh& mesh, const dictionary solverControls)
     {
         eP.stream() >> preconditioner;
     }
-    std::cout << "=== GAMG config preconditioner: " << preconditioner << std::endl;
-    std::cout << "=== GAMG config smoother: " << smoother << std::endl;
+    std::cout << "   == GAMG config preconditioner: " << preconditioner << std::endl;
+    std::cout << "   == GAMG config smoother: " << smoother << std::endl;
 
-    std::cout << "=== GAMG config nVcycles: " << nVcycles << std::endl; 
-    std::cout << "=== GAMG config nCellsInCoarsestLevel: " << nCellsInCoarsestLevel << std::endl; 
-    std::cout << "=== GAMG config nPreSweeps: " << nPreSweeps << std::endl; 
-    std::cout << "=== GAMG config nPostSweeps: " << nPostSweeps << std::endl; 
-    std::cout << "=== GAMG config nFinestSweeps: " << nFinestSweeps << std::endl; 
+    std::cout << "   == GAMG config nVcycles: " << nVcycles << std::endl; 
+    std::cout << "   == GAMG config nCellsInCoarsestLevel: " << nCellsInCoarsestLevel << std::endl; 
+    std::cout << "   == GAMG config nPreSweeps: " << nPreSweeps << std::endl; 
+    std::cout << "   == GAMG config nPostSweeps: " << nPostSweeps << std::endl; 
+    std::cout << "   == GAMG config nFinestSweeps: " << nFinestSweeps << std::endl; 
 
-    std::cout << "=== GAMG config interpolateCorrection: " << interpolateCorrection << std::endl;  
-    std::cout << "=== GAMG config scaleCorrection: " << scaleCorrection << std::endl; 
-    std::cout << "=== GAMG config solveCoarsest: " << solveCoarsest << std::endl; 
+    std::cout << "   == GAMG config interpolateCorrection: " << interpolateCorrection << std::endl;  
+    std::cout << "   == GAMG config scaleCorrection: " << scaleCorrection << std::endl; 
+    std::cout << "   == GAMG config solveCoarsest: " << solveCoarsest << std::endl; 
     
     int sparse_type = -1;
 #ifdef iscsr
@@ -647,7 +644,7 @@ void createGPUGAMGInput(const lduMesh& mesh, const dictionary solverControls)
 #endif
 
     int agglomeration_level = agglomeration.size();
-    std::cout << "=== GAMG agglomeration level: " << agglomeration_level << std::endl;
+    std::cout << "   == GAMG agglomeration level: " << agglomeration_level << std::endl;
 
 #ifdef iscsr
     h_ldu_to_csr_no_diag = (int**)malloc(sizeof(int*)*agglomeration_level);
@@ -714,8 +711,8 @@ void createGPUGAMGInput(const lduMesh& mesh, const dictionary solverControls)
         setConstantIndexes_GAMG(GAMG_maps[leveli].nCell, GAMG_maps[leveli].nFace, &GAMG_maps[leveli].lowerAddr[0], 
                 &GAMG_maps[leveli].upperAddr[0], leveli, sparse_type);
 
-        std::cout << "  == level: " << leveli << ", cell: " << GAMG_maps[leveli].nCell
-                                              << ", face: " << GAMG_maps[leveli].nFace << std::endl;
+        std::cout << "    === level: " << leveli << ", cell: " << GAMG_maps[leveli].nCell
+                                                << ", face: " << GAMG_maps[leveli].nFace << std::endl;
 
         int patchSize = agglomeration.nPatchFaces(0).size();
         GAMG_maps[leveli].patchSize = patchSize;
@@ -773,8 +770,7 @@ void createGPUGAMGInput(const lduMesh& mesh, const dictionary solverControls)
 
 void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, MATRIX_EQUATION EqnID)
 {
-    std::cout << "==========================================================" << std::endl;
-    std::cout << "   Set linear solver variables for DeepFlame_Academic: " << EqnID << std::endl;    
+    std::cout << "- Set linear solver variables for DeepFlame_Academic: " << EqnID << std::endl;    
     
     matrix_solver_para solver_configs;
 
@@ -786,10 +782,10 @@ void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, 
     solverControls.readIfPresent("tolerance", tolerance);
     solverControls.readIfPresent("relTol",    relTol);
 
-    std::cout << "=== Solver config minIter: "   << minIter   << std::endl;
-    std::cout << "=== Solver config maxIter: "   << maxIter   << std::endl;
-    std::cout << "=== Solver config tolerance: " << tolerance << std::endl;
-    std::cout << "=== Solver config relTol: "    << relTol    << std::endl;
+    std::cout << "  = Solver config minIter: "   << minIter   << std::endl;
+    std::cout << "  = Solver config maxIter: "   << maxIter   << std::endl;
+    std::cout << "  = Solver config tolerance: " << tolerance << std::endl;
+    std::cout << "  = Solver config relTol: "    << relTol    << std::endl;
 
     if (minIter   > 0) solver_configs.minIter   = minIter;
     if (maxIter   > 0) solver_configs.maxIter   = maxIter;
@@ -798,7 +794,7 @@ void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, 
 
     // Set solver
     const word solver(solverControls.lookup("solver"));
-    std::cout << "=== Solver config solver: " << solver << std::endl;
+    std::cout << "  = Solver config solver: " << solver << std::endl;
 
     // read control files
     word preconditioner, smoother;
@@ -814,8 +810,8 @@ void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, 
         {
             eP.stream() >> preconditioner;
         }
-        std::cout << "=== Solver config preconditioner: " << preconditioner << std::endl;
-        std::cout << "=== Solver config smoother: " << smoother << std::endl;
+        std::cout << "  = Solver config preconditioner: " << preconditioner << std::endl;
+        std::cout << "  = Solver config smoother: " << smoother << std::endl;
     }
 
     // SET MATRIX_SOLVER
@@ -861,8 +857,7 @@ void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, 
 void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data, 
                         const IOdictionary& CanteraTorchProperties, fvMesh& mesh, PtrList<volScalarField>& Y)
 {
-    std::cout << "==========================================================" << std::endl;
-    std::cout << "   Set mesh info variables for DeepFlame_Academic   " << std::endl;   
+    std::cout << "- Set mesh info variables for DeepFlame_Academic   " << std::endl;   
 
     // prepare constant values: num_cells, num_surfaces, num_boundary_surfaces,
     // num_patches, patch_size, num_species, rdelta_t
@@ -1085,8 +1080,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
 
 void createGPUSparseFormat(mesh_info_para &mesh_paras, fvMesh& mesh)
 {
-    std::cout << "==========================================================" << std::endl;
-    std::cout << "   Set mesh info variables for DeepFlame_Academic   " << std::endl;   
+    std::cout << "- Set sparse format variables for DeepFlame_Academic   " << std::endl;   
 
     // prepare constant values: num_cells, num_surfaces, num_boundary_surfaces,
     // num_patches, patch_size, num_species, rdelta_t
@@ -1355,9 +1349,6 @@ void setConstantIndexes(mesh_info_para &mesh_paras, const int *owner, const int 
     free(ellColsperRow);
     free(ellCols);
     free(ldu2ellIndex);
-
-    std::cout << "==========================================================" << std::endl;
-    std::cout << "   Set matrix info variables for DeepFlame_Academic   " << std::endl;
 
     // TODO: if CSR;
 #ifdef iscsr
