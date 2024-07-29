@@ -559,9 +559,6 @@ void createGPUThermo(mesh_info_para &mesh_paras, init_data_para &init_data, cons
     delete h_thermo_rhoD;
 }
 
-/*=========================================================================*/
-/*                          For DeepFlame_Academic                         */
-/*                                                                         */
 void createGPUSolver(const dictionary solversDict, 
                      const volScalarField& rho, const volVectorField& U, volScalarField& p, 
                      PtrList<volScalarField>& Y, volScalarField& he)

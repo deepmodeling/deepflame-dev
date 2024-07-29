@@ -148,8 +148,8 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
          fvm::ddt(rho, Y[specie_index])
          + mvConvection->fvmDiv(phi, Y[specie_index])
          + mvConvection->fvmDiv(phiUc, Y[specie_index])
-        //  ==
-        //  fvm::laplacian(DEff(), Y[specie_index])
+         ==
+         fvm::laplacian(DEff(), Y[specie_index])
         );
     // YiEqn.relax();
     // YiEqn.solve("Yi");

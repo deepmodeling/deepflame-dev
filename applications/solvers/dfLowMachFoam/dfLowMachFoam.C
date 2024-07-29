@@ -237,6 +237,11 @@ int main(int argc, char *argv[])
 
     // DF-A: MALLOC & MEMCPY-H2D "DFDATABASE" 
     set_data_info(init_data);
+
+    // DF-A: SET THERMO-CONSTANT-COEFFS
+    string mechanismFile = CanteraTorchProperties.lookupOrDefault("CanteraMechanismFile", string(""));
+    const char* mechanism_file = mechanismFile.c_str();
+    set_thermo_const_coeffs(mechanism_file);
     
     // DF-A: SET SPARSE-FORMAT-MAPS
     createGPUSparseFormat(mesh_paras, mesh);
@@ -421,14 +426,15 @@ int main(int argc, char *argv[])
         clock_t loop_end = std::clock();
         double loop_time = double(loop_end - loop_start) / double(CLOCKS_PER_SEC);
 
-#ifdef GPUSolverNew_
-        // thermo_GPU.updateRho();
-#if defined DEBUG_
-        rho = thermo.rho();
-#endif
-#else
-        rho = thermo.rho();
-#endif
+        #ifdef GPUSolverNew_
+            /* FOR DEEPFLAME-ACADEMIC */
+            updateRho();  // thermo_GPU.updateRho();   
+        #if defined DEBUG_
+            rho = thermo.rho();
+        #endif
+        #else
+            rho = thermo.rho();
+        #endif
 
         runTime.write();
         Info<< "========Time Spent in diffenet parts========"<< endl;
