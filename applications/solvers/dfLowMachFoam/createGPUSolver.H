@@ -57,7 +57,7 @@ void writeDoubleArrayToFile(const double* data, int num, const std::string& file
 }
 
 
-void permuteVector(double *new_order, const double *old_order, int num) 
+void permuteVector(double *&new_order, const double *old_order, int num) 
 {
     for (int i = 0; i < num; i++) 
     {
@@ -67,7 +67,7 @@ void permuteVector(double *new_order, const double *old_order, int num)
     }
 }
 
-void permuteTensor(double *new_order, const double *old_order, int num) 
+void permuteTensor(double *&new_order, const double *old_order, int num) 
 {
     for (int i = 0; i < num; i++) 
     {
@@ -172,8 +172,8 @@ void createGPURhoEqn(mesh_info_para &mesh_paras, init_data_para &init_data, cons
     std::vector<int> patch_type;
     patch_type.resize(mesh_paras.num_patches);
 
-    double h_boundary_phi[mesh_paras.num_boundary_surfaces];
-    double h_boundary_rho[mesh_paras.num_boundary_surfaces];
+    double *h_boundary_phi = new double[mesh_paras.num_boundary_surfaces]();
+    double *h_boundary_rho = new double[mesh_paras.num_boundary_surfaces]();
 
     int offset = 0;
     forAll(rho.boundaryField(), patchi)
@@ -259,8 +259,8 @@ void createGPUUEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
         }
     }
 
-    double u_newOrder[mesh_paras.num_cells*3];
-    double boundary_u_newOrder[mesh_paras.num_boundary_surfaces*3];
+    double *u_newOrder = new double[mesh_paras.num_cells*3]();
+    double *boundary_u_newOrder = new double[mesh_paras.num_boundary_surfaces*3]();
     permuteVector(u_newOrder, &U[0][0], mesh_paras.num_cells);
     permuteVector(boundary_u_newOrder, h_boundary_u, mesh_paras.num_boundary_surfaces);
 
@@ -293,8 +293,8 @@ void createGPUYEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     }
     // set lewis number
     std::vector<double> lewis_number(init_data.num_species, 1.); // unity lewis
-    double h_y[init_data.num_species*mesh_paras.num_cells];
-    double h_boundary_y[init_data.num_species*mesh_paras.num_boundary_surfaces];
+    double *h_y = new double[init_data.num_species*mesh_paras.num_cells]();
+    double *h_boundary_y = new double[init_data.num_species*mesh_paras.num_boundary_surfaces]();
 
     // prepare internal and boundary of Y
     int offset = 0;
@@ -1002,8 +1002,8 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
         meshDistance[facei] = mesh.C()[nei] - mesh.C()[own];
     }
 
-    double meshDistance_newOrder[num_surfaces*3];
-    double sf_newOrder[num_surfaces*3];
+    double *meshDistance_newOrder = new double[num_surfaces*3]();
+    double *sf_newOrder = new double[num_surfaces*3]();
     permuteVector(meshDistance_newOrder, &meshDistance[0][0], num_surfaces);
     permuteVector(sf_newOrder, &mesh.Sf()[0][0], num_surfaces);
 
@@ -1051,7 +1051,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     mesh_paras.boundary_delta_coeffs = new double[num_boundary_surfaces];
     mesh_paras.boundary_weight       = new double[num_boundary_surfaces];
 
-    double boundary_sf_newOrder[num_boundary_surfaces*3];
+    double *boundary_sf_newOrder = new double[num_boundary_surfaces*3]();
     permuteVector(boundary_sf_newOrder, &boundary_sf[0], num_boundary_surfaces);
 
     memcpy(mesh_paras.mesh_dis, &meshDistance_newOrder[0], num_surfaces * 3 * sizeof(double));
