@@ -191,10 +191,10 @@
 
         // MPI_Abort(MPI_COMM_WORLD, 1);
 
-        csr.solve(p_psi, source, internalCoeffs, boundaryCoeffs);
+        // csr.solve(p_psi, source, internalCoeffs, boundaryCoeffs);
         std::cout << "=== end call csr.solve " << std::endl;
 
-        // pEqn.solve();
+        pEqn.solve();
         if (pimple.finalNonOrthogonalIter())
         {
             phi = phiHbyA + pEqn.flux();

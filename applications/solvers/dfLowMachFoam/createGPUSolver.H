@@ -591,33 +591,24 @@ void createGPUGAMGInput(const lduMesh& mesh, const dictionary solverControls)
     std::cout << " -- Set GAMG variables for DeepFlame_Academic " << std::endl;    
 
     // read control files
-    word preconditioner, smoother;
-    int nVcycles, nCellsInCoarsestLevel;
-    int nPreSweeps, nPostSweeps, nFinestSweeps;
-    bool interpolateCorrection, scaleCorrection, solveCoarsest;
-    const entry& eP = solverControls.lookupEntry("preconditioner", false, false);
-    if (eP.isDict())
-    {
-        eP.dict().lookup("preconditioner") >> preconditioner;
-        eP.dict().lookup("smoother") >> smoother;
+    int nVcycles = 1;
+    int nCellsInCoarsestLevel = 32;
+    int nPreSweeps = 2;
+    int nPostSweeps = 2;
+    int nFinestSweeps = 2;
+    bool interpolateCorrection = false;
+    bool scaleCorrection = true;
+    bool solveCoarsest = false;
 
-        eP.dict().lookup("nVcycles") >> nVcycles;
-        eP.dict().lookup("nCellsInCoarsestLevel") >> nCellsInCoarsestLevel;
+    if(solverControls.found("nVcycles")) solverControls.lookup("nVcycles") >> nVcycles;
+    if(solverControls.found("nCellsInCoarsestLevel")) solverControls.lookup("nCellsInCoarsestLevel") >> nCellsInCoarsestLevel;
+    if(solverControls.found("nPreSweeps")) solverControls.lookup("nPreSweeps") >> nPreSweeps;
+    if(solverControls.found("nPostSweeps")) solverControls.lookup("nPostSweeps") >> nPostSweeps;
+    if(solverControls.found("nFinestSweeps")) solverControls.lookup("nFinestSweeps") >> nFinestSweeps;
 
-        eP.dict().lookup("nPreSweeps") >> nPreSweeps;
-        eP.dict().lookup("nPostSweeps") >> nPostSweeps;
-        eP.dict().lookup("nFinestSweeps") >> nFinestSweeps;
-
-        eP.dict().lookup("interpolateCorrection") >> interpolateCorrection;
-        eP.dict().lookup("scaleCorrection") >> scaleCorrection;
-        eP.dict().lookup("solveCoarsest") >> solveCoarsest;
-    }
-    else
-    {
-        eP.stream() >> preconditioner;
-    }
-    std::cout << "   == GAMG config preconditioner: " << preconditioner << std::endl;
-    std::cout << "   == GAMG config smoother: " << smoother << std::endl;
+    if(solverControls.found("interpolateCorrection")) solverControls.lookup("interpolateCorrection") >> interpolateCorrection;
+    if(solverControls.found("scaleCorrection")) solverControls.lookup("scaleCorrection") >> scaleCorrection;
+    if(solverControls.found("solveCoarsest")) solverControls.lookup("solveCoarsest") >> solveCoarsest;
 
     std::cout << "   == GAMG config nVcycles: " << nVcycles << std::endl; 
     std::cout << "   == GAMG config nCellsInCoarsestLevel: " << nCellsInCoarsestLevel << std::endl; 
@@ -795,20 +786,24 @@ void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, 
 
     // read control files
     word preconditioner, smoother;
-    if (solver != "diagonal")
+
+    bool hasPreconditioner = solverControls.found("preconditioner");
+    if (hasPreconditioner)
     {
-        const entry& eP = solverControls.lookupEntry("preconditioner", false, false);
+        const entry& eP = solverControls.lookupEntry("preconditioner", false, true);
         if (eP.isDict())
         {
             eP.dict().lookup("preconditioner") >> preconditioner;
             eP.dict().lookup("smoother") >> smoother;
+
+            std::cout << "  = Solver config preconditioner: " << preconditioner << std::endl;
+            std::cout << "  = Solver config smoother: " << smoother << std::endl;
         }
         else
         {
             eP.stream() >> preconditioner;
+            std::cout << "  = Solver config preconditioner: " << preconditioner << std::endl;
         }
-        std::cout << "  = Solver config preconditioner: " << preconditioner << std::endl;
-        std::cout << "  = Solver config smoother: " << smoother << std::endl;
     }
 
     // SET MATRIX_SOLVER
@@ -827,7 +822,8 @@ void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, 
     if (preconditioner == "GAMG") 
     {
         matrix_preconditioner = 0;
-        createGPUGAMGInput(mesh, solverControls);
+        const entry& eP = solverControls.lookupEntry("preconditioner", false, false);
+        createGPUGAMGInput(mesh, eP.dict());
     }
 
     // SET MATRIX_SMOOTHER
