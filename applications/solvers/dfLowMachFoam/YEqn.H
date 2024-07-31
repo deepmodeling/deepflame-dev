@@ -138,8 +138,6 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     const volVectorField grad_yi = fvc::grad(Y[specie_index]);
     double *grad_y_newOrder = new double[mesh_paras.num_cells * 3]();
     permuteVector(grad_y_newOrder, &grad_yi[0][0], mesh_paras.num_cells);
-
-    writeDoubleArrayToFile(&Y[0][0], mesh_paras.num_cells, "Y_y.host");
     writeDoubleArrayToFile(&grad_y_newOrder[0], mesh_paras.num_cells * 3, "Y_grad_y.host");
 
     tmp<volScalarField> DEff = chemistry->rhoD(specie_index) + turbulence->mut()/Sct;
@@ -273,7 +271,7 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     writeDoubleArrayToFile(yeqn_h_internal_coeffs.data(), mesh_paras.num_boundary_surfaces, "Y_internalCoeffs0.host");
     writeDoubleArrayToFile(yeqn_h_boundary_coeffs.data(), mesh_paras.num_boundary_surfaces, "Y_boundaryCoeffs0.host");
 
-    abort();
+    writeDoubleArrayToFile(&Y[0][0], mesh_paras.num_cells * init_data.num_species, "Y_y_solved.host");
 
     DEBUG_TRACE;
     // YEqn_GPU.compareYi(&Y[specie_index][0], specie_index, false);

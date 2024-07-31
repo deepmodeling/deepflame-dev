@@ -116,11 +116,17 @@
     {
         fvScalarMatrix pEqn(pDDtEqn - fvm::laplacian(rhorAUf, p));
         
-        csrMatrix csr(pEqn);
+        // csrMatrix csr(pEqn);
         auto& p_psi = const_cast<GeometricField<scalar, fvPatchField, volMesh>&>(pEqn.psi());
         auto& source = pEqn.source();
         auto& internalCoeffs = pEqn.internalCoeffs();
         auto& boundaryCoeffs = pEqn.boundaryCoeffs();
+
+        writeDoubleArrayToFile(&pEqn.lower()[0], mesh_paras.num_surfaces, "p_lower.host");
+        writeDoubleArrayToFile(&pEqn.upper()[0], mesh_paras.num_surfaces, "p_upper.host");
+        writeDoubleArrayToFile(&pEqn.diag()[0], mesh_paras.num_cells, "p_diag.host");
+        writeDoubleArrayToFile(&pEqn.source()[0], mesh_paras.num_cells, "p_source.host");
+        
         std::cout << "=== start call csr.solve " << std::endl;
 
         // int mpirank;
@@ -194,7 +200,7 @@
         // csr.solve(p_psi, source, internalCoeffs, boundaryCoeffs);
         std::cout << "=== end call csr.solve " << std::endl;
 
-        pEqn.solve();
+        // pEqn.solve();
         if (pimple.finalNonOrthogonalIter())
         {
             phi = phiHbyA + pEqn.flux();
@@ -220,6 +226,12 @@
             // pEqn_GPU.compareResult(&pEqn.lower()[0], &pEqn.upper()[0], &pEqn.diag()[0], &pEqn.source()[0], 
             //         h_internal_coeffs.data(), h_boundary_coeffs.data(), false);
         }
+
+        writeDoubleArrayToFile(h_internal_coeffs.data(), mesh_paras.num_boundary_surfaces, "p_internalCoeffs.host");
+        writeDoubleArrayToFile(h_boundary_coeffs.data(), mesh_paras.num_boundary_surfaces, "p_boundaryCoeffs.host");
+
+        writeDoubleArrayToFile(&p[0], mesh_paras.num_cells, "p_p_solved.host");
+        // abort();
     }
 
     // compare p

@@ -108,7 +108,7 @@
 #if defined DEBUG_
     // UEqn.relax();
     TICK_START;
-    solve(UEqn == -fvc::grad(p));
+    // solve(UEqn == -fvc::grad(p));
     K.oldTime();
     K = 0.5*magSqr(U);
     TICK_STOP(CPU solve time);
