@@ -203,7 +203,48 @@ int main(int argc, char *argv[])
     }
 
     start1 = std::clock();
+
 #ifdef GPUSolverNew_
+
+    int mpi_init_flag;
+    checkMpiErrors(MPI_Initialized(&mpi_init_flag));
+    if(mpi_init_flag) {
+        initNccl();
+    }
+
+    std::cout << "                                                          " << std::endl;
+    std::cout << "==========================================================" << std::endl;
+    std::cout << "              SETDATA FOR DEEPFLAME-ACADEMIC              " << std::endl;
+    std::cout << "                                                          " << std::endl; 
+    
+    mesh_info_para mesh_paras;    
+    init_data_para init_data;
+
+    // DF-A: CREATE MESHBASE 
+    createGPUBaseInput(mesh_paras, init_data, CanteraTorchProperties, mesh, Y); 
+
+    // DF-A: CREATE DFDATABASE 
+    createGPUUEqn(mesh_paras, init_data, CanteraTorchProperties, U);
+    createGPUYEqn(mesh_paras, init_data, CanteraTorchProperties, Y, inertIndex);
+    createGPUEEqn(mesh_paras, init_data, CanteraTorchProperties, thermo.he(), K);
+    createGPUpEqn(mesh_paras, init_data, CanteraTorchProperties, p, U);
+    createGPURhoEqn(mesh_paras, init_data, rho, phi);
+    createGPUThermo(mesh_paras, init_data, CanteraTorchProperties, T, thermo.he(), 
+                    psi, thermo.alpha(), thermo.mu(), K, dpdt, chemistry);
+
+    // DF-A: MALLOC & MEMCPY-H2D "MESHBASE" 
+    set_mesh_info(mesh_paras);
+
+    // DF-A: MALLOC & MEMCPY-H2D "DFDATABASE" 
+    set_data_info(init_data);
+
+    // DF-A: SET THERMO-CONSTANT-COEFFS
+    string mechanismFile = CanteraTorchProperties.lookupOrDefault("CanteraMechanismFile", string(""));
+    const char* mechanism_file = mechanismFile.c_str();
+    set_thermo_const_coeffs(mechanism_file);
+    
+    // DF-A: SET SPARSE-FORMAT-MAPS
+    createGPUSparseFormat(mesh_paras, mesh);
 
     IOdictionary fvSolutionDict
     (
@@ -217,32 +258,14 @@ int main(int argc, char *argv[])
         )
     );
     dictionary solversDict = fvSolutionDict.subDict("solvers");
-    createGPUSolver(solversDict, rho, U, p, Y, thermo.he());
 
-    int mpi_init_flag;
-    checkMpiErrors(MPI_Initialized(&mpi_init_flag));
-    if(mpi_init_flag) {
-        initNccl();
-    }
+    // DF-A: SET LINEAR SOLVER CONFIGS
+    createGPUSolver(solversDict, rho, U, p, Y, thermo.he()); 
 
-    /* For DeepFlame_Academic */
-    mesh_info_para mesh_paras;    
-    init_data_para init_data;
+    std::cout << "                                                          " << std::endl;
+    std::cout << "!!!  All data has been set done for deepflame academic.   " << std::endl; 
+    std::cout << "==========================================================" << std::endl;
 
-    createGPUBaseInput(mesh_paras, init_data, CanteraTorchProperties, mesh, Y); 
-
-    createGPUUEqn(mesh_paras, init_data, CanteraTorchProperties, U);
-    createGPUYEqn(mesh_paras, init_data, CanteraTorchProperties, Y, inertIndex);
-
-    createGPUEEqn(mesh_paras, init_data, CanteraTorchProperties, thermo.he(), K);
-    createGPUpEqn(mesh_paras, init_data, CanteraTorchProperties, p, U);
-    createGPURhoEqn(mesh_paras, init_data, rho, phi);
-
-    createGPUThermo(mesh_paras, init_data, CanteraTorchProperties, T, thermo.he(), 
-                    psi, thermo.alpha(), thermo.mu(), K, dpdt, chemistry);
-
-    set_mesh_info(mesh_paras);
-    set_data_info(init_data);
     DEBUG_TRACE;
 
     // if (chemistry->ifChemstry())
@@ -278,10 +301,11 @@ int main(int argc, char *argv[])
 
         Info<< "Time = " << runTime.timeName() << nl << endl;
         
-        // store old time fields
+        // DF-A: STORE PRE-TIMESTPE FIELDS IN ACADEMIC
         #ifdef GPUSolverNew_
         preTimeStep();
         #endif
+
         clock_t loop_start = std::clock();
         // --- Pressure-velocity PIMPLE corrector loop
         while (pimple.loop())
@@ -307,48 +331,36 @@ int main(int argc, char *argv[])
             if (pimple.firstPimpleIter() && !pimple.simpleRho())
             {
                 #include "rhoEqn.H"
-                #ifdef GPUSolverNew_
-                process_equation(MATRIX_EQUATION::rhoEqn);
-                #endif
             }
             end = std::clock();
             time_monitor_rho += double(end - start) / double(CLOCKS_PER_SEC);        
 
             start = std::clock();
             #include "UEqn.H"
-            #ifdef GPUSolverNew_
-            process_equation(MATRIX_EQUATION::UEqn);
-            #endif
             end = std::clock();
             time_monitor_U += double(end - start) / double(CLOCKS_PER_SEC);
 
             if(combModelName!="ESF" && combModelName!="flareFGM" && combModelName!="DeePFGM")
             {
                 start = std::clock();
-                // #include "YEqn.H"
-                #ifdef GPUSolverNew_
-                process_equation(MATRIX_EQUATION::YEqn);
-                #endif
+                #include "YEqn.H"
                 end = std::clock();
                 time_monitor_Y += double(end - start) / double(CLOCKS_PER_SEC);
 
                 start = std::clock();
-                // #include "EEqn.H"
-                #ifdef GPUSolverNew_
-                process_equation(MATRIX_EQUATION::EEqn);
-                #endif
+                #include "EEqn.H"
                 end = std::clock();
                 time_monitor_E += double(end - start) / double(CLOCKS_PER_SEC);
 
-            start = std::clock();
-            #ifdef GPUSolverNew_
-                // thermo_GPU.correctThermo();
-                // thermo_GPU.sync();
-            #else
-                chemistry->correctThermo();
-            #endif
-            end = std::clock();
-            time_monitor_chemistry_correctThermo += double(end - start) / double(CLOCKS_PER_SEC);
+                start = std::clock();
+                #ifdef GPUSolverNew_
+                    // thermo_GPU.correctThermo();
+                    // thermo_GPU.sync();
+                #else
+                    chemistry->correctThermo();
+                #endif
+                end = std::clock();
+                time_monitor_chemistry_correctThermo += double(end - start) / double(CLOCKS_PER_SEC);
             }
             else
             {
@@ -392,18 +404,7 @@ int main(int argc, char *argv[])
                 {
 
                 #ifdef GPUSolverNew_
-                    process_equation(MATRIX_EQUATION::pEqn); //include all "pEqn_GPU.H"
-
-                    // thermo_GPU.updateRho();
-
-                    // // Thermodynamic density needs to be updated by psi*d(p) after the
-                    // // pressure solution
-                    // thermo_GPU.psip0();
-
-                    // UEqn_GPU.getHbyA();
-                    // pEqn_GPU.process();
-                    // UEqn_GPU.sync();
-                    // #include "pEqn_GPU.H"
+                    #include "pEqn_GPU.H"
                 #else
                     #include "pEqn_CPU.H"
                 #endif
@@ -425,28 +426,15 @@ int main(int argc, char *argv[])
         clock_t loop_end = std::clock();
         double loop_time = double(loop_end - loop_start) / double(CLOCKS_PER_SEC);
 
-// #ifdef GPUSolverNew_
-//         thermo_GPU.updateRho();
-//         dfDataBase.postTimeStep();
-// #if defined DEBUG_
-//         rho = thermo.rho();
-// #endif
-// #else
-//         rho = thermo.rho();
-// #endif
-
-// #ifdef GPUSolverNew_
-//         // write U
-//         UEqn_GPU.postProcess();
-//         memcpy(&U[0][0], dfDataBase.h_u, dfDataBase.cell_value_vec_bytes);
-//         U.correctBoundaryConditions();
-// #endif
-
-        std::cout << "*************************************************" << std::endl;
-        std::cout << "NOTICE:" << std::endl;
-        std::cout << "  The subsequent code has not been modified yet. " << std::endl;
-        std::cout << "*************************************************" << std::endl;
-        abort();    
+        #ifdef GPUSolverNew_
+            /* FOR DEEPFLAME-ACADEMIC */
+            updateRho();  // thermo_GPU.updateRho();   
+        #if defined DEBUG_
+            rho = thermo.rho();
+        #endif
+        #else
+            rho = thermo.rho();
+        #endif
 
         runTime.write();
         Info<< "========Time Spent in diffenet parts========"<< endl;

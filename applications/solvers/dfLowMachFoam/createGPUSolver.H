@@ -38,7 +38,7 @@ void writeDoubleArrayToFile(const double* data, int num, const std::string& file
         std::cerr << "Failed to open file: " << filename << std::endl;
     }
 
-    file << std::fixed << std::setprecision(15);
+    file << std::scientific << std::setprecision(15);
 
     for (int i = 0; i < num; ++i) {
         file << data[i];
@@ -57,7 +57,7 @@ void writeDoubleArrayToFile(const double* data, int num, const std::string& file
 }
 
 
-void permuteVector(double *new_order, const double *old_order, int num) 
+void permuteVector(double *&new_order, const double *old_order, int num) 
 {
     for (int i = 0; i < num; i++) 
     {
@@ -67,7 +67,7 @@ void permuteVector(double *new_order, const double *old_order, int num)
     }
 }
 
-void permuteTensor(double *new_order, const double *old_order, int num) 
+void permuteTensor(double *&new_order, const double *old_order, int num) 
 {
     for (int i = 0; i < num; i++) 
     {
@@ -172,8 +172,8 @@ void createGPURhoEqn(mesh_info_para &mesh_paras, init_data_para &init_data, cons
     std::vector<int> patch_type;
     patch_type.resize(mesh_paras.num_patches);
 
-    double h_boundary_phi[mesh_paras.num_boundary_surfaces];
-    double h_boundary_rho[mesh_paras.num_boundary_surfaces];
+    double *h_boundary_phi = new double[mesh_paras.num_boundary_surfaces]();
+    double *h_boundary_rho = new double[mesh_paras.num_boundary_surfaces]();
 
     int offset = 0;
     forAll(rho.boundaryField(), patchi)
@@ -259,8 +259,8 @@ void createGPUUEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
         }
     }
 
-    double u_newOrder[mesh_paras.num_cells*3];
-    double boundary_u_newOrder[mesh_paras.num_boundary_surfaces*3];
+    double *u_newOrder = new double[mesh_paras.num_cells*3]();
+    double *boundary_u_newOrder = new double[mesh_paras.num_boundary_surfaces*3]();
     permuteVector(u_newOrder, &U[0][0], mesh_paras.num_cells);
     permuteVector(boundary_u_newOrder, h_boundary_u, mesh_paras.num_boundary_surfaces);
 
@@ -293,8 +293,8 @@ void createGPUYEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     }
     // set lewis number
     std::vector<double> lewis_number(init_data.num_species, 1.); // unity lewis
-    double h_y[init_data.num_species*mesh_paras.num_cells];
-    double h_boundary_y[init_data.num_species*mesh_paras.num_boundary_surfaces];
+    double *h_y = new double[init_data.num_species*mesh_paras.num_cells]();
+    double *h_boundary_y = new double[init_data.num_species*mesh_paras.num_boundary_surfaces]();
 
     // prepare internal and boundary of Y
     int offset = 0;
@@ -528,7 +528,9 @@ void createGPUThermo(mesh_info_para &mesh_paras, init_data_para &init_data, cons
     init_data.mu = &mu[0];
     init_data.k = &K[0];
     init_data.dpdt = &dpdt[0];
-    init_data.thermo_rhoD = &h_thermo_rhoD[0];
+
+    init_data.thermo_rhoD  = new double[mesh_paras.num_cells * init_data.num_species];
+    memcpy(init_data.thermo_rhoD, &h_thermo_rhoD[0], mesh_paras.num_cells * init_data.num_species * sizeof(double));
 
     init_data.boundary_T  = new double[mesh_paras.num_boundary_surfaces];
     init_data.boundary_thermo_psi  = new double[mesh_paras.num_boundary_surfaces];
@@ -557,9 +559,6 @@ void createGPUThermo(mesh_info_para &mesh_paras, init_data_para &init_data, cons
     delete h_thermo_rhoD;
 }
 
-/*=========================================================================*/
-/*                          For DeepFlame_Academic                         */
-/*                                                                         */
 void createGPUSolver(const dictionary solversDict, 
                      const volScalarField& rho, const volVectorField& U, volScalarField& p, 
                      PtrList<volScalarField>& Y, volScalarField& he)
@@ -589,47 +588,37 @@ void createGPUSolver(const dictionary solversDict,
 
 void createGPUGAMGInput(const lduMesh& mesh, const dictionary solverControls)
 {
-    std::cout << "========================================================" << std::endl;
-    std::cout << "   Set GAMG variables for DeepFlame_Academic " << std::endl;    
+    std::cout << " -- Set GAMG variables for DeepFlame_Academic " << std::endl;    
 
     // read control files
-    word preconditioner, smoother;
-    int nVcycles, nCellsInCoarsestLevel;
-    int nPreSweeps, nPostSweeps, nFinestSweeps;
-    bool interpolateCorrection, scaleCorrection, solveCoarsest;
-    const entry& eP = solverControls.lookupEntry("preconditioner", false, false);
-    if (eP.isDict())
-    {
-        eP.dict().lookup("preconditioner") >> preconditioner;
-        eP.dict().lookup("smoother") >> smoother;
+    int nVcycles = 1;
+    int nCellsInCoarsestLevel = 32;
+    int nPreSweeps = 2;
+    int nPostSweeps = 2;
+    int nFinestSweeps = 2;
+    bool interpolateCorrection = false;
+    bool scaleCorrection = true;
+    bool solveCoarsest = false;
 
-        eP.dict().lookup("nVcycles") >> nVcycles;
-        eP.dict().lookup("nCellsInCoarsestLevel") >> nCellsInCoarsestLevel;
+    if(solverControls.found("nVcycles")) solverControls.lookup("nVcycles") >> nVcycles;
+    if(solverControls.found("nCellsInCoarsestLevel")) solverControls.lookup("nCellsInCoarsestLevel") >> nCellsInCoarsestLevel;
+    if(solverControls.found("nPreSweeps")) solverControls.lookup("nPreSweeps") >> nPreSweeps;
+    if(solverControls.found("nPostSweeps")) solverControls.lookup("nPostSweeps") >> nPostSweeps;
+    if(solverControls.found("nFinestSweeps")) solverControls.lookup("nFinestSweeps") >> nFinestSweeps;
 
-        eP.dict().lookup("nPreSweeps") >> nPreSweeps;
-        eP.dict().lookup("nPostSweeps") >> nPostSweeps;
-        eP.dict().lookup("nFinestSweeps") >> nFinestSweeps;
+    if(solverControls.found("interpolateCorrection")) solverControls.lookup("interpolateCorrection") >> interpolateCorrection;
+    if(solverControls.found("scaleCorrection")) solverControls.lookup("scaleCorrection") >> scaleCorrection;
+    if(solverControls.found("solveCoarsest")) solverControls.lookup("solveCoarsest") >> solveCoarsest;
 
-        eP.dict().lookup("interpolateCorrection") >> interpolateCorrection;
-        eP.dict().lookup("scaleCorrection") >> scaleCorrection;
-        eP.dict().lookup("solveCoarsest") >> solveCoarsest;
-    }
-    else
-    {
-        eP.stream() >> preconditioner;
-    }
-    std::cout << "=== GAMG config preconditioner: " << preconditioner << std::endl;
-    std::cout << "=== GAMG config smoother: " << smoother << std::endl;
+    std::cout << "   == GAMG config nVcycles: " << nVcycles << std::endl; 
+    std::cout << "   == GAMG config nCellsInCoarsestLevel: " << nCellsInCoarsestLevel << std::endl; 
+    std::cout << "   == GAMG config nPreSweeps: " << nPreSweeps << std::endl; 
+    std::cout << "   == GAMG config nPostSweeps: " << nPostSweeps << std::endl; 
+    std::cout << "   == GAMG config nFinestSweeps: " << nFinestSweeps << std::endl; 
 
-    std::cout << "=== GAMG config nVcycles: " << nVcycles << std::endl; 
-    std::cout << "=== GAMG config nCellsInCoarsestLevel: " << nCellsInCoarsestLevel << std::endl; 
-    std::cout << "=== GAMG config nPreSweeps: " << nPreSweeps << std::endl; 
-    std::cout << "=== GAMG config nPostSweeps: " << nPostSweeps << std::endl; 
-    std::cout << "=== GAMG config nFinestSweeps: " << nFinestSweeps << std::endl; 
-
-    std::cout << "=== GAMG config interpolateCorrection: " << interpolateCorrection << std::endl;  
-    std::cout << "=== GAMG config scaleCorrection: " << scaleCorrection << std::endl; 
-    std::cout << "=== GAMG config solveCoarsest: " << solveCoarsest << std::endl; 
+    std::cout << "   == GAMG config interpolateCorrection: " << interpolateCorrection << std::endl;  
+    std::cout << "   == GAMG config scaleCorrection: " << scaleCorrection << std::endl; 
+    std::cout << "   == GAMG config solveCoarsest: " << solveCoarsest << std::endl; 
     
     int sparse_type = -1;
 #ifdef iscsr
@@ -643,7 +632,7 @@ void createGPUGAMGInput(const lduMesh& mesh, const dictionary solverControls)
 #endif
 
     int agglomeration_level = agglomeration.size();
-    std::cout << "=== GAMG agglomeration level: " << agglomeration_level << std::endl;
+    std::cout << "   == GAMG agglomeration level: " << agglomeration_level << std::endl;
 
 #ifdef iscsr
     h_ldu_to_csr_no_diag = (int**)malloc(sizeof(int*)*agglomeration_level);
@@ -693,18 +682,25 @@ void createGPUGAMGInput(const lduMesh& mesh, const dictionary solverControls)
         GAMG_maps[leveli].nCell = restrictMapVector.size();
         GAMG_maps[leveli].nFace = faceRestrictMapVector.size();
 
-        GAMG_maps[leveli].upperAddr = upperAddrVector.data();
-        GAMG_maps[leveli].lowerAddr = lowerAddrVector.data();
+        GAMG_maps[leveli].upperAddr  = new int[GAMG_maps[leveli].nFace];
+        GAMG_maps[leveli].lowerAddr  = new int[GAMG_maps[leveli].nFace];
 
-        GAMG_maps[leveli].restrictMap = restrictMapVector.data();
-        GAMG_maps[leveli].faceRestrictMap = faceRestrictMapVector.data();
-        GAMG_maps[leveli].faceFlipMap = faceFlipMapVector_int.data();
+        GAMG_maps[leveli].restrictMap = new int[GAMG_maps[leveli].nCell];
+        GAMG_maps[leveli].faceRestrictMap = new int[GAMG_maps[leveli].nFace];
+        GAMG_maps[leveli].faceFlipMap  = new int[GAMG_maps[leveli].nFace];
+
+        memcpy(GAMG_maps[leveli].upperAddr, upperAddrVector.data(), GAMG_maps[leveli].nFace * sizeof(int));
+        memcpy(GAMG_maps[leveli].lowerAddr, lowerAddrVector.data(), GAMG_maps[leveli].nFace * sizeof(int));
+
+        memcpy(GAMG_maps[leveli].restrictMap, restrictMapVector.data(), GAMG_maps[leveli].nCell * sizeof(int));
+        memcpy(GAMG_maps[leveli].faceRestrictMap, faceRestrictMapVector.data(), GAMG_maps[leveli].nFace * sizeof(int));
+        memcpy(GAMG_maps[leveli].faceFlipMap, faceFlipMapVector_int.data(), GAMG_maps[leveli].nFace * sizeof(int));
 
         setConstantIndexes_GAMG(GAMG_maps[leveli].nCell, GAMG_maps[leveli].nFace, &GAMG_maps[leveli].lowerAddr[0], 
                 &GAMG_maps[leveli].upperAddr[0], leveli, sparse_type);
 
-        std::cout << "  == level: " << leveli << ", cell: " << GAMG_maps[leveli].nCell
-                                              << ", face: " << GAMG_maps[leveli].nFace << std::endl;
+        std::cout << "    === level: " << leveli << ", cell: " << GAMG_maps[leveli].nCell
+                                                << ", face: " << GAMG_maps[leveli].nFace << std::endl;
 
         int patchSize = agglomeration.nPatchFaces(0).size();
         GAMG_maps[leveli].patchSize = patchSize;
@@ -762,8 +758,7 @@ void createGPUGAMGInput(const lduMesh& mesh, const dictionary solverControls)
 
 void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, MATRIX_EQUATION EqnID)
 {
-    std::cout << "==========================================================" << std::endl;
-    std::cout << "   Set linear solver variables for DeepFlame_Academic: " << EqnID << std::endl;    
+    std::cout << "- Set linear solver variables for DeepFlame_Academic: " << EqnID << std::endl;    
     
     matrix_solver_para solver_configs;
 
@@ -775,10 +770,10 @@ void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, 
     solverControls.readIfPresent("tolerance", tolerance);
     solverControls.readIfPresent("relTol",    relTol);
 
-    std::cout << "=== Solver config minIter: "   << minIter   << std::endl;
-    std::cout << "=== Solver config maxIter: "   << maxIter   << std::endl;
-    std::cout << "=== Solver config tolerance: " << tolerance << std::endl;
-    std::cout << "=== Solver config relTol: "    << relTol    << std::endl;
+    std::cout << "  = Solver config minIter: "   << minIter   << std::endl;
+    std::cout << "  = Solver config maxIter: "   << maxIter   << std::endl;
+    std::cout << "  = Solver config tolerance: " << tolerance << std::endl;
+    std::cout << "  = Solver config relTol: "    << relTol    << std::endl;
 
     if (minIter   > 0) solver_configs.minIter   = minIter;
     if (maxIter   > 0) solver_configs.maxIter   = maxIter;
@@ -787,24 +782,28 @@ void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, 
 
     // Set solver
     const word solver(solverControls.lookup("solver"));
-    std::cout << "=== Solver config solver: " << solver << std::endl;
+    std::cout << "  = Solver config solver: " << solver << std::endl;
 
     // read control files
     word preconditioner, smoother;
-    if (solver != "diagonal")
+
+    bool hasPreconditioner = solverControls.found("preconditioner");
+    if (hasPreconditioner)
     {
-        const entry& eP = solverControls.lookupEntry("preconditioner", false, false);
+        const entry& eP = solverControls.lookupEntry("preconditioner", false, true);
         if (eP.isDict())
         {
             eP.dict().lookup("preconditioner") >> preconditioner;
             eP.dict().lookup("smoother") >> smoother;
+
+            std::cout << "  = Solver config preconditioner: " << preconditioner << std::endl;
+            std::cout << "  = Solver config smoother: " << smoother << std::endl;
         }
         else
         {
             eP.stream() >> preconditioner;
+            std::cout << "  = Solver config preconditioner: " << preconditioner << std::endl;
         }
-        std::cout << "=== Solver config preconditioner: " << preconditioner << std::endl;
-        std::cout << "=== Solver config smoother: " << smoother << std::endl;
     }
 
     // SET MATRIX_SOLVER
@@ -823,7 +822,8 @@ void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, 
     if (preconditioner == "GAMG") 
     {
         matrix_preconditioner = 0;
-        createGPUGAMGInput(mesh, solverControls);
+        const entry& eP = solverControls.lookupEntry("preconditioner", false, false);
+        createGPUGAMGInput(mesh, eP.dict());
     }
 
     // SET MATRIX_SMOOTHER
@@ -850,8 +850,7 @@ void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, 
 void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data, 
                         const IOdictionary& CanteraTorchProperties, fvMesh& mesh, PtrList<volScalarField>& Y)
 {
-    std::cout << "==========================================================" << std::endl;
-    std::cout << "   Set mesh info variables for DeepFlame_Academic   " << std::endl;   
+    std::cout << "- Set mesh info variables for DeepFlame_Academic   " << std::endl;   
 
     // prepare constant values: num_cells, num_surfaces, num_boundary_surfaces,
     // num_patches, patch_size, num_species, rdelta_t
@@ -878,32 +877,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
         }
         num_patches++;
     }
-    // prepare interface info
-    const globalIndex globalNumbering(num_cells);
-    const lduInterfacePtrsList interfaces(mesh.interfaces());
-    const lduAddressing& lduAddr = mesh.lduAddr();
-    labelList globalCells(num_cells);
-    forAll(globalCells, celli)
-    {
-        globalCells[celli] = globalNumbering.toGlobal(Pstream::myProcNo(), celli);
-    }
-    const label nReq = Pstream::nRequests();
-    label nProcValues = 0;
-    // send global cells
-    forAll(interfaces, patchi)
-    {
-        if (interfaces.set(patchi))
-        {
-            nProcValues += lduAddr.patchAddr(patchi).size();
 
-            // send patchInternalField
-            interfaces[patchi].initInternalFieldTransfer
-            (
-                Pstream::commsTypes::nonBlocking,
-                globalCells
-            );
-        }
-    }
     // TODO: get deltaT fomr time API
     double rDeltaT = 1 / 1e-6;
 
@@ -932,51 +906,6 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
                     cyclicPatch().cyclicPatch().neighbPatch().name()];
         }
     }
-    // prepare constant indexes: owner, neighbor, procRows, procCols
-    if (Pstream::parRun())
-    {
-        Pstream::waitRequests(nReq);
-    }
-    labelField procRows(nProcValues, 0);
-    labelField procCols(nProcValues, 0);
-    nProcValues = 0;
-
-    forAll(interfaces, patchi)
-    {
-        if (interfaces.set(patchi))
-        {
-            // local cell index
-            const labelUList& faceCells = lduAddr.patchAddr(patchi);
-            const label len = faceCells.size();
-
-            // global col index
-            labelField nbrCells
-            (
-                interfaces[patchi].internalFieldTransfer
-                (
-                    Pstream::commsTypes::nonBlocking,
-                    globalCells
-                )
-            );
-
-            if (faceCells.size() != nbrCells.size())
-            {
-                FatalErrorInFunction
-                    << "Mismatch in interface sizes (AMI?)" << nl
-                    << "Have " << faceCells.size() << " != "
-                    << nbrCells.size() << nl
-                    << exit(FatalError);
-            }
-
-            // for AMGx: Local rows, Global columns
-            SubList<label>(procRows, len, nProcValues) = faceCells;
-            SubList<label>(procCols, len, nProcValues) = nbrCells;
-            nProcValues += len;
-        }
-    }
-    label globalOffset = globalNumbering.toGlobal(0);
-    /* For DeepFlame_Academic */
-    setConstantIndexes(mesh_paras, &owner[0], &neighbour[0], &procRows[0], &procCols[0], globalOffset, nProcValues);
 
     // prepare internal and boundary of sf, mag_sf, weights, delta_coeffs, volume
     double *boundary_sf = new double[3 * num_boundary_surfaces];
@@ -1073,8 +1002,8 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
         meshDistance[facei] = mesh.C()[nei] - mesh.C()[own];
     }
 
-    double meshDistance_newOrder[num_surfaces*3];
-    double sf_newOrder[num_surfaces*3];
+    double *meshDistance_newOrder = new double[num_surfaces*3]();
+    double *sf_newOrder = new double[num_surfaces*3]();
     permuteVector(meshDistance_newOrder, &meshDistance[0][0], num_surfaces);
     permuteVector(sf_newOrder, &mesh.Sf()[0][0], num_surfaces);
 
@@ -1122,7 +1051,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     mesh_paras.boundary_delta_coeffs = new double[num_boundary_surfaces];
     mesh_paras.boundary_weight       = new double[num_boundary_surfaces];
 
-    double boundary_sf_newOrder[num_boundary_surfaces*3];
+    double *boundary_sf_newOrder = new double[num_boundary_surfaces*3]();
     permuteVector(boundary_sf_newOrder, &boundary_sf[0], num_boundary_surfaces);
 
     memcpy(mesh_paras.mesh_dis, &meshDistance_newOrder[0], num_surfaces * 3 * sizeof(double));
@@ -1140,6 +1069,91 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     delete boundary_weights;
     delete boundary_face_cell;
 }
+
+
+void createGPUSparseFormat(mesh_info_para &mesh_paras, fvMesh& mesh)
+{
+    std::cout << "- Set sparse format variables for DeepFlame_Academic   " << std::endl;   
+
+    // prepare constant values: num_cells, num_surfaces, num_boundary_surfaces,
+    // num_patches, patch_size, num_species, rdelta_t
+    const labelUList& owner = mesh.owner();
+    const labelUList& neighbour = mesh.neighbour();
+
+    // prepare interface info
+    const globalIndex globalNumbering(mesh_paras.num_cells);
+    const lduInterfacePtrsList interfaces(mesh.interfaces());
+    const lduAddressing& lduAddr = mesh.lduAddr();
+    labelList globalCells(mesh_paras.num_cells);
+    forAll(globalCells, celli)
+    {
+        globalCells[celli] = globalNumbering.toGlobal(Pstream::myProcNo(), celli);
+    }
+    const label nReq = Pstream::nRequests();
+    label nProcValues = 0;
+    // send global cells
+    forAll(interfaces, patchi)
+    {
+        if (interfaces.set(patchi))
+        {
+            nProcValues += lduAddr.patchAddr(patchi).size();
+
+            // send patchInternalField
+            interfaces[patchi].initInternalFieldTransfer
+            (
+                Pstream::commsTypes::nonBlocking,
+                globalCells
+            );
+        }
+    }
+
+    // prepare constant indexes: owner, neighbor, procRows, procCols
+    if (Pstream::parRun())
+    {
+        Pstream::waitRequests(nReq);
+    }
+    labelField procRows(nProcValues, 0);
+    labelField procCols(nProcValues, 0);
+    nProcValues = 0;
+
+    forAll(interfaces, patchi)
+    {
+        if (interfaces.set(patchi))
+        {
+            // local cell index
+            const labelUList& faceCells = lduAddr.patchAddr(patchi);
+            const label len = faceCells.size();
+
+            // global col index
+            labelField nbrCells
+            (
+                interfaces[patchi].internalFieldTransfer
+                (
+                    Pstream::commsTypes::nonBlocking,
+                    globalCells
+                )
+            );
+
+            if (faceCells.size() != nbrCells.size())
+            {
+                FatalErrorInFunction
+                    << "Mismatch in interface sizes (AMI?)" << nl
+                    << "Have " << faceCells.size() << " != "
+                    << nbrCells.size() << nl
+                    << exit(FatalError);
+            }
+
+            // for AMGx: Local rows, Global columns
+            SubList<label>(procRows, len, nProcValues) = faceCells;
+            SubList<label>(procCols, len, nProcValues) = nbrCells;
+            nProcValues += len;
+        }
+    }
+    label globalOffset = globalNumbering.toGlobal(0);
+    /* For DeepFlame_Academic */
+    setConstantIndexes(mesh_paras, &owner[0], &neighbour[0], &procRows[0], &procCols[0], globalOffset, nProcValues);
+}
+
 
 void setConstantIndexes(mesh_info_para &mesh_paras, const int *owner, const int *neighbor, const int *procRows, 
         const int *procCols, int globalOffset, int num_proc_surfaces)
@@ -1328,9 +1342,6 @@ void setConstantIndexes(mesh_info_para &mesh_paras, const int *owner, const int 
     free(ellColsperRow);
     free(ellCols);
     free(ldu2ellIndex);
-
-    std::cout << "==========================================================" << std::endl;
-    std::cout << "   Set matrix info variables for DeepFlame_Academic   " << std::endl;
 
     // TODO: if CSR;
 #ifdef iscsr

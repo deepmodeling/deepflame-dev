@@ -1,12 +1,20 @@
-// thermo_GPU.updateRho();
+/* FOR DEEPFLAME-ACADEMIC */
+#ifdef GPUSolverNew_
 
-// // Thermodynamic density needs to be updated by psi*d(p) after the
-// // pressure solution
-// thermo_GPU.psip0();
+    // thermo_GPU.updateRho();
+    // thermo_GPU.psip0();
 
-// UEqn_GPU.getHbyA();
-// pEqn_GPU.process();
-// UEqn_GPU.sync();
+    process_equation(MATRIX_EQUATION::pEqn); // including UEqn_GPU.getHbyA();
+
+    // thermo_GPU.correctPsipRho();
+
+    #include "rhoEqn.H"
+
+#endif
+
+// Thermodynamic density needs to be updated by psi*d(p) after the
+// pressure solution
+
 #include <mpi.h>
 #include <iostream>
 #include <vector>
@@ -24,9 +32,9 @@
     surfaceScalarField rhorAUf("rhorAUf", fvc::interpolate(rho*rAU));
     volVectorField HbyA(constrainHbyA(rAU*UEqn.H(), U, p));
 
-    double *h_boundary_rAU = new double[dfDataBase.num_boundary_surfaces];
-    double *h_boundary_rhorAUf = (double*)calloc(dfDataBase.num_boundary_surfaces, sizeof(double));
-    double *h_boundary_HbyA = new double[3 * dfDataBase.num_boundary_surfaces];
+    double *h_boundary_rAU = new double[mesh_paras.num_boundary_surfaces];
+    double *h_boundary_rhorAUf = (double*)calloc(mesh_paras.num_boundary_surfaces, sizeof(double));
+    double *h_boundary_HbyA = new double[3 * mesh_paras.num_boundary_surfaces];
     offset = 0;
     forAll(rAU.boundaryField(), patchi)
     {
@@ -76,7 +84,7 @@
     + rhorAUf*fvc::ddtCorr(rho, U, phi, rhoUf)
     );
 
-    double *h_boundary_phiHbyA = (double*)calloc(dfDataBase.num_boundary_surfaces, sizeof(double));
+    double *h_boundary_phiHbyA = (double*)calloc(mesh_paras.num_boundary_surfaces, sizeof(double));
     offset = 0;
     forAll(phiHbyA.boundaryField(), patchi)
     {
@@ -108,11 +116,17 @@
     {
         fvScalarMatrix pEqn(pDDtEqn - fvm::laplacian(rhorAUf, p));
         
-        csrMatrix csr(pEqn);
+        // csrMatrix csr(pEqn);
         auto& p_psi = const_cast<GeometricField<scalar, fvPatchField, volMesh>&>(pEqn.psi());
         auto& source = pEqn.source();
         auto& internalCoeffs = pEqn.internalCoeffs();
         auto& boundaryCoeffs = pEqn.boundaryCoeffs();
+
+        writeDoubleArrayToFile(&pEqn.lower()[0], mesh_paras.num_surfaces, "p_lower.host");
+        writeDoubleArrayToFile(&pEqn.upper()[0], mesh_paras.num_surfaces, "p_upper.host");
+        writeDoubleArrayToFile(&pEqn.diag()[0], mesh_paras.num_cells, "p_diag.host");
+        writeDoubleArrayToFile(&pEqn.source()[0], mesh_paras.num_cells, "p_source.host");
+        
         std::cout << "=== start call csr.solve " << std::endl;
 
         // int mpirank;
@@ -121,25 +135,25 @@
         // std::string a1 = "diag";
         // std::string b1 = ".bin";
         // std::string filename1 = a1 + c + b1;
-        // // saveArrayToBinaryFile(filename1, &csr.diag()[0], dfDataBase.num_cells);
+        // // saveArrayToBinaryFile(filename1, &csr.diag()[0], mesh_paras.num_cells);
         // std::ofstream outFile1(filename1, std::ios::binary);
-        // outFile1.write(reinterpret_cast<const char*>(&csr.diag()[0]), dfDataBase.num_cells * sizeof(double));
+        // outFile1.write(reinterpret_cast<const char*>(&csr.diag()[0]), mesh_paras.num_cells * sizeof(double));
         // outFile1.close();
 
         // std::string a2 = "lower";
         // std::string b2 = ".bin";
         // std::string filename2 = a2 + c + b2;
-        // // saveArrayToBinaryFile(filename2, &csr.ldu().lower()[0], dfDataBase.num_surfaces);
+        // // saveArrayToBinaryFile(filename2, &csr.ldu().lower()[0], mesh_paras.num_surfaces);
         // std::ofstream outFile2(filename2, std::ios::binary);
-        // outFile2.write(reinterpret_cast<const char*>(&csr.ldu().lower()[0]), dfDataBase.num_surfaces * sizeof(double));
+        // outFile2.write(reinterpret_cast<const char*>(&csr.ldu().lower()[0]), mesh_paras.num_surfaces * sizeof(double));
         // outFile2.close();
 
         // std::string a3 = "upper";
         // std::string b3 = ".bin";
         // std::string filename3 = a3 + c + b3;
-        // // saveArrayToBinaryFile(filename3, &csr.ldu().upper()[0], dfDataBase.num_surfaces);
+        // // saveArrayToBinaryFile(filename3, &csr.ldu().upper()[0], mesh_paras.num_surfaces);
         // std::ofstream outFile3(filename3, std::ios::binary);
-        // outFile3.write(reinterpret_cast<const char*>(&csr.ldu().upper()[0]), dfDataBase.num_surfaces * sizeof(double));
+        // outFile3.write(reinterpret_cast<const char*>(&csr.ldu().upper()[0]), mesh_paras.num_surfaces * sizeof(double));
         // outFile3.close();
 
         // int toffset = 0;
@@ -151,8 +165,8 @@
         //     int patchsize = patchPi.size();
         //     const double* internal_coeff_ptr = &pEqn.internalCoeffs()[patchi][0];
         //     const double* boundary_coeff_ptr = &pEqn.boundaryCoeffs()[patchi][0];
-        //     if (dfDataBase.patch_type_extropolated.data()[patchi] == boundaryConditions::processor
-        //         || dfDataBase.patch_type_extropolated.data()[patchi] == boundaryConditions::processorCyclic) {
+        //     if (mesh_paras.patch_type_extropolated.data()[patchi] == boundaryConditions::processor
+        //         || mesh_paras.patch_type_extropolated.data()[patchi] == boundaryConditions::processorCyclic) {
         //         vecInt.insert(vecInt.end(), internal_coeff_ptr, internal_coeff_ptr + patchsize);
         //         vecInt.insert(vecInt.end(), internal_coeff_ptr, internal_coeff_ptr + patchsize);
         //         vecBou.insert(vecBou.end(), boundary_coeff_ptr, boundary_coeff_ptr + patchsize);
@@ -168,7 +182,7 @@
         // std::string a1 = "IntCoef";
         // std::string b1 = ".bin";
         // std::string filename1 = a1 + c + b1;
-        // // saveArrayToBinaryFile(filename1, &csr.diag()[0], dfDataBase.num_cells);
+        // // saveArrayToBinaryFile(filename1, &csr.diag()[0], mesh_paras.num_cells);
         // std::ofstream outFile1(filename1, std::ios::binary);
         // outFile1.write(reinterpret_cast<const char*>(&vecInt[0]), toffset * sizeof(double));
         // outFile1.close();
@@ -176,14 +190,14 @@
         // std::string a2 = "BouCoef";
         // std::string b2 = ".bin";
         // std::string filename2 = a2 + c + b2;
-        // // saveArrayToBinaryFile(filename1, &csr.diag()[0], dfDataBase.num_cells);
+        // // saveArrayToBinaryFile(filename1, &csr.diag()[0], mesh_paras.num_cells);
         // std::ofstream outFile2(filename2, std::ios::binary);
         // outFile2.write(reinterpret_cast<const char*>(&vecBou[0]), toffset * sizeof(double));
         // outFile2.close();
 
         // MPI_Abort(MPI_COMM_WORLD, 1);
 
-        csr.solve(p_psi, source, internalCoeffs, boundaryCoeffs);
+        // csr.solve(p_psi, source, internalCoeffs, boundaryCoeffs);
         std::cout << "=== end call csr.solve " << std::endl;
 
         // pEqn.solve();
@@ -193,14 +207,14 @@
         }
         thermo.correctRho(psi*p - psip0);
         // compare pEqn
-        std::vector<double> h_internal_coeffs(dfDataBase.num_boundary_surfaces);
-        std::vector<double> h_boundary_coeffs(dfDataBase.num_boundary_surfaces);
+        std::vector<double> h_internal_coeffs(mesh_paras.num_boundary_surfaces);
+        std::vector<double> h_boundary_coeffs(mesh_paras.num_boundary_surfaces);
 
         offset = 0;
-        for (int patchi = 0; patchi < dfDataBase.num_patches; patchi++)
+        for (int patchi = 0; patchi < mesh_paras.num_patches; patchi++)
         {
             const fvPatchScalarField& patchP = p.boundaryField()[patchi];
-            int patchsize = dfDataBase.patch_size[patchi];
+            int patchsize = mesh_paras.patch_size[patchi];
             const double* internal_coeff_ptr = &pEqn.internalCoeffs()[patchi][0];
             const double* boundary_coeff_ptr = &pEqn.boundaryCoeffs()[patchi][0];
             memcpy(h_internal_coeffs.data() + offset, internal_coeff_ptr, patchsize * sizeof(double));
@@ -212,10 +226,16 @@
             // pEqn_GPU.compareResult(&pEqn.lower()[0], &pEqn.upper()[0], &pEqn.diag()[0], &pEqn.source()[0], 
             //         h_internal_coeffs.data(), h_boundary_coeffs.data(), false);
         }
+
+        writeDoubleArrayToFile(h_internal_coeffs.data(), mesh_paras.num_boundary_surfaces, "p_internalCoeffs.host");
+        writeDoubleArrayToFile(h_boundary_coeffs.data(), mesh_paras.num_boundary_surfaces, "p_boundaryCoeffs.host");
+
+        writeDoubleArrayToFile(&p[0], mesh_paras.num_cells, "p_p_solved.host");
+        // abort();
     }
 
     // compare p
-    double *h_boundary_p = new double[dfDataBase.num_boundary_surfaces];
+    double *h_boundary_p = new double[mesh_paras.num_boundary_surfaces];
     offset = 0;
     forAll(p.boundaryField(), patchi)
     {
@@ -240,7 +260,7 @@
     delete h_boundary_p;
 
     // compare phi
-    double *h_boundary_phi = new double[dfDataBase.num_boundary_surfaces];
+    double *h_boundary_phi = new double[mesh_paras.num_boundary_surfaces];
     offset = 0;
     forAll(phi.boundaryField(), patchi)
     {
@@ -261,9 +281,9 @@
     delete h_boundary_phi;
 #endif
 
-thermo_GPU.correctPsipRho();
+// // thermo_GPU.correctPsipRho();
 
-#include "rhoEqn.H"
+// #include "rhoEqn.H"
 // #include "compressibleContinuityErrs.H" // TODO: implement this func in future
 
 #if defined DEBUG_
@@ -273,7 +293,7 @@ thermo_GPU.correctPsipRho();
     K = 0.5*magSqr(U);
 
     // check U
-    double *h_boundary_u_tmp_inp = new double[dfDataBase.num_boundary_surfaces * 3];
+    double *h_boundary_u_tmp_inp = new double[mesh_paras.num_boundary_surfaces * 3];
     offset = 0;
     forAll(U.boundaryField(), patchi)
     {

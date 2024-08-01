@@ -1,11 +1,16 @@
+/* FOR DEEPFLAME-ACADEMIC */
+#ifdef GPUSolverNew_
+    process_equation(MATRIX_EQUATION::EEqn);
+#endif
+
 {
     volScalarField& he = thermo.he();
 #if defined GPUSolverNew_
-    double *h_he = dfDataBase.getFieldPointer("he", location::cpu, position::internal);
-    double *h_boundary_he = dfDataBase.getFieldPointer("he", location::cpu, position::boundary);
+    // double *h_he = dfDataBase.getFieldPointer("he", location::cpu, position::internal);
+    // double *h_boundary_he = dfDataBase.getFieldPointer("he", location::cpu, position::boundary);
 
-    EEqn_GPU.process();
-    EEqn_GPU.sync();
+    // EEqn_GPU.process();
+    // EEqn_GPU.sync();
     // EEqn_GPU.postProcess(h_he, h_boundary_he);
 
     // copy h_he to he(cpu)
@@ -38,11 +43,11 @@
         )
     );
     // EEqn.relax();
-    EEqn.solve("ha");
+    // EEqn.solve("ha");
     // checkResult
     // TODO: for temp, now we compare ldu, finally we compare csr
-    std::vector<double> h_internal_coeffs(dfDataBase.num_boundary_surfaces);
-    std::vector<double> h_boundary_coeffs(dfDataBase.num_boundary_surfaces);
+    std::vector<double> h_internal_coeffs(mesh_paras.num_boundary_surfaces);
+    std::vector<double> h_boundary_coeffs(mesh_paras.num_boundary_surfaces);
 
     offset = 0;
     forAll(he.boundaryField(), patchi)
@@ -65,7 +70,7 @@
         }
     }
 
-    double *h_boundary_he_tmp = new double[dfDataBase.num_boundary_surfaces];
+    double *h_boundary_he_tmp = new double[mesh_paras.num_boundary_surfaces];
     offset = 0;
     forAll(he.boundaryField(), patchi)
     {
@@ -95,6 +100,15 @@
 		// DEBUG_TRACE;
         // EEqn_GPU.compareHe(&he[0], h_boundary_he_tmp, printFlag);
     }
+
+    writeDoubleArrayToFile(&EEqn.lower()[0], mesh_paras.num_surfaces, "E_lower.host");
+    writeDoubleArrayToFile(&EEqn.upper()[0], mesh_paras.num_surfaces, "E_upper.host");
+    writeDoubleArrayToFile(&EEqn.diag()[0], mesh_paras.num_cells, "E_diag.host");
+    writeDoubleArrayToFile(&EEqn.source()[0], mesh_paras.num_cells, "E_source.host");
+    writeDoubleArrayToFile(h_internal_coeffs.data(), mesh_paras.num_boundary_surfaces, "E_internalCoeffs.host");
+    writeDoubleArrayToFile(h_boundary_coeffs.data(), mesh_paras.num_boundary_surfaces, "E_boundaryCoeffs.host");
+
+    writeDoubleArrayToFile(&he[0], mesh_paras.num_cells, "E_he_solved.host");
 
     delete h_boundary_he_tmp;
 
