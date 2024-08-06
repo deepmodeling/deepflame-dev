@@ -262,6 +262,20 @@ int main(int argc, char *argv[])
     // DF-A: SET LINEAR SOLVER CONFIGS
     createGPUSolver(solversDict, rho, U, p, Y, thermo.he()); 
 
+    IOdictionary fvSchemesDict
+    (
+        IOobject
+        (
+            "fvSchemes",          // Dictionary name
+            runTime.system(),      // Location within case
+            Y[0].mesh(),           // Mesh reference
+            IOobject::MUST_READ,   // Read if present
+            IOobject::NO_WRITE     // Do not write to disk
+        )
+    );
+    fvSchemes_para schemes_para;
+    createGPUSchemesInput(fvSchemesDict, schemes_para);
+
     std::cout << "                                                          " << std::endl;
     std::cout << "!!!  All data has been set done for deepflame academic.   " << std::endl; 
     std::cout << "==========================================================" << std::endl;
@@ -356,6 +370,9 @@ int main(int argc, char *argv[])
                 #ifdef GPUSolverNew_
                     // thermo_GPU.correctThermo();
                     // thermo_GPU.sync();
+                    #if defined DEBUG_
+                    chemistry->correctThermo(); // reference debug
+                    #endif
                 #else
                     chemistry->correctThermo();
                 #endif
