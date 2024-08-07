@@ -8,8 +8,6 @@
 
     // thermo_GPU.correctPsipRho();
 
-    #include "rhoEqn.H"
-
 #endif
 
 // Thermodynamic density needs to be updated by psi*d(p) after the
@@ -31,6 +29,13 @@
     volScalarField rAU(1/UEqn.A());
     surfaceScalarField rhorAUf("rhorAUf", fvc::interpolate(rho*rAU));
     volVectorField HbyA(constrainHbyA(rAU*UEqn.H(), U, p));
+
+    double *HbyA_newOrder = new double[mesh_paras.num_cells*3]();
+    permuteVector(HbyA_newOrder, &HbyA[0][0], mesh_paras.num_cells);
+    writeDoubleArrayToFile(&rho[0], mesh_paras.num_cells, "d_rho_thermo.host");
+    writeDoubleArrayToFile(&rAU[0], mesh_paras.num_cells, "d_rAU.host");
+    writeDoubleArrayToFile(HbyA_newOrder, mesh_paras.num_cells * 3, "d_HbyA.host");
+    writeDoubleArrayToFile(&rhorAUf[0], mesh_paras.num_surfaces, "d_rhorAUf.host");
 
     double *h_boundary_rAU = new double[mesh_paras.num_boundary_surfaces];
     double *h_boundary_rhorAUf = (double*)calloc(mesh_paras.num_boundary_surfaces, sizeof(double));
@@ -84,6 +89,8 @@
     + rhorAUf*fvc::ddtCorr(rho, U, phi, rhoUf)
     );
 
+    writeDoubleArrayToFile(&phiHbyA[0], mesh_paras.num_surfaces, "d_phiHbyA.host");
+
     double *h_boundary_phiHbyA = (double*)calloc(mesh_paras.num_boundary_surfaces, sizeof(double));
     offset = 0;
     forAll(phiHbyA.boundaryField(), patchi)
@@ -115,8 +122,8 @@
     while (pimple.correctNonOrthogonal())
     {
         fvScalarMatrix pEqn(pDDtEqn - fvm::laplacian(rhorAUf, p));
-        
-        // csrMatrix csr(pEqn);
+
+        csrMatrix csr(pEqn);
         auto& p_psi = const_cast<GeometricField<scalar, fvPatchField, volMesh>&>(pEqn.psi());
         auto& source = pEqn.source();
         auto& internalCoeffs = pEqn.internalCoeffs();
@@ -126,6 +133,8 @@
         writeDoubleArrayToFile(&pEqn.upper()[0], mesh_paras.num_surfaces, "p_upper.host");
         writeDoubleArrayToFile(&pEqn.diag()[0], mesh_paras.num_cells, "p_diag.host");
         writeDoubleArrayToFile(&pEqn.source()[0], mesh_paras.num_cells, "p_source.host");
+
+        writeDoubleArrayToFile(&psi[0], mesh_paras.num_cells, "d_thermo_psi.host");
         
         std::cout << "=== start call csr.solve " << std::endl;
 
@@ -197,7 +206,7 @@
 
         // MPI_Abort(MPI_COMM_WORLD, 1);
 
-        // csr.solve(p_psi, source, internalCoeffs, boundaryCoeffs);
+        csr.solve(p_psi, source, internalCoeffs, boundaryCoeffs);
         std::cout << "=== end call csr.solve " << std::endl;
 
         // pEqn.solve();
@@ -283,7 +292,8 @@
 
 // // thermo_GPU.correctPsipRho();
 
-// #include "rhoEqn.H"
+/* FOR DEEPFLAME-ACADEMIC */
+#include "rhoEqn.H"
 // #include "compressibleContinuityErrs.H" // TODO: implement this func in future
 
 #if defined DEBUG_

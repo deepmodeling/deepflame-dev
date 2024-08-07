@@ -372,6 +372,14 @@ int main(int argc, char *argv[])
                     // thermo_GPU.sync();
                     #if defined DEBUG_
                     chemistry->correctThermo(); // reference debug
+                    const volScalarField& mu = thermo.mu();
+                    const volScalarField& alpha = thermo.alpha();
+                    writeDoubleArrayToFile(&T[0], mesh_paras.num_cells, "d_T.host");
+                    writeDoubleArrayToFile(&psi[0], mesh_paras.num_cells, "d_thermo_psi.host");
+                    writeDoubleArrayToFile(&thermo.rho()()[0], mesh_paras.num_cells, "d_rho.host");
+                    writeDoubleArrayToFile(&mu[0], mesh_paras.num_cells, "d_mu.host");
+                    writeDoubleArrayToFile(&alpha[0], mesh_paras.num_cells, "d_thermo_alpha.host");
+                    writeDoubleArrayToFile(&chemistry->rhoD(0)[0], mesh_paras.num_cells, "d_thermo_rhoD.host-");                    
                     #endif
                 #else
                     chemistry->correctThermo();

@@ -108,7 +108,7 @@
 #if defined DEBUG_
     // UEqn.relax();
     TICK_START;
-    // solve(UEqn == -fvc::grad(p));
+    solve(UEqn == -fvc::grad(p));
     K.oldTime();
     K = 0.5*magSqr(U);
     TICK_STOP(CPU solve time);
@@ -162,9 +162,9 @@
     double *boundary_u_newOrder = new double[mesh_paras.num_boundary_surfaces * 3]();
     permuteVector(U_newOrder, &U[0][0], mesh_paras.num_cells);
     permuteVector(boundary_u_newOrder, &h_boundary_u_tmp[0], mesh_paras.num_boundary_surfaces);
-    writeDoubleArrayToFile(U_newOrder, mesh_paras.num_cells * 3, "U_u_solved.host");
-    writeDoubleArrayToFile(boundary_u_newOrder, mesh_paras.num_boundary_surfaces * 3, "U_boundary_u.host");
-    writeDoubleArrayToFile(&K[0], mesh_paras.num_cells, "U_k.host");
+    writeDoubleArrayToFile(U_newOrder, mesh_paras.num_cells * 3, "U_solved_u.host");
+    writeDoubleArrayToFile(boundary_u_newOrder, mesh_paras.num_boundary_surfaces * 3, "U_solved_boundary_u.host");
+    writeDoubleArrayToFile(&K[0], mesh_paras.num_cells, "U_solved_k.host");
 
     bool printFlag = false;
 

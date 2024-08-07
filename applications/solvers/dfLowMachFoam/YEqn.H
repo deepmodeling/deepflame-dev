@@ -87,6 +87,15 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
 #if defined DEBUG_
     // run CPU
     volScalarField Yt(0.0*Y[0]);
+
+    int specie_index = 0;
+
+    // should compute grad_yi before YiEqn.solve()
+    const volVectorField grad_yi = fvc::grad(Y[specie_index]);
+    double *grad_y_newOrder = new double[mesh_paras.num_cells * 3]();
+    permuteVector(grad_y_newOrder, &grad_yi[0][0], mesh_paras.num_cells);
+    writeDoubleArrayToFile(&grad_y_newOrder[0], mesh_paras.num_cells * 3, "Y_grad_y.host");
+
     int speciesIndex = 0;
     forAll(Y, i)
     {
@@ -120,7 +129,7 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
             // YiEqn.relax();
 
             start1 = std::clock();
-            // YiEqn.solve("Yi");
+            YiEqn.solve("Yi");
             end1 = std::clock();
             time_monitor_YEqn_solve += double(end1 - start1) / double(CLOCKS_PER_SEC);
 
@@ -131,14 +140,6 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     }
     Y[inertIndex] = scalar(1) - Yt;
     Y[inertIndex].max(0.0);
-
-    int specie_index = 0;
-
-    // should compute grad_yi before YiEqn.solve()
-    const volVectorField grad_yi = fvc::grad(Y[specie_index]);
-    double *grad_y_newOrder = new double[mesh_paras.num_cells * 3]();
-    permuteVector(grad_y_newOrder, &grad_yi[0][0], mesh_paras.num_cells);
-    writeDoubleArrayToFile(&grad_y_newOrder[0], mesh_paras.num_cells * 3, "Y_grad_y.host");
 
     tmp<volScalarField> DEff = chemistry->rhoD(specie_index) + turbulence->mut()/Sct;
     fvScalarMatrix YiEqn
@@ -262,7 +263,7 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     // writeDoubleArrayToFile(&diffAlphaD_newOrder[0], mesh_paras.num_cells * 3, "Y_diffAlphaD.host");
     // writeDoubleArrayToFile(&hDiffCorrFlux_newOrder[0], mesh_paras.num_cells * 3, "Y_hDiffCorrFlux.host");
     // writeDoubleArrayToFile(&sumYDiffError_newOrder[0], mesh_paras.num_cells * 3, "Y_sumYDiffError.host");
-    writeDoubleArrayToFile(&phiUc[0], mesh_paras.num_surfaces, "Y_phiUc.host");
+    // writeDoubleArrayToFile(&phiUc[0], mesh_paras.num_surfaces, "Y_phiUc.host");
 
     writeDoubleArrayToFile(&YiEqn.lower()[0], mesh_paras.num_surfaces, "Y_lower0.host");
     writeDoubleArrayToFile(&YiEqn.upper()[0], mesh_paras.num_surfaces, "Y_upper0.host");
@@ -271,7 +272,8 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     writeDoubleArrayToFile(yeqn_h_internal_coeffs.data(), mesh_paras.num_boundary_surfaces, "Y_internalCoeffs0.host");
     writeDoubleArrayToFile(yeqn_h_boundary_coeffs.data(), mesh_paras.num_boundary_surfaces, "Y_boundaryCoeffs0.host");
 
-    writeDoubleArrayToFile(&Y[0][0], mesh_paras.num_cells * init_data.num_species, "Y_y_solved.host");
+    // writeDoubleArrayToFile(&Y[0][0], mesh_paras.num_cells * init_data.num_species, "Y_solved_y.host");
+    writeDoubleArrayToFile(&Y[3][0], mesh_paras.num_cells, "Y_solved_y.host");
 
     DEBUG_TRACE;
     // YEqn_GPU.compareYi(&Y[specie_index][0], specie_index, false);
