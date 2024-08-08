@@ -3,8 +3,9 @@
 
     // thermo_GPU.updateRho();
     // thermo_GPU.psip0();
+    // UEqn_GPU.getHbyA();
 
-    process_equation(MATRIX_EQUATION::pEqn); // including UEqn_GPU.getHbyA();
+    process_equation(MATRIX_EQUATION::pEqn); 
 
     // thermo_GPU.correctPsipRho();
 
@@ -322,6 +323,14 @@
             offset += patchSize;
         }
     }
+    double *U_newOrder = new double[mesh_paras.num_cells * 3]();
+    permuteVector(U_newOrder, &U[0][0], mesh_paras.num_cells);
+    writeDoubleArrayToFile(U_newOrder, mesh_paras.num_cells * 3, "p_correct_u.host");
+
+    double *boundary_u_newOrder = new double[mesh_paras.num_boundary_surfaces * 3]();
+    permuteVector(boundary_u_newOrder, &h_boundary_u_tmp_inp[0], mesh_paras.num_boundary_surfaces);
+    writeDoubleArrayToFile(boundary_u_newOrder, mesh_paras.num_boundary_surfaces * 3, "p_correct_boundary_u.host");
+    
     if (!mpi_init_flag || rank == 0) {
         // pEqn_GPU.compareU(&U[0][0], h_boundary_u_tmp_inp, false);
     }
@@ -330,6 +339,7 @@
 
 #if defined DEBUG_ 
     dpdt = fvc::ddt(p);
+    writeDoubleArrayToFile(&dpdt[0], mesh_paras.num_cells, "p_dpdt.host");
     // pEqn_GPU.comparedpdt(&dpdt[0], false);
 #endif
 

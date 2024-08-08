@@ -43,7 +43,7 @@
         )
     );
     // EEqn.relax();
-    // EEqn.solve("ha");
+    EEqn.solve("ha");
     // checkResult
     // TODO: for temp, now we compare ldu, finally we compare csr
     std::vector<double> h_internal_coeffs(mesh_paras.num_boundary_surfaces);
