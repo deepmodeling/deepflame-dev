@@ -32,8 +32,8 @@ void setConstantIndexes_GAMG(int nCells, int nFaces, int *owner, int *neighbor, 
 #include <fstream>
 #include <iostream>
 #include <iomanip> 
-void writeDoubleArrayToFile(const double* data, int num, const std::string& filename) {
-    if(NOTWriteArrays) return;
+void writeDoubleArrayToFile(const double* data, int num, const std::string& filename, bool compareCPUResults = false) {
+    if(!compareCPUResults) return;
     std::ofstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Failed to open file: " << filename << std::endl;
@@ -55,6 +55,16 @@ void writeDoubleArrayToFile(const double* data, int num, const std::string& file
 
     file.close();
     std::cout << "--- DEBUG: Write " << filename << " successfully. " << std::endl;
+}
+
+void permuteVector2Host(double *&new_order, double *old_order, int num) 
+{
+    for (int i = 0; i < num; i++) 
+    {
+        new_order[i * 3 + 0] = old_order[num * 0 + i];
+        new_order[i * 3 + 1] = old_order[num * 1 + i];
+        new_order[i * 3 + 2] = old_order[num * 2 + i];
+    }
 }
 
 
@@ -1565,4 +1575,14 @@ else if (type == 2)
 
     free(ellColsperRow);
 }
+}
+
+void copyGPUResults2Host(mesh_info_para &mesh_paras, volVectorField& U)
+{
+    // DF-A: memcpy results data d2h 
+    writeResults();
+
+    double *U_hostOrder = new double[mesh_paras.num_cells * 3]();
+    permuteVector2Host(U_hostOrder, resultsData.h_u, mesh_paras.num_cells);
+    memcpy(&U[0][0], U_hostOrder, mesh_paras.num_cells * 3 * sizeof(double));
 }

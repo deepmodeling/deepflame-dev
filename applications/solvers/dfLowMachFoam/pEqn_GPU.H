@@ -4,7 +4,7 @@
     // thermo_GPU.updateRho();
     // thermo_GPU.psip0();
     // UEqn_GPU.getHbyA();
-
+    
     process_equation(MATRIX_EQUATION::pEqn); 
 
     // thermo_GPU.correctPsipRho();
@@ -33,10 +33,10 @@
 
     double *HbyA_newOrder = new double[mesh_paras.num_cells*3]();
     permuteVector(HbyA_newOrder, &HbyA[0][0], mesh_paras.num_cells);
-    writeDoubleArrayToFile(&rho[0], mesh_paras.num_cells, "d_rho_thermo.host");
-    writeDoubleArrayToFile(&rAU[0], mesh_paras.num_cells, "d_rAU.host");
-    writeDoubleArrayToFile(HbyA_newOrder, mesh_paras.num_cells * 3, "d_HbyA.host");
-    writeDoubleArrayToFile(&rhorAUf[0], mesh_paras.num_surfaces, "d_rhorAUf.host");
+    writeDoubleArrayToFile(&rho[0], mesh_paras.num_cells, "d_rho_thermo.host", compareCPUResults);
+    writeDoubleArrayToFile(&rAU[0], mesh_paras.num_cells, "d_rAU.host", compareCPUResults);
+    writeDoubleArrayToFile(HbyA_newOrder, mesh_paras.num_cells * 3, "d_HbyA.host", compareCPUResults);
+    writeDoubleArrayToFile(&rhorAUf[0], mesh_paras.num_surfaces, "d_rhorAUf.host", compareCPUResults);
 
     double *h_boundary_rAU = new double[mesh_paras.num_boundary_surfaces];
     double *h_boundary_rhorAUf = (double*)calloc(mesh_paras.num_boundary_surfaces, sizeof(double));
@@ -90,7 +90,7 @@
     + rhorAUf*fvc::ddtCorr(rho, U, phi, rhoUf)
     );
 
-    writeDoubleArrayToFile(&phiHbyA[0], mesh_paras.num_surfaces, "d_phiHbyA.host");
+    writeDoubleArrayToFile(&phiHbyA[0], mesh_paras.num_surfaces, "d_phiHbyA.host", compareCPUResults);
 
     double *h_boundary_phiHbyA = (double*)calloc(mesh_paras.num_boundary_surfaces, sizeof(double));
     offset = 0;
@@ -130,12 +130,12 @@
         auto& internalCoeffs = pEqn.internalCoeffs();
         auto& boundaryCoeffs = pEqn.boundaryCoeffs();
 
-        writeDoubleArrayToFile(&pEqn.lower()[0], mesh_paras.num_surfaces, "p_lower.host");
-        writeDoubleArrayToFile(&pEqn.upper()[0], mesh_paras.num_surfaces, "p_upper.host");
-        writeDoubleArrayToFile(&pEqn.diag()[0], mesh_paras.num_cells, "p_diag.host");
-        writeDoubleArrayToFile(&pEqn.source()[0], mesh_paras.num_cells, "p_source.host");
+        writeDoubleArrayToFile(&pEqn.lower()[0], mesh_paras.num_surfaces, "p_lower.host", compareCPUResults);
+        writeDoubleArrayToFile(&pEqn.upper()[0], mesh_paras.num_surfaces, "p_upper.host", compareCPUResults);
+        writeDoubleArrayToFile(&pEqn.diag()[0], mesh_paras.num_cells, "p_diag.host", compareCPUResults);
+        writeDoubleArrayToFile(&pEqn.source()[0], mesh_paras.num_cells, "p_source.host", compareCPUResults);
 
-        writeDoubleArrayToFile(&psi[0], mesh_paras.num_cells, "d_thermo_psi.host");
+        writeDoubleArrayToFile(&psi[0], mesh_paras.num_cells, "d_thermo_psi.host", compareCPUResults);
         
         std::cout << "=== start call csr.solve " << std::endl;
 
@@ -237,10 +237,10 @@
             //         h_internal_coeffs.data(), h_boundary_coeffs.data(), false);
         }
 
-        writeDoubleArrayToFile(h_internal_coeffs.data(), mesh_paras.num_boundary_surfaces, "p_internalCoeffs.host");
-        writeDoubleArrayToFile(h_boundary_coeffs.data(), mesh_paras.num_boundary_surfaces, "p_boundaryCoeffs.host");
+        writeDoubleArrayToFile(h_internal_coeffs.data(), mesh_paras.num_boundary_surfaces, "p_internalCoeffs.host", compareCPUResults);
+        writeDoubleArrayToFile(h_boundary_coeffs.data(), mesh_paras.num_boundary_surfaces, "p_boundaryCoeffs.host", compareCPUResults);
 
-        writeDoubleArrayToFile(&p[0], mesh_paras.num_cells, "p_p_solved.host");
+        writeDoubleArrayToFile(&p[0], mesh_paras.num_cells, "p_p_solved.host", compareCPUResults);
         // abort();
     }
 
@@ -325,11 +325,11 @@
     }
     double *U_newOrder = new double[mesh_paras.num_cells * 3]();
     permuteVector(U_newOrder, &U[0][0], mesh_paras.num_cells);
-    writeDoubleArrayToFile(U_newOrder, mesh_paras.num_cells * 3, "p_correct_u.host");
+    writeDoubleArrayToFile(U_newOrder, mesh_paras.num_cells * 3, "p_correct_u.host", compareCPUResults);
 
     double *boundary_u_newOrder = new double[mesh_paras.num_boundary_surfaces * 3]();
     permuteVector(boundary_u_newOrder, &h_boundary_u_tmp_inp[0], mesh_paras.num_boundary_surfaces);
-    writeDoubleArrayToFile(boundary_u_newOrder, mesh_paras.num_boundary_surfaces * 3, "p_correct_boundary_u.host");
+    writeDoubleArrayToFile(boundary_u_newOrder, mesh_paras.num_boundary_surfaces * 3, "p_correct_boundary_u.host", compareCPUResults);
     
     if (!mpi_init_flag || rank == 0) {
         // pEqn_GPU.compareU(&U[0][0], h_boundary_u_tmp_inp, false);
@@ -339,7 +339,7 @@
 
 #if defined DEBUG_ 
     dpdt = fvc::ddt(p);
-    writeDoubleArrayToFile(&dpdt[0], mesh_paras.num_cells, "p_dpdt.host");
+    writeDoubleArrayToFile(&dpdt[0], mesh_paras.num_cells, "p_dpdt.host", compareCPUResults);
     // pEqn_GPU.comparedpdt(&dpdt[0], false);
 #endif
 

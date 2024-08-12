@@ -37,6 +37,51 @@
     fvVectorMatrix& UEqn = tUEqn.ref();
     TICK_STOP(CPU assembly time);
 
+
+    // double *h_value_internal_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
+    // double *h_value_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
+    // double *h_gradient_internal_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
+    // double *h_gradient_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
+
+    // offset = 0;
+    // forAll(U.boundaryField(), patchi)
+    // {
+    //     const fvsPatchScalarField& patchFlux = phi.boundaryField()[patchi];
+    //     const fvsPatchScalarField& pw = mesh.surfaceInterpolation::weights().boundaryField()[patchi];
+    //     const scalarField& pDeltaCoeffs = mesh.deltaCoeffs().boundaryField()[patchi];
+    //     int patchsize = mesh_paras.patch_size[patchi];
+
+    //     // Field<vector> ueqn_internalCoeffs_vec = patchFlux*U.boundaryField()[patchi].valueInternalCoeffs(pw);
+    //     // Field<vector> ueqn_boundaryCoeffs_vec = -patchFlux*U.boundaryField()[patchi].valueBoundaryCoeffs(pw); 
+
+    //     Field<vector> ueqn_internalCoeffs_vec = U.boundaryField()[patchi].valueInternalCoeffs(pw);
+    //     Field<vector> ueqn_boundaryCoeffs_vec = U.boundaryField()[patchi].valueBoundaryCoeffs(pw); 
+    //     Field<vector> ueqn_laplac_internalCoeffs_vec = U.boundaryField()[patchi].gradientInternalCoeffs(pDeltaCoeffs);
+    //     Field<vector> ueqn_laplac_boundaryCoeffs_vec = U.boundaryField()[patchi].gradientBoundaryCoeffs(pDeltaCoeffs);
+
+    //     memcpy(h_value_internal_coeffs + offset * 3, ueqn_internalCoeffs_vec.data(), patchsize * 3 * sizeof(double));
+    //     memcpy(h_value_boundary_coeffs + offset * 3, ueqn_boundaryCoeffs_vec.data(), patchsize * 3 * sizeof(double));
+    //     memcpy(h_gradient_internal_coeffs + offset * 3, ueqn_laplac_internalCoeffs_vec.data(), patchsize * 3 * sizeof(double));
+    //     memcpy(h_gradient_boundary_coeffs + offset * 3, ueqn_laplac_boundaryCoeffs_vec.data(), patchsize * 3 * sizeof(double));
+
+    //     if (patchFlux.type() == "processor" || patchFlux.type() == "processorCyclic") offset += 2 * patchsize;
+    //     else offset += patchsize;
+    // }
+
+    // double *d_value_internal_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
+    // double *d_value_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
+    // double *d_gradient_internal_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
+    // double *d_gradient_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
+    // permuteVector(d_value_internal_coeffs, &h_value_internal_coeffs[0], mesh_paras.num_boundary_surfaces);
+    // permuteVector(d_value_boundary_coeffs, &h_value_boundary_coeffs[0], mesh_paras.num_boundary_surfaces);
+    // permuteVector(d_gradient_internal_coeffs, &h_gradient_internal_coeffs[0], mesh_paras.num_boundary_surfaces);
+    // permuteVector(d_gradient_boundary_coeffs, &h_gradient_boundary_coeffs[0], mesh_paras.num_boundary_surfaces);
+
+    // writeDoubleArrayToFile(d_value_internal_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_value_internal_coeffs.host");
+    // writeDoubleArrayToFile(d_value_boundary_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_value_boundary_coeffs.host");
+    // writeDoubleArrayToFile(d_gradient_internal_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_gradient_internal_coeffs.host");
+    // writeDoubleArrayToFile(d_gradient_boundary_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_gradient_boundary_coeffs.host");
+
     // add for test
     double *diag = &UEqn.diag()[0];
     double *lower = &UEqn.lower()[0];
@@ -45,17 +90,17 @@
     double *source_newOrder = new double[mesh_paras.num_cells*3]();
     permuteVector(source_newOrder, &UEqn.source()[0][0], mesh_paras.num_cells);
 
-    writeDoubleArrayToFile(diag, mesh_paras.num_cells, "U_diag.host");
-    writeDoubleArrayToFile(lower, mesh_paras.num_surfaces, "U_lower.host");
-    writeDoubleArrayToFile(upper, mesh_paras.num_surfaces, "U_upper.host");
-    writeDoubleArrayToFile(source_newOrder, mesh_paras.num_cells * 3, "U_source.host");
+    writeDoubleArrayToFile(diag, mesh_paras.num_cells, "U_diag.host", compareCPUResults);
+    writeDoubleArrayToFile(lower, mesh_paras.num_surfaces, "U_lower.host", compareCPUResults);
+    writeDoubleArrayToFile(upper, mesh_paras.num_surfaces, "U_upper.host", compareCPUResults);
+    writeDoubleArrayToFile(source_newOrder, mesh_paras.num_cells * 3, "U_source.host", compareCPUResults);
 
 
     volTensorField gradU = fvc::grad(U);
 
     double *gradU_newOrder = new double[mesh_paras.num_cells*9]();
     permuteTensor(gradU_newOrder, &gradU[0][0], mesh_paras.num_cells);
-    writeDoubleArrayToFile(gradU_newOrder, mesh_paras.num_cells * 9, "U_grad_U.host");
+    writeDoubleArrayToFile(gradU_newOrder, mesh_paras.num_cells * 9, "U_grad_U.host", compareCPUResults);
 
     double *h_boundary_gradU = new double[mesh_paras.num_boundary_surfaces * 9];
     offset = 0;
@@ -86,7 +131,7 @@
 
     double *boundary_gradU_newOrder = new double[mesh_paras.num_boundary_surfaces * 9]();
     permuteTensor(boundary_gradU_newOrder, &h_boundary_gradU[0], mesh_paras.num_boundary_surfaces);
-    writeDoubleArrayToFile(boundary_gradU_newOrder, mesh_paras.num_boundary_surfaces * 9, "U_boundary_grad_u.host");
+    writeDoubleArrayToFile(boundary_gradU_newOrder, mesh_paras.num_boundary_surfaces * 9, "U_boundary_grad_u.host", compareCPUResults);
 
 #endif
 
@@ -109,6 +154,7 @@
     // UEqn.relax();
     TICK_START;
     solve(UEqn == -fvc::grad(p));
+    U.correctBoundaryConditions();
     K.oldTime();
     K = 0.5*magSqr(U);
     TICK_STOP(CPU solve time);
@@ -135,8 +181,8 @@
     double *h_boundary_coeffs_newOrder = new double[mesh_paras.num_boundary_surfaces * 3]();
     permuteVector(h_internal_coeffs_newOrder, &h_internal_coeffs.data()[0], mesh_paras.num_boundary_surfaces);
     permuteVector(h_boundary_coeffs_newOrder, &h_boundary_coeffs.data()[0], mesh_paras.num_boundary_surfaces);
-    writeDoubleArrayToFile(h_internal_coeffs_newOrder, mesh_paras.num_boundary_surfaces * 3, "U_internalCoeffs.host");
-    writeDoubleArrayToFile(h_boundary_coeffs_newOrder, mesh_paras.num_boundary_surfaces * 3, "U_boundaryCoeffs.host");
+    writeDoubleArrayToFile(h_internal_coeffs_newOrder, mesh_paras.num_boundary_surfaces * 3, "U_internalCoeffs.host", compareCPUResults);
+    writeDoubleArrayToFile(h_boundary_coeffs_newOrder, mesh_paras.num_boundary_surfaces * 3, "U_boundaryCoeffs.host", compareCPUResults);
 
     double *h_boundary_u_tmp = new double[mesh_paras.num_boundary_surfaces * 3];
     offset = 0;
@@ -162,9 +208,9 @@
     double *boundary_u_newOrder = new double[mesh_paras.num_boundary_surfaces * 3]();
     permuteVector(U_newOrder, &U[0][0], mesh_paras.num_cells);
     permuteVector(boundary_u_newOrder, &h_boundary_u_tmp[0], mesh_paras.num_boundary_surfaces);
-    writeDoubleArrayToFile(U_newOrder, mesh_paras.num_cells * 3, "U_solved_u.host");
-    writeDoubleArrayToFile(boundary_u_newOrder, mesh_paras.num_boundary_surfaces * 3, "U_solved_boundary_u.host");
-    writeDoubleArrayToFile(&K[0], mesh_paras.num_cells, "U_solved_k.host");
+    writeDoubleArrayToFile(U_newOrder, mesh_paras.num_cells * 3, "U_solved_u.host", compareCPUResults);
+    writeDoubleArrayToFile(boundary_u_newOrder, mesh_paras.num_boundary_surfaces * 3, "U_solved_boundary_u.host", compareCPUResults);
+    writeDoubleArrayToFile(&K[0], mesh_paras.num_cells, "U_solved_k.host", compareCPUResults);
 
     bool printFlag = false;
 

@@ -101,14 +101,14 @@
         // EEqn_GPU.compareHe(&he[0], h_boundary_he_tmp, printFlag);
     }
 
-    writeDoubleArrayToFile(&EEqn.lower()[0], mesh_paras.num_surfaces, "E_lower.host");
-    writeDoubleArrayToFile(&EEqn.upper()[0], mesh_paras.num_surfaces, "E_upper.host");
-    writeDoubleArrayToFile(&EEqn.diag()[0], mesh_paras.num_cells, "E_diag.host");
-    writeDoubleArrayToFile(&EEqn.source()[0], mesh_paras.num_cells, "E_source.host");
-    writeDoubleArrayToFile(h_internal_coeffs.data(), mesh_paras.num_boundary_surfaces, "E_internalCoeffs.host");
-    writeDoubleArrayToFile(h_boundary_coeffs.data(), mesh_paras.num_boundary_surfaces, "E_boundaryCoeffs.host");
+    writeDoubleArrayToFile(&EEqn.lower()[0], mesh_paras.num_surfaces, "E_lower.host", compareCPUResults);
+    writeDoubleArrayToFile(&EEqn.upper()[0], mesh_paras.num_surfaces, "E_upper.host", compareCPUResults);
+    writeDoubleArrayToFile(&EEqn.diag()[0], mesh_paras.num_cells, "E_diag.host", compareCPUResults);
+    writeDoubleArrayToFile(&EEqn.source()[0], mesh_paras.num_cells, "E_source.host", compareCPUResults);
+    writeDoubleArrayToFile(h_internal_coeffs.data(), mesh_paras.num_boundary_surfaces, "E_internalCoeffs.host", compareCPUResults);
+    writeDoubleArrayToFile(h_boundary_coeffs.data(), mesh_paras.num_boundary_surfaces, "E_boundaryCoeffs.host", compareCPUResults);
 
-    writeDoubleArrayToFile(&he[0], mesh_paras.num_cells, "E_he_solved.host");
+    writeDoubleArrayToFile(&he[0], mesh_paras.num_cells, "E_he_solved.host", compareCPUResults);
 
     delete h_boundary_he_tmp;
 
