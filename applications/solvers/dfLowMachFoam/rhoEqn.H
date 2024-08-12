@@ -49,8 +49,8 @@ Description
     int num_cells = rho.mesh().nCells();
     int num_surfaces = rho.mesh().neighbour().size();
 
-    writeDoubleArrayToFile(diag, num_cells, "rho_diag.host");
-    writeDoubleArrayToFile(source, num_cells, "rho_source.host");
+    writeDoubleArrayToFile(diag, num_cells, "rho_diag.host", compareCPUResults);
+    writeDoubleArrayToFile(source, num_cells, "rho_source.host", compareCPUResults);
 
     rhoEqn.solve();
     TICK_STOP(CPU process time);
@@ -60,7 +60,7 @@ Description
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     }
 
-    writeDoubleArrayToFile(&rho[0], num_cells, "rho_rho_solved.host");
+    writeDoubleArrayToFile(&rho[0], num_cells, "rho_solved_rho.host", compareCPUResults);
 
     double *h_boundary_rho = (double*)calloc(mesh_paras.num_boundary_surfaces, sizeof(double));
     offset = 0;
@@ -81,7 +81,7 @@ Description
         }
     }
 
-    writeDoubleArrayToFile(&h_boundary_rho[0], mesh_paras.num_boundary_surfaces, "rho_boundary_rho.host");
+    writeDoubleArrayToFile(&h_boundary_rho[0], mesh_paras.num_boundary_surfaces, "rho_solved_boundary_rho.host", compareCPUResults);
 
 #endif
 #else

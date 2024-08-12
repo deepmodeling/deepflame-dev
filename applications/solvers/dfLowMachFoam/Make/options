@@ -64,7 +64,7 @@ EXE_LIBS = \
     $(if $(PYTHON_LIB_DIR),-lpython3.8,) \
     $(if $(AMGX_DIR), /usr/local/cuda/lib64/libcudart.so,) \
 	$(if $(AMGX_DIR), /usr/local/cuda/lib64/libnccl.so,) \
-    /root/DeepFlame_Academic/lib/libdfacademic.so \
+    /root/DeepFlame_Academic/build/libdfacademic.so \
     $(if $(AMGX_DIR), $(DF_ROOT)/src_gpu/build/libdfMatrix.so,) \
     $(if $(AMGX_DIR), $(AMGX_DIR)/build/libamgxsh.so,) 
 

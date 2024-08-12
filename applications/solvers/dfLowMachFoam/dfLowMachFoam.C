@@ -219,6 +219,7 @@ int main(int argc, char *argv[])
     
     mesh_info_para mesh_paras;    
     init_data_para init_data;
+    bool compareCPUResults = compareResults;
 
     // DF-A: CREATE MESHBASE 
     createGPUBaseInput(mesh_paras, init_data, CanteraTorchProperties, mesh, Y); 
@@ -233,7 +234,7 @@ int main(int argc, char *argv[])
                     psi, thermo.alpha(), thermo.mu(), K, dpdt, chemistry);
 
     // DF-A: MALLOC & MEMCPY-H2D "MESHBASE" 
-    set_mesh_info(mesh_paras);
+    set_mesh_info(mesh_paras, compareCPUResults);
 
     // DF-A: MALLOC & MEMCPY-H2D "DFDATABASE" 
     set_data_info(init_data);
@@ -261,6 +262,20 @@ int main(int argc, char *argv[])
 
     // DF-A: SET LINEAR SOLVER CONFIGS
     createGPUSolver(solversDict, rho, U, p, Y, thermo.he()); 
+
+    IOdictionary fvSchemesDict
+    (
+        IOobject
+        (
+            "fvSchemes",          // Dictionary name
+            runTime.system(),      // Location within case
+            Y[0].mesh(),           // Mesh reference
+            IOobject::MUST_READ,   // Read if present
+            IOobject::NO_WRITE     // Do not write to disk
+        )
+    );
+    fvSchemes_para schemes_para;
+    createGPUSchemesInput(fvSchemesDict, schemes_para);
 
     std::cout << "                                                          " << std::endl;
     std::cout << "!!!  All data has been set done for deepflame academic.   " << std::endl; 
@@ -303,7 +318,8 @@ int main(int argc, char *argv[])
         
         // DF-A: STORE PRE-TIMESTPE FIELDS IN ACADEMIC
         #ifdef GPUSolverNew_
-        preTimeStep();
+        double rDeltaT = 1.0/Y[0].mesh().time().deltaTValue();
+        preTimeStep(rDeltaT);   
         #endif
 
         clock_t loop_start = std::clock();
@@ -356,6 +372,17 @@ int main(int argc, char *argv[])
                 #ifdef GPUSolverNew_
                     // thermo_GPU.correctThermo();
                     // thermo_GPU.sync();
+                    #if defined DEBUG_
+                    chemistry->correctThermo(); // reference debug
+                    const volScalarField& mu = thermo.mu();
+                    const volScalarField& alpha = thermo.alpha();
+                    writeDoubleArrayToFile(&T[0], mesh_paras.num_cells, "d_T.host", compareCPUResults);
+                    writeDoubleArrayToFile(&psi[0], mesh_paras.num_cells, "d_thermo_psi.host", compareCPUResults);
+                    writeDoubleArrayToFile(&thermo.rho()()[0], mesh_paras.num_cells, "d_rho.host"), compareCPUResults;
+                    writeDoubleArrayToFile(&mu[0], mesh_paras.num_cells, "d_mu.host", compareCPUResults);
+                    writeDoubleArrayToFile(&alpha[0], mesh_paras.num_cells, "d_thermo_alpha.host", compareCPUResults);
+                    writeDoubleArrayToFile(&chemistry->rhoD(0)[0], mesh_paras.num_cells, "d_thermo_rhoD.host", compareCPUResults);                    
+                    #endif
                 #else
                     chemistry->correctThermo();
                 #endif
@@ -434,6 +461,10 @@ int main(int argc, char *argv[])
         #endif
         #else
             rho = thermo.rho();
+        #endif
+
+        #ifdef GPUSolverNew_
+            copyGPUResults2Host(mesh_paras, U);
         #endif
 
         runTime.write();

@@ -17,3 +17,4 @@ export LD_LIBRARY_PATH=$DF_LIBBIN:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=$DF_ROOT/src_gpu/build:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=$AMGX_DIR/build:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=$DF_ROOT/src/dfChemistryModel/DNNInferencer/build:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/root/DeepFlame_Academic/build:$LD_LIBRARY_PATH

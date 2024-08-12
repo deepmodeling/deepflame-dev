@@ -32,7 +32,8 @@ void setConstantIndexes_GAMG(int nCells, int nFaces, int *owner, int *neighbor, 
 #include <fstream>
 #include <iostream>
 #include <iomanip> 
-void writeDoubleArrayToFile(const double* data, int num, const std::string& filename) {
+void writeDoubleArrayToFile(const double* data, int num, const std::string& filename, bool compareCPUResults = false) {
+    if(!compareCPUResults) return;
     std::ofstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Failed to open file: " << filename << std::endl;
@@ -54,6 +55,16 @@ void writeDoubleArrayToFile(const double* data, int num, const std::string& file
 
     file.close();
     std::cout << "--- DEBUG: Write " << filename << " successfully. " << std::endl;
+}
+
+void permuteVector2Host(double *&new_order, double *old_order, int num) 
+{
+    for (int i = 0; i < num; i++) 
+    {
+        new_order[i * 3 + 0] = old_order[num * 0 + i];
+        new_order[i * 3 + 1] = old_order[num * 1 + i];
+        new_order[i * 3 + 2] = old_order[num * 2 + i];
+    }
 }
 
 
@@ -584,6 +595,87 @@ void createGPUSolver(const dictionary solversDict,
 
     createGPUSolverInput(p.mesh(), pSolverDict, MATRIX_EQUATION::pEqn); 
     initialize_matrix(MATRIX_EQUATION::pEqn);    
+}
+
+string getFullSchemesName(const dictionary schemesDict, string foundSchemes)
+{
+    ITstream& its(schemesDict.lookup(foundSchemes));
+    token t;
+    its.putBack(t); // Put back the first token to read it again
+    its >> t;
+    string fullScheme = t.wordToken();
+
+    // Read the rest of the tokens
+    while (its.good())
+    {
+        its >> t;
+        if (t.good())
+        {
+            fullScheme += t.wordToken();
+        }
+    }
+    return fullScheme;
+}
+
+int getIntSchemes(string schemeName)
+{
+    if (schemeName == "Gausslinear")           return 0;
+    if (schemeName == "Gaussupwind")           return 1;
+}
+
+void createGPUSchemesInput(const dictionary schemesControls, fvSchemes_para schemes_para)
+{
+    std::cout << "- Set operator schemes for DeepFlame_Academic " << std::endl;    
+    
+    dictionary ddtSchemesDict = schemesControls.subDict("ddtSchemes"); 
+    dictionary gradSchemesDict = schemesControls.subDict("gradSchemes"); 
+    dictionary divSchemesDict = schemesControls.subDict("divSchemes"); 
+    dictionary laplacianSchemesDict = schemesControls.subDict("laplacianSchemes"); 
+    dictionary interpolationSchemesDict = schemesControls.subDict("interpolationSchemes"); 
+    dictionary snGradSchemesDict = schemesControls.subDict("snGradSchemes"); 
+
+    string divSchemes = getFullSchemesName(divSchemesDict, "default");
+    std::cout << "  = Schemes setting [divSchemes]: " << divSchemes << std::endl;
+    if (divSchemes == "none")
+    {
+        string divSchemes_phi_U = getFullSchemesName(divSchemesDict, "div(phi,U)");
+        int divSchemes_phi_UInt = getIntSchemes(divSchemes_phi_U);
+        schemes_para.divSchemes_phi_U = static_cast<INTERPOLATION_SCHEME>(divSchemes_phi_UInt);
+        std::cout << "    == Schemes setting [divSchemes div(phi,U)]: " << divSchemes_phi_U << std::endl;
+
+        string divSchemes_phi_K = getFullSchemesName(divSchemesDict, "div(phi,K)");
+        int divSchemes_phi_KInt = getIntSchemes(divSchemes_phi_K);
+        schemes_para.divSchemes_phi_K = static_cast<INTERPOLATION_SCHEME>(divSchemes_phi_KInt);
+        std::cout << "    == Schemes setting [divSchemes div(phi,K)]: " << divSchemes_phi_K << std::endl;
+
+        string divSchemes_phid_p = getFullSchemesName(divSchemesDict, "div(phid,p)");
+        int divSchemes_phid_pInt = getIntSchemes(divSchemes_phid_p);
+        schemes_para.divSchemes_phid_p = static_cast<INTERPOLATION_SCHEME>(divSchemes_phid_pInt);
+        std::cout << "    == Schemes setting [divSchemes div(phid,p)]: " << divSchemes_phid_p << std::endl;
+
+        string divSchemes_phi_Yih = getFullSchemesName(divSchemesDict, "div(phi,Yi_h)");
+        int divSchemes_phi_YihInt = getIntSchemes(divSchemes_phi_Yih);
+        schemes_para.divSchemes_phi_Yih = static_cast<INTERPOLATION_SCHEME>(divSchemes_phi_YihInt);
+        std::cout << "    == Schemes setting [divSchemes div(phi,Yi_h)]: " << divSchemes_phi_Yih << std::endl;
+
+        string divSchemes_phi_k = getFullSchemesName(divSchemesDict, "div(phi,k)");
+        int divSchemes_phi_kInt = getIntSchemes(divSchemes_phi_k);
+        schemes_para.divSchemes_phi_k = static_cast<INTERPOLATION_SCHEME>(divSchemes_phi_kInt);
+        std::cout << "    == Schemes setting [divSchemes div(phi,k)]: " << divSchemes_phi_k << std::endl;
+
+        string divSchemes_hDiffCorrFlux = getFullSchemesName(divSchemesDict, "div(hDiffCorrFlux)");
+        int divSchemes_hDiffCorrFluxInt = getIntSchemes(divSchemes_hDiffCorrFlux);
+        schemes_para.divSchemes_hDiffCorrFlux = static_cast<INTERPOLATION_SCHEME>(divSchemes_hDiffCorrFluxInt);
+        std::cout << "    == Schemes setting [divSchemes div(hDiffCorrFlux)]: " << divSchemes_hDiffCorrFlux << std::endl;
+
+        string divSchemes_rho_nuEff = getFullSchemesName(divSchemesDict, "div(((rho*nuEff)*dev2(T(grad(U)))))");
+        int divSchemes_rho_nuEffInt = getIntSchemes(divSchemes_rho_nuEff);
+        schemes_para.divSchemes_rho_nuEff = static_cast<INTERPOLATION_SCHEME>(divSchemes_rho_nuEffInt);
+        std::cout << "    == Schemes setting [divSchemes div(((rho*nuEff)*dev2(T(grad(U)))))]: " << divSchemes_rho_nuEff << std::endl;
+    }
+
+    set_schemes(schemes_para);
+
 }
 
 void createGPUGAMGInput(const lduMesh& mesh, const dictionary solverControls)
@@ -1339,9 +1431,16 @@ void setConstantIndexes(mesh_info_para &mesh_paras, const int *owner, const int 
         rowOffset[row] += 1;
     }
 
-    free(ellColsperRow);
-    free(ellCols);
-    free(ldu2ellIndex);
+    int* revert_ellCols;
+    revert_ellCols = (int*)malloc(sizeof(int) * num_cells * ell_row_maxcount);
+    for(int i = 0; i < num_cells; i++){
+        for(int j = 0; j < ell_row_maxcount; j++){
+            revert_ellCols[i + j * num_cells] =ellCols[i * ell_row_maxcount + j];
+        }
+    }
+    memcpy(ellCols, revert_ellCols, sizeof(int) * num_cells * ell_row_maxcount);
+
+    free(revert_ellCols);    
 
     // TODO: if CSR;
 #ifdef iscsr
@@ -1349,6 +1448,10 @@ void setConstantIndexes(mesh_info_para &mesh_paras, const int *owner, const int 
 #else
     set_matrix_format_ell(ell_row_maxcount, ellCols, ldu2ellIndex);
 #endif
+
+    free(ellColsperRow);
+    free(ellCols);
+    free(ldu2ellIndex);
 }
 
 
@@ -1459,6 +1562,27 @@ else if (type == 2)
         rowOffset[row] += 1;
     }
 
+    int* revert_ellCols;
+    revert_ellCols = (int*)malloc(sizeof(int) * nCells * h_ell_row_maxcount[leveli]);
+    for(int i = 0; i < nCells; i++){
+        for(int j = 0; j < h_ell_row_maxcount[leveli]; j++){
+            revert_ellCols[i + j * nCells] =h_ellCols[leveli][i * h_ell_row_maxcount[leveli] + j];
+        }
+    }
+    memcpy(h_ellCols[leveli], revert_ellCols, sizeof(int) * nCells * h_ell_row_maxcount[leveli]);
+
+    free(revert_ellCols);    
+
     free(ellColsperRow);
 }
+}
+
+void copyGPUResults2Host(mesh_info_para &mesh_paras, volVectorField& U)
+{
+    // DF-A: memcpy results data d2h 
+    writeResults();
+
+    double *U_hostOrder = new double[mesh_paras.num_cells * 3]();
+    permuteVector2Host(U_hostOrder, resultsData.h_u, mesh_paras.num_cells);
+    memcpy(&U[0][0], U_hostOrder, mesh_paras.num_cells * 3 * sizeof(double));
 }
