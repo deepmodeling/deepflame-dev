@@ -867,10 +867,10 @@ void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, 
     std::cout << "  = Solver config tolerance: " << tolerance << std::endl;
     std::cout << "  = Solver config relTol: "    << relTol    << std::endl;
 
-    if (minIter   > 0) solver_configs.minIter   = minIter;
-    if (maxIter   > 0) solver_configs.maxIter   = maxIter;
-    if (tolerance > 0) solver_configs.tolerance = tolerance;
-    if (relTol    > 0) solver_configs.reltol    = relTol;
+    if (minIter   >= 0) solver_configs.minIter   = minIter;
+    if (maxIter   >= 0) solver_configs.maxIter   = maxIter;
+    if (tolerance >= 0) solver_configs.tolerance = tolerance;
+    if (relTol    >= 0) solver_configs.reltol    = relTol;
 
     // Set solver
     const word solver(solverControls.lookup("solver"));
