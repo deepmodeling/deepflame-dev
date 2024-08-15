@@ -1004,6 +1004,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     double *boundary_mag_sf = new double[num_boundary_surfaces];
     double *boundary_delta_coeffs = new double[num_boundary_surfaces];
     double *boundary_weights = new double[num_boundary_surfaces];
+    double *boundary_weights_delta = new double[3 * num_boundary_surfaces];
     int *boundary_face_cell = new int[num_boundary_surfaces];
     std::vector<int> patch_type_calculated(num_patches, 5); // default patch type is calculated
     std::vector<int> patch_type_extropolated(num_patches, 8); // default patch type is extrapolated
@@ -1015,6 +1016,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
         const scalarField& pMagSf = mesh.magSf().boundaryField()[patchi];
         const scalarField& pDeltaCoeffs = mesh.deltaCoeffs().boundaryField()[patchi];
         const scalarField& pWeights = mesh.surfaceInterpolation::weights().boundaryField()[patchi];
+        const vectorField& pWeightsDelta = mesh.surfaceInterpolation::weights().boundaryField()[patchi].patch().delta();
         const labelUList& pFaceCells = mesh.boundary()[patchi].faceCells();
 
         int patchsize = pMagSf.size();
@@ -1027,6 +1029,9 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
 
             memcpy(boundary_sf + 3*offset, &pSf[0][0], 3*patchsize*sizeof(double));
             memcpy(boundary_sf + 3*offset + 3*patchsize, &pSf[0][0], 3*patchsize*sizeof(double));
+
+            memcpy(boundary_weights_delta + 3*offset, &pWeightsDelta[0], 3*patchsize*sizeof(double));
+            memcpy(boundary_weights_delta + 3*offset + 3*patchsize, &pWeightsDelta[0], 3*patchsize*sizeof(double));
 
             memcpy(boundary_mag_sf + offset, &pMagSf[0], patchsize*sizeof(double));
             memcpy(boundary_mag_sf + offset + patchsize, &pMagSf[0], patchsize*sizeof(double));
@@ -1050,6 +1055,9 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
             memcpy(boundary_sf + 3*offset, &pSf[0][0], 3*patchsize*sizeof(double));
             memcpy(boundary_sf + 3*offset + 3*patchsize, &pSf[0][0], 3*patchsize*sizeof(double));
 
+            memcpy(boundary_weights_delta + 3*offset, &pWeightsDelta[0], 3*patchsize*sizeof(double));
+            memcpy(boundary_weights_delta + 3*offset + 3*patchsize, &pWeightsDelta[0], 3*patchsize*sizeof(double));            
+
             memcpy(boundary_mag_sf + offset, &pMagSf[0], patchsize*sizeof(double));
             memcpy(boundary_mag_sf + offset + patchsize, &pMagSf[0], patchsize*sizeof(double));
 
@@ -1069,6 +1077,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
             patch_type_extropolated[patchi] = 6; // patchi type is cyclic
 
             memcpy(boundary_sf + 3*offset, &pSf[0][0], 3*patchsize*sizeof(double));
+            memcpy(boundary_weights_delta + 3*offset, &pWeightsDelta[0], 3*patchsize*sizeof(double));
             memcpy(boundary_mag_sf + offset, &pMagSf[0], patchsize*sizeof(double));
             memcpy(boundary_delta_coeffs + offset, &pDeltaCoeffs[0], patchsize*sizeof(double));
             memcpy(boundary_weights + offset, &pWeights[0], patchsize*sizeof(double));
@@ -1077,6 +1086,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
             offset += patchsize;
         } else {
             memcpy(boundary_sf + 3*offset, &pSf[0][0], 3*patchsize*sizeof(double));
+            memcpy(boundary_weights_delta + 3*offset, &pWeightsDelta[0], 3*patchsize*sizeof(double));
             memcpy(boundary_mag_sf + offset, &pMagSf[0], patchsize*sizeof(double));
             memcpy(boundary_delta_coeffs + offset, &pDeltaCoeffs[0], patchsize*sizeof(double));
             memcpy(boundary_weights + offset, &pWeights[0], patchsize*sizeof(double));
@@ -1142,6 +1152,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     mesh_paras.boundary_mag_sf       = new double[num_boundary_surfaces];
     mesh_paras.boundary_delta_coeffs = new double[num_boundary_surfaces];
     mesh_paras.boundary_weight       = new double[num_boundary_surfaces];
+    mesh_paras.boundary_weight_delta = new double[num_boundary_surfaces*3];
 
     double *boundary_sf_newOrder = new double[num_boundary_surfaces*3]();
     permuteVector(boundary_sf_newOrder, &boundary_sf[0], num_boundary_surfaces);
@@ -1149,11 +1160,12 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     memcpy(mesh_paras.mesh_dis, &meshDistance_newOrder[0], num_surfaces * 3 * sizeof(double));
     memcpy(mesh_paras.sf,       &sf_newOrder[0],           num_surfaces * 3 * sizeof(double));
 
-    memcpy(mesh_paras.boundary_face_cell,    &boundary_face_cell[0],    num_boundary_surfaces * sizeof(int));
-    memcpy(mesh_paras.boundary_sf,           &boundary_sf_newOrder[0],  num_boundary_surfaces * 3 * sizeof(double));
-    memcpy(mesh_paras.boundary_mag_sf,       &boundary_mag_sf[0],       num_boundary_surfaces * sizeof(double));
-    memcpy(mesh_paras.boundary_delta_coeffs, &boundary_delta_coeffs[0], num_boundary_surfaces * sizeof(double));
-    memcpy(mesh_paras.boundary_weight,       &boundary_weights[0],      num_boundary_surfaces * sizeof(double));
+    memcpy(mesh_paras.boundary_face_cell,    &boundary_face_cell[0],     num_boundary_surfaces * sizeof(int));
+    memcpy(mesh_paras.boundary_sf,           &boundary_sf_newOrder[0],   num_boundary_surfaces * 3 * sizeof(double));
+    memcpy(mesh_paras.boundary_mag_sf,       &boundary_mag_sf[0],        num_boundary_surfaces * sizeof(double));
+    memcpy(mesh_paras.boundary_delta_coeffs, &boundary_delta_coeffs[0],  num_boundary_surfaces * sizeof(double));
+    memcpy(mesh_paras.boundary_weight,       &boundary_weights[0],       num_boundary_surfaces * sizeof(double));
+    memcpy(mesh_paras.boundary_weight_delta, &boundary_weights_delta[0], num_boundary_surfaces * 3 * sizeof(double));
 
     delete boundary_sf;
     delete boundary_mag_sf;
