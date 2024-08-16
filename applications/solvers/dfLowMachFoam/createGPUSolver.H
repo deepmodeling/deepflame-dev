@@ -621,6 +621,7 @@ int getIntSchemes(string schemeName)
 {
     if (schemeName == "Gausslinear")           return 0;
     if (schemeName == "Gaussupwind")           return 1;
+    if (schemeName == "GausslimitedLinear01")  return 2;
 }
 
 void createGPUSchemesInput(const dictionary schemesControls, fvSchemes_para schemes_para)
