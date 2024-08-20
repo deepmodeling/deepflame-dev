@@ -26,13 +26,24 @@
     //randomInitField<volScalarField>(const_cast<volScalarField&>(chemistry->hai(4)));
     //randomInitField<volScalarField>(const_cast<volScalarField&>(chemistry->hai(5)));
     //randomInitField<volScalarField>(const_cast<volScalarField&>(chemistry->hai(6)));
-
-    // auto& mgcs = dynamic_cast<fv::multivariateGaussConvectionScheme<scalar>&>(mvConvection.ref());
-    // tmp<surfaceInterpolationScheme<scalar>> tinterpScheme_ = mgcs.interpolationScheme()()(Y[0]);
-    // tmp<surfaceScalarField> tweights = tinterpScheme_().weights(Y[0]);
-    // const surfaceScalarField& weights = tweights();
+    
+    auto& mgcs = dynamic_cast<fv::multivariateGaussConvectionScheme<scalar>&>(mvConvection.ref());
+    tmp<surfaceInterpolationScheme<scalar>> tinterpScheme_ = mgcs.interpolationScheme()()(Y[0]);
+    tmp<surfaceScalarField> tweights = tinterpScheme_().weights(Y[0]);
+    const surfaceScalarField& weights = tweights();
     // Info << "CPU weights\n" << weights << endl;
 
+
+    // tmp<fv::convectionScheme<scalar>> cs = 
+    //     fv::convectionScheme<scalar>::New(mesh, phi, mesh.divScheme("div(phi,Yi_h)"));
+    // fv::gaussConvectionScheme<scalar>& gcs = dynamic_cast<fv::gaussConvectionScheme<scalar>&>(cs.ref());
+    // tmp<surfaceScalarField> tweights = gcs.interpScheme().weights(Y[0]);
+    // const surfaceScalarField& weights = tweights();
+
+
+    writeDoubleArrayToFile(&weights[0], mesh_paras.num_surfaces, "weights.host", true);
+    writeDoubleArrayToFile(&phi[0], mesh_paras.num_surfaces, "phi0.host", true);
+    
     // auto& limitedScheme_ = dynamic_cast<const limitedSurfaceInterpolationScheme<scalar>&>(tinterpScheme_());
     // Info << "CPU limiter\n" << limitedScheme_.limiter(Y[0]) << endl;
 
@@ -91,7 +102,7 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     int specie_index = 0;
 
     // should compute grad_yi before YiEqn.solve()
-    const volVectorField grad_yi = fvc::grad(Y[specie_index]);
+    const volVectorField grad_yi = fvc::grad(Y[0]);
     double *grad_y_newOrder = new double[mesh_paras.num_cells * 3]();
     permuteVector(grad_y_newOrder, &grad_yi[0][0], mesh_paras.num_cells);
     writeDoubleArrayToFile(&grad_y_newOrder[0], mesh_paras.num_cells * 3, "Y_grad_y.host", compareCPUResults);
@@ -272,7 +283,7 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     writeDoubleArrayToFile(yeqn_h_internal_coeffs.data(), mesh_paras.num_boundary_surfaces, "Y_internalCoeffs0.host", compareCPUResults);
     writeDoubleArrayToFile(yeqn_h_boundary_coeffs.data(), mesh_paras.num_boundary_surfaces, "Y_boundaryCoeffs0.host", compareCPUResults);
 
-    writeDoubleArrayToFile(&Y[0][0], mesh_paras.num_cells * init_data.num_species, "Y_solved_y.host", compareCPUResults);
+    writeDoubleArrayToFile(&Y[0][0], mesh_paras.num_cells, "Y_solved_y.host", compareCPUResults);
     // writeDoubleArrayToFile(&Y[3][0], mesh_paras.num_cells, "Y_solved_y.host", compareCPUResults);
 
     DEBUG_TRACE;

@@ -621,7 +621,9 @@ int getIntSchemes(string schemeName)
 {
     if (schemeName == "Gausslinear")           return 0;
     if (schemeName == "Gaussupwind")           return 1;
-    if (schemeName == "GausslimitedLinear01")  return 2;
+    if (schemeName == "GausslimitedLinear")    return 2;
+    if (schemeName == "GausslimitedLinear01")  return 3;
+    return -1;
 }
 
 void createGPUSchemesInput(const dictionary schemesControls, fvSchemes_para schemes_para)
@@ -642,37 +644,37 @@ void createGPUSchemesInput(const dictionary schemesControls, fvSchemes_para sche
         string divSchemes_phi_U = getFullSchemesName(divSchemesDict, "div(phi,U)");
         int divSchemes_phi_UInt = getIntSchemes(divSchemes_phi_U);
         schemes_para.divSchemes_phi_U = static_cast<INTERPOLATION_SCHEME>(divSchemes_phi_UInt);
-        std::cout << "    == Schemes setting [divSchemes div(phi,U)]: " << divSchemes_phi_U << std::endl;
+        std::cout << "    == Schemes setting [divSchemes div(phi,U)]: " << divSchemes_phi_U << ", " << divSchemes_phi_UInt << std::endl;
 
         string divSchemes_phi_K = getFullSchemesName(divSchemesDict, "div(phi,K)");
         int divSchemes_phi_KInt = getIntSchemes(divSchemes_phi_K);
         schemes_para.divSchemes_phi_K = static_cast<INTERPOLATION_SCHEME>(divSchemes_phi_KInt);
-        std::cout << "    == Schemes setting [divSchemes div(phi,K)]: " << divSchemes_phi_K << std::endl;
+        std::cout << "    == Schemes setting [divSchemes div(phi,K)]: " << divSchemes_phi_K << ", " << divSchemes_phi_KInt << std::endl;
 
         string divSchemes_phid_p = getFullSchemesName(divSchemesDict, "div(phid,p)");
         int divSchemes_phid_pInt = getIntSchemes(divSchemes_phid_p);
         schemes_para.divSchemes_phid_p = static_cast<INTERPOLATION_SCHEME>(divSchemes_phid_pInt);
-        std::cout << "    == Schemes setting [divSchemes div(phid,p)]: " << divSchemes_phid_p << std::endl;
+        std::cout << "    == Schemes setting [divSchemes div(phid,p)]: " << divSchemes_phid_p << ", " << divSchemes_phid_pInt << std::endl;
 
         string divSchemes_phi_Yih = getFullSchemesName(divSchemesDict, "div(phi,Yi_h)");
         int divSchemes_phi_YihInt = getIntSchemes(divSchemes_phi_Yih);
         schemes_para.divSchemes_phi_Yih = static_cast<INTERPOLATION_SCHEME>(divSchemes_phi_YihInt);
-        std::cout << "    == Schemes setting [divSchemes div(phi,Yi_h)]: " << divSchemes_phi_Yih << std::endl;
+        std::cout << "    == Schemes setting [divSchemes div(phi,Yi_h)]: " << divSchemes_phi_Yih << ", " << divSchemes_phi_YihInt << std::endl;
 
         string divSchemes_phi_k = getFullSchemesName(divSchemesDict, "div(phi,k)");
         int divSchemes_phi_kInt = getIntSchemes(divSchemes_phi_k);
         schemes_para.divSchemes_phi_k = static_cast<INTERPOLATION_SCHEME>(divSchemes_phi_kInt);
-        std::cout << "    == Schemes setting [divSchemes div(phi,k)]: " << divSchemes_phi_k << std::endl;
+        std::cout << "    == Schemes setting [divSchemes div(phi,k)]: " << divSchemes_phi_k << ", " << divSchemes_phi_kInt << std::endl;
 
         string divSchemes_hDiffCorrFlux = getFullSchemesName(divSchemesDict, "div(hDiffCorrFlux)");
         int divSchemes_hDiffCorrFluxInt = getIntSchemes(divSchemes_hDiffCorrFlux);
         schemes_para.divSchemes_hDiffCorrFlux = static_cast<INTERPOLATION_SCHEME>(divSchemes_hDiffCorrFluxInt);
-        std::cout << "    == Schemes setting [divSchemes div(hDiffCorrFlux)]: " << divSchemes_hDiffCorrFlux << std::endl;
+        std::cout << "    == Schemes setting [divSchemes div(hDiffCorrFlux)]: " << divSchemes_hDiffCorrFlux << ", " << divSchemes_hDiffCorrFluxInt << std::endl;
 
         string divSchemes_rho_nuEff = getFullSchemesName(divSchemesDict, "div(((rho*nuEff)*dev2(T(grad(U)))))");
         int divSchemes_rho_nuEffInt = getIntSchemes(divSchemes_rho_nuEff);
         schemes_para.divSchemes_rho_nuEff = static_cast<INTERPOLATION_SCHEME>(divSchemes_rho_nuEffInt);
-        std::cout << "    == Schemes setting [divSchemes div(((rho*nuEff)*dev2(T(grad(U)))))]: " << divSchemes_rho_nuEff << std::endl;
+        std::cout << "    == Schemes setting [divSchemes div(((rho*nuEff)*dev2(T(grad(U)))))]: " << divSchemes_rho_nuEff << ", " << divSchemes_rho_nuEffInt << std::endl;
     }
 
     set_schemes(schemes_para);
