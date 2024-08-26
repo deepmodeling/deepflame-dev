@@ -56,8 +56,8 @@
 
     //     Field<vector> ueqn_internalCoeffs_vec = U.boundaryField()[patchi].valueInternalCoeffs(pw);
     //     Field<vector> ueqn_boundaryCoeffs_vec = U.boundaryField()[patchi].valueBoundaryCoeffs(pw); 
-    //     Field<vector> ueqn_laplac_internalCoeffs_vec = U.boundaryField()[patchi].gradientInternalCoeffs(pDeltaCoeffs);
-    //     Field<vector> ueqn_laplac_boundaryCoeffs_vec = U.boundaryField()[patchi].gradientBoundaryCoeffs(pDeltaCoeffs);
+    //     Field<vector> ueqn_laplac_internalCoeffs_vec = U.boundaryField()[patchi].gradientInternalCoeffs();
+    //     Field<vector> ueqn_laplac_boundaryCoeffs_vec = U.boundaryField()[patchi].gradientBoundaryCoeffs();
 
     //     memcpy(h_value_internal_coeffs + offset * 3, ueqn_internalCoeffs_vec.data(), patchsize * 3 * sizeof(double));
     //     memcpy(h_value_boundary_coeffs + offset * 3, ueqn_boundaryCoeffs_vec.data(), patchsize * 3 * sizeof(double));
@@ -77,10 +77,10 @@
     // permuteVector(d_gradient_internal_coeffs, &h_gradient_internal_coeffs[0], mesh_paras.num_boundary_surfaces);
     // permuteVector(d_gradient_boundary_coeffs, &h_gradient_boundary_coeffs[0], mesh_paras.num_boundary_surfaces);
 
-    // writeDoubleArrayToFile(d_value_internal_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_value_internal_coeffs.host");
-    // writeDoubleArrayToFile(d_value_boundary_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_value_boundary_coeffs.host");
-    // writeDoubleArrayToFile(d_gradient_internal_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_gradient_internal_coeffs.host");
-    // writeDoubleArrayToFile(d_gradient_boundary_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_gradient_boundary_coeffs.host");
+    // writeDoubleArrayToFile(d_value_internal_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_value_internal_coeffs.host", compareCPUResults);
+    // writeDoubleArrayToFile(d_value_boundary_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_value_boundary_coeffs.host", compareCPUResults);
+    // writeDoubleArrayToFile(d_gradient_internal_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_gradient_internal_coeffs.host", compareCPUResults);
+    // writeDoubleArrayToFile(d_gradient_boundary_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_gradient_boundary_coeffs.host", compareCPUResults);
 
     // add for test
     double *diag = &UEqn.diag()[0];

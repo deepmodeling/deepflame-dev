@@ -41,8 +41,7 @@
     // const surfaceScalarField& weights = tweights();
 
 
-    writeDoubleArrayToFile(&weights[0], mesh_paras.num_surfaces, "weights.host", true);
-    writeDoubleArrayToFile(&phi[0], mesh_paras.num_surfaces, "phi0.host", true);
+    writeDoubleArrayToFile(&weights[0], mesh_paras.num_surfaces, "weights.host", compareCPUResults);
     
     // auto& limitedScheme_ = dynamic_cast<const limitedSurfaceInterpolationScheme<scalar>&>(tinterpScheme_());
     // Info << "CPU limiter\n" << limitedScheme_.limiter(Y[0]) << endl;

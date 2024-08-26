@@ -13,7 +13,7 @@
     tmp<surfaceScalarField> tweights = gcs.interpScheme().weights(he);
     const surfaceScalarField& weights = tweights();
     // Info << "ha_weights: " << weights << endl;
-    writeDoubleArrayToFile(&weights[0], mesh_paras.num_surfaces, "weights-thermohe.host", true);
+    writeDoubleArrayToFile(&weights[0], mesh_paras.num_surfaces, "weights-thermohe.host", compareCPUResults);
 #if defined GPUSolverNew_
     // double *h_he = dfDataBase.getFieldPointer("he", location::cpu, position::internal);
     // double *h_boundary_he = dfDataBase.getFieldPointer("he", location::cpu, position::boundary);

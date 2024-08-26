@@ -39,6 +39,7 @@ Description
 #include "heRhoThermo.H"
 #include "csrMatrix.H"
 #include "ellMatrix.H"
+// #include "GPUTestRef.H"
 
 #ifdef USE_PYTORCH
 #include <pybind11/embed.h>
@@ -85,6 +86,7 @@ Description
     #include "processorFvPatchField.H"
     #include "cyclicFvPatchField.H"
     #include "processorCyclicFvPatchField.H"
+    #include "totalPressureFvPatchScalarField.H"
     #include "createGPUSolver.H"
 
     #include "upwind.H"

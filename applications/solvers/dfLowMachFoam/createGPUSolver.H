@@ -109,7 +109,9 @@ void constructBoundarySelectorPerPatch(int *patchTypeSelector, const std::string
         {"processor", processor},
         {"extrapolated", extrapolated},
         {"fixedEnergy", fixedEnergy},
-        {"processorCyclic", processorCyclic}
+        {"processorCyclic", processorCyclic},
+        {"pressureInletOutletVelocity", pressureInletOutletVelocity},
+        {"totalPressure", totalPressure}   
     };
     auto iter = BCMap.find(patchTypeStr);
     if (iter != BCMap.end()) {
@@ -172,6 +174,16 @@ void constructBoundarySelectorPerPatch(int *patchTypeSelector, const std::string
         case processorCyclic:
         {
             *patchTypeSelector = 10;
+            break;
+        }
+        case pressureInletOutletVelocity:
+        {
+            *patchTypeSelector = 11;
+            break;
+        }
+        case totalPressure:
+        {
+            *patchTypeSelector = 12;
             break;
         }
     }
@@ -423,6 +435,11 @@ void createGPUpEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
         } else {
             memcpy(h_boundary_p + offset, &patchP[0], patchsize * sizeof(double));
             offset += patchsize;
+        }
+        if (patchP.type() == "totalPressure"){
+            const scalarField& p0 = dynamic_cast<const totalPressureFvPatchScalarField&>(patchP).p0();
+            init_data.p0 = p0[0];
+            Info << "totalPressure p0: " << p0[0] << endl;
         }
     }
 
