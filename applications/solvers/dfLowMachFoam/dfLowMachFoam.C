@@ -263,7 +263,7 @@ int main(int argc, char *argv[])
     dictionary solversDict = fvSolutionDict.subDict("solvers");
 
     // DF-A: SET LINEAR SOLVER CONFIGS
-    createGPUSolver(solversDict, rho, U, p, Y, thermo.he()); 
+    createGPUSolver(solversDict, CanteraTorchProperties, rho, U, p, Y, thermo.he()); 
 
     IOdictionary fvSchemesDict
     (

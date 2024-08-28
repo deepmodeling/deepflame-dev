@@ -5,13 +5,7 @@
 #define PARALLEL_
 #define iscsr
 
-ncclUniqueId nccl_id;
-ncclComm_t nccl_comm;
-int nRanks, myRank, localRank, mpi_init_flag = 0;
-void initNccl() {
-    ncclInit(PstreamGlobals::MPI_COMM_FOAM, nccl_comm, nccl_id, &nRanks, &myRank, &localRank, &mpi_init_flag);
-}
-
+int myRank = 0;
 
 int **h_ldu_to_csr_no_diag = nullptr;
 int **h_csr_row_index_no_diag= nullptr;
@@ -22,7 +16,7 @@ int **h_ellCols = nullptr;
 int **h_ldu2ellIndex = nullptr;
 
 /* For DeepFlame_Academic */
-void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, MATRIX_EQUATION EqnID);
+void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, MATRIX_EQUATION EqnID, string AMGXsetting="");
 void createGPUGAMGInput(const lduMesh& mesh, volScalarField& eqn);
 void setConstantIndexes(mesh_info_para &mesh_paras, const int *owner, const int *neighbor, const int *procRows, 
         const int *procCols, int globalOffset, int num_proc_surfaces);
@@ -587,7 +581,7 @@ void createGPUThermo(mesh_info_para &mesh_paras, init_data_para &init_data, cons
     delete h_thermo_rhoD;
 }
 
-void createGPUSolver(const dictionary solversDict, 
+void createGPUSolver(const dictionary solversDict, const IOdictionary& CanteraTorchProperties, 
                      const volScalarField& rho, const volVectorField& U, volScalarField& p, 
                      PtrList<volScalarField>& Y, volScalarField& he)
 {
@@ -597,20 +591,23 @@ void createGPUSolver(const dictionary solversDict,
     dictionary YSolverDict = solversDict.subDict("Yi"); 
     dictionary ESolverDict = solversDict.subDict("ha"); 
 
+    string UEqnSettingPath = CanteraTorchProperties.subDict("AmgxSettings").lookupOrDefault("UEqnSettingPath", string(""));
+    string pEqnSettingPath = CanteraTorchProperties.subDict("AmgxSettings").lookupOrDefault("pEqnSettingPath", string(""));
+
     /* For DeepFlame_Academic */
     createGPUSolverInput(rho.mesh(), rhoSolverDict, MATRIX_EQUATION::rhoEqn); 
     initialize_matrix(MATRIX_EQUATION::rhoEqn);
 
-    createGPUSolverInput(U.mesh(), USolverDict, MATRIX_EQUATION::UEqn); 
+    createGPUSolverInput(U.mesh(), USolverDict, MATRIX_EQUATION::UEqn, UEqnSettingPath); 
     initialize_matrix(MATRIX_EQUATION::UEqn);  
 
-    createGPUSolverInput(Y[0].mesh(), YSolverDict, MATRIX_EQUATION::YEqn); 
+    createGPUSolverInput(Y[0].mesh(), YSolverDict, MATRIX_EQUATION::YEqn, UEqnSettingPath); 
     initialize_matrix(MATRIX_EQUATION::YEqn);
 
-    createGPUSolverInput(he.mesh(), ESolverDict, MATRIX_EQUATION::EEqn); 
+    createGPUSolverInput(he.mesh(), ESolverDict, MATRIX_EQUATION::EEqn, UEqnSettingPath); 
     initialize_matrix(MATRIX_EQUATION::EEqn);
 
-    createGPUSolverInput(p.mesh(), pSolverDict, MATRIX_EQUATION::pEqn); 
+    createGPUSolverInput(p.mesh(), pSolverDict, MATRIX_EQUATION::pEqn, pEqnSettingPath); 
     initialize_matrix(MATRIX_EQUATION::pEqn);    
 }
 
@@ -868,7 +865,7 @@ void createGPUGAMGInput(const lduMesh& mesh, const dictionary solverControls)
 
 }
 
-void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, MATRIX_EQUATION EqnID)
+void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, MATRIX_EQUATION EqnID, string AMGXsetting)
 {
     std::cout << "- Set linear solver variables for DeepFlame_Academic: " << EqnID << std::endl;    
     
@@ -949,6 +946,17 @@ void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, 
 #else
     int sparse_format = 1; // ELL
 #endif    
+
+    if (!AMGXsetting.empty()) 
+    {
+        const char* SettingPath_char = AMGXsetting.c_str();
+
+        size_t length = strlen(SettingPath_char) + 1;
+        solver_configs.AMGXsettingPath = new char[length];
+        strcpy(solver_configs.AMGXsettingPath, SettingPath_char);
+
+        sparse_format = 2; // AMGX
+    }
 
     set_matrix_solver(  solver_configs, 
                         static_cast<MATRIX_SMOOTHER>(matrix_smoother),
@@ -1192,6 +1200,20 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     delete boundary_delta_coeffs;
     delete boundary_weights;
     delete boundary_face_cell;
+
+    const lduInterfacePtrsList interfaces(mesh.interfaces());
+    const lduAddressing& lduAddr = mesh.lduAddr();
+    label nProcValues = 0;
+    forAll(interfaces, patchi)
+    {
+        if (interfaces.set(patchi))
+        {
+            const labelUList& faceCells = lduAddr.patchAddr(patchi);
+            const label len = faceCells.size();
+            nProcValues += len;
+        }
+    }
+    mesh_paras.num_proc_surfaces = nProcValues;
 }
 
 
@@ -1274,6 +1296,7 @@ void createGPUSparseFormat(mesh_info_para &mesh_paras, fvMesh& mesh)
         }
     }
     label globalOffset = globalNumbering.toGlobal(0);
+
     /* For DeepFlame_Academic */
     setConstantIndexes(mesh_paras, &owner[0], &neighbour[0], &procRows[0], &procCols[0], globalOffset, nProcValues);
 }
@@ -1475,11 +1498,13 @@ void setConstantIndexes(mesh_info_para &mesh_paras, const int *owner, const int 
     free(revert_ellCols);    
 
     // TODO: if CSR;
-#ifdef iscsr
-    set_matrix_format_csr(lduCSRNoDiagIndex.data(), CSRRowIndexNoDiag.data(), CSRColIndexNoDiag.data());
-#else
+#ifndef iscsr
     set_matrix_format_ell(ell_row_maxcount, ellCols, ldu2ellIndex);
+#else
+    set_matrix_format_csr(lduCSRNoDiagIndex.data(), CSRRowIndexNoDiag.data(), CSRColIndexNoDiag.data());
 #endif
+
+    set_matrix_format_amgx(lduCSRIndex.data(), CSRRowIndex.data(), CSRColIndex.data());
 
     free(ellColsperRow);
     free(ellCols);
