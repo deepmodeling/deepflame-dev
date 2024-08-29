@@ -69,7 +69,7 @@ Description
 
 #define GPUSolverNew_
 // #define TIME
-#define DEBUG_
+// #define DEBUG_
 // #define SHOW_MEMINFO
 
 #define iscsr // true -> csr, false -> ell
@@ -278,6 +278,19 @@ int main(int argc, char *argv[])
     );
     fvSchemes_para schemes_para;
     createGPUSchemesInput(fvSchemesDict, schemes_para);
+
+    IOdictionary turbulenceDict
+    (
+        IOobject
+        (
+            "turbulenceProperties", // Dictionary name
+            runTime.constant(),     // Location within case
+            Y[0].mesh(),            // Mesh reference
+            IOobject::MUST_READ,    // Read if present
+            IOobject::NO_WRITE      // Do not write to disk
+        )
+    );
+    createTurbulenceInput(turbulenceDict, mesh_paras, turbulence->nut(), turbulence->alphat());
 
     std::cout << "                                                          " << std::endl;
     std::cout << "!!!  All data has been set done for deepflame academic.   " << std::endl; 

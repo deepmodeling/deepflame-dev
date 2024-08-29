@@ -1643,3 +1643,48 @@ void copyGPUResults2Host(mesh_info_para &mesh_paras, volVectorField& U)
     permuteVector2Host(U_hostOrder, resultsData.h_u, mesh_paras.num_cells);
     memcpy(&U[0][0], U_hostOrder, mesh_paras.num_cells * 3 * sizeof(double));
 }
+
+void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &mesh_paras, const volScalarField& nut, const volScalarField& alphat)
+{
+    std::cout << "- Set turbulence model for DeepFlame_Academic " << std::endl;  
+
+    const word simulationType(turbulenceControls.lookup("simulationType"));
+    std::cout << "  = simulationType: " << simulationType << std::endl;
+
+    bool useTurbulence = false;
+    bool useTCI = false;
+    int LESModelTypeInt = 0;
+    int RASModelTypeInt = 0;
+    std::vector<int> patch_type_nut;
+    std::vector<int> patch_type_alphat;
+
+    patch_type_nut.resize(mesh_paras.num_patches);
+    patch_type_alphat.resize(mesh_paras.num_patches);
+
+    if (simulationType == "laminar")
+    {
+    }
+    else if (simulationType == "LES")
+    {
+        useTurbulence = true;
+
+        dictionary LESturbDict = turbulenceControls.subDict("LES");
+        const word LESModelType(LESturbDict.lookup("LESModel"));
+        std::cout << "    == LESModelType: " << LESModelType << std::endl;
+
+        if (LESModelType == "Smagorinsky") LESModelTypeInt = 1;
+        if (LESModelType == "Sigma")       LESModelTypeInt = 2;
+    }
+
+    if (useTurbulence)
+    {
+        forAll(nut.boundaryField(), patchi)
+        {
+            constructBoundarySelectorPerPatch(&(patch_type_nut[patchi]), nut.boundaryField()[patchi].type());
+            constructBoundarySelectorPerPatch(&(patch_type_alphat[patchi]), alphat.boundaryField()[patchi].type());
+        }
+    }
+
+    init_turbulence(useTurbulence, useTCI, static_cast<LES_TURBULENCE_MODEL>(LESModelTypeInt), static_cast<RAS_TURBULENCE_MODEL>(RASModelTypeInt), 
+                    patch_type_nut.data(), patch_type_alphat.data());
+}
