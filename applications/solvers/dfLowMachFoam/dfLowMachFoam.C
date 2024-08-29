@@ -69,7 +69,7 @@ Description
 
 #define GPUSolverNew_
 // #define TIME
-// #define DEBUG_
+#define DEBUG_
 // #define SHOW_MEMINFO
 
 #define iscsr // true -> csr, false -> ell

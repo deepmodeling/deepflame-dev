@@ -152,14 +152,44 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     Y[inertIndex].max(0.0);
 
     tmp<volScalarField> DEff = chemistry->rhoD(specie_index) + turbulence->mut()/Sct;
+    writeDoubleArrayToFile(&DEff()[0], mesh_paras.num_cells, "turb_DEff.host", compareCPUResults);
+
+    std::vector<double> h_boundary_DEff;
+    h_boundary_DEff.resize(mesh_paras.num_boundary_surfaces);
+    offset = 0;
+    forAll(DEff().boundaryField(), patchi)
+    {
+        const fvPatchScalarField& patchDEff = DEff().boundaryField()[patchi];
+        int patchSize = patchDEff.size();
+        if (patchDEff.type() == "processor"
+            || patchDEff.type() == "processorCyclic") {
+            scalarField patchDEffInternal = dynamic_cast<const processorFvPatchField<scalar>&>(patchDEff).patchInternalField()();
+            memcpy(h_boundary_DEff.data() + offset, &patchDEff[0], patchSize*sizeof(double));
+            memcpy(h_boundary_DEff.data() + offset + patchSize, &patchDEffInternal[0], patchSize*sizeof(double));
+            offset += patchSize * 2;
+        } else {
+            memcpy(h_boundary_DEff.data() + offset, &patchDEff[0], patchSize*sizeof(double));
+            offset += patchSize;
+        }
+    }
+    writeDoubleArrayToFile(h_boundary_DEff.data(), mesh_paras.num_boundary_surfaces, "turb_boundary_DEff.host", compareCPUResults);
+
     fvScalarMatrix YiEqn
+    (
+        fvm::ddt(rho, Y[specie_index])
+        +
         (
-         fvm::ddt(rho, Y[specie_index])
-         + mvConvection->fvmDiv(phi, Y[specie_index])
-         + mvConvection->fvmDiv(phiUc, Y[specie_index])
-         ==
-         fvm::laplacian(DEff(), Y[specie_index])
-        );
+            turbName == "laminar"
+            ?  (mvConvection->fvmDiv(phi, Y[specie_index]) + mvConvection->fvmDiv(phiUc, Y[specie_index]))
+            :   mvConvection->fvmDiv(phi, Y[specie_index])
+        )
+        ==
+        (
+            splitting
+            ?   fvm::laplacian(DEff(), Y[specie_index])
+            :  (fvm::laplacian(DEff(), Y[specie_index]) + combustion->R(Y[specie_index]))
+        )
+    );
     // YiEqn.relax();
     // YiEqn.solve("Yi");
     // Y[specie_index].max(0.0);

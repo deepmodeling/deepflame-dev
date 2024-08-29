@@ -37,6 +37,12 @@
     fvVectorMatrix& UEqn = tUEqn.ref();
     TICK_STOP(CPU assembly time);
 
+    writeDoubleArrayToFile(&turbulence->k()()[0], mesh_paras.num_cells, "turb_k.host", compareCPUResults);
+    writeDoubleArrayToFile(&turbulence->epsilon()()[0], mesh_paras.num_cells, "turb_epsilon.host", compareCPUResults);
+    writeDoubleArrayToFile(&turbulence->nut()()[0], mesh_paras.num_cells, "turb_nut.host", compareCPUResults);
+    writeDoubleArrayToFile(&turbulence->alphat()()[0], mesh_paras.num_cells, "turb_alphat.host", compareCPUResults);
+    writeDoubleArrayToFile(&turbulence->mut()()[0], mesh_paras.num_cells, "turb_mut.host", compareCPUResults);
+
 
     // double *h_value_internal_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
     // double *h_value_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
