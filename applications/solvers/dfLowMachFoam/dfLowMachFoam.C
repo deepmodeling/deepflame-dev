@@ -39,6 +39,7 @@ Description
 #include "heRhoThermo.H"
 #include "csrMatrix.H"
 #include "ellMatrix.H"
+// #include "GPUTestRef.H"
 
 #ifdef USE_PYTORCH
 #include <pybind11/embed.h>
@@ -85,6 +86,7 @@ Description
     #include "processorFvPatchField.H"
     #include "cyclicFvPatchField.H"
     #include "processorCyclicFvPatchField.H"
+    #include "totalPressureFvPatchScalarField.H"
     #include "createGPUSolver.H"
 
     #include "upwind.H"
@@ -261,7 +263,8 @@ int main(int argc, char *argv[])
     dictionary solversDict = fvSolutionDict.subDict("solvers");
 
     // DF-A: SET LINEAR SOLVER CONFIGS
-    createGPUSolver(solversDict, rho, U, p, Y, thermo.he()); 
+    bool setRAS = (turbName == "RAS");
+    createGPUSolver(solversDict, CanteraTorchProperties, rho, U, p, Y, thermo.he(), setRAS); 
 
     IOdictionary fvSchemesDict
     (
@@ -276,6 +279,20 @@ int main(int argc, char *argv[])
     );
     fvSchemes_para schemes_para;
     createGPUSchemesInput(fvSchemesDict, schemes_para);
+
+    IOdictionary turbulenceDict
+    (
+        IOobject
+        (
+            "turbulenceProperties", // Dictionary name
+            runTime.constant(),     // Location within case
+            Y[0].mesh(),            // Mesh reference
+            IOobject::MUST_READ,    // Read if present
+            IOobject::NO_WRITE      // Do not write to disk
+        )
+    );
+    createTurbulenceInput(turbulenceDict, mesh_paras, turbulence->nut(), turbulence->alphat(), turbulence->k(), turbulence->epsilon());
+
 
     std::cout << "                                                          " << std::endl;
     std::cout << "!!!  All data has been set done for deepflame academic.   " << std::endl; 
@@ -445,7 +462,24 @@ int main(int argc, char *argv[])
             start = std::clock();
             if (pimple.turbCorr())
             {
-                turbulence->correct();
+                #ifdef GPUSolverNew_
+
+                    correctTurbulence();
+
+                    #if defined DEBUG_
+                    turbulence->correct();
+
+                    writeDoubleArrayToFile(&turbulence->k()()[0], mesh_paras.num_cells, "turb_k_correct.host", compareCPUResults);
+                    writeDoubleArrayToFile(&turbulence->epsilon()()[0], mesh_paras.num_cells, "turb_epsilon_correct.host", compareCPUResults);
+
+                    writeDoubleArrayToFile(&turbulence->nut()()[0], mesh_paras.num_cells, "turb_kEpsilon_nut.host", compareCPUResults);
+                    writeDoubleArrayToFile(&turbulence->mut()()[0], mesh_paras.num_cells, "turb_kEpsilon_mut.host", compareCPUResults);
+                    writeDoubleArrayToFile(&turbulence->alphat()()[0], mesh_paras.num_cells, "turb_kEpsilon_alphat.host", compareCPUResults);
+                    #endif
+
+                #else
+                    turbulence->correct();
+                #endif
             }
             end = std::clock();
             time_monitor_turbulence_correct += double(end - start) / double(CLOCKS_PER_SEC);

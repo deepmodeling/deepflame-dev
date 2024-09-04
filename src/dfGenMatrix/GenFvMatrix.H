@@ -375,7 +375,9 @@ enum boundaryConditions{
     processor,
     extrapolated,
     fixedEnergy,
-    processorCyclic
+    processorCyclic,
+    pressureInletOutletVelocity,
+    totalPressure
 };
 
 // ************************************************************************* //

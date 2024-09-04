@@ -5,13 +5,7 @@
 #define PARALLEL_
 #define iscsr
 
-ncclUniqueId nccl_id;
-ncclComm_t nccl_comm;
-int nRanks, myRank, localRank, mpi_init_flag = 0;
-void initNccl() {
-    ncclInit(PstreamGlobals::MPI_COMM_FOAM, nccl_comm, nccl_id, &nRanks, &myRank, &localRank, &mpi_init_flag);
-}
-
+int myRank = 0;
 
 int **h_ldu_to_csr_no_diag = nullptr;
 int **h_csr_row_index_no_diag= nullptr;
@@ -22,7 +16,7 @@ int **h_ellCols = nullptr;
 int **h_ldu2ellIndex = nullptr;
 
 /* For DeepFlame_Academic */
-void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, MATRIX_EQUATION EqnID);
+void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, MATRIX_EQUATION EqnID, string AMGXsetting="");
 void createGPUGAMGInput(const lduMesh& mesh, volScalarField& eqn);
 void setConstantIndexes(mesh_info_para &mesh_paras, const int *owner, const int *neighbor, const int *procRows, 
         const int *procCols, int globalOffset, int num_proc_surfaces);
@@ -109,7 +103,9 @@ void constructBoundarySelectorPerPatch(int *patchTypeSelector, const std::string
         {"processor", processor},
         {"extrapolated", extrapolated},
         {"fixedEnergy", fixedEnergy},
-        {"processorCyclic", processorCyclic}
+        {"processorCyclic", processorCyclic},
+        {"pressureInletOutletVelocity", pressureInletOutletVelocity},
+        {"totalPressure", totalPressure}   
     };
     auto iter = BCMap.find(patchTypeStr);
     if (iter != BCMap.end()) {
@@ -172,6 +168,16 @@ void constructBoundarySelectorPerPatch(int *patchTypeSelector, const std::string
         case processorCyclic:
         {
             *patchTypeSelector = 10;
+            break;
+        }
+        case pressureInletOutletVelocity:
+        {
+            *patchTypeSelector = 11;
+            break;
+        }
+        case totalPressure:
+        {
+            *patchTypeSelector = 12;
             break;
         }
     }
@@ -424,6 +430,11 @@ void createGPUpEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
             memcpy(h_boundary_p + offset, &patchP[0], patchsize * sizeof(double));
             offset += patchsize;
         }
+        if (patchP.type() == "totalPressure"){
+            const scalarField& p0 = dynamic_cast<const totalPressureFvPatchScalarField&>(patchP).p0();
+            init_data.p0 = p0[0];
+            Info << "totalPressure p0: " << p0[0] << endl;
+        }
     }
 
     init_data.p = &p[0];
@@ -570,9 +581,9 @@ void createGPUThermo(mesh_info_para &mesh_paras, init_data_para &init_data, cons
     delete h_thermo_rhoD;
 }
 
-void createGPUSolver(const dictionary solversDict, 
+void createGPUSolver(const dictionary solversDict, const IOdictionary& CanteraTorchProperties, 
                      const volScalarField& rho, const volVectorField& U, volScalarField& p, 
-                     PtrList<volScalarField>& Y, volScalarField& he)
+                     PtrList<volScalarField>& Y, volScalarField& he, bool setRAS)
 {
     dictionary rhoSolverDict = solversDict.subDict("rho"); 
     dictionary USolverDict = solversDict.subDict("U"); 
@@ -580,21 +591,33 @@ void createGPUSolver(const dictionary solversDict,
     dictionary YSolverDict = solversDict.subDict("Yi"); 
     dictionary ESolverDict = solversDict.subDict("ha"); 
 
+    string UEqnSettingPath = CanteraTorchProperties.subDict("AmgxSettings").lookupOrDefault("UEqnSettingPath", string(""));
+    string pEqnSettingPath = CanteraTorchProperties.subDict("AmgxSettings").lookupOrDefault("pEqnSettingPath", string(""));
+
     /* For DeepFlame_Academic */
     createGPUSolverInput(rho.mesh(), rhoSolverDict, MATRIX_EQUATION::rhoEqn); 
     initialize_matrix(MATRIX_EQUATION::rhoEqn);
 
-    createGPUSolverInput(U.mesh(), USolverDict, MATRIX_EQUATION::UEqn); 
+    createGPUSolverInput(U.mesh(), USolverDict, MATRIX_EQUATION::UEqn, UEqnSettingPath); 
     initialize_matrix(MATRIX_EQUATION::UEqn);  
 
-    createGPUSolverInput(Y[0].mesh(), YSolverDict, MATRIX_EQUATION::YEqn); 
+    createGPUSolverInput(Y[0].mesh(), YSolverDict, MATRIX_EQUATION::YEqn, UEqnSettingPath); 
     initialize_matrix(MATRIX_EQUATION::YEqn);
 
-    createGPUSolverInput(he.mesh(), ESolverDict, MATRIX_EQUATION::EEqn); 
+    createGPUSolverInput(he.mesh(), ESolverDict, MATRIX_EQUATION::EEqn, UEqnSettingPath); 
     initialize_matrix(MATRIX_EQUATION::EEqn);
 
-    createGPUSolverInput(p.mesh(), pSolverDict, MATRIX_EQUATION::pEqn); 
+    createGPUSolverInput(p.mesh(), pSolverDict, MATRIX_EQUATION::pEqn, pEqnSettingPath); 
     initialize_matrix(MATRIX_EQUATION::pEqn);    
+
+    if (setRAS)
+    {
+        createGPUSolverInput(U.mesh(), USolverDict, MATRIX_EQUATION::kEqn, UEqnSettingPath); 
+        initialize_matrix(MATRIX_EQUATION::kEqn);   
+
+        createGPUSolverInput(U.mesh(), USolverDict, MATRIX_EQUATION::epsilonEqn, UEqnSettingPath); 
+        initialize_matrix(MATRIX_EQUATION::epsilonEqn);          
+    }
 }
 
 string getFullSchemesName(const dictionary schemesDict, string foundSchemes)
@@ -621,6 +644,9 @@ int getIntSchemes(string schemeName)
 {
     if (schemeName == "Gausslinear")           return 0;
     if (schemeName == "Gaussupwind")           return 1;
+    if (schemeName == "GausslimitedLinear")    return 2;
+    if (schemeName == "GausslimitedLinear01")  return 3;
+    return -1;
 }
 
 void createGPUSchemesInput(const dictionary schemesControls, fvSchemes_para schemes_para)
@@ -641,37 +667,37 @@ void createGPUSchemesInput(const dictionary schemesControls, fvSchemes_para sche
         string divSchemes_phi_U = getFullSchemesName(divSchemesDict, "div(phi,U)");
         int divSchemes_phi_UInt = getIntSchemes(divSchemes_phi_U);
         schemes_para.divSchemes_phi_U = static_cast<INTERPOLATION_SCHEME>(divSchemes_phi_UInt);
-        std::cout << "    == Schemes setting [divSchemes div(phi,U)]: " << divSchemes_phi_U << std::endl;
+        std::cout << "    == Schemes setting [divSchemes div(phi,U)]: " << divSchemes_phi_U << ", " << divSchemes_phi_UInt << std::endl;
 
         string divSchemes_phi_K = getFullSchemesName(divSchemesDict, "div(phi,K)");
         int divSchemes_phi_KInt = getIntSchemes(divSchemes_phi_K);
         schemes_para.divSchemes_phi_K = static_cast<INTERPOLATION_SCHEME>(divSchemes_phi_KInt);
-        std::cout << "    == Schemes setting [divSchemes div(phi,K)]: " << divSchemes_phi_K << std::endl;
+        std::cout << "    == Schemes setting [divSchemes div(phi,K)]: " << divSchemes_phi_K << ", " << divSchemes_phi_KInt << std::endl;
 
         string divSchemes_phid_p = getFullSchemesName(divSchemesDict, "div(phid,p)");
         int divSchemes_phid_pInt = getIntSchemes(divSchemes_phid_p);
         schemes_para.divSchemes_phid_p = static_cast<INTERPOLATION_SCHEME>(divSchemes_phid_pInt);
-        std::cout << "    == Schemes setting [divSchemes div(phid,p)]: " << divSchemes_phid_p << std::endl;
+        std::cout << "    == Schemes setting [divSchemes div(phid,p)]: " << divSchemes_phid_p << ", " << divSchemes_phid_pInt << std::endl;
 
         string divSchemes_phi_Yih = getFullSchemesName(divSchemesDict, "div(phi,Yi_h)");
         int divSchemes_phi_YihInt = getIntSchemes(divSchemes_phi_Yih);
         schemes_para.divSchemes_phi_Yih = static_cast<INTERPOLATION_SCHEME>(divSchemes_phi_YihInt);
-        std::cout << "    == Schemes setting [divSchemes div(phi,Yi_h)]: " << divSchemes_phi_Yih << std::endl;
+        std::cout << "    == Schemes setting [divSchemes div(phi,Yi_h)]: " << divSchemes_phi_Yih << ", " << divSchemes_phi_YihInt << std::endl;
 
         string divSchemes_phi_k = getFullSchemesName(divSchemesDict, "div(phi,k)");
         int divSchemes_phi_kInt = getIntSchemes(divSchemes_phi_k);
         schemes_para.divSchemes_phi_k = static_cast<INTERPOLATION_SCHEME>(divSchemes_phi_kInt);
-        std::cout << "    == Schemes setting [divSchemes div(phi,k)]: " << divSchemes_phi_k << std::endl;
+        std::cout << "    == Schemes setting [divSchemes div(phi,k)]: " << divSchemes_phi_k << ", " << divSchemes_phi_kInt << std::endl;
 
         string divSchemes_hDiffCorrFlux = getFullSchemesName(divSchemesDict, "div(hDiffCorrFlux)");
         int divSchemes_hDiffCorrFluxInt = getIntSchemes(divSchemes_hDiffCorrFlux);
         schemes_para.divSchemes_hDiffCorrFlux = static_cast<INTERPOLATION_SCHEME>(divSchemes_hDiffCorrFluxInt);
-        std::cout << "    == Schemes setting [divSchemes div(hDiffCorrFlux)]: " << divSchemes_hDiffCorrFlux << std::endl;
+        std::cout << "    == Schemes setting [divSchemes div(hDiffCorrFlux)]: " << divSchemes_hDiffCorrFlux << ", " << divSchemes_hDiffCorrFluxInt << std::endl;
 
         string divSchemes_rho_nuEff = getFullSchemesName(divSchemesDict, "div(((rho*nuEff)*dev2(T(grad(U)))))");
         int divSchemes_rho_nuEffInt = getIntSchemes(divSchemes_rho_nuEff);
         schemes_para.divSchemes_rho_nuEff = static_cast<INTERPOLATION_SCHEME>(divSchemes_rho_nuEffInt);
-        std::cout << "    == Schemes setting [divSchemes div(((rho*nuEff)*dev2(T(grad(U)))))]: " << divSchemes_rho_nuEff << std::endl;
+        std::cout << "    == Schemes setting [divSchemes div(((rho*nuEff)*dev2(T(grad(U)))))]: " << divSchemes_rho_nuEff << ", " << divSchemes_rho_nuEffInt << std::endl;
     }
 
     set_schemes(schemes_para);
@@ -848,7 +874,7 @@ void createGPUGAMGInput(const lduMesh& mesh, const dictionary solverControls)
 
 }
 
-void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, MATRIX_EQUATION EqnID)
+void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, MATRIX_EQUATION EqnID, string AMGXsetting)
 {
     std::cout << "- Set linear solver variables for DeepFlame_Academic: " << EqnID << std::endl;    
     
@@ -867,10 +893,10 @@ void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, 
     std::cout << "  = Solver config tolerance: " << tolerance << std::endl;
     std::cout << "  = Solver config relTol: "    << relTol    << std::endl;
 
-    if (minIter   > 0) solver_configs.minIter   = minIter;
-    if (maxIter   > 0) solver_configs.maxIter   = maxIter;
-    if (tolerance > 0) solver_configs.tolerance = tolerance;
-    if (relTol    > 0) solver_configs.reltol    = relTol;
+    if (minIter   >= 0) solver_configs.minIter   = minIter;
+    if (maxIter   >= 0) solver_configs.maxIter   = maxIter;
+    if (tolerance >= 0) solver_configs.tolerance = tolerance;
+    if (relTol    >= 0) solver_configs.reltol    = relTol;
 
     // Set solver
     const word solver(solverControls.lookup("solver"));
@@ -929,6 +955,17 @@ void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, 
 #else
     int sparse_format = 1; // ELL
 #endif    
+
+    if (!AMGXsetting.empty()) 
+    {
+        const char* SettingPath_char = AMGXsetting.c_str();
+
+        size_t length = strlen(SettingPath_char) + 1;
+        solver_configs.AMGXsettingPath = new char[length];
+        strcpy(solver_configs.AMGXsettingPath, SettingPath_char);
+
+        sparse_format = 2; // AMGX
+    }
 
     set_matrix_solver(  solver_configs, 
                         static_cast<MATRIX_SMOOTHER>(matrix_smoother),
@@ -1004,6 +1041,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     double *boundary_mag_sf = new double[num_boundary_surfaces];
     double *boundary_delta_coeffs = new double[num_boundary_surfaces];
     double *boundary_weights = new double[num_boundary_surfaces];
+    double *boundary_weights_delta = new double[3 * num_boundary_surfaces];
     int *boundary_face_cell = new int[num_boundary_surfaces];
     std::vector<int> patch_type_calculated(num_patches, 5); // default patch type is calculated
     std::vector<int> patch_type_extropolated(num_patches, 8); // default patch type is extrapolated
@@ -1015,6 +1053,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
         const scalarField& pMagSf = mesh.magSf().boundaryField()[patchi];
         const scalarField& pDeltaCoeffs = mesh.deltaCoeffs().boundaryField()[patchi];
         const scalarField& pWeights = mesh.surfaceInterpolation::weights().boundaryField()[patchi];
+        const vectorField& pWeightsDelta = mesh.surfaceInterpolation::weights().boundaryField()[patchi].patch().delta();
         const labelUList& pFaceCells = mesh.boundary()[patchi].faceCells();
 
         int patchsize = pMagSf.size();
@@ -1027,6 +1066,9 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
 
             memcpy(boundary_sf + 3*offset, &pSf[0][0], 3*patchsize*sizeof(double));
             memcpy(boundary_sf + 3*offset + 3*patchsize, &pSf[0][0], 3*patchsize*sizeof(double));
+
+            memcpy(boundary_weights_delta + 3*offset, &pWeightsDelta[0], 3*patchsize*sizeof(double));
+            memcpy(boundary_weights_delta + 3*offset + 3*patchsize, &pWeightsDelta[0], 3*patchsize*sizeof(double));
 
             memcpy(boundary_mag_sf + offset, &pMagSf[0], patchsize*sizeof(double));
             memcpy(boundary_mag_sf + offset + patchsize, &pMagSf[0], patchsize*sizeof(double));
@@ -1050,6 +1092,9 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
             memcpy(boundary_sf + 3*offset, &pSf[0][0], 3*patchsize*sizeof(double));
             memcpy(boundary_sf + 3*offset + 3*patchsize, &pSf[0][0], 3*patchsize*sizeof(double));
 
+            memcpy(boundary_weights_delta + 3*offset, &pWeightsDelta[0], 3*patchsize*sizeof(double));
+            memcpy(boundary_weights_delta + 3*offset + 3*patchsize, &pWeightsDelta[0], 3*patchsize*sizeof(double));            
+
             memcpy(boundary_mag_sf + offset, &pMagSf[0], patchsize*sizeof(double));
             memcpy(boundary_mag_sf + offset + patchsize, &pMagSf[0], patchsize*sizeof(double));
 
@@ -1069,6 +1114,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
             patch_type_extropolated[patchi] = 6; // patchi type is cyclic
 
             memcpy(boundary_sf + 3*offset, &pSf[0][0], 3*patchsize*sizeof(double));
+            memcpy(boundary_weights_delta + 3*offset, &pWeightsDelta[0], 3*patchsize*sizeof(double));
             memcpy(boundary_mag_sf + offset, &pMagSf[0], patchsize*sizeof(double));
             memcpy(boundary_delta_coeffs + offset, &pDeltaCoeffs[0], patchsize*sizeof(double));
             memcpy(boundary_weights + offset, &pWeights[0], patchsize*sizeof(double));
@@ -1077,6 +1123,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
             offset += patchsize;
         } else {
             memcpy(boundary_sf + 3*offset, &pSf[0][0], 3*patchsize*sizeof(double));
+            memcpy(boundary_weights_delta + 3*offset, &pWeightsDelta[0], 3*patchsize*sizeof(double));
             memcpy(boundary_mag_sf + offset, &pMagSf[0], patchsize*sizeof(double));
             memcpy(boundary_delta_coeffs + offset, &pDeltaCoeffs[0], patchsize*sizeof(double));
             memcpy(boundary_weights + offset, &pWeights[0], patchsize*sizeof(double));
@@ -1142,6 +1189,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     mesh_paras.boundary_mag_sf       = new double[num_boundary_surfaces];
     mesh_paras.boundary_delta_coeffs = new double[num_boundary_surfaces];
     mesh_paras.boundary_weight       = new double[num_boundary_surfaces];
+    mesh_paras.boundary_weight_delta = new double[num_boundary_surfaces*3];
 
     double *boundary_sf_newOrder = new double[num_boundary_surfaces*3]();
     permuteVector(boundary_sf_newOrder, &boundary_sf[0], num_boundary_surfaces);
@@ -1149,17 +1197,32 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     memcpy(mesh_paras.mesh_dis, &meshDistance_newOrder[0], num_surfaces * 3 * sizeof(double));
     memcpy(mesh_paras.sf,       &sf_newOrder[0],           num_surfaces * 3 * sizeof(double));
 
-    memcpy(mesh_paras.boundary_face_cell,    &boundary_face_cell[0],    num_boundary_surfaces * sizeof(int));
-    memcpy(mesh_paras.boundary_sf,           &boundary_sf_newOrder[0],  num_boundary_surfaces * 3 * sizeof(double));
-    memcpy(mesh_paras.boundary_mag_sf,       &boundary_mag_sf[0],       num_boundary_surfaces * sizeof(double));
-    memcpy(mesh_paras.boundary_delta_coeffs, &boundary_delta_coeffs[0], num_boundary_surfaces * sizeof(double));
-    memcpy(mesh_paras.boundary_weight,       &boundary_weights[0],      num_boundary_surfaces * sizeof(double));
+    memcpy(mesh_paras.boundary_face_cell,    &boundary_face_cell[0],     num_boundary_surfaces * sizeof(int));
+    memcpy(mesh_paras.boundary_sf,           &boundary_sf_newOrder[0],   num_boundary_surfaces * 3 * sizeof(double));
+    memcpy(mesh_paras.boundary_mag_sf,       &boundary_mag_sf[0],        num_boundary_surfaces * sizeof(double));
+    memcpy(mesh_paras.boundary_delta_coeffs, &boundary_delta_coeffs[0],  num_boundary_surfaces * sizeof(double));
+    memcpy(mesh_paras.boundary_weight,       &boundary_weights[0],       num_boundary_surfaces * sizeof(double));
+    memcpy(mesh_paras.boundary_weight_delta, &boundary_weights_delta[0], num_boundary_surfaces * 3 * sizeof(double));
 
     delete boundary_sf;
     delete boundary_mag_sf;
     delete boundary_delta_coeffs;
     delete boundary_weights;
     delete boundary_face_cell;
+
+    const lduInterfacePtrsList interfaces(mesh.interfaces());
+    const lduAddressing& lduAddr = mesh.lduAddr();
+    label nProcValues = 0;
+    forAll(interfaces, patchi)
+    {
+        if (interfaces.set(patchi))
+        {
+            const labelUList& faceCells = lduAddr.patchAddr(patchi);
+            const label len = faceCells.size();
+            nProcValues += len;
+        }
+    }
+    mesh_paras.num_proc_surfaces = nProcValues;
 }
 
 
@@ -1242,6 +1305,7 @@ void createGPUSparseFormat(mesh_info_para &mesh_paras, fvMesh& mesh)
         }
     }
     label globalOffset = globalNumbering.toGlobal(0);
+
     /* For DeepFlame_Academic */
     setConstantIndexes(mesh_paras, &owner[0], &neighbour[0], &procRows[0], &procCols[0], globalOffset, nProcValues);
 }
@@ -1443,11 +1507,13 @@ void setConstantIndexes(mesh_info_para &mesh_paras, const int *owner, const int 
     free(revert_ellCols);    
 
     // TODO: if CSR;
-#ifdef iscsr
-    set_matrix_format_csr(lduCSRNoDiagIndex.data(), CSRRowIndexNoDiag.data(), CSRColIndexNoDiag.data());
-#else
+#ifndef iscsr
     set_matrix_format_ell(ell_row_maxcount, ellCols, ldu2ellIndex);
+#else
+    set_matrix_format_csr(lduCSRNoDiagIndex.data(), CSRRowIndexNoDiag.data(), CSRColIndexNoDiag.data());
 #endif
+
+    set_matrix_format_amgx(lduCSRIndex.data(), CSRRowIndex.data(), CSRColIndex.data());
 
     free(ellColsperRow);
     free(ellCols);
@@ -1585,4 +1651,66 @@ void copyGPUResults2Host(mesh_info_para &mesh_paras, volVectorField& U)
     double *U_hostOrder = new double[mesh_paras.num_cells * 3]();
     permuteVector2Host(U_hostOrder, resultsData.h_u, mesh_paras.num_cells);
     memcpy(&U[0][0], U_hostOrder, mesh_paras.num_cells * 3 * sizeof(double));
+}
+
+void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &mesh_paras, const volScalarField& nut, const volScalarField& alphat, 
+                            const volScalarField& k, const volScalarField& epsilon)
+{
+    std::cout << "- Set turbulence model for DeepFlame_Academic " << std::endl;  
+
+    const word simulationType(turbulenceControls.lookup("simulationType"));
+    std::cout << "  = simulationType: " << simulationType << std::endl;
+
+    bool useTurbulence = false;
+    bool useTCI = false;
+    int LESModelTypeInt = 0;
+    int RASModelTypeInt = 0;
+    std::vector<int> patch_type_nut;
+    std::vector<int> patch_type_alphat;
+    std::vector<int> patch_type_k;
+    std::vector<int> patch_type_epsilon;
+
+    patch_type_nut.resize(mesh_paras.num_patches);
+    patch_type_alphat.resize(mesh_paras.num_patches);
+    patch_type_k.resize(mesh_paras.num_patches);
+    patch_type_epsilon.resize(mesh_paras.num_patches);
+
+    if (simulationType == "laminar")
+    {
+    }
+    else if (simulationType == "LES")
+    {
+        useTurbulence = true;
+
+        dictionary LESturbDict = turbulenceControls.subDict("LES");
+        const word LESModelType(LESturbDict.lookup("LESModel"));
+        std::cout << "    == LESModelType: " << LESModelType << std::endl;
+
+        if (LESModelType == "Smagorinsky") LESModelTypeInt = 1;
+        if (LESModelType == "Sigma")       LESModelTypeInt = 2;
+    }
+    else if (simulationType == "RAS")
+    {
+        useTurbulence = true;
+
+        dictionary RASturbDict = turbulenceControls.subDict("RAS");
+        const word RASModelType(RASturbDict.lookup("RASModel"));
+        std::cout << "    == RASModelType: " << RASModelType << std::endl;
+
+        if (RASModelType == "kEpsilon") RASModelTypeInt = 1;
+    }
+
+    if (useTurbulence)
+    {
+        forAll(nut.boundaryField(), patchi)
+        {
+            constructBoundarySelectorPerPatch(&(patch_type_nut[patchi]), nut.boundaryField()[patchi].type());
+            constructBoundarySelectorPerPatch(&(patch_type_alphat[patchi]), alphat.boundaryField()[patchi].type());
+            constructBoundarySelectorPerPatch(&(patch_type_k[patchi]), k.boundaryField()[patchi].type());
+            constructBoundarySelectorPerPatch(&(patch_type_epsilon[patchi]), epsilon.boundaryField()[patchi].type());
+        }
+    }
+
+    init_turbulence(useTurbulence, useTCI, static_cast<LES_TURBULENCE_MODEL>(LESModelTypeInt), static_cast<RAS_TURBULENCE_MODEL>(RASModelTypeInt), 
+                    patch_type_nut.data(), patch_type_alphat.data(), patch_type_k.data(), patch_type_epsilon.data(), &k[0], &epsilon[0]);
 }

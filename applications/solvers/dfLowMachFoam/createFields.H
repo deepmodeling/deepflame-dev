@@ -9,9 +9,7 @@ fluidThermo& thermo = *pThermo;
 
 const volScalarField& psi = thermo.psi();
 volScalarField& p = thermo.p();
-p.correctBoundaryConditions();
 volScalarField& T = thermo.T();
-T.correctBoundaryConditions();
 volScalarField rho
 (
     IOobject
@@ -39,9 +37,11 @@ volVectorField U
     ),
     mesh
 );
-U.correctBoundaryConditions();
-
 #include "compressibleCreatePhi.H"
+
+U.correctBoundaryConditions();
+p.correctBoundaryConditions();
+T.correctBoundaryConditions();
 
 pressureControl pressureControl(p, rho, pimple.dict(), false);
 

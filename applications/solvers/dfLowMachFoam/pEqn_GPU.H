@@ -71,6 +71,9 @@
             offset += patchSize;
         }
     }
+    double *boundary_HbyA_newOrder = new double[mesh_paras.num_boundary_surfaces*3]();
+    permuteVector(boundary_HbyA_newOrder, &h_boundary_HbyA[0], mesh_paras.num_boundary_surfaces);
+    writeDoubleArrayToFile(boundary_HbyA_newOrder, mesh_paras.num_boundary_surfaces * 3, "d_boundary_HbyA.host", compareCPUResults);
     if (!mpi_init_flag || rank == 0) {
         // UEqn_GPU.compareHbyA(&HbyA[0][0], h_boundary_HbyA, false);
         // UEqn_GPU.comparerAU(&rAU[0], h_boundary_rAU, false);
@@ -90,7 +93,8 @@
     + rhorAUf*fvc::ddtCorr(rho, U, phi, rhoUf)
     );
 
-    writeDoubleArrayToFile(&phiHbyA[0], mesh_paras.num_surfaces, "d_phiHbyA.host", compareCPUResults);
+
+    // EulerDdtSchemeFvcDdtCorr(rho, U, phi, rhoUf);
 
     double *h_boundary_phiHbyA = (double*)calloc(mesh_paras.num_boundary_surfaces, sizeof(double));
     offset = 0;
@@ -110,6 +114,7 @@
     if (!mpi_init_flag || rank == 0) {
         // pEqn_GPU.comparephiHbyA(&phiHbyA[0], h_boundary_phiHbyA, false);
     }
+    writeDoubleArrayToFile(&h_boundary_phiHbyA[0], mesh_paras.num_boundary_surfaces, "d_boundary_phiHbyA.host", compareCPUResults);
     delete h_boundary_phiHbyA;
 #endif
 
@@ -136,6 +141,38 @@
         writeDoubleArrayToFile(&pEqn.source()[0], mesh_paras.num_cells, "p_source.host", compareCPUResults);
 
         writeDoubleArrayToFile(&psi[0], mesh_paras.num_cells, "d_thermo_psi.host", compareCPUResults);
+
+        double *h_value_internal_coeffs = new double[mesh_paras.num_boundary_surfaces]();
+        double *h_value_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces]();
+        double *h_gradient_internal_coeffs = new double[mesh_paras.num_boundary_surfaces]();
+        double *h_gradient_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces]();
+
+        offset = 0;
+        forAll(U.boundaryField(), patchi)
+        {
+            const fvsPatchScalarField& patchFlux = phi.boundaryField()[patchi];
+            const fvsPatchScalarField& pw = mesh.surfaceInterpolation::weights().boundaryField()[patchi];
+            const scalarField& pDeltaCoeffs = mesh.deltaCoeffs().boundaryField()[patchi];
+            int patchsize = mesh_paras.patch_size[patchi];
+
+            Field<scalar> peqn_internalCoeffs = p.boundaryField()[patchi].valueInternalCoeffs(pw);
+            Field<scalar> peqn_boundaryCoeffs = p.boundaryField()[patchi].valueBoundaryCoeffs(pw); 
+            Field<scalar> peqn_laplac_internalCoeffs = p.boundaryField()[patchi].gradientInternalCoeffs();
+            Field<scalar> peqn_laplac_boundaryCoeffs = p.boundaryField()[patchi].gradientBoundaryCoeffs();
+
+            memcpy(h_value_internal_coeffs + offset, peqn_internalCoeffs.data(), patchsize * sizeof(double));
+            memcpy(h_value_boundary_coeffs + offset, peqn_boundaryCoeffs.data(), patchsize * sizeof(double));
+            memcpy(h_gradient_internal_coeffs + offset, peqn_laplac_internalCoeffs.data(), patchsize * sizeof(double));
+            memcpy(h_gradient_boundary_coeffs + offset, peqn_laplac_boundaryCoeffs.data(), patchsize * sizeof(double));
+
+            if (patchFlux.type() == "processor" || patchFlux.type() == "processorCyclic") offset += 2 * patchsize;
+            else offset += patchsize;
+        }
+
+        writeDoubleArrayToFile(h_value_internal_coeffs, mesh_paras.num_boundary_surfaces, "p_value_internal_coeffs.host", compareCPUResults);
+        writeDoubleArrayToFile(h_value_boundary_coeffs, mesh_paras.num_boundary_surfaces, "p_value_boundary_coeffs.host", compareCPUResults);
+        writeDoubleArrayToFile(h_gradient_internal_coeffs, mesh_paras.num_boundary_surfaces, "p_gradient_internal_coeffs.host", compareCPUResults);
+        writeDoubleArrayToFile(h_gradient_boundary_coeffs, mesh_paras.num_boundary_surfaces, "p_gradient_boundary_coeffs.host", compareCPUResults);
         
         std::cout << "=== start call csr.solve " << std::endl;
 
@@ -211,10 +248,14 @@
         std::cout << "=== end call csr.solve " << std::endl;
 
         // pEqn.solve();
+
+        p.correctBoundaryConditions(); //need check, update phi after correctBC
+        
         if (pimple.finalNonOrthogonalIter())
         {
             phi = phiHbyA + pEqn.flux();
         }
+
         thermo.correctRho(psi*p - psip0);
         // compare pEqn
         std::vector<double> h_internal_coeffs(mesh_paras.num_boundary_surfaces);
@@ -267,6 +308,7 @@
     if (!mpi_init_flag || rank == 0) {
         //pEqn_GPU.comparep(&p[0], h_boundary_p, false);
     }
+    writeDoubleArrayToFile(&h_boundary_p[0], mesh_paras.num_boundary_surfaces, "p_boundary_p_solved.host", compareCPUResults);
     delete h_boundary_p;
 
     // compare phi
@@ -288,6 +330,8 @@
     if (!mpi_init_flag || rank == 0) {
         // pEqn_GPU.comparephi(&phi[0], h_boundary_phi, false);
     }
+    writeDoubleArrayToFile(&phi[0], mesh_paras.num_surfaces, "p_correct_phi.host", compareCPUResults);
+    writeDoubleArrayToFile(h_boundary_phi, mesh_paras.num_boundary_surfaces, "p_correct_boundary_phi.host", compareCPUResults);    
     delete h_boundary_phi;
 #endif
 
