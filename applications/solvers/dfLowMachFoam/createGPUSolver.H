@@ -583,7 +583,7 @@ void createGPUThermo(mesh_info_para &mesh_paras, init_data_para &init_data, cons
 
 void createGPUSolver(const dictionary solversDict, const IOdictionary& CanteraTorchProperties, 
                      const volScalarField& rho, const volVectorField& U, volScalarField& p, 
-                     PtrList<volScalarField>& Y, volScalarField& he)
+                     PtrList<volScalarField>& Y, volScalarField& he, bool setRAS)
 {
     dictionary rhoSolverDict = solversDict.subDict("rho"); 
     dictionary USolverDict = solversDict.subDict("U"); 
@@ -609,6 +609,15 @@ void createGPUSolver(const dictionary solversDict, const IOdictionary& CanteraTo
 
     createGPUSolverInput(p.mesh(), pSolverDict, MATRIX_EQUATION::pEqn, pEqnSettingPath); 
     initialize_matrix(MATRIX_EQUATION::pEqn);    
+
+    if (setRAS)
+    {
+        createGPUSolverInput(U.mesh(), USolverDict, MATRIX_EQUATION::kEqn, UEqnSettingPath); 
+        initialize_matrix(MATRIX_EQUATION::kEqn);   
+
+        createGPUSolverInput(U.mesh(), USolverDict, MATRIX_EQUATION::epsilonEqn, UEqnSettingPath); 
+        initialize_matrix(MATRIX_EQUATION::epsilonEqn);          
+    }
 }
 
 string getFullSchemesName(const dictionary schemesDict, string foundSchemes)
@@ -1644,7 +1653,8 @@ void copyGPUResults2Host(mesh_info_para &mesh_paras, volVectorField& U)
     memcpy(&U[0][0], U_hostOrder, mesh_paras.num_cells * 3 * sizeof(double));
 }
 
-void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &mesh_paras, const volScalarField& nut, const volScalarField& alphat)
+void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &mesh_paras, const volScalarField& nut, const volScalarField& alphat, 
+                            const volScalarField& k, const volScalarField& epsilon)
 {
     std::cout << "- Set turbulence model for DeepFlame_Academic " << std::endl;  
 
@@ -1657,9 +1667,13 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
     int RASModelTypeInt = 0;
     std::vector<int> patch_type_nut;
     std::vector<int> patch_type_alphat;
+    std::vector<int> patch_type_k;
+    std::vector<int> patch_type_epsilon;
 
     patch_type_nut.resize(mesh_paras.num_patches);
     patch_type_alphat.resize(mesh_paras.num_patches);
+    patch_type_k.resize(mesh_paras.num_patches);
+    patch_type_epsilon.resize(mesh_paras.num_patches);
 
     if (simulationType == "laminar")
     {
@@ -1675,6 +1689,16 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
         if (LESModelType == "Smagorinsky") LESModelTypeInt = 1;
         if (LESModelType == "Sigma")       LESModelTypeInt = 2;
     }
+    else if (simulationType == "RAS")
+    {
+        useTurbulence = true;
+
+        dictionary RASturbDict = turbulenceControls.subDict("RAS");
+        const word RASModelType(RASturbDict.lookup("RASModel"));
+        std::cout << "    == RASModelType: " << RASModelType << std::endl;
+
+        if (RASModelType == "kEpsilon") RASModelTypeInt = 1;
+    }
 
     if (useTurbulence)
     {
@@ -1682,9 +1706,11 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
         {
             constructBoundarySelectorPerPatch(&(patch_type_nut[patchi]), nut.boundaryField()[patchi].type());
             constructBoundarySelectorPerPatch(&(patch_type_alphat[patchi]), alphat.boundaryField()[patchi].type());
+            constructBoundarySelectorPerPatch(&(patch_type_k[patchi]), k.boundaryField()[patchi].type());
+            constructBoundarySelectorPerPatch(&(patch_type_epsilon[patchi]), epsilon.boundaryField()[patchi].type());
         }
     }
 
     init_turbulence(useTurbulence, useTCI, static_cast<LES_TURBULENCE_MODEL>(LESModelTypeInt), static_cast<RAS_TURBULENCE_MODEL>(RASModelTypeInt), 
-                    patch_type_nut.data(), patch_type_alphat.data());
+                    patch_type_nut.data(), patch_type_alphat.data(), patch_type_k.data(), patch_type_epsilon.data(), &k[0], &epsilon[0]);
 }
