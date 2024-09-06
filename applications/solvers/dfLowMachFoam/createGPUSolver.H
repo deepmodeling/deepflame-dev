@@ -28,6 +28,15 @@ void setConstantIndexes_GAMG(int nCells, int nFaces, int *owner, int *neighbor, 
 #include <iomanip> 
 void writeDoubleArrayToFile(const double* data, int num, const std::string& filename, bool compareCPUResults = false) {
     if(!compareCPUResults) return;
+
+    int mpi_init_flag;
+    checkMpiErrors(MPI_Initialized(&mpi_init_flag));
+    if(mpi_init_flag) {
+        checkMpiErrors(MPI_Comm_rank(MPI_COMM_WORLD, &myRank));
+    }
+
+    if(myRank!=0) return;
+
     std::ofstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Failed to open file: " << filename << std::endl;
@@ -248,7 +257,7 @@ void createGPUUEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     // prepare patch_type
     std::vector<int> patch_type;
     patch_type.resize(mesh_paras.num_patches);
-    double h_boundary_u[mesh_paras.num_boundary_surfaces*3];
+    double *h_boundary_u = new double[mesh_paras.num_boundary_surfaces*3]();
     
     int offset = 0;
     forAll(U.boundaryField(), patchi)
@@ -1012,7 +1021,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
 
     // wyr: now there is no other place to prepare nccl info, thus mpi must be initialized at beginning.
     std::vector<int> GPUNeighbProcNo(num_patches, -1);
-    std::vector<int> patch_type(num_patches, -1), interfaceFlag(num_patches, -1);
+    std::vector<int> patch_type(num_patches, -1), interfaceFlag(num_patches, 0);
     // get basic communication info from of
     forAll(Y[0].boundaryField(), patchi) {
         if (Y[0].boundaryField()[patchi].type() == "processor"
@@ -1034,7 +1043,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
             cyclicNeighbor[patchi] = patchNameToIndex[dynamic_cast<const cyclicFvPatchField<scalar>&>(Y[0].boundaryField()[patchi]).
                     cyclicPatch().cyclicPatch().neighbPatch().name()];
         }
-    }
+    } 
 
     // prepare internal and boundary of sf, mag_sf, weights, delta_coeffs, volume
     double *boundary_sf = new double[3 * num_boundary_surfaces];
