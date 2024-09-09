@@ -1652,7 +1652,7 @@ else if (type == 2)
 }
 }
 
-void copyGPUResults2Host(mesh_info_para &mesh_paras, volVectorField& U)
+void copyGPUResults2Host(mesh_info_para &mesh_paras, volVectorField& U, volScalarField& T, PtrList<volScalarField>& Y)
 {
     // DF-A: memcpy results data d2h 
     writeResults();
@@ -1660,6 +1660,12 @@ void copyGPUResults2Host(mesh_info_para &mesh_paras, volVectorField& U)
     double *U_hostOrder = new double[mesh_paras.num_cells * 3]();
     permuteVector2Host(U_hostOrder, resultsData.h_u, mesh_paras.num_cells);
     memcpy(&U[0][0], U_hostOrder, mesh_paras.num_cells * 3 * sizeof(double));
+
+    memcpy(&T[0], resultsData.h_T, mesh_paras.num_cells * sizeof(double));
+
+    forAll(Y, speciesI) {
+        memcpy(&Y[speciesI][0], resultsData.h_y + speciesI * mesh_paras.num_cells, mesh_paras.num_cells * sizeof(double));
+    }
 }
 
 void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &mesh_paras, const volScalarField& nut, const volScalarField& alphat, 

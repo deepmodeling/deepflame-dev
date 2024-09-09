@@ -69,7 +69,7 @@ Description
 
 #define GPUSolverNew_
 // #define TIME
-#define DEBUG_
+// #define DEBUG_
 // #define SHOW_MEMINFO
 
 #define iscsr // true -> csr, false -> ell
@@ -498,7 +498,7 @@ int main(int argc, char *argv[])
         #endif
 
         #ifdef GPUSolverNew_
-            copyGPUResults2Host(mesh_paras, U);
+            copyGPUResults2Host(mesh_paras, U, T, Y);
         #endif
 
         runTime.write();
