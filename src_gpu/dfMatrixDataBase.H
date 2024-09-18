@@ -91,7 +91,15 @@ enum boundaryConditions{
     fixedEnergy,
     processorCyclic,
     pressureInletOutletVelocity,
-    totalPressure
+    totalPressure,
+    wedge,
+    noSlip,
+    turbulentMixingLengthDissipationRateInlet,
+    turbulentIntensityKineticEnergyInlet,
+    nutkWallFunction,
+    epsilonWallFunction,
+    kqRWallFunction,
+    alphatWallFunction
 };
 
 void constructBoundarySelectorPerPatch(int *patchTypeSelector, const std::string& patchTypeStr);

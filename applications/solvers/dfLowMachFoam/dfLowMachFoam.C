@@ -87,6 +87,7 @@ Description
     #include "cyclicFvPatchField.H"
     #include "processorCyclicFvPatchField.H"
     #include "totalPressureFvPatchScalarField.H"
+    #include "epsilonWallFunctionFvPatchScalarField.H"
     #include "createGPUSolver.H"
 
     #include "upwind.H"

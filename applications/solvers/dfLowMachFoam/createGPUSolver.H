@@ -114,7 +114,16 @@ void constructBoundarySelectorPerPatch(int *patchTypeSelector, const std::string
         {"fixedEnergy", fixedEnergy},
         {"processorCyclic", processorCyclic},
         {"pressureInletOutletVelocity", pressureInletOutletVelocity},
-        {"totalPressure", totalPressure}   
+        {"totalPressure", totalPressure},
+        {"wedge", wedge},
+        {"noSlip", noSlip},
+
+        {"turbulentMixingLengthDissipationRateInlet", turbulentMixingLengthDissipationRateInlet},
+        {"turbulentIntensityKineticEnergyInlet", turbulentIntensityKineticEnergyInlet},
+        {"nutkWallFunction", nutkWallFunction},
+        {"epsilonWallFunction", epsilonWallFunction},
+        {"kqRWallFunction", kqRWallFunction},
+        {"alphatWallFunction", alphatWallFunction},
     };
     auto iter = BCMap.find(patchTypeStr);
     if (iter != BCMap.end()) {
@@ -187,6 +196,46 @@ void constructBoundarySelectorPerPatch(int *patchTypeSelector, const std::string
         case totalPressure:
         {
             *patchTypeSelector = 12;
+            break;
+        }
+        case wedge:
+        {
+            *patchTypeSelector = 13;
+            break;
+        }
+        case noSlip:
+        {
+            *patchTypeSelector = 14;
+            break;
+        }
+        case turbulentMixingLengthDissipationRateInlet:
+        {
+            *patchTypeSelector = 15;
+            break;
+        }
+        case turbulentIntensityKineticEnergyInlet:
+        {
+            *patchTypeSelector = 16;
+            break;
+        }
+        case nutkWallFunction:
+        {
+            *patchTypeSelector = 17;
+            break;
+        }
+        case epsilonWallFunction:
+        {
+            *patchTypeSelector = 18;
+            break;
+        }
+        case kqRWallFunction:
+        {
+            *patchTypeSelector = 19;
+            break;
+        }
+        case alphatWallFunction:
+        {
+            *patchTypeSelector = 20;
             break;
         }
     }
@@ -1736,12 +1785,13 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
     // for turbulence BCs - start
     // get near wall distance
     nearWallDist yDist(k.mesh());
+    const volScalarField::Boundary& bf = epsilon.boundaryField();
 
     double *h_boundary_yDist = new double[mesh_paras.num_boundary_surfaces];
     int offset = 0;
-    forAll(yDist.boundaryField(), patchi)
+    forAll(bf, patchi)
     {
-        const fvPatchScalarField& patchyDist = yDist.boundaryField()[patchi];
+        const fvPatchScalarField& patchyDist = yDist[patchi];
         int patchsize = patchyDist.size();
         if (patchyDist.type() == "processor"
             || patchyDist.type() == "processorCyclic") {
@@ -1757,30 +1807,19 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
         }
     }
 
-    const volScalarField::Boundary& bf = epsilon.boundaryField();
-
     label master = -1;
     forAll(bf, patchi)
     {
         if (isA<epsilonWallFunctionFvPatchScalarField>(bf[patchi]))
         {
-            epsilonWallFunctionFvPatchScalarField& epf = epsilonPatch(patchi);
-
             if (master == -1)
             {
                 master = patchi;
             }
-
-            epf.master() = master;
         }
     }
 
     const fvMesh& mesh = epsilon.mesh();
-
-    if (initialised_ && !mesh.changing())
-    {
-        return;
-    }
 
     volScalarField weights
     (
@@ -1807,11 +1846,12 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
             const labelUList& faceCells = bf[patchi].patch().faceCells();
             forAll(faceCells, i)
             {
-                weights[faceCells[i]]++; //计数器？
+                weights[faceCells[i]]++;
             }
         }
     }
 
+    List<List<scalar>> cornerWeights_;
     cornerWeights_.setSize(bf.size());
     forAll(epsilonPatches, i)
     {
@@ -1822,20 +1862,20 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
 
     double *h_boundary_cornerWeights = new double[mesh_paras.num_boundary_surfaces];
     offset = 0;
-    forAll(cornerWeights_.boundaryField(), patchi)
+    forAll(bf, patchi)
     {
-        const fvPatchScalarField& patchycornerWeights = cornerWeights_.boundaryField()[patchi];
-        int patchsize = patchycornerWeights.size();
-        if (patchycornerWeights.type() == "processor"
-            || patchycornerWeights.type() == "processorCyclic") {
+        int patchsize = bf[patchi].size();
+        if (isA<epsilonWallFunctionFvPatchScalarField>(bf[patchi]))
+        {
+            List<double> patchycornerWeights = cornerWeights_[patchi];
+            int patchsize = patchycornerWeights.size();
             memcpy(h_boundary_cornerWeights + offset, &patchycornerWeights[0], patchsize * sizeof(double));
-            scalarField patchPInternal = 
-                    dynamic_cast<const processorFvPatchField<scalar>&>(patchycornerWeights).patchInternalField()();
-            memcpy(h_boundary_cornerWeights + offset + patchsize, &patchPInternal[0], patchsize * sizeof(double));
-
+            offset += patchsize;
+        }
+        if (bf[patchi].type() == "processor"
+            || bf[patchi].type() == "processorCyclic") {
             offset += patchsize * 2;
         } else {
-            memcpy(h_boundary_cornerWeights + offset, &patchycornerWeights[0], patchsize * sizeof(double));
             offset += patchsize;
         }
     }
