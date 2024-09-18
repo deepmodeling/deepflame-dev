@@ -93,6 +93,7 @@ Description
     #include "CanteraMixture.H"
     #include "multivariateGaussConvectionScheme.H"
     #include "limitedSurfaceInterpolationScheme.H"
+    #include "nearWallDist.H"
 #else
     #include "processorFvPatchField.H"
     #include "cyclicFvPatchField.H"

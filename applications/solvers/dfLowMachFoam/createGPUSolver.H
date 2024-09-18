@@ -600,8 +600,15 @@ void createGPUSolver(const dictionary solversDict, const IOdictionary& CanteraTo
     dictionary YSolverDict = solversDict.subDict("Yi"); 
     dictionary ESolverDict = solversDict.subDict("ha"); 
 
-    string UEqnSettingPath = CanteraTorchProperties.subDict("AmgxSettings").lookupOrDefault("UEqnSettingPath", string(""));
-    string pEqnSettingPath = CanteraTorchProperties.subDict("AmgxSettings").lookupOrDefault("pEqnSettingPath", string(""));
+    string UEqnSettingPath = "";
+    string pEqnSettingPath = "";
+
+    bool useAMGX = false;
+    if (useAMGX)
+    {
+        UEqnSettingPath = CanteraTorchProperties.subDict("AmgxSettings").lookupOrDefault("UEqnSettingPath", string(""));
+        pEqnSettingPath = CanteraTorchProperties.subDict("AmgxSettings").lookupOrDefault("pEqnSettingPath", string(""));
+    }
 
     /* For DeepFlame_Academic */
     createGPUSolverInput(rho.mesh(), rhoSolverDict, MATRIX_EQUATION::rhoEqn); 
@@ -617,7 +624,7 @@ void createGPUSolver(const dictionary solversDict, const IOdictionary& CanteraTo
     initialize_matrix(MATRIX_EQUATION::EEqn);
 
     createGPUSolverInput(p.mesh(), pSolverDict, MATRIX_EQUATION::pEqn, pEqnSettingPath); 
-    initialize_matrix(MATRIX_EQUATION::pEqn);    
+    initialize_matrix(MATRIX_EQUATION::pEqn);  
 
     if (setRAS)
     {
@@ -1726,6 +1733,114 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
         }
     }
 
+    // for turbulence BCs - start
+    // get near wall distance
+    nearWallDist yDist(k.mesh());
+
+    double *h_boundary_yDist = new double[mesh_paras.num_boundary_surfaces];
+    int offset = 0;
+    forAll(yDist.boundaryField(), patchi)
+    {
+        const fvPatchScalarField& patchyDist = yDist.boundaryField()[patchi];
+        int patchsize = patchyDist.size();
+        if (patchyDist.type() == "processor"
+            || patchyDist.type() == "processorCyclic") {
+            memcpy(h_boundary_yDist + offset, &patchyDist[0], patchsize * sizeof(double));
+            scalarField patchPInternal = 
+                    dynamic_cast<const processorFvPatchField<scalar>&>(patchyDist).patchInternalField()();
+            memcpy(h_boundary_yDist + offset + patchsize, &patchPInternal[0], patchsize * sizeof(double));
+
+            offset += patchsize * 2;
+        } else {
+            memcpy(h_boundary_yDist + offset, &patchyDist[0], patchsize * sizeof(double));
+            offset += patchsize;
+        }
+    }
+
+    const volScalarField::Boundary& bf = epsilon.boundaryField();
+
+    label master = -1;
+    forAll(bf, patchi)
+    {
+        if (isA<epsilonWallFunctionFvPatchScalarField>(bf[patchi]))
+        {
+            epsilonWallFunctionFvPatchScalarField& epf = epsilonPatch(patchi);
+
+            if (master == -1)
+            {
+                master = patchi;
+            }
+
+            epf.master() = master;
+        }
+    }
+
+    const fvMesh& mesh = epsilon.mesh();
+
+    if (initialised_ && !mesh.changing())
+    {
+        return;
+    }
+
+    volScalarField weights
+    (
+        IOobject
+        (
+            "weights",
+            mesh.time().timeName(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE,
+            false // do not register
+        ),
+        mesh,
+        dimensionedScalar(dimless, 0)
+    );
+
+    DynamicList<label> epsilonPatches(bf.size());
+    forAll(bf, patchi)
+    {
+        if (isA<epsilonWallFunctionFvPatchScalarField>(bf[patchi]))
+        {
+            epsilonPatches.append(patchi);
+
+            const labelUList& faceCells = bf[patchi].patch().faceCells();
+            forAll(faceCells, i)
+            {
+                weights[faceCells[i]]++; //计数器？
+            }
+        }
+    }
+
+    cornerWeights_.setSize(bf.size());
+    forAll(epsilonPatches, i)
+    {
+        label patchi = epsilonPatches[i];
+        const fvPatchScalarField& wf = weights.boundaryField()[patchi];
+        cornerWeights_[patchi] = 1.0/wf.patchInternalField();
+    }
+
+    double *h_boundary_cornerWeights = new double[mesh_paras.num_boundary_surfaces];
+    offset = 0;
+    forAll(cornerWeights_.boundaryField(), patchi)
+    {
+        const fvPatchScalarField& patchycornerWeights = cornerWeights_.boundaryField()[patchi];
+        int patchsize = patchycornerWeights.size();
+        if (patchycornerWeights.type() == "processor"
+            || patchycornerWeights.type() == "processorCyclic") {
+            memcpy(h_boundary_cornerWeights + offset, &patchycornerWeights[0], patchsize * sizeof(double));
+            scalarField patchPInternal = 
+                    dynamic_cast<const processorFvPatchField<scalar>&>(patchycornerWeights).patchInternalField()();
+            memcpy(h_boundary_cornerWeights + offset + patchsize, &patchPInternal[0], patchsize * sizeof(double));
+
+            offset += patchsize * 2;
+        } else {
+            memcpy(h_boundary_cornerWeights + offset, &patchycornerWeights[0], patchsize * sizeof(double));
+            offset += patchsize;
+        }
+    }
+
     init_turbulence(useTurbulence, useTCI, static_cast<LES_TURBULENCE_MODEL>(LESModelTypeInt), static_cast<RAS_TURBULENCE_MODEL>(RASModelTypeInt), 
-                    patch_type_nut.data(), patch_type_alphat.data(), patch_type_k.data(), patch_type_epsilon.data(), &k[0], &epsilon[0]);
+                    patch_type_nut.data(), patch_type_alphat.data(), patch_type_k.data(), patch_type_epsilon.data(), &k[0], &epsilon[0],
+                    h_boundary_yDist, h_boundary_cornerWeights);
 }
