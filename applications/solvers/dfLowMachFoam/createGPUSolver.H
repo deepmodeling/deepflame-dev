@@ -1880,7 +1880,13 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
         }
     }
 
+    double intensity = 0.0628; 
+    double mixingLength = 0.000735; 
+    double E = 9.8;
+    double kappa = 0.41; 
+    double Cmu = 0.09;
+
     init_turbulence(useTurbulence, useTCI, static_cast<LES_TURBULENCE_MODEL>(LESModelTypeInt), static_cast<RAS_TURBULENCE_MODEL>(RASModelTypeInt), 
                     patch_type_nut.data(), patch_type_alphat.data(), patch_type_k.data(), patch_type_epsilon.data(), &k[0], &epsilon[0],
-                    h_boundary_yDist, h_boundary_cornerWeights);
+                    h_boundary_yDist, h_boundary_cornerWeights, intensity, mixingLength, E, kappa, Cmu);
 }
