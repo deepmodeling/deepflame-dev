@@ -105,12 +105,15 @@ void Foam::fluxScheme::createSavedFields()
 void Foam::fluxScheme::update
 (
     const volScalarField& rho,
+    const PtrList<volScalarField>& rhoYi,
+    const scalar& nspecies,
     const volVectorField& U,
     const volScalarField& e,
     const volScalarField& p,
     const volScalarField& c,
     surfaceScalarField& phi,
     surfaceScalarField& rhoPhi,
+    PtrList<surfaceScalarField>& rhoPhiYi,
     surfaceVectorField& rhoUPhi,
     surfaceScalarField& rhoEPhi
 )
@@ -119,6 +122,49 @@ void Foam::fluxScheme::update
 
     rhoOwn_ = fvc::interpolate(rho, own_(), scheme("rho"));
     rhoNei_ = fvc::interpolate(rho, nei_(), scheme("rho"));
+
+    PtrList<surfaceScalarField> rhoYiOwn(nspecies);
+    PtrList<surfaceScalarField> rhoYiNei(nspecies);
+
+    forAll(rhoYiOwn,i)
+    {
+        rhoYiOwn.set
+        (
+            i,
+            new surfaceScalarField
+            (
+                IOobject
+                (
+                    "rhoYiOwn" + rhoYi[i].name(),
+                    mesh_.time().timeName(),
+                    mesh_,
+                    IOobject::NO_READ,
+                    IOobject::NO_WRITE
+                ),
+                fvc::interpolate(rhoYi[i], own_(), scheme("Yi"))
+            )
+        );
+    }
+
+    forAll(rhoYiNei,i)
+    {
+        rhoYiNei.set
+        (
+            i,
+            new surfaceScalarField
+            (
+                IOobject
+                (
+                    "rhoYiNei" + rhoYi[i].name(),
+                    mesh_.time().timeName(),
+                    mesh_,
+                    IOobject::NO_READ,
+                    IOobject::NO_WRITE
+                ),
+                fvc::interpolate(rhoYi[i], nei_(), scheme("Yi"))
+            )
+        );
+    }
 
     surfaceVectorField UOwn(fvc::interpolate(U, own_(), scheme("U")));
     surfaceVectorField UNei(fvc::interpolate(U, nei_(), scheme("U")));
@@ -135,10 +181,24 @@ void Foam::fluxScheme::update
     preUpdate(p);
     forAll(UOwn, facei)
     {
+        scalarList rhoYiOwn_face(nspecies);
+        scalarList rhoYiNei_face(nspecies);
+        scalarList rhoPhiYi_face(nspecies);
+
+        forAll(rhoYiOwn_face,i)
+        {
+            rhoYiOwn_face[i] = rhoYiOwn[i][facei];
+        }
+
+        forAll(rhoYiNei_face,i)
+        {
+            rhoYiNei_face[i] = rhoYiNei[i][facei];
+        }
 
         calculateFluxes
         (
             rhoOwn_()[facei], rhoNei_()[facei],
+            rhoYiOwn_face, rhoYiNei_face,
             UOwn[facei], UNei[facei],
             eOwn[facei], eNei[facei],
             pOwn[facei], pNei[facei],
@@ -146,10 +206,16 @@ void Foam::fluxScheme::update
             mesh_.Sf()[facei],
             phi[facei],
             rhoPhi[facei],
+            rhoPhiYi_face,
             rhoUPhi[facei],
             rhoEPhi[facei],
             facei
         );
+
+        forAll(rhoPhiYi_face,i)
+        {
+            rhoPhiYi[i][facei] = rhoPhiYi_face[i];
+        }
     }
 
     forAll(U.boundaryField(), patchi)
@@ -157,10 +223,26 @@ void Foam::fluxScheme::update
         forAll(U.boundaryField()[patchi], facei)
         {
 
+            scalarList rhoYiOwn_bf(nspecies);
+            scalarList rhoYiNei_bf(nspecies);
+            scalarList rhoPhiYi_bf(nspecies);
+
+            forAll(rhoYiOwn_bf,i)
+            {
+                rhoYiOwn_bf[i] = rhoYiOwn[i].boundaryField()[patchi][facei];
+            }
+
+            forAll(rhoYiNei_bf,i)
+            {
+                rhoYiNei_bf[i] = rhoYiNei[i].boundaryField()[patchi][facei];
+            }
+
             calculateFluxes
             (
                 rhoOwn_().boundaryField()[patchi][facei],
                 rhoNei_().boundaryField()[patchi][facei],
+                rhoYiOwn_bf,
+                rhoYiNei_bf,
                 UOwn.boundaryField()[patchi][facei],
                 UNei.boundaryField()[patchi][facei],
                 eOwn.boundaryField()[patchi][facei],
@@ -172,10 +254,16 @@ void Foam::fluxScheme::update
                 mesh_.Sf().boundaryField()[patchi][facei],
                 phi.boundaryFieldRef()[patchi][facei],
                 rhoPhi.boundaryFieldRef()[patchi][facei],
+                rhoPhiYi_bf,
                 rhoUPhi.boundaryFieldRef()[patchi][facei],
                 rhoEPhi.boundaryFieldRef()[patchi][facei],
                 facei, patchi
             );
+
+            forAll(rhoPhiYi_bf,i)
+            {
+                rhoPhiYi[i].boundaryFieldRef()[patchi][facei] = rhoPhiYi_bf[i];
+            }
         }
     }
     postUpdate();

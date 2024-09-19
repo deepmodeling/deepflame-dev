@@ -53,7 +53,7 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
     forAll(Y, i)
     {
         volScalarField& Yi = Y[i];
-        surfaceScalarField rhoPhiYi(rhoPhi*fvc::interpolate(Yi, "Yi").ref());
+        // surfaceScalarField rhoPhiYi(rhoPhi*fvc::interpolate(Yi, "Yi").ref());
 
         if (!inviscid)
         {
@@ -65,7 +65,7 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
         {   
             if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
             {
-                rhoYi_rhs = -fvc::div(rhoPhiYi);
+                rhoYi_rhs = -fvc::div(rhoPhiYi[i]);
 
                 if(chemScheme == "direct")
                 {
@@ -107,26 +107,26 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
             else
             {
                 // original convection term
-                fvScalarMatrix YiEqn
-                (
-                     fvm::ddt(rho, Yi)
-                   + mvConvection->fvmDiv(rhoPhi, Yi)
-                  ==
-                      combustion->R(Yi)
-                    + parcels.SYi(i, Yi)
-                );
-                
-                // solve
+                // fvScalarMatrix YiEqn
                 // (
-                //       fvm::ddt(rhoYi[i])
-                //     + fvc::div(rhoPhiYi)
-                // == 
-                //       chemistry->RR(i)
-                //     + parcels.SYi(i, rhoYi[i])
+                //      fvm::ddt(rho, Yi)
+                //    + mvConvection->fvmDiv(rhoPhi, Yi)
+                //   ==
+                //       combustion->R(Yi)
+                //     + parcels.SYi(i, Yi)
                 // );
+                
+                solve
+                (
+                      fvm::ddt(rhoYi[i])
+                    + fvc::div(rhoPhiYi[i])
+                == 
+                      chemistry->RR(i)
+                    + parcels.SYi(i, rhoYi[i])
+                );
 
-                // Yi=rhoYi[i]/rho;
-                // Yi.max(0.0);
+                Yi=rhoYi[i]/rho;
+                Yi.max(0.0);
 
                 if (!inviscid)
                 {
@@ -134,35 +134,35 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
                     tmp<volScalarField> DEff = chemistry->rhoD(i) + turbulence->mut()/Sct;
 
                     // original term
-                    YiEqn -= 
-                        (
-                            turbName == "laminar"
-                            ? (fvm::laplacian(DEff(), Yi) - mvConvection->fvmDiv(phiUc, Yi))
-                            : fvm::laplacian(DEff(), Yi)   
-                        );
+                    // YiEqn -= 
+                    //     (
+                    //         turbName == "laminar"
+                    //         ? (fvm::laplacian(DEff(), Yi) - mvConvection->fvmDiv(phiUc, Yi))
+                    //         : fvm::laplacian(DEff(), Yi)   
+                    //     );
 
 
-                    // fvScalarMatrix YiEqn
-                    // (
-                    //         fvm::ddt(rho, Yi) - fvc::ddt(rho, Yi)
-                    //      -
-                    //         (
-                    //             turbName == "laminar"
-                    //             ?  (fvm::laplacian(DEff(), Yi) - mvConvection->fvmDiv(phiUc, Yi))
-                    //             :  fvm::laplacian(DEff(), Yi)
-                    //         )
-                    // );
+                    fvScalarMatrix YiEqn
+                    (
+                            fvm::ddt(rho, Yi) - fvc::ddt(rho, Yi)
+                         -
+                            (
+                                turbName == "laminar"
+                                ?  (fvm::laplacian(DEff(), Yi) - mvConvection->fvmDiv(phiUc, Yi))
+                                :  fvm::laplacian(DEff(), Yi)
+                            )
+                    );
 
-                    // YiEqn.relax();
+                    YiEqn.relax();
 
-                    // YiEqn.solve("Yi");
+                    YiEqn.solve("Yi");
 
-                    // Yi.max(0.0);
+                    Yi.max(0.0);
                 }
                 // original term
-                YiEqn.relax();
-                YiEqn.solve("Yi");
-                Yi.max(0.0);
+                // YiEqn.relax();
+                // YiEqn.solve("Yi");
+                // Yi.max(0.0);
                 rhoYi[i] = rho*Yi;
 
             }      

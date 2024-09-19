@@ -75,6 +75,8 @@ class Kurganov
         virtual void calculateFluxes
         (
             const scalar& rhoOwn, const scalar& rhoNei,
+            const scalarList& rhoYiOwn,
+            const scalarList& rhoYiNei,
             const vector& UOwn, const vector& UNei,
             const scalar& eOwn, const scalar& eNei,
             const scalar& pOwn, const scalar& pNei,
@@ -82,6 +84,7 @@ class Kurganov
             const vector& Sf,
             scalar& phi,
             scalar& rhoPhi,
+            scalarList& rhoPhiYi,
             vector& rhoUPhi,
             scalar& rhoEPhi,
             const label facei, const label patchi = -1

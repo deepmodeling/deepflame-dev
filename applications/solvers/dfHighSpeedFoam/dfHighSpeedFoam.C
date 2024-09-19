@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
                 volScalarField rPsi("rPsi", 1.0/psi);
                 volScalarField c("c", sqrt(thermo.Cp()/thermo.Cv()*rPsi));
 
-                fluxSchemeFields->update(rho,U,ea,p,c,phi,rhoPhi,rhoUPhi,rhoEPhi);
+                fluxSchemeFields->update(rho,rhoYi,nspecies,U,ea,p,c,phi,rhoPhi,rhoPhiYi,rhoUPhi,rhoEPhi);
 
                 volScalarField muEff("muEff", turbulence->muEff());
                 volTensorField tauMC("tauMC", muEff*dev2(Foam::T(fvc::grad(U))));
@@ -222,7 +222,7 @@ int main(int argc, char *argv[])
             volScalarField rPsi("rPsi", 1.0/psi);
             volScalarField c("c", sqrt(thermo.Cp()/thermo.Cv()*rPsi));
 
-            fluxSchemeFields->update(rho,U,ea,p,c,phi,rhoPhi,rhoUPhi,rhoEPhi);
+            fluxSchemeFields->update(rho,rhoYi,nspecies,U,ea,p,c,phi,rhoPhi,rhoPhiYi,rhoUPhi,rhoEPhi);
 
             volScalarField muEff("muEff", turbulence->muEff());
             volTensorField tauMC("tauMC", muEff*dev2(Foam::T(fvc::grad(U))));

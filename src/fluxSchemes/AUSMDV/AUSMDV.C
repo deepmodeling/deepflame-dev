@@ -73,6 +73,8 @@ void Foam::fluxSchemes::AUSMDV::createSavedFields()
 void Foam::fluxSchemes::AUSMDV::calculateFluxes
 (
     const scalar& rhoOwn, const scalar& rhoNei,
+    const scalarList& rhoYiOwn,
+    const scalarList& rhoYiNei,
     const vector& UOwn, const vector& UNei,
     const scalar& eOwn, const scalar& eNei,
     const scalar& pOwn, const scalar& pNei,
@@ -80,6 +82,7 @@ void Foam::fluxSchemes::AUSMDV::calculateFluxes
     const vector& Sf,
     scalar& phi,
     scalar& rhoPhi,
+    scalarList& rhoPhiYi,
     vector& rhoUPhi,
     scalar& rhoEPhi,
     const label facei, const label patchi
@@ -128,6 +131,13 @@ void Foam::fluxSchemes::AUSMDV::calculateFluxes
     rhoPhi =   (uPlus*rhoOwn + uMinus*rhoNei)*magSf
              - (1 - caseA*caseB)*(caseA*0.125*(UvNei - cNei - UvOwn + cOwn)*(rhoNei - rhoOwn)*magSf
                     + (1 - caseA)*caseB*0.125*(UvNei + cNei - UvOwn - cOwn)*(rhoNei - rhoOwn)*magSf);
+
+    forAll(rhoPhiYi,i)
+    {
+        rhoPhiYi[i] =  (uPlus*rhoYiOwn[i] + uMinus*rhoYiNei[i])*magSf
+                     - (1 - caseA*caseB)*(caseA*0.125*(UvNei - cNei - UvOwn + cOwn)*(rhoYiNei[i] - rhoYiOwn[i])*magSf
+                            + (1 - caseA)*caseB*0.125*(UvNei + cNei - UvOwn - cOwn)*(rhoYiNei[i] - rhoYiOwn[i])*magSf);
+    }
 
     vector AUSMV((uPlus*rhoOwn*UOwn + uMinus*rhoNei*UNei)*magSf);
     vector AUSMD(0.5*(rhoPhi*(UOwn+UNei) - mag(rhoPhi)*(UNei-UOwn)));

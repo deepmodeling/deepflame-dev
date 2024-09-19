@@ -74,6 +74,8 @@ void Foam::fluxSchemes::Tadmor::createSavedFields()
 void Foam::fluxSchemes::Tadmor::calculateFluxes
 (
     const scalar& rhoOwn, const scalar& rhoNei,
+    const scalarList& rhoYiOwn,
+    const scalarList& rhoYiNei,
     const vector& UOwn, const vector& UNei,
     const scalar& eOwn, const scalar& eNei,
     const scalar& pOwn, const scalar& pNei,
@@ -81,6 +83,7 @@ void Foam::fluxSchemes::Tadmor::calculateFluxes
     const vector& Sf,
     scalar& phi,
     scalar& rhoPhi,
+    scalarList& rhoPhiYi,
     vector& rhoUPhi,
     scalar& rhoEPhi,
     const label facei, const label patchi
@@ -120,6 +123,11 @@ void Foam::fluxSchemes::Tadmor::calculateFluxes
     // this->save(facei, patchi, 0.5*(UOwn + UNei), Uf_);
     phi = aphivOwn + aphivNei;
     rhoPhi = aphivOwn*rhoOwn + aphivNei*rhoNei;
+
+    forAll(rhoPhiYi,i)
+    {
+        rhoPhiYi[i] = aphivOwn*rhoYiOwn[i] + aphivNei*rhoYiNei[i];
+    }
 
     rhoUPhi =
     (

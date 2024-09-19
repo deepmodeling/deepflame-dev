@@ -111,6 +111,8 @@ void Foam::fluxSchemes::HLLCP::postUpdate()
 void Foam::fluxSchemes::HLLCP::calculateFluxes
 (
     const scalar& rhoOwn, const scalar& rhoNei,
+    const scalarList& rhoYiOwn,
+    const scalarList& rhoYiNei,
     const vector& UOwn, const vector& UNei,
     const scalar& eOwn, const scalar& eNei,
     const scalar& pOwn, const scalar& pNei,
@@ -118,6 +120,7 @@ void Foam::fluxSchemes::HLLCP::calculateFluxes
     const vector& Sf,
     scalar& phi,
     scalar& rhoPhi,
+    scalarList& rhoPhiYi,
     vector& rhoUPhi,
     scalar& rhoEPhi,
     const label facei, const label patchi
@@ -199,6 +202,10 @@ void Foam::fluxSchemes::HLLCP::calculateFluxes
         // this->save(facei, patchi, UOwn, Uf_);
         phi = UvOwn;
         rhoPhi = rhoOwn*UvOwn;
+        forAll(rhoPhiYi,i)
+        {
+            rhoPhiYi[i] = rhoYiOwn[i]*UvOwn;
+        }
         rhoUPhi = rhoUPhiOwn;
         rhoEPhi = rhoEPhiOwn;
         p = pOwn;
@@ -218,6 +225,10 @@ void Foam::fluxSchemes::HLLCP::calculateFluxes
         phi = SStar*(SOwn - UvOwn)/dS;
 
         rhoPhi = phi*rhoOwn + phip;
+        forAll(rhoPhiYi,i)
+        {
+            rhoPhiYi[i] = (phi*rhoOwn+ phip)*(rhoYiOwn[i]/rhoOwn);
+        }
         rhoUPhi =
             (
                 SStar*(SOwn*rhoUOwn - rhoUPhiOwn) + SOwn*pStarStarStar*normal
@@ -242,6 +253,10 @@ void Foam::fluxSchemes::HLLCP::calculateFluxes
         // );
         phi = SStar*(SNei - UvNei)/dS;
         rhoPhi = phi*rhoNei + phip;
+        forAll(rhoPhiYi,i)
+        {
+            rhoPhiYi[i] = (phi*rhoNei+ phip)*(rhoYiNei[i]/rhoNei);
+        }
         rhoUPhi =
             (
                 SStar*(SNei*rhoUNei - rhoUPhiNei) + SNei*pStarStarStar*normal
@@ -257,6 +272,10 @@ void Foam::fluxSchemes::HLLCP::calculateFluxes
         // this->save(facei, patchi, UNei, Uf_);
         phi = UvNei;
         rhoPhi = rhoNei*UvNei;
+        forAll(rhoPhiYi,i)
+        {
+            rhoPhiYi[i] = rhoYiNei[i]*UvNei;
+        }
         rhoUPhi = rhoUPhiNei;
         rhoEPhi = rhoEPhiNei;
         p = pNei;
@@ -264,6 +283,10 @@ void Foam::fluxSchemes::HLLCP::calculateFluxes
 
     phi *= magSf;
     rhoPhi *= magSf;
+    forAll(rhoPhiYi,i)
+    {
+        rhoPhiYi[i] *= magSf;
+    }
     rhoUPhi *= magSf;
     rhoEPhi *= magSf;
     rhoEPhi += meshPhi(facei, patchi)*p;

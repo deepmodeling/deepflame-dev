@@ -70,6 +70,8 @@ void Foam::fluxSchemes::HLLC::createSavedFields()
 void Foam::fluxSchemes::HLLC::calculateFluxes
 (
     const scalar& rhoOwn, const scalar& rhoNei,
+    const scalarList& rhoYiOwn,
+    const scalarList& rhoYiNei,
     const vector& UOwn, const vector& UNei,
     const scalar& eOwn, const scalar& eNei,
     const scalar& pOwn, const scalar& pNei,
@@ -77,6 +79,7 @@ void Foam::fluxSchemes::HLLC::calculateFluxes
     const vector& Sf,
     scalar& phi,
     scalar& rhoPhi,
+    scalarList& rhoPhiYi,
     vector& rhoUPhi,
     scalar& rhoEPhi,
     const label facei, const label patchi
@@ -142,6 +145,10 @@ void Foam::fluxSchemes::HLLC::calculateFluxes
         // this->save(facei, patchi, UOwn, Uf_);
         phi = UvOwn;
         rhoPhi = rhoOwn*UvOwn;
+        forAll(rhoPhiYi,i)
+        {
+            rhoPhiYi[i] = rhoYiOwn[i]*UvOwn;
+        }
         p = pOwn;
         rhoUPhi = rhoUPhiOwn;
         rhoEPhi = rhoEPhiOwn;
@@ -160,6 +167,10 @@ void Foam::fluxSchemes::HLLC::calculateFluxes
         // );
         phi = SStar;
         rhoPhi = phi*rhoOwn*(SOwn - UvOwn)/dS;
+        forAll(rhoPhiYi,i)
+        {
+            rhoPhiYi[i] = phi*rhoYiOwn[i]*(SOwn - UvOwn)/dS;
+        }
         p = 0.5*(pStarNei + pStarOwn);
         rhoUPhi =
             (SStar*(SOwn*rhoUOwn - rhoUPhiOwn) + SOwn*pStarOwn*normal)/dS;
@@ -179,6 +190,10 @@ void Foam::fluxSchemes::HLLC::calculateFluxes
         // );
         phi = SStar;
         rhoPhi = phi*rhoNei*(SNei - UvNei)/dS;
+        forAll(rhoPhiYi,i)
+        {
+            rhoPhiYi[i] = phi*rhoYiNei[i]*(SNei - UvNei)/dS;
+        }
         p = 0.5*(pStarNei + pStarOwn);
         rhoUPhi =
             (SStar*(SNei*rhoUNei - rhoUPhiNei) + SNei*pStarNei*normal)/dS;
@@ -189,12 +204,20 @@ void Foam::fluxSchemes::HLLC::calculateFluxes
         // this->save(facei, patchi, UNei, Uf_);
         phi = UvNei;
         rhoPhi = rhoNei*UvNei;
+        forAll(rhoPhiYi,i)
+        {
+            rhoPhiYi[i] = rhoYiNei[i]*UvNei;
+        }
         p = pNei;
         rhoUPhi = rhoUPhiNei;
         rhoEPhi = rhoEPhiNei;
     }
     phi *= magSf;
     rhoPhi *= magSf;
+    forAll(rhoPhiYi,i)
+    {
+        rhoPhiYi[i] *= magSf;
+    }
     rhoUPhi *= magSf;
     rhoEPhi *= magSf;
     rhoEPhi += vMesh*magSf*p;

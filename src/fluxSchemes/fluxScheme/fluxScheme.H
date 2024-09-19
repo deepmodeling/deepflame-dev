@@ -82,6 +82,8 @@ protected:
         virtual void calculateFluxes
         (
             const scalar& rhoOwn, const scalar& rhoNei,
+            const scalarList& rhoYiOwn, 
+            const scalarList& rhoYiNei,
             const vector& UOwn, const vector& UNei,
             const scalar& eOwn, const scalar& eNei,
             const scalar& pOwn, const scalar& pNei,
@@ -89,6 +91,7 @@ protected:
             const vector& Sf,
             scalar& phi,
             scalar& rhoPhi,
+            scalarList& rhoPhiYi,
             vector& rhoUPhi,
             scalar& rhoEPhi,
             const label facei, const label patchi = -1
@@ -177,12 +180,15 @@ public:
         void update
         (
             const volScalarField& rho,
+            const PtrList<volScalarField>& rhoYi,
+            const scalar& nspecies,
             const volVectorField& U,
             const volScalarField& e,
             const volScalarField& p,
             const volScalarField& c,
             surfaceScalarField& phi,
             surfaceScalarField& rhoPhi,
+            PtrList<surfaceScalarField>& rhoPhiYi,
             surfaceVectorField& rhoUPhi,
             surfaceScalarField& rhoEPhi
         );
