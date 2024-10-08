@@ -71,6 +71,7 @@ Description
 // #define TIME
 #define DEBUG_
 // #define SHOW_MEMINFO
+// #define OPENCC
 
 #define iscsr // true -> csr, false -> ell
 
@@ -100,6 +101,10 @@ Description
     #include "limitedSurfaceInterpolationScheme.H"
     int myRank = -1;
     int mpi_init_flag = 0;
+#endif
+
+#ifdef OPENCC
+    #include "opencc.h"
 #endif
 
 int offset;
@@ -139,6 +144,9 @@ int main(int argc, char *argv[])
     #include "createDyMControls.H"
     #include "initContinuityErrs.H"
     #include "createFields.H"
+#ifdef OPENCC
+    #include "createFields_GPU.H"
+#endif
     #include "createRhoUfIfPresent.H"
 
     double time_monitor_init = 0;
@@ -265,6 +273,9 @@ int main(int argc, char *argv[])
     // DF-A: SET LINEAR SOLVER CONFIGS
     bool setRAS = (turbName == "RAS");
     createGPUSolver(solversDict, CanteraTorchProperties, rho, U, p, Y, thermo.he(), setRAS); 
+
+    // DF-A: SET CHEMISTRY SOLVER CONFIGS
+    createChemistrySolver(4096, 500); // (batch_size, unReactT)
 
     IOdictionary fvSchemesDict
     (
