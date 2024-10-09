@@ -1,6 +1,16 @@
 #include <queue>
 #include "CSRGAMGAgglomeration.H"
 #include "ELLGAMGAgglomeration.H"
+#include "mpi.h"
+
+#define checkMpiErrors(cmd) do {                          \
+  int e = cmd;                                      \
+  if( e != MPI_SUCCESS ) {                          \
+    printf("Failed: MPI error %s:%d '%d'\n",        \
+        __FILE__,__LINE__, e);   \
+    exit(EXIT_FAILURE);                             \
+  }                                                 \
+} while(0)
 
 #define PARALLEL_
 #define iscsr
@@ -123,7 +133,7 @@ void constructBoundarySelectorPerPatch(int *patchTypeSelector, const std::string
         {"nutkWallFunction", nutkWallFunction},
         {"epsilonWallFunction", epsilonWallFunction},
         {"kqRWallFunction", kqRWallFunction},
-        {"alphatWallFunction", alphatWallFunction},
+        {"compressible::alphatWallFunction", alphatWallFunction},
     };
     auto iter = BCMap.find(patchTypeStr);
     if (iter != BCMap.end()) {
@@ -652,7 +662,7 @@ void createGPUSolver(const dictionary solversDict, const IOdictionary& CanteraTo
     string UEqnSettingPath = "";
     string pEqnSettingPath = "";
 
-    bool useAMGX = false;
+    bool useAMGX = true;
     if (useAMGX)
     {
         UEqnSettingPath = CanteraTorchProperties.subDict("AmgxSettings").lookupOrDefault("UEqnSettingPath", string(""));
@@ -754,15 +764,20 @@ void createGPUSchemesInput(const dictionary schemesControls, fvSchemes_para sche
         schemes_para.divSchemes_phi_k = static_cast<INTERPOLATION_SCHEME>(divSchemes_phi_kInt);
         std::cout << "    == Schemes setting [divSchemes div(phi,k)]: " << divSchemes_phi_k << ", " << divSchemes_phi_kInt << std::endl;
 
-        string divSchemes_hDiffCorrFlux = getFullSchemesName(divSchemesDict, "div(hDiffCorrFlux)");
-        int divSchemes_hDiffCorrFluxInt = getIntSchemes(divSchemes_hDiffCorrFlux);
-        schemes_para.divSchemes_hDiffCorrFlux = static_cast<INTERPOLATION_SCHEME>(divSchemes_hDiffCorrFluxInt);
-        std::cout << "    == Schemes setting [divSchemes div(hDiffCorrFlux)]: " << divSchemes_hDiffCorrFlux << ", " << divSchemes_hDiffCorrFluxInt << std::endl;
+        string divSchemes_phi_epsilon = getFullSchemesName(divSchemesDict, "div(phi,epsilon)");
+        int divSchemes_phi_epsInt = getIntSchemes(divSchemes_phi_epsilon);
+        schemes_para.divSchemes_phi_epsilon = static_cast<INTERPOLATION_SCHEME>(divSchemes_phi_epsInt);
+        std::cout << "    == Schemes setting [divSchemes div(phi,k)]: " << divSchemes_phi_epsilon << ", " << divSchemes_phi_epsInt << std::endl;
 
-        string divSchemes_rho_nuEff = getFullSchemesName(divSchemesDict, "div(((rho*nuEff)*dev2(T(grad(U)))))");
-        int divSchemes_rho_nuEffInt = getIntSchemes(divSchemes_rho_nuEff);
-        schemes_para.divSchemes_rho_nuEff = static_cast<INTERPOLATION_SCHEME>(divSchemes_rho_nuEffInt);
-        std::cout << "    == Schemes setting [divSchemes div(((rho*nuEff)*dev2(T(grad(U)))))]: " << divSchemes_rho_nuEff << ", " << divSchemes_rho_nuEffInt << std::endl;
+        // string divSchemes_hDiffCorrFlux = getFullSchemesName(divSchemesDict, "div(hDiffCorrFlux)");
+        // int divSchemes_hDiffCorrFluxInt = getIntSchemes(divSchemes_hDiffCorrFlux);
+        // schemes_para.divSchemes_hDiffCorrFlux = static_cast<INTERPOLATION_SCHEME>(divSchemes_hDiffCorrFluxInt);
+        // std::cout << "    == Schemes setting [divSchemes div(hDiffCorrFlux)]: " << divSchemes_hDiffCorrFlux << ", " << divSchemes_hDiffCorrFluxInt << std::endl;
+
+        // string divSchemes_rho_nuEff = getFullSchemesName(divSchemesDict, "div(((rho*nuEff)*dev2(T(grad(U)))))");
+        // int divSchemes_rho_nuEffInt = getIntSchemes(divSchemes_rho_nuEff);
+        // schemes_para.divSchemes_rho_nuEff = static_cast<INTERPOLATION_SCHEME>(divSchemes_rho_nuEffInt);
+        // std::cout << "    == Schemes setting [divSchemes div(((rho*nuEff)*dev2(T(grad(U)))))]: " << divSchemes_rho_nuEff << ", " << divSchemes_rho_nuEffInt << std::endl;
     }
 
     set_schemes(schemes_para);
@@ -1111,6 +1126,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     std::vector<int> patch_type_calculated(num_patches, 5); // default patch type is calculated
     std::vector<int> patch_type_extropolated(num_patches, 8); // default patch type is extrapolated
 
+    bool wedgeDataMalloc = false;
     int offset = 0;
     forAll(mesh.boundary(), patchi) {
         const fvPatchScalarField& patchY = Y[0].boundaryField()[patchi];
@@ -1196,6 +1212,37 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
 
             offset += patchsize;
         }
+
+        if (patchY.type() == "wedge")
+        {
+            patch_type[patchi] = 13;
+            patch_type_calculated[patchi] = 13; // patchi type is wedge
+            patch_type_extropolated[patchi] = 13; // patchi type is wedge
+            if (!wedgeDataMalloc) 
+            {
+                mesh_paras.faceT = new double[num_patches * 9]();
+                mesh_paras.cellT = new double[num_patches * 9]();
+                wedgeDataMalloc = true;
+            }
+            std::cout << "wedge type patchi: " << patchi << std::endl;
+
+            const tensor& faceT_ = dynamic_cast<const wedgeFvPatch&>(patchY.patch()).faceT();
+            Info << "faceT: " << faceT_ << endl;
+
+            const tensor& cellT_ = dynamic_cast<const wedgeFvPatch&>(patchY.patch()).cellT();
+            Info << "cellT: " << cellT_ << endl;
+
+            memcpy(mesh_paras.faceT + patchi * 9, &faceT_[0], 9 * sizeof(double));
+            memcpy(mesh_paras.cellT + patchi * 9, &cellT_[0], 9 * sizeof(double));
+        }
+        if (patchY.type() == "empty")
+        {
+            patch_type[patchi] = 3;
+            patch_type_calculated[patchi] = 3; // patchi type is empty
+            patch_type_extropolated[patchi] = 3; // patchi type is empty            
+        }
+
+        Info << "patchName: " << patchY.patch().name() << endl;
     }
 
     // construct mesh distance for limitedLinear scheme
@@ -1788,21 +1835,46 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
     const volScalarField::Boundary& bf = epsilon.boundaryField();
 
     double *h_boundary_yDist = new double[mesh_paras.num_boundary_surfaces];
+    double *h_boundary_nut = new double[mesh_paras.num_boundary_surfaces];
+    double *h_boundary_alphat = new double[mesh_paras.num_boundary_surfaces];
+    double *h_boundary_k = new double[mesh_paras.num_boundary_surfaces];
+    double *h_boundary_epsilon = new double[mesh_paras.num_boundary_surfaces];
     int offset = 0;
     forAll(bf, patchi)
     {
         const fvPatchScalarField& patchyDist = yDist[patchi];
+        const fvPatchScalarField& patchyNut = nut.boundaryField()[patchi];
+        const fvPatchScalarField& patchyAlphat = alphat.boundaryField()[patchi];
+        const fvPatchScalarField& patchyk = k.boundaryField()[patchi];
+        const fvPatchScalarField& patchyEps = epsilon.boundaryField()[patchi];
         int patchsize = patchyDist.size();
         if (patchyDist.type() == "processor"
             || patchyDist.type() == "processorCyclic") {
             memcpy(h_boundary_yDist + offset, &patchyDist[0], patchsize * sizeof(double));
-            scalarField patchPInternal = 
-                    dynamic_cast<const processorFvPatchField<scalar>&>(patchyDist).patchInternalField()();
-            memcpy(h_boundary_yDist + offset + patchsize, &patchPInternal[0], patchsize * sizeof(double));
+            memcpy(h_boundary_nut + offset, &patchyNut[0], patchsize * sizeof(double));
+            memcpy(h_boundary_alphat + offset, &patchyAlphat[0], patchsize * sizeof(double));
+            memcpy(h_boundary_k + offset, &patchyk[0], patchsize * sizeof(double));
+            memcpy(h_boundary_epsilon + offset, &patchyEps[0], patchsize * sizeof(double));
+
+            scalarField patchyDistInternal = dynamic_cast<const processorFvPatchField<scalar>&>(patchyDist).patchInternalField()();
+            scalarField patchNutInternal = dynamic_cast<const processorFvPatchField<scalar>&>(patchyNut).patchInternalField()();
+            scalarField patchAlphatInternal = dynamic_cast<const processorFvPatchField<scalar>&>(patchyAlphat).patchInternalField()();
+            scalarField patchKInternal = dynamic_cast<const processorFvPatchField<scalar>&>(patchyk).patchInternalField()();
+            scalarField patchEpsInternal = dynamic_cast<const processorFvPatchField<scalar>&>(patchyEps).patchInternalField()();
+
+            memcpy(h_boundary_yDist + offset + patchsize, &patchyDistInternal[0], patchsize * sizeof(double));
+            memcpy(h_boundary_nut + offset + patchsize, &patchNutInternal[0], patchsize * sizeof(double));
+            memcpy(h_boundary_alphat + offset + patchsize, &patchAlphatInternal[0], patchsize * sizeof(double));
+            memcpy(h_boundary_k + offset + patchsize, &patchKInternal[0], patchsize * sizeof(double));
+            memcpy(h_boundary_epsilon + offset + patchsize, &patchEpsInternal[0], patchsize * sizeof(double));
 
             offset += patchsize * 2;
         } else {
             memcpy(h_boundary_yDist + offset, &patchyDist[0], patchsize * sizeof(double));
+            memcpy(h_boundary_nut + offset, &patchyNut[0], patchsize * sizeof(double));
+            memcpy(h_boundary_alphat + offset, &patchyAlphat[0], patchsize * sizeof(double));
+            memcpy(h_boundary_k + offset, &patchyk[0], patchsize * sizeof(double));
+            memcpy(h_boundary_epsilon + offset, &patchyEps[0], patchsize * sizeof(double));
             offset += patchsize;
         }
     }
@@ -1872,7 +1944,7 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
             memcpy(h_boundary_cornerWeights + offset, &patchycornerWeights[0], patchsize * sizeof(double));
             offset += patchsize;
         }
-        if (bf[patchi].type() == "processor"
+        else if (bf[patchi].type() == "processor"
             || bf[patchi].type() == "processorCyclic") {
             offset += patchsize * 2;
         } else {
@@ -1880,13 +1952,26 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
         }
     }
 
-    double intensity = 0.0628; 
-    double mixingLength = 0.000735; 
     double E = 9.8;
     double kappa = 0.41; 
     double Cmu = 0.09;
 
+    double *intensity = new double[mesh_paras.num_patches]();
+    double *mixingLength = new double[mesh_paras.num_patches]();
+
+    // NOTICE: only for case [SandiaD_LTS] - start
+    std::cout << "only for case [SandiaD_LTS] boundary setting" << std::endl;
+    intensity[3] = 0.0628; // inletPilot
+    intensity[4] = 0.0471; // inletAir
+    intensity[0] = 0.0458; // inletCH4
+
+    mixingLength[3] = 0.000735;
+    mixingLength[4] = 0.019677;
+    mixingLength[0] = 0.000504;
+    // NOTICE: only for case [SandiaD_LTS] - end
+
     init_turbulence(useTurbulence, useTCI, static_cast<LES_TURBULENCE_MODEL>(LESModelTypeInt), static_cast<RAS_TURBULENCE_MODEL>(RASModelTypeInt), 
                     patch_type_nut.data(), patch_type_alphat.data(), patch_type_k.data(), patch_type_epsilon.data(), &k[0], &epsilon[0],
+                    h_boundary_nut, h_boundary_alphat, h_boundary_k, h_boundary_epsilon,
                     h_boundary_yDist, h_boundary_cornerWeights, intensity, mixingLength, E, kappa, Cmu);
 }

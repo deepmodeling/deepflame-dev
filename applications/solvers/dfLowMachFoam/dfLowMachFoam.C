@@ -73,13 +73,15 @@ Description
 // #define SHOW_MEMINFO
 
 #define iscsr // true -> csr, false -> ell
+#define DEBUG_TRACE fprintf(stderr, "myRank[%d] %s %d\n", myRank, __FILE__, __LINE__);
 
 
 #ifdef GPUSolverNew_
-    #include "AmgXSolver.H"
-    #include "dfNcclBase.H"
-    #include "dfThermo.H"
-    #include "dfChemistrySolver.H"
+    #include "GenFvMatrix.H"
+    // #include "AmgXSolver.H"
+    // #include "dfNcclBase.H"
+    // #include "dfThermo.H"
+    // #include "dfChemistrySolver.H"
     #include <cuda_runtime.h>
     #include <thread>
 
@@ -88,6 +90,8 @@ Description
     #include "processorCyclicFvPatchField.H"
     #include "totalPressureFvPatchScalarField.H"
     #include "epsilonWallFunctionFvPatchScalarField.H"
+    #include "wedgeFvPatch.H"
+    #include "wedgeFvPatchField.H"
     #include "createGPUSolver.H"
 
     #include "upwind.H"
@@ -477,6 +481,39 @@ int main(int argc, char *argv[])
                     writeDoubleArrayToFile(&turbulence->nut()()[0], mesh_paras.num_cells, "turb_kEpsilon_nut.host", compareCPUResults);
                     writeDoubleArrayToFile(&turbulence->mut()()[0], mesh_paras.num_cells, "turb_kEpsilon_mut.host", compareCPUResults);
                     writeDoubleArrayToFile(&turbulence->alphat()()[0], mesh_paras.num_cells, "turb_kEpsilon_alphat.host", compareCPUResults);
+
+                    int offset = 0;
+                    double *h_boundary_nut = new double[mesh_paras.num_boundary_surfaces]();
+                    double *h_boundary_alphat = new double[mesh_paras.num_boundary_surfaces]();
+                    double *h_boundary_mut = new double[mesh_paras.num_boundary_surfaces]();
+                    double *h_boundary_k = new double[mesh_paras.num_boundary_surfaces]();
+                    double *h_boundary_epsilon = new double[mesh_paras.num_boundary_surfaces]();
+                    forAll(turbulence->nut()().boundaryField(), patchi)
+                    {
+                        const fvsPatchScalarField& patchFlux = phi.boundaryField()[patchi];
+                        int patchsize = mesh_paras.patch_size[patchi];
+
+                        Field<scalar> bouNut = turbulence->nut()().boundaryField()[patchi];
+                        Field<scalar> bouAlphat = turbulence->alphat()().boundaryField()[patchi]; 
+                        Field<scalar> bouMut = turbulence->mut()().boundaryField()[patchi]; 
+                        Field<scalar> bouK = turbulence->k()().boundaryField()[patchi]; 
+                        Field<scalar> bouEps = turbulence->epsilon()().boundaryField()[patchi]; 
+
+                        memcpy(h_boundary_nut + offset, bouNut.data(), patchsize * sizeof(double));
+                        memcpy(h_boundary_alphat + offset, bouAlphat.data(), patchsize * sizeof(double));
+                        memcpy(h_boundary_mut + offset, bouMut.data(), patchsize * sizeof(double));
+                        memcpy(h_boundary_k + offset, bouK.data(), patchsize * sizeof(double));
+                        memcpy(h_boundary_epsilon + offset, bouEps.data(), patchsize * sizeof(double));
+
+                        if (patchFlux.type() == "processor" || patchFlux.type() == "processorCyclic") offset += 2 * patchsize;
+                        else offset += patchsize;
+                    }
+                    writeDoubleArrayToFile(h_boundary_nut, mesh_paras.num_boundary_surfaces, "turb_kEpsilon_boundary_nut.host", compareCPUResults);
+                    writeDoubleArrayToFile(h_boundary_alphat, mesh_paras.num_boundary_surfaces, "turb_kEpsilon_boundary_alphat.host", compareCPUResults);
+                    writeDoubleArrayToFile(h_boundary_mut, mesh_paras.num_boundary_surfaces, "turb_kEpsilon_boundary_mut.host", compareCPUResults);
+                    writeDoubleArrayToFile(h_boundary_k, mesh_paras.num_boundary_surfaces, "turb_kEpsilon_boundary_k.host", compareCPUResults);
+                    writeDoubleArrayToFile(h_boundary_epsilon, mesh_paras.num_boundary_surfaces, "turb_kEpsilon_boundary_epsilon.host", compareCPUResults);
+
                     #endif
 
                 #else
