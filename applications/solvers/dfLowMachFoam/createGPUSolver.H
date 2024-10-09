@@ -695,6 +695,18 @@ void createGPUSolver(const dictionary solversDict, const IOdictionary& CanteraTo
     }
 }
 
+void createChemistrySolver(int batch_size, double unReactT){
+    
+    /* For DeepFlame_Academic */
+#ifdef OPENCC
+    set_chemistry_solver(OpenCC);
+#else
+    set_chemistry_solver(DNN);
+#endif
+    initialize_chemistry_solver(batch_size, unReactT);
+
+}
+
 string getFullSchemesName(const dictionary schemesDict, string foundSchemes)
 {
     ITstream& its(schemesDict.lookup(foundSchemes));
