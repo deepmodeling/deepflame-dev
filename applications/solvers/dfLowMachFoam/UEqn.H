@@ -43,50 +43,97 @@
     writeDoubleArrayToFile(&turbulence->alphat()()[0], mesh_paras.num_cells, "turb_alphat.host", compareCPUResults);
     writeDoubleArrayToFile(&turbulence->mut()()[0], mesh_paras.num_cells, "turb_mut.host", compareCPUResults);
 
+    volScalarField& nutField = const_cast<volScalarField&>(turbulence->nut()());
+    nutField.correctBoundaryConditions();
 
-    // double *h_value_internal_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
-    // double *h_value_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
-    // double *h_gradient_internal_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
-    // double *h_gradient_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
+    volScalarField& alphatField = const_cast<volScalarField&>(turbulence->alphat()());
+    alphatField.correctBoundaryConditions();
 
-    // offset = 0;
-    // forAll(U.boundaryField(), patchi)
-    // {
-    //     const fvsPatchScalarField& patchFlux = phi.boundaryField()[patchi];
-    //     const fvsPatchScalarField& pw = mesh.surfaceInterpolation::weights().boundaryField()[patchi];
-    //     const scalarField& pDeltaCoeffs = mesh.deltaCoeffs().boundaryField()[patchi];
-    //     int patchsize = mesh_paras.patch_size[patchi];
+    int offset = 0;
+    double *h_boundary_nut = new double[mesh_paras.num_boundary_surfaces]();
+    double *h_boundary_alphat = new double[mesh_paras.num_boundary_surfaces]();
+    double *h_boundary_mut = new double[mesh_paras.num_boundary_surfaces]();
+    forAll(turbulence->nut()().boundaryField(), patchi)
+    {
+        Info << "patchi: " << patchi << ", nut type: " << turbulence->nut()().boundaryField()[patchi].type() << endl;
+        Info << "patchi: " << patchi << ", alphat type: " << turbulence->alphat()().boundaryField()[patchi].type() << endl;
+        Info << "patchi: " << patchi << ", mut type: " << turbulence->mut()().boundaryField()[patchi].type() << endl;
 
-    //     // Field<vector> ueqn_internalCoeffs_vec = patchFlux*U.boundaryField()[patchi].valueInternalCoeffs(pw);
-    //     // Field<vector> ueqn_boundaryCoeffs_vec = -patchFlux*U.boundaryField()[patchi].valueBoundaryCoeffs(pw); 
+        const fvsPatchScalarField& patchFlux = phi.boundaryField()[patchi];
+        int patchsize = mesh_paras.patch_size[patchi];
 
-    //     Field<vector> ueqn_internalCoeffs_vec = U.boundaryField()[patchi].valueInternalCoeffs(pw);
-    //     Field<vector> ueqn_boundaryCoeffs_vec = U.boundaryField()[patchi].valueBoundaryCoeffs(pw); 
-    //     Field<vector> ueqn_laplac_internalCoeffs_vec = U.boundaryField()[patchi].gradientInternalCoeffs();
-    //     Field<vector> ueqn_laplac_boundaryCoeffs_vec = U.boundaryField()[patchi].gradientBoundaryCoeffs();
+        Field<scalar> bouNut = turbulence->nut()().boundaryField()[patchi];
+        // Field<scalar> bouNut = nutField.boundaryField()[patchi];
+        Field<scalar> bouAlphat = turbulence->alphat()().boundaryField()[patchi]; 
+        // Field<scalar> bouAlphat = alphatField.boundaryField()[patchi]; 
+        Field<scalar> bouMut = turbulence->mut()().boundaryField()[patchi]; 
 
-    //     memcpy(h_value_internal_coeffs + offset * 3, ueqn_internalCoeffs_vec.data(), patchsize * 3 * sizeof(double));
-    //     memcpy(h_value_boundary_coeffs + offset * 3, ueqn_boundaryCoeffs_vec.data(), patchsize * 3 * sizeof(double));
-    //     memcpy(h_gradient_internal_coeffs + offset * 3, ueqn_laplac_internalCoeffs_vec.data(), patchsize * 3 * sizeof(double));
-    //     memcpy(h_gradient_boundary_coeffs + offset * 3, ueqn_laplac_boundaryCoeffs_vec.data(), patchsize * 3 * sizeof(double));
+        memcpy(h_boundary_nut + offset, bouNut.data(), patchsize * sizeof(double));
+        memcpy(h_boundary_alphat + offset, bouAlphat.data(), patchsize * sizeof(double));
+        memcpy(h_boundary_mut + offset, bouMut.data(), patchsize * sizeof(double));
 
-    //     if (patchFlux.type() == "processor" || patchFlux.type() == "processorCyclic") offset += 2 * patchsize;
-    //     else offset += patchsize;
-    // }
+        if (patchFlux.type() == "processor" || patchFlux.type() == "processorCyclic") offset += 2 * patchsize;
+        else offset += patchsize;
 
-    // double *d_value_internal_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
-    // double *d_value_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
-    // double *d_gradient_internal_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
-    // double *d_gradient_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
-    // permuteVector(d_value_internal_coeffs, &h_value_internal_coeffs[0], mesh_paras.num_boundary_surfaces);
-    // permuteVector(d_value_boundary_coeffs, &h_value_boundary_coeffs[0], mesh_paras.num_boundary_surfaces);
-    // permuteVector(d_gradient_internal_coeffs, &h_gradient_internal_coeffs[0], mesh_paras.num_boundary_surfaces);
-    // permuteVector(d_gradient_boundary_coeffs, &h_gradient_boundary_coeffs[0], mesh_paras.num_boundary_surfaces);
+    }
+    writeDoubleArrayToFile(h_boundary_nut, mesh_paras.num_boundary_surfaces, "boundary_nut.host", compareCPUResults);
+    writeDoubleArrayToFile(h_boundary_alphat, mesh_paras.num_boundary_surfaces, "boundary_alphat.host", compareCPUResults);
+    writeDoubleArrayToFile(h_boundary_mut, mesh_paras.num_boundary_surfaces, "boundary_mut.host", compareCPUResults);
 
-    // writeDoubleArrayToFile(d_value_internal_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_value_internal_coeffs.host", compareCPUResults);
-    // writeDoubleArrayToFile(d_value_boundary_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_value_boundary_coeffs.host", compareCPUResults);
-    // writeDoubleArrayToFile(d_gradient_internal_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_gradient_internal_coeffs.host", compareCPUResults);
-    // writeDoubleArrayToFile(d_gradient_boundary_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_gradient_boundary_coeffs.host", compareCPUResults);
+    double *h_value_internal_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
+    double *h_value_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
+    double *h_gradient_internal_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
+    double *h_gradient_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
+
+    offset = 0;
+
+    forAll(U.boundaryField(), patchi)
+    {
+        Info << "patchi: " << patchi << ", offset: " << offset << endl;
+        // if (U.boundaryField()[patchi].type() == "wedge")
+        // {
+        //     vectorField snGradTransformDiag_ = dynamic_cast<const wedgeFvPatchField<vector>&>(U.boundaryField()[patchi]).snGradTransformDiag();
+        //     Info << "snGradTransformDiag_: " << snGradTransformDiag_ << endl;
+
+        //     vectorField snGrad_ = dynamic_cast<const wedgeFvPatchField<vector>&>(U.boundaryField()[patchi]).snGrad();
+        //     Info << "snGrad_: " << snGrad_ << endl;
+        // }
+
+        const fvsPatchScalarField& patchFlux = phi.boundaryField()[patchi];
+        const fvsPatchScalarField& pw = mesh.surfaceInterpolation::weights().boundaryField()[patchi];
+        const scalarField& pDeltaCoeffs = mesh.deltaCoeffs().boundaryField()[patchi];
+        int patchsize = mesh_paras.patch_size[patchi];
+
+        // Field<vector> ueqn_internalCoeffs_vec = patchFlux*U.boundaryField()[patchi].valueInternalCoeffs(pw);
+        // Field<vector> ueqn_boundaryCoeffs_vec = -patchFlux*U.boundaryField()[patchi].valueBoundaryCoeffs(pw); 
+
+        Field<vector> ueqn_internalCoeffs_vec = U.boundaryField()[patchi].valueInternalCoeffs(pw);
+        Field<vector> ueqn_boundaryCoeffs_vec = U.boundaryField()[patchi].valueBoundaryCoeffs(pw); 
+        Field<vector> ueqn_laplac_internalCoeffs_vec = U.boundaryField()[patchi].gradientInternalCoeffs();
+        Field<vector> ueqn_laplac_boundaryCoeffs_vec = U.boundaryField()[patchi].gradientBoundaryCoeffs();
+
+        memcpy(h_value_internal_coeffs + offset * 3, ueqn_internalCoeffs_vec.data(), patchsize * 3 * sizeof(double));
+        memcpy(h_value_boundary_coeffs + offset * 3, ueqn_boundaryCoeffs_vec.data(), patchsize * 3 * sizeof(double));
+        memcpy(h_gradient_internal_coeffs + offset * 3, ueqn_laplac_internalCoeffs_vec.data(), patchsize * 3 * sizeof(double));
+        memcpy(h_gradient_boundary_coeffs + offset * 3, ueqn_laplac_boundaryCoeffs_vec.data(), patchsize * 3 * sizeof(double));
+
+        if (patchFlux.type() == "processor" || patchFlux.type() == "processorCyclic") offset += 2 * patchsize;
+        else offset += patchsize;
+    }
+
+    double *d_value_internal_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
+    double *d_value_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
+    double *d_gradient_internal_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
+    double *d_gradient_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces * 3]();
+    permuteVector(d_value_internal_coeffs, &h_value_internal_coeffs[0], mesh_paras.num_boundary_surfaces);
+    permuteVector(d_value_boundary_coeffs, &h_value_boundary_coeffs[0], mesh_paras.num_boundary_surfaces);
+    permuteVector(d_gradient_internal_coeffs, &h_gradient_internal_coeffs[0], mesh_paras.num_boundary_surfaces);
+    permuteVector(d_gradient_boundary_coeffs, &h_gradient_boundary_coeffs[0], mesh_paras.num_boundary_surfaces);
+
+    writeDoubleArrayToFile(d_value_internal_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_value_internal_coeffs.host", compareCPUResults);
+    writeDoubleArrayToFile(d_value_boundary_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_value_boundary_coeffs.host", compareCPUResults);
+    writeDoubleArrayToFile(d_gradient_internal_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_gradient_internal_coeffs.host", compareCPUResults);
+    writeDoubleArrayToFile(d_gradient_boundary_coeffs, mesh_paras.num_boundary_surfaces * 3, "d_gradient_boundary_coeffs.host", compareCPUResults);
 
     // add for test
     double *diag = &UEqn.diag()[0];
@@ -103,6 +150,8 @@
 
 
     volTensorField gradU = fvc::grad(U);
+
+    // volTensorField gradU = gaussGradSchemeGrad(U);
 
     double *gradU_newOrder = new double[mesh_paras.num_cells*9]();
     permuteTensor(gradU_newOrder, &gradU[0][0], mesh_paras.num_cells);

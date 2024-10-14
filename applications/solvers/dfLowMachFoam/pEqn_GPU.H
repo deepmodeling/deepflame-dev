@@ -169,10 +169,10 @@
             else offset += patchsize;
         }
 
-        writeDoubleArrayToFile(h_value_internal_coeffs, mesh_paras.num_boundary_surfaces, "p_value_internal_coeffs.host", compareCPUResults);
-        writeDoubleArrayToFile(h_value_boundary_coeffs, mesh_paras.num_boundary_surfaces, "p_value_boundary_coeffs.host", compareCPUResults);
-        writeDoubleArrayToFile(h_gradient_internal_coeffs, mesh_paras.num_boundary_surfaces, "p_gradient_internal_coeffs.host", compareCPUResults);
-        writeDoubleArrayToFile(h_gradient_boundary_coeffs, mesh_paras.num_boundary_surfaces, "p_gradient_boundary_coeffs.host", compareCPUResults);
+        // writeDoubleArrayToFile(h_value_internal_coeffs, mesh_paras.num_boundary_surfaces, "p_value_internal_coeffs.host", compareCPUResults);
+        // writeDoubleArrayToFile(h_value_boundary_coeffs, mesh_paras.num_boundary_surfaces, "p_value_boundary_coeffs.host", compareCPUResults);
+        // writeDoubleArrayToFile(h_gradient_internal_coeffs, mesh_paras.num_boundary_surfaces, "p_gradient_internal_coeffs.host", compareCPUResults);
+        // writeDoubleArrayToFile(h_gradient_boundary_coeffs, mesh_paras.num_boundary_surfaces, "p_gradient_boundary_coeffs.host", compareCPUResults);
         
         std::cout << "=== start call csr.solve " << std::endl;
 
@@ -330,8 +330,8 @@
     if (!mpi_init_flag || rank == 0) {
         // pEqn_GPU.comparephi(&phi[0], h_boundary_phi, false);
     }
-    writeDoubleArrayToFile(&phi[0], mesh_paras.num_surfaces, "p_correct_phi.host", compareCPUResults);
-    writeDoubleArrayToFile(h_boundary_phi, mesh_paras.num_boundary_surfaces, "p_correct_boundary_phi.host", compareCPUResults);    
+    // writeDoubleArrayToFile(&phi[0], mesh_paras.num_surfaces, "p_correct_phi.host", compareCPUResults);
+    // writeDoubleArrayToFile(h_boundary_phi, mesh_paras.num_boundary_surfaces, "p_correct_boundary_phi.host", compareCPUResults);    
     delete h_boundary_phi;
 #endif
 
