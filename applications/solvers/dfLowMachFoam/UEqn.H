@@ -151,6 +151,8 @@
 
     volTensorField gradU = fvc::grad(U);
 
+    // volTensorField gradU = gaussGradSchemeGrad(U);
+
     double *gradU_newOrder = new double[mesh_paras.num_cells*9]();
     permuteTensor(gradU_newOrder, &gradU[0][0], mesh_paras.num_cells);
     writeDoubleArrayToFile(gradU_newOrder, mesh_paras.num_cells * 9, "U_grad_U.host", compareCPUResults);

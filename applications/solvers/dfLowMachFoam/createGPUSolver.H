@@ -1082,10 +1082,11 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     int num_surfaces = neighbour.size();
     int num_boundary_surfaces = 0;
     int num_patches = 0;
-    std::vector<int> patch_size, patch_offset;
+    std::vector<int> patch_size, patch_offset, patch_start;
     forAll(mesh.boundary(), patchi) 
     {
         patch_offset.push_back(num_boundary_surfaces);
+        patch_start.push_back(mesh.boundary()[patchi].start());
 
         const fvPatchScalarField& patchY = Y[0].boundaryField()[patchi];
         int patchsize = patchY.size();
@@ -1098,6 +1099,43 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
         }
         num_patches++;
     }
+
+    // For manipulate_matrix
+    int nInternalFaces = mesh.nInternalFaces();
+    int *cell2face = new int[num_cells * 6]();
+    forAll(mesh.cells(), celli)
+    {
+        const cell& cFaces = mesh.cells()[celli];
+        int cFaceSize = cFaces.size();
+
+        if (cFaceSize <= 6)
+        {
+            for (int j = 0; j < 6; j++)
+            {
+                if (j < cFaceSize) 
+                {
+                    cell2face[6 * celli + j] = cFaces[j];
+                }
+                else 
+                {
+                    cell2face[6 * celli + j] = -1;
+                }
+            }
+        }
+        else 
+        {
+            std::cout << "Error! Need enlarge cFaceSize (default=6)." << std::endl;
+            abort();
+        }
+    }
+
+    int *face2patch = new int[num_boundary_surfaces]();
+    for(int facei=0; facei < num_boundary_surfaces; facei++) 
+    {
+        int faceIndex = facei + nInternalFaces;
+        face2patch[facei] = mesh.boundaryMesh().whichPatch(faceIndex);
+    }
+
 
     // TODO: get deltaT fomr time API
     double rDeltaT = 1 / 1e-6;
@@ -1287,12 +1325,14 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     
     mesh_paras.patch_size     = new int[num_patches]();
     mesh_paras.patch_offset   = new int[num_patches]();
+    mesh_paras.patch_start    = new int[num_patches]();
     mesh_paras.neighbProcNo   = new int[num_patches]();
     mesh_paras.cyclicNeighbor = new int[num_patches]();
     mesh_paras.interfaceFlag  = new int[num_patches]();
 
     std::copy( patch_size.begin(),      patch_size.end(),      mesh_paras.patch_size );
     std::copy( patch_offset.begin(),    patch_offset.end(),    mesh_paras.patch_offset );
+    std::copy( patch_start.begin(),     patch_start.end(),     mesh_paras.patch_start );
     std::copy( GPUNeighbProcNo.begin(), GPUNeighbProcNo.end(), mesh_paras.neighbProcNo );
     std::copy( cyclicNeighbor.begin(),  cyclicNeighbor.end(),  mesh_paras.cyclicNeighbor );   
     std::copy( interfaceFlag.begin(),   interfaceFlag.end(),   mesh_paras.interfaceFlag ); 
@@ -1308,6 +1348,8 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     mesh_paras.mesh_dis              = new double[num_surfaces*3];
     mesh_paras.sf                    = new double[num_surfaces*3];
 
+    mesh_paras.cell2face             = new int[num_cells*6];
+    mesh_paras.face2patch            = new int[num_boundary_surfaces];
     mesh_paras.boundary_face_cell    = new int[num_boundary_surfaces];
     mesh_paras.boundary_sf           = new double[num_boundary_surfaces*3];
     mesh_paras.boundary_mag_sf       = new double[num_boundary_surfaces];
@@ -1321,6 +1363,8 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     memcpy(mesh_paras.mesh_dis, &meshDistance_newOrder[0], num_surfaces * 3 * sizeof(double));
     memcpy(mesh_paras.sf,       &sf_newOrder[0],           num_surfaces * 3 * sizeof(double));
 
+    memcpy(mesh_paras.cell2face,             &cell2face[0],              num_cells * 6 * sizeof(int));
+    memcpy(mesh_paras.face2patch,            &face2patch[0],             num_boundary_surfaces * sizeof(int));
     memcpy(mesh_paras.boundary_face_cell,    &boundary_face_cell[0],     num_boundary_surfaces * sizeof(int));
     memcpy(mesh_paras.boundary_sf,           &boundary_sf_newOrder[0],   num_boundary_surfaces * 3 * sizeof(double));
     memcpy(mesh_paras.boundary_mag_sf,       &boundary_mag_sf[0],        num_boundary_surfaces * sizeof(double));
@@ -1333,6 +1377,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     delete boundary_delta_coeffs;
     delete boundary_weights;
     delete boundary_face_cell;
+    delete cell2face;
 
     const lduInterfacePtrsList interfaces(mesh.interfaces());
     const lduAddressing& lduAddr = mesh.lduAddr();
