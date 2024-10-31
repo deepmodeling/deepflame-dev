@@ -71,7 +71,7 @@ Description
 // #define TIME
 // #define DEBUG_
 // #define SHOW_MEMINFO
-// #define OPENCC
+#define OPENCC
 
 #define iscsr // true -> csr, false -> ell
 #define DEBUG_TRACE fprintf(stderr, "myRank[%d] %s %d\n", myRank, __FILE__, __LINE__);
@@ -281,7 +281,10 @@ int main(int argc, char *argv[])
     createGPUSolver(solversDict, CanteraTorchProperties, rho, U, p, Y, thermo.he(), setRAS); 
 
     // DF-A: SET CHEMISTRY SOLVER CONFIGS
-    createChemistrySolver(4096, 500); // (batch_size, unReactT)
+    if (chemistry->ifChemstry())
+    {
+        createChemistrySolver(4096, 500); // (batch_size, unReactT)
+    }
 
     IOdictionary fvSchemesDict
     (
@@ -317,10 +320,6 @@ int main(int argc, char *argv[])
 
     DEBUG_TRACE;
 
-    // if (chemistry->ifChemstry())
-    // {
-    //     chemistrySolver_GPU.setConstantValue(mesh_paras.num_cells, init_data.num_species, 4096);
-    // }
 #endif
 
     end1 = std::clock();
@@ -410,12 +409,58 @@ int main(int argc, char *argv[])
                     chemistry->correctThermo(); // reference debug
                     const volScalarField& mu = thermo.mu();
                     const volScalarField& alpha = thermo.alpha();
-                    writeDoubleArrayToFile(&T[0], mesh_paras.num_cells, "d_T.host", compareCPUResults);
-                    writeDoubleArrayToFile(&psi[0], mesh_paras.num_cells, "d_thermo_psi.host", compareCPUResults);
-                    writeDoubleArrayToFile(&thermo.rho()()[0], mesh_paras.num_cells, "d_rho.host"), compareCPUResults;
-                    writeDoubleArrayToFile(&mu[0], mesh_paras.num_cells, "d_mu.host", compareCPUResults);
-                    writeDoubleArrayToFile(&alpha[0], mesh_paras.num_cells, "d_thermo_alpha.host", compareCPUResults);
-                    writeDoubleArrayToFile(&chemistry->rhoD(0)[0], mesh_paras.num_cells, "d_thermo_rhoD.host", compareCPUResults);                    
+                    writeDoubleArrayToFile(&T[0], mesh_paras.num_cells, "thermo_d_T.host", compareCPUResults);
+                    writeDoubleArrayToFile(&psi[0], mesh_paras.num_cells, "thermo_d_thermo_psi.host", compareCPUResults);
+                    writeDoubleArrayToFile(&thermo.rho()()[0], mesh_paras.num_cells, "thermo_d_rho.host", compareCPUResults);
+                    writeDoubleArrayToFile(&mu[0], mesh_paras.num_cells, "thermo_d_mu.host", compareCPUResults);
+                    writeDoubleArrayToFile(&alpha[0], mesh_paras.num_cells, "thermo_d_thermo_alpha.host", compareCPUResults);
+                    writeDoubleArrayToFile(&chemistry->rhoD(0)[0], mesh_paras.num_cells, "thermo_d_thermo_rhoD.host", compareCPUResults);  
+
+                    double *h_boundary_T_tmp = new double[mesh_paras.num_boundary_surfaces];
+                    double *h_boundary_psi_tmp = new double[mesh_paras.num_boundary_surfaces];
+                    double *h_boundary_thermorho_tmp = new double[mesh_paras.num_boundary_surfaces];
+                    double *h_boundary_mu_tmp = new double[mesh_paras.num_boundary_surfaces];
+                    double *h_boundary_alpha_tmp = new double[mesh_paras.num_boundary_surfaces];
+                    double *h_boundary_thermorhoD_tmp = new double[mesh_paras.num_boundary_surfaces];
+                    offset = 0;
+                    forAll(T.boundaryField(), patchi) {
+                        fvPatchScalarField& patchT = const_cast<fvPatchScalarField&>(T.boundaryField()[patchi]);
+                        fvPatchScalarField& patchpsi = const_cast<fvPatchScalarField&>(psi.boundaryField()[patchi]);
+                        fvPatchScalarField& patchrho = const_cast<fvPatchScalarField&>(thermo.rho()().boundaryField()[patchi]);
+                        fvPatchScalarField& patchmu = const_cast<fvPatchScalarField&>(mu.boundaryField()[patchi]);
+                        fvPatchScalarField& patchalpha = const_cast<fvPatchScalarField&>(alpha.boundaryField()[patchi]);
+                        fvPatchScalarField& patchrhoD = const_cast<fvPatchScalarField&>(chemistry->rhoD(0).boundaryField()[patchi]);
+
+                        int patchsize = patchT.size();
+
+                        memcpy(h_boundary_T_tmp + offset, &patchT[0], patchsize * sizeof(double));
+                        memcpy(h_boundary_psi_tmp + offset, &patchpsi[0], patchsize * sizeof(double));
+                        memcpy(h_boundary_thermorho_tmp + offset, &patchrho[0], patchsize * sizeof(double));
+                        memcpy(h_boundary_mu_tmp + offset, &patchmu[0], patchsize * sizeof(double));
+                        memcpy(h_boundary_alpha_tmp + offset, &patchalpha[0], patchsize * sizeof(double));
+                        memcpy(h_boundary_thermorhoD_tmp + offset, &patchrhoD[0], patchsize * sizeof(double));
+
+                        if (patchT.type() == "processor") {
+                            offset += patchsize * 2;
+                        } else {
+                            offset += patchsize;
+                        }
+                    }
+                    writeDoubleArrayToFile(h_boundary_T_tmp, mesh_paras.num_boundary_surfaces, "thermo_d_T_boundary.host", compareCPUResults);
+                    writeDoubleArrayToFile(h_boundary_psi_tmp, mesh_paras.num_boundary_surfaces, "thermo_d_thermo_psi_boundary.host", compareCPUResults);
+                    writeDoubleArrayToFile(h_boundary_thermorho_tmp, mesh_paras.num_boundary_surfaces, "thermo_d_rho_boundary.host", compareCPUResults);
+
+                    writeDoubleArrayToFile(h_boundary_mu_tmp, mesh_paras.num_boundary_surfaces, "thermo_d_mu_boundary.host", compareCPUResults);
+                    writeDoubleArrayToFile(h_boundary_alpha_tmp, mesh_paras.num_boundary_surfaces, "thermo_d_thermo_alpha_boundary.host", compareCPUResults);
+                    writeDoubleArrayToFile(h_boundary_thermorhoD_tmp, mesh_paras.num_boundary_surfaces, "thermo_d_thermo_rhoD_boundary.host", compareCPUResults);
+
+                    delete h_boundary_T_tmp;   
+                    delete h_boundary_psi_tmp; 
+                    delete h_boundary_thermorho_tmp; 
+                    delete h_boundary_mu_tmp; 
+                    delete h_boundary_alpha_tmp; 
+                    delete h_boundary_thermorhoD_tmp; 
+
                     #endif
                 #else
                     chemistry->correctThermo();
@@ -486,6 +531,14 @@ int main(int argc, char *argv[])
                     #if defined DEBUG_
                     turbulence->correct();
 
+                    // surfaceScalarField surf_k = linearInterpolate(turbulence->k()());
+                    // Field<scalar> sum_magSf = fvc::surfaceSum(mesh.magSf())().primitiveField();
+                    // Field<scalar> averageField = fvc::average(surf_k)().primitiveField();
+
+                    // writeDoubleArrayToFile(&surf_k[0], mesh_paras.num_surfaces, "averageField_surf.host", compareCPUResults);
+                    // writeDoubleArrayToFile(&sum_magSf[0], mesh_paras.num_cells, "averageField_sumSf.host", compareCPUResults);
+                    // writeDoubleArrayToFile(&averageField[0], mesh_paras.num_cells, "averageField.host", compareCPUResults);
+
                     writeDoubleArrayToFile(&turbulence->k()()[0], mesh_paras.num_cells, "turb_k_correct.host", compareCPUResults);
                     writeDoubleArrayToFile(&turbulence->epsilon()()[0], mesh_paras.num_cells, "turb_epsilon_correct.host", compareCPUResults);
 
@@ -548,10 +601,24 @@ int main(int argc, char *argv[])
         #endif
 
         #ifdef GPUSolverNew_
-            copyGPUResults2Host(mesh_paras, U, T, Y);
+            copyGPUResults2Host(mesh_paras, U, T, Y, rho, phi);
         #endif
 
         runTime.write();
+
+        Info<< "========Write Min/Max Info========"<< endl;
+        Info<< "min/max(rho) = " << min(rho).value() << ", " << max(rho).value() << endl;
+        Info<< "min/max(U) = " << min(U).value() << ", " << max(U).value() << endl;
+        forAll(Y, i)
+        {
+            Info<< "min/max(Y) " << i << " = " << min(Y[i]).value() << ", " << max(Y[i]).value() << endl;
+        } 
+        Info<< "min/max(E) = " << min(thermo.he()).value() << ", " << max(thermo.he()).value() << endl;
+        Info<< "min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
+        Info<< "min/max(p) = " << min(p).value() << ", " << max(p).value() << endl;
+        Info<< "min/max(k) = " << min(turbulence->k()()).value() << ", " << max(turbulence->k()()).value() << endl;
+        Info<< "min/max(epsilon) = " << min(turbulence->epsilon()()).value() << ", " << max(turbulence->epsilon()()).value() << endl;
+
         Info<< "========Time Spent in diffenet parts========"<< endl;
         Info<< "loop Time                    = " << loop_time << " s" << endl;
         Info<< "other Time                   = " << time_monitor_other << " s" << endl;

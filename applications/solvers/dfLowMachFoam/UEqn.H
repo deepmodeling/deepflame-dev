@@ -43,11 +43,11 @@
     writeDoubleArrayToFile(&turbulence->alphat()()[0], mesh_paras.num_cells, "turb_alphat.host", compareCPUResults);
     writeDoubleArrayToFile(&turbulence->mut()()[0], mesh_paras.num_cells, "turb_mut.host", compareCPUResults);
 
-    volScalarField& nutField = const_cast<volScalarField&>(turbulence->nut()());
-    nutField.correctBoundaryConditions();
+    // volScalarField& nutField = const_cast<volScalarField&>(turbulence->nut()());
+    // nutField.correctBoundaryConditions();
 
-    volScalarField& alphatField = const_cast<volScalarField&>(turbulence->alphat()());
-    alphatField.correctBoundaryConditions();
+    // volScalarField& alphatField = const_cast<volScalarField&>(turbulence->alphat()());
+    // alphatField.correctBoundaryConditions();
 
     int offset = 0;
     double *h_boundary_nut = new double[mesh_paras.num_boundary_surfaces]();
