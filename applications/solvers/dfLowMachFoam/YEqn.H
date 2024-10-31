@@ -96,6 +96,52 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
 #ifdef GPUSolverNew_
 #if defined DEBUG_
     // run CPU
+    #ifdef OPENCC
+    scalar dt = runTime.deltaTValue();
+
+    forAll(Y, speciesI) {
+        volScalarField& Yi = Y[speciesI];
+        memcpy(h_y + speciesI * num_cells, &Yi[0], num_cells * sizeof(double));
+    }
+
+    for (int i = 0; i < num_cells; i++) {
+        for (int j = 0; j < sp_num; j++) {
+            h_y_t[j + i*sp_num] = h_y[i + j*num_cells];
+        }
+    }
+
+
+    for(int i=100*sp_num ; i<110*sp_num; i++ )
+    {
+        Info << "h_y_t: " << i << ", " << h_y_t[i] << endl;
+    }
+
+    opencc_ode_all(&T[0], &p[0], h_y_t, 1e-10, dt, CPU);
+
+    Info << "after opencc: " << endl;
+    for(int i=100*sp_num ; i<110*sp_num; i++ )
+    {
+        Info << "h_y_t: " << i << ", "<< h_y_t[i] << endl;
+    }
+
+    for (int i = 0; i < num_cells; i++) {
+        for (int j = 0; j < sp_num; j++) {
+            Ynew[i + j*num_cells] = h_y_t[j + i*sp_num];
+        }
+    }
+
+    QdotGPU = Zero;
+    forAll(QdotGPU,celli)
+    {
+        for (int sp = 0; sp < sp_num; sp++)
+        {
+            RRGPU[sp][celli] = (Ynew[sp*num_cells+celli]-Y[sp][celli])*rho[celli]/dt;
+        }
+    }
+    #else
+    combustion->correct();
+    #endif
+
     volScalarField Yt(0.0*Y[0]);
 
     int specie_index = 0;
@@ -117,6 +163,24 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
             start1 = std::clock();
             tmp<volScalarField> DEff = chemistry->rhoD(i) + turbulence->mut()/Sct;
 
+            #ifdef OPENCC
+            fvScalarMatrix YiEqn
+            (
+                fvm::ddt(rho, Yi)
+            +
+                (
+                    turbName == "laminar"
+                    ?  (mvConvection->fvmDiv(phi, Yi) + mvConvection->fvmDiv(phiUc, Yi))
+                    :   mvConvection->fvmDiv(phi, Yi)
+                )
+            ==
+                (
+                    splitting
+                    ?   fvm::laplacian(DEff(), Yi)
+                    :  (fvm::laplacian(DEff(), Yi) + RRGPU[i])
+                    )
+            );
+            #else
             fvScalarMatrix YiEqn
             (
                 fvm::ddt(rho, Yi)
@@ -133,6 +197,7 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
                     :  (fvm::laplacian(DEff(), Yi) + combustion->R(Yi))
                     )
             );
+            #endif
             
             end1 = std::clock();
             time_monitor_YEqn_mtxAssembly += double(end1 - start1) / double(CLOCKS_PER_SEC);
@@ -174,30 +239,46 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     }
     writeDoubleArrayToFile(h_boundary_DEff.data(), mesh_paras.num_boundary_surfaces, "turb_boundary_DEff.host", compareCPUResults);
 
+    #ifdef OPENCC
     fvScalarMatrix YiEqn
     (
-        fvm::ddt(rho, Y[specie_index])
-        +
+        fvm::ddt(rho,  Y[specie_index])
+    +
         (
             turbName == "laminar"
             ?  (mvConvection->fvmDiv(phi, Y[specie_index]) + mvConvection->fvmDiv(phiUc, Y[specie_index]))
             :   mvConvection->fvmDiv(phi, Y[specie_index])
         )
-        ==
+    ==
+        (
+            splitting
+            ?   fvm::laplacian(DEff(), Y[specie_index])
+            :  (fvm::laplacian(DEff(), Y[specie_index]) + RRGPU[specie_index])
+            )
+    );
+    #else
+    fvScalarMatrix YiEqn
+    (
+        fvm::ddt(rho, Y[specie_index])
+    +
+        (
+            turbName == "laminar"
+            ?  (mvConvection->fvmDiv(phi, Y[specie_index]) + mvConvection->fvmDiv(phiUc, Y[specie_index]))
+            :   mvConvection->fvmDiv(phi, Y[specie_index])
+        )
+    ==
         (
             splitting
             ?   fvm::laplacian(DEff(), Y[specie_index])
             :  (fvm::laplacian(DEff(), Y[specie_index]) + combustion->R(Y[specie_index]))
-        )
+            )
     );
+    #endif
+    writeDoubleArrayToFile(&RRGPU[specie_index][0], mesh_paras.num_cells, "Y_RR.host", compareCPUResults);
     // YiEqn.relax();
     // YiEqn.solve("Yi");
     // Y[specie_index].max(0.0);
 #endif
-
-    // // process
-    // YEqn_GPU.process();
-    // YEqn_GPU.sync();
 
 #if defined DEBUG_
     std::vector<double> h_boundary_diffAlphaD;
@@ -361,21 +442,6 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     // DEBUG_TRACE;
 #endif
 
-    // // postProcess
-    // double *h_y = mesh_paras.getFieldPointer("y", location::cpu, position::internal);
-    // double *h_boundary_y = mesh_paras.getFieldPointer("y", location::cpu, position::boundary);
-    // // YEqn_GPU.postProcess(h_y, h_boundary_y);
-    // DEBUG_TRACE;
-
-    // copy h_y to Y(cpu)
-    // offset = 0;
-    // forAll(Y, i)
-    // {
-    //     volScalarField& Yi = Y[i];
-    //     memcpy(&Yi[0], h_y + offset, Yi.size() * sizeof(double));
-    //     offset += Yi.size();
-    //     Yi.correctBoundaryConditions();
-    // }
     DEBUG_TRACE;
 
     fflush(stderr);
@@ -383,7 +449,41 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     if (!splitting)
     {
         std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
+        #ifdef OPENCC
+	    scalar dt = runTime.deltaTValue();
+
+        forAll(Y, speciesI) {
+            volScalarField& Yi = Y[speciesI];
+            memcpy(h_y + speciesI * num_cells, &Yi[0], num_cells * sizeof(double));
+        }
+
+        for (int i = 0; i < num_cells; i++) {
+            for (int j = 0; j < sp_num; j++) {
+                h_y_t[j + i*sp_num] = h_y[i + j*num_cells];
+            }
+        }
+
+        opencc_ode_all(&T[0], &p[0], h_y_t, 1e-10, dt, CPU);
+
+        for (int i = 0; i < num_cells; i++) {
+            for (int j = 0; j < sp_num; j++) {
+                Ynew[i + j*num_cells] = h_y_t[j + i*sp_num];
+            }
+        }
+
+        QdotGPU = Zero;
+        forAll(QdotGPU,celli)
+        {
+            for (int sp = 0; sp < sp_num; sp++)
+            {
+                RRGPU[sp][celli] = (Ynew[sp*num_cells+celli]-Y[sp][celli])*rho[celli]/dt;
+            }
+        }
+        #else
         combustion->correct();
+        #endif
+
         //label flag_mpi_init;
         //MPI_Initialized(&flag_mpi_init);
         if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
@@ -405,6 +505,24 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
             start1 = std::clock();
             tmp<volScalarField> DEff = chemistry->rhoD(i) + turbulence->mut()/Sct;
 
+            #ifdef OPENCC
+            fvScalarMatrix YiEqn
+            (
+                fvm::ddt(rho, Yi)
+            +
+                (
+                    turbName == "laminar"
+                    ?  (mvConvection->fvmDiv(phi, Yi) + mvConvection->fvmDiv(phiUc, Yi))
+                    :   mvConvection->fvmDiv(phi, Yi)
+                )
+            ==
+                (
+                    splitting
+                    ?   fvm::laplacian(DEff(), Yi)
+                    :  (fvm::laplacian(DEff(), Yi) + RRGPU[i])
+                    )
+            );
+            #else
             fvScalarMatrix YiEqn
             (
                 fvm::ddt(rho, Yi)
@@ -421,6 +539,7 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
                     :  (fvm::laplacian(DEff(), Yi) + combustion->R(Yi))
                     )
             );
+            #endif
             
             end1 = std::clock();
             time_monitor_YEqn_mtxAssembly += double(end1 - start1) / double(CLOCKS_PER_SEC);

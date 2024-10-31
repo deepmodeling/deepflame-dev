@@ -1812,7 +1812,7 @@ else if (type == 2)
 }
 }
 
-void copyGPUResults2Host(mesh_info_para &mesh_paras, volVectorField& U, volScalarField& T, PtrList<volScalarField>& Y)
+void copyGPUResults2Host(mesh_info_para &mesh_paras, volVectorField& U, volScalarField& T, PtrList<volScalarField>& Y, volScalarField& rho, surfaceScalarField& phi)
 {
     // DF-A: memcpy results data d2h 
     writeResults();
@@ -1822,6 +1822,8 @@ void copyGPUResults2Host(mesh_info_para &mesh_paras, volVectorField& U, volScala
     memcpy(&U[0][0], U_hostOrder, mesh_paras.num_cells * 3 * sizeof(double));
 
     memcpy(&T[0], resultsData.h_T, mesh_paras.num_cells * sizeof(double));
+    memcpy(&rho[0], resultsData.h_rho, mesh_paras.num_cells * sizeof(double));
+    memcpy(&phi[0], resultsData.h_phi, mesh_paras.num_surfaces * sizeof(double));
 
     forAll(Y, speciesI) {
         memcpy(&Y[speciesI][0], resultsData.h_y + speciesI * mesh_paras.num_cells, mesh_paras.num_cells * sizeof(double));
