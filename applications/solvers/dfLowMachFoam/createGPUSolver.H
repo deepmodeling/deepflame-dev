@@ -1098,6 +1098,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
             num_boundary_surfaces += patchsize;
         }
         num_patches++;
+        Info<< "num_boundary_surfaces: " << num_boundary_surfaces << ", patchsize: " << patchsize << endl;
     }
 
     // For manipulate_matrix
@@ -1130,12 +1131,14 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
     }
 
     int *face2patch = new int[num_boundary_surfaces]();
-    for(int facei=0; facei < num_boundary_surfaces; facei++) 
+    forAll(mesh.boundary(), patchi) 
     {
-        int faceIndex = facei + nInternalFaces;
-        face2patch[facei] = mesh.boundaryMesh().whichPatch(faceIndex);
+        for(int facei=0; facei < patch_size[patchi]; facei++) 
+        {
+            int faceIndex = patch_start[patchi] + facei;
+            face2patch[facei+patch_offset[patchi]] = mesh.boundaryMesh().whichPatch(faceIndex);
+        }
     }
-
 
     // TODO: get deltaT fomr time API
     double rDeltaT = 1 / 1e-6;
