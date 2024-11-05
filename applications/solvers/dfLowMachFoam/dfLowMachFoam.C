@@ -224,9 +224,7 @@ int main(int argc, char *argv[])
 
     int mpi_init_flag;
     checkMpiErrors(MPI_Initialized(&mpi_init_flag));
-    if(mpi_init_flag) {
-        initNccl();
-    }
+    initNccl();
 
     std::cout << "                                                          " << std::endl;
     std::cout << "==========================================================" << std::endl;
