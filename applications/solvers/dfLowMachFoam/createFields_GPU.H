@@ -60,6 +60,8 @@ string mechanismFilet = CanteraTorchProperties.lookupOrDefault("CanteraMechanism
 char target_mechanismFile[100];
 std::strcpy(target_mechanismFile, mechanismFilet.c_str());
 
-opencc_ode_init(target_mechanismFile, num_cells, &T[0], &p[0], h_y, PRESSURE);
+int device_ID = get_device_ID();
+
+opencc_ode_init(target_mechanismFile, num_cells, 2, &T[0], &p[0], h_y, PRESSURE, device_ID);
 
 double* Ynew = new double[num_cells * num_species];
