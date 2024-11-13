@@ -1,0 +1,13 @@
+loadBalancing/ChemistryProblem.C
+loadBalancing/ChemistrySolution.C
+loadBalancing/ChemistryLoad.C
+loadBalancing/LoadBalancerBase.C
+loadBalancing/SendBuffer.C
+loadBalancing/RecvBuffer.C
+loadBalancing/algorithms_DLB.C
+loadBalancing/runtime_assert.C
+loadBalancing/LoadBalancer.C
+
+makeDfChemistryModels.C
+
+LIB = $(DF_LIBBIN)/libdfChemistryModel
