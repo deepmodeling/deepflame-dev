@@ -25,3 +25,4 @@ wmake applications/solvers/dfHighSpeedFoam
 wmake applications/solvers/dfSprayFoam
 
 wmake applications/utilities/flameSpeed
+wmake applications/utilities/flameSpeed1
