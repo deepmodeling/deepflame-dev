@@ -150,9 +150,6 @@ int main(int argc, char *argv[])
     #include "createDyMControls.H"
     #include "initContinuityErrs.H"
     #include "createFields.H"
-#ifdef OPENCC
-    #include "createFields_GPU.H"
-#endif
     #include "createRhoUfIfPresent.H"
 
     double time_monitor_init = 0;
@@ -218,6 +215,11 @@ int main(int argc, char *argv[])
         #include "setInitialDeltaT.H"
     }
 
+#ifndef GPUSolverNew_   
+    #ifdef OPENCC
+        #include "createFields_GPU.H"
+    #endif   
+#endif 
     start1 = std::clock();
 
 #ifdef GPUSolverNew_
@@ -225,6 +227,10 @@ int main(int argc, char *argv[])
     int mpi_init_flag;
     checkMpiErrors(MPI_Initialized(&mpi_init_flag));
     initNccl();
+
+#ifdef OPENCC
+    #include "createFields_GPU.H"
+#endif  
 
     std::cout << "                                                          " << std::endl;
     std::cout << "==========================================================" << std::endl;
@@ -234,6 +240,7 @@ int main(int argc, char *argv[])
     mesh_info_para mesh_paras;    
     init_data_para init_data;
     bool compareCPUResults = compareResults;
+    bool doCorrectBCsCPU = true;
 
     // DF-A: CREATE MESHBASE 
     createGPUBaseInput(mesh_paras, init_data, CanteraTorchProperties, mesh, Y); 
@@ -401,8 +408,6 @@ int main(int argc, char *argv[])
 
                 start = std::clock();
                 #ifdef GPUSolverNew_
-                    // thermo_GPU.correctThermo();
-                    // thermo_GPU.sync();
                     #if defined DEBUG_
                     chemistry->correctThermo(); // reference debug
                     const volScalarField& mu = thermo.mu();
@@ -470,27 +475,6 @@ int main(int argc, char *argv[])
             {
                 combustion->correct();
             }
-            // // update T for debug
-            // #ifdef GPUSolverNew_
-            // double *h_T = dfDataBase.getFieldPointer("T", location::cpu, position::internal);
-            // double *h_boundary_T_tmp = new double[dfDataBase.num_boundary_surfaces];
-            // thermo_GPU.updateCPUT(h_T, h_boundary_T_tmp);
-            // memcpy(&T[0], h_T, T.size() * sizeof(double));
-            // offset = 0;
-            // forAll(T.boundaryField(), patchi) {
-            //     const fvPatchScalarField& const_patchT = T.boundaryField()[patchi];
-            //     fvPatchScalarField& patchT = const_cast<fvPatchScalarField&>(const_patchT);
-            //     int patchsize = patchT.size();
-            //     if (patchT.type() == "processor") {
-            //         memcpy(&patchT[0], h_boundary_T_tmp + offset, patchsize * sizeof(double));
-            //         offset += patchsize * 2;
-            //     } else {
-            //         memcpy(&patchT[0], h_boundary_T_tmp + offset, patchsize * sizeof(double));
-            //         offset += patchsize;
-            //     }
-            // }
-            // delete h_boundary_T_tmp;
-            // #endif
 
             Info<< "min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
 
@@ -528,14 +512,6 @@ int main(int argc, char *argv[])
 
                     #if defined DEBUG_
                     turbulence->correct();
-
-                    // surfaceScalarField surf_k = linearInterpolate(turbulence->k()());
-                    // Field<scalar> sum_magSf = fvc::surfaceSum(mesh.magSf())().primitiveField();
-                    // Field<scalar> averageField = fvc::average(surf_k)().primitiveField();
-
-                    // writeDoubleArrayToFile(&surf_k[0], mesh_paras.num_surfaces, "averageField_surf.host", compareCPUResults);
-                    // writeDoubleArrayToFile(&sum_magSf[0], mesh_paras.num_cells, "averageField_sumSf.host", compareCPUResults);
-                    // writeDoubleArrayToFile(&averageField[0], mesh_paras.num_cells, "averageField.host", compareCPUResults);
 
                     writeDoubleArrayToFile(&turbulence->k()()[0], mesh_paras.num_cells, "turb_k_correct.host", compareCPUResults);
                     writeDoubleArrayToFile(&turbulence->epsilon()()[0], mesh_paras.num_cells, "turb_epsilon_correct.host", compareCPUResults);

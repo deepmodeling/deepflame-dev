@@ -7,6 +7,8 @@
     
     process_equation(MATRIX_EQUATION::pEqn); 
 
+    if (doCorrectBCsCPU) correctVelBCsHost(mesh_paras, U);
+
     // thermo_GPU.correctPsipRho();
 
 #endif
@@ -48,7 +50,7 @@
     double *h_boundary_rhoT = new double[mesh_paras.num_boundary_surfaces];
     double *h_boundary_psip0 = new double[mesh_paras.num_boundary_surfaces];
     double *h_boundary_rAU = new double[mesh_paras.num_boundary_surfaces];
-    double *h_boundary_rhorAUf = (double*)calloc(mesh_paras.num_boundary_surfaces, sizeof(double));
+    double *h_boundary_rhorAUf = new double[mesh_paras.num_boundary_surfaces];
     double *h_boundary_HbyA = new double[3 * mesh_paras.num_boundary_surfaces];
     offset = 0;
     forAll(rAU.boundaryField(), patchi)
@@ -69,6 +71,9 @@
 
             memcpy(h_boundary_rhorAUf + offset, &patchrhorAUf[0], patchSize*sizeof(double));
             memcpy(h_boundary_rhoT + offset, &patchrho[0], patchSize*sizeof(double));
+            scalarField patchrhoTInternal = dynamic_cast<const processorFvPatchField<scalar>&>(patchrho).patchInternalField()();
+            memcpy(h_boundary_rhoT + offset + patchSize, &patchrhoTInternal[0], patchSize*sizeof(double));
+
             memcpy(h_boundary_psip0 + offset, &patchpsip0[0], patchSize*sizeof(double));
 
             memcpy(h_boundary_HbyA + offset * 3, &patchHbyA[0][0], patchSize*3*sizeof(double));
@@ -278,12 +283,12 @@
         }
         surfaceScalarField pEqn_flux(pEqn.flux());
         writeDoubleArrayToFile(&pEqn_flux[0], mesh_paras.num_surfaces, "d_pEqn_flux.host", compareCPUResults);
-        Info << "pEqn.flux(): " << pEqn.flux() << endl;
+        // Info << "pEqn.flux(): " << pEqn.flux() << endl;
 
         thermo.correctRho(psi*p - psip0);
 
         bool limitedp = pressureControl.limit(p);
-        Info << "limitedp: " << limitedp << endl;
+        // Info << "limitedp: " << limitedp << endl;
         if (limitedp)
         {
             rho = thermo.rho();
