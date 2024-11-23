@@ -142,7 +142,7 @@ public IOdictionary
         Switch gpulog_;
 
         label cvodeComm;
-
+        double Tem;
         // profiling
         double time_allsolve_;
         double time_submaster_;
