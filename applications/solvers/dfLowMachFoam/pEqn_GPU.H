@@ -22,6 +22,13 @@
 #include <fstream>
 
 #if defined DEBUG_
+
+    if (doCorrectBCsCPU)
+    {
+        memcpy(&U[0][0], &U.oldTime()[0][0], mesh_paras.num_cells * 3 * sizeof(double));
+        U.correctBoundaryConditions();
+    }
+
     if (!pimple.simpleRho())
     {
         rho = thermo.rho();

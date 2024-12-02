@@ -27,6 +27,11 @@
 // csr0.solve(psi0, source0, internalCoeffs0, boundaryCoeffs0);
 
 #if defined DEBUG_
+if (doCorrectBCsCPU)
+{
+    memcpy(&U[0][0], &U.oldTime()[0][0], mesh_paras.num_cells * 3 * sizeof(double));
+    U.correctBoundaryConditions();
+}
     // run CPU, for temp
     TICK_START;
     tmp<fvVectorMatrix> tUEqn

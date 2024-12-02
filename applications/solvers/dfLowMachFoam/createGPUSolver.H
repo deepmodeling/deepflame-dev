@@ -376,11 +376,13 @@ void createGPUYEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
 
     // prepare patch_type
     std::vector<int> patch_type;
-    patch_type.resize(mesh_paras.num_patches);
+    patch_type.resize(mesh_paras.num_patches*init_data.num_species);
 
-    forAll(Y[0].boundaryField(), patchi)
-    {
-        constructBoundarySelectorPerPatch(&(patch_type[patchi]), Y[0].boundaryField()[patchi].type());
+    forAll(Y, speciesI) {
+        forAll(Y[speciesI].boundaryField(), patchi)
+        {
+            constructBoundarySelectorPerPatch(&(patch_type[mesh_paras.num_patches * speciesI + patchi]), Y[speciesI].boundaryField()[patchi].type());
+        }
     }
     // set lewis number
     std::vector<double> lewis_number(init_data.num_species, 1.); // unity lewis
@@ -416,7 +418,7 @@ void createGPUYEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     memcpy(init_data.y,          &h_y[0],          mesh_paras.num_cells*init_data.num_species * sizeof(double));
     memcpy(init_data.boundary_y, &h_boundary_y[0], mesh_paras.num_boundary_surfaces*init_data.num_species * sizeof(double));
 
-    init_data.patch_type_Y   = new int[mesh_paras.num_patches]();
+    init_data.patch_type_Y   = new int[mesh_paras.num_patches*init_data.num_species]();
     std::copy( patch_type.begin(), patch_type.end(), init_data.patch_type_Y ); 
 }
 
@@ -504,7 +506,7 @@ void createGPUpEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
             memcpy(h_boundary_p + offset, &patchP[0], patchsize * sizeof(double));
             offset += patchsize;
         }
-        if (patchP.type() == "totalPressure"){
+        if (patchP.type() == "totalPressure" && patchsize > 0){
             const scalarField& p0 = dynamic_cast<const totalPressureFvPatchScalarField&>(patchP).p0();
             init_data.p0 = p0[0];
             Info << "totalPressure p0: " << p0[0] << endl;
@@ -1133,7 +1135,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
         else 
         {
             std::cout << "Error! Need enlarge cFaceSize (default=6)." << std::endl;
-            abort();
+            // abort();
         }
     }
 
@@ -1832,11 +1834,26 @@ void copyGPUResults2Host(mesh_info_para &mesh_paras, volVectorField& U, volScala
     memcpy(&U[0][0], U_hostOrder, mesh_paras.num_cells * 3 * sizeof(double));
 
     memcpy(&T[0], resultsData.h_T, mesh_paras.num_cells * sizeof(double));
+    int offset = 0;
+    forAll(T.boundaryField(), patchi) {
+        const fvPatchScalarField& const_patchT = T.boundaryField()[patchi];
+        fvPatchScalarField& patchT = const_cast<fvPatchScalarField&>(const_patchT);
+        int patchsize = patchT.size();
+        if (patchT.type() == "processor") {
+            memcpy(&patchT[0], resultsData.h_boundary_T + offset, patchsize * sizeof(double));
+            offset += patchsize * 2;
+        } else {
+            memcpy(&patchT[0], resultsData.h_boundary_T + offset, patchsize * sizeof(double));
+            offset += patchsize;
+        }
+    }
+
     memcpy(&rho[0], resultsData.h_rho, mesh_paras.num_cells * sizeof(double));
     memcpy(&phi[0], resultsData.h_phi, mesh_paras.num_surfaces * sizeof(double));
 
     forAll(Y, speciesI) {
         memcpy(&Y[speciesI][0], resultsData.h_y + speciesI * mesh_paras.num_cells, mesh_paras.num_cells * sizeof(double));
+        Y[speciesI].correctBoundaryConditions();
     }
 
     U.correctBoundaryConditions();
