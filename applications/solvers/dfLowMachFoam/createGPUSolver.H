@@ -1636,7 +1636,10 @@ void setConstantIndexes(mesh_info_para &mesh_paras, const int *owner, const int 
         CSRColIndexNoDiag[i] = colIndicesTmp[lduCSRNoDiagIndex[i]];
     }
 
-    // ell
+    /**
+     * @brief ldu2ell with no diagonal
+     * 
+     */
     ell_row_maxcount = 0;
     int* ellColsperRow;
     ellColsperRow = (int*)malloc(sizeof(int) * num_cells);
@@ -1662,7 +1665,7 @@ void setConstantIndexes(mesh_info_para &mesh_paras, const int *owner, const int 
     // lower
     for(int i = 0; i < num_surfaces; i++){
         int row = neighbor[i];
-        int index = ell_row_maxcount * row + rowOffset[row];
+        int index = rowOffset[row] * num_cells + row;
         ldu2ellIndex[i] = index;
         ellCols[index] = owner[i];
         rowOffset[row] += 1;
@@ -1670,22 +1673,11 @@ void setConstantIndexes(mesh_info_para &mesh_paras, const int *owner, const int 
     // upper
     for(int i = 0; i < num_surfaces; i++){
         int row = owner[i];
-        int index = ell_row_maxcount * row + rowOffset[row];
+        int index = rowOffset[row] * num_cells + row;
         ldu2ellIndex[i + num_surfaces] = index;
         ellCols[index] = neighbor[i];
         rowOffset[row] += 1;
     }
-
-    int* revert_ellCols;
-    revert_ellCols = (int*)malloc(sizeof(int) * num_cells * ell_row_maxcount);
-    for(int i = 0; i < num_cells; i++){
-        for(int j = 0; j < ell_row_maxcount; j++){
-            revert_ellCols[i + j * num_cells] =ellCols[i * ell_row_maxcount + j];
-        }
-    }
-    memcpy(ellCols, revert_ellCols, sizeof(int) * num_cells * ell_row_maxcount);
-
-    free(revert_ellCols);    
 
     // TODO: if CSR;
 #ifndef iscsr
@@ -1794,7 +1786,7 @@ else if (type == 2)
     // lower
     for(int i = 0; i < nFaces; i++){
         int row = neighbor[i];
-        int index = h_ell_row_maxcount[leveli] * row + rowOffset[row];
+        int index = rowOffset[row] * nCells + row;
         h_ldu2ellIndex[leveli][i] = index;
         h_ellCols[leveli][index] = owner[i];
         rowOffset[row] += 1;
@@ -1803,22 +1795,11 @@ else if (type == 2)
     // upper
     for(int i = 0; i < nFaces; i++){
         int row = owner[i];
-        int index = h_ell_row_maxcount[leveli] * row + rowOffset[row];
+        int index = rowOffset[row] * nCells + row;
         h_ldu2ellIndex[leveli][i + nFaces] = index;
         h_ellCols[leveli][index] = neighbor[i];
         rowOffset[row] += 1;
     }
-
-    int* revert_ellCols;
-    revert_ellCols = (int*)malloc(sizeof(int) * nCells * h_ell_row_maxcount[leveli]);
-    for(int i = 0; i < nCells; i++){
-        for(int j = 0; j < h_ell_row_maxcount[leveli]; j++){
-            revert_ellCols[i + j * nCells] =h_ellCols[leveli][i * h_ell_row_maxcount[leveli] + j];
-        }
-    }
-    memcpy(h_ellCols[leveli], revert_ellCols, sizeof(int) * nCells * h_ell_row_maxcount[leveli]);
-
-    free(revert_ellCols);    
 
     free(ellColsperRow);
 }

@@ -71,7 +71,7 @@ Description
 // #define TIME
 // #define DEBUG_
 // #define SHOW_MEMINFO
-#define OPENCC
+// #define OPENCC
 
 #define iscsr // true -> csr, false -> ell
 #define DEBUG_TRACE fprintf(stderr, "myRank[%d] %s %d\n", myRank, __FILE__, __LINE__);

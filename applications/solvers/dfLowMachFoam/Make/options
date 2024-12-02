@@ -37,7 +37,7 @@ EXE_INC = -std=c++14 \
     -I$(DF_SRC)/dfGenMatrix/lnInclude \
     -I$(DF_SRC)/dfMatrices/lnInclude \
     -I$(DF_SRC)/dfSchedule/lnInclude \
-    -I/root/OpenCC-cuda/include
+    -I/root/1014/OpenCC-cuda/include
 
 EXE_LIBS = \
     -lcompressibleTransportModels \
@@ -60,7 +60,6 @@ EXE_LIBS = \
     $(if $(LIBTORCH_ROOT),$(LIBTORCH_ROOT)/lib/libc10.so,) \
     $(if $(LIBTORCH_ROOT),-rdynamic,) \
     $(if $(LIBTORCH_ROOT),-lpthread,) \
-    $(if $(LIBTORCH_ROOT),$(DF_SRC)/dfChemistryModel/DNNInferencer/build/libDNNInferencer.so,) \
     $(if $(PYTHON_LIB_DIR),-L$(PYTHON_LIB_DIR),) \
     $(if $(PYTHON_LIB_DIR),-lpython3.8,) \
     $(if $(AMGX_DIR), /usr/local/cuda/lib64/libcudart.so,) \
@@ -68,5 +67,5 @@ EXE_LIBS = \
     /root/DeepFlame_Academic/build/libdfacademic.so \
     $(if $(AMGX_DIR), $(DF_ROOT)/src_gpu/build/libdfMatrix.so,) \
     $(if $(AMGX_DIR), $(AMGX_DIR)/build/libamgxsh.so,) \
-    -L/root/OpenCC-cuda/lib -lopencc
+    -L/root/1014/OpenCC-cuda/lib -lopencc
 
