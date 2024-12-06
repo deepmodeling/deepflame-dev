@@ -385,7 +385,8 @@ enum boundaryConditions{
     nutkWallFunction,
     epsilonWallFunction,
     kqRWallFunction,
-    alphatWallFunction
+    alphatWallFunction,
+    mapped
 };
 
 // ************************************************************************* //

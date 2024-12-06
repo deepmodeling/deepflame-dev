@@ -111,18 +111,8 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     }
 
 
-    for(int i=100*sp_num ; i<110*sp_num; i++ )
-    {
-        Info << "h_y_t: " << i << ", " << h_y_t[i] << endl;
-    }
-
     opencc_ode_all(&T[0], &p[0], h_y_t, 1e-10, dt, CPU);
 
-    Info << "after opencc: " << endl;
-    for(int i=100*sp_num ; i<110*sp_num; i++ )
-    {
-        Info << "h_y_t: " << i << ", "<< h_y_t[i] << endl;
-    }
 
     for (int i = 0; i < num_cells; i++) {
         for (int j = 0; j < sp_num; j++) {
@@ -152,7 +142,7 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     permuteVector(grad_y_newOrder, &grad_yi[0][0], mesh_paras.num_cells);
     writeDoubleArrayToFile(&grad_y_newOrder[0], mesh_paras.num_cells * 3, "Y_grad_y.host", compareCPUResults);
 
-    int speciesIndex = 0;
+    // int speciesIndex = 0;
     forAll(Y, i)
     {
         volScalarField& Yi = Y[i];
@@ -210,7 +200,7 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
 
             Yi.max(0.0);
             Yt += Yi;
-            ++speciesIndex;
+            // ++speciesIndex;
         }
     }
     Y[inertIndex] = scalar(1) - Yt;
@@ -256,6 +246,7 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
             :  (fvm::laplacian(DEff(), Y[specie_index]) + RRGPU[specie_index])
             )
     );
+    writeDoubleArrayToFile(&RRGPU[specie_index][0], mesh_paras.num_cells, "Y_RR.host", compareCPUResults);
     #else
     fvScalarMatrix YiEqn
     (
@@ -274,7 +265,6 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
             )
     );
     #endif
-    writeDoubleArrayToFile(&RRGPU[specie_index][0], mesh_paras.num_cells, "Y_RR.host", compareCPUResults);
     // YiEqn.relax();
     // YiEqn.solve("Yi");
     // Y[specie_index].max(0.0);
@@ -335,46 +325,46 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     // YEqn_GPU.comparephiUc(&phiUc[0], h_boundary_phiUc.data(), false);
     DEBUG_TRACE;
 
-    double *h_value_internal_coeffs = new double[mesh_paras.num_boundary_surfaces]();
-    double *h_value_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces]();
-    double *h_gradient_internal_coeffs = new double[mesh_paras.num_boundary_surfaces]();
-    double *h_gradient_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces]();
+    // double *h_value_internal_coeffs = new double[mesh_paras.num_boundary_surfaces]();
+    // double *h_value_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces]();
+    // double *h_gradient_internal_coeffs = new double[mesh_paras.num_boundary_surfaces]();
+    // double *h_gradient_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces]();
 
-    offset = 0;
-    forAll(U.boundaryField(), patchi)
-    {
-        if (U.boundaryField()[patchi].type() == "wedge")
-        {
-            scalarField snGradTransformDiag_ = dynamic_cast<const wedgeFvPatchField<scalar>&>(Y[specie_index].boundaryField()[patchi]).snGradTransformDiag();
-            Info << "Y0 snGradTransformDiag_: " << snGradTransformDiag_ << endl;
+    // offset = 0;
+    // forAll(U.boundaryField(), patchi)
+    // {
+    //     if (U.boundaryField()[patchi].type() == "wedge")
+    //     {
+    //         scalarField snGradTransformDiag_ = dynamic_cast<const wedgeFvPatchField<scalar>&>(Y[specie_index].boundaryField()[patchi]).snGradTransformDiag();
+    //         Info << "Y0 snGradTransformDiag_: " << snGradTransformDiag_ << endl;
 
-            scalarField snGrad_ = dynamic_cast<const wedgeFvPatchField<scalar>&>(Y[specie_index].boundaryField()[patchi]).snGrad();
-            Info << "Y0 snGrad_: " << snGrad_ << endl;
-        }
+    //         scalarField snGrad_ = dynamic_cast<const wedgeFvPatchField<scalar>&>(Y[specie_index].boundaryField()[patchi]).snGrad();
+    //         Info << "Y0 snGrad_: " << snGrad_ << endl;
+    //     }
 
-        const fvsPatchScalarField& patchFlux = phi.boundaryField()[patchi];
-        const fvsPatchScalarField& pw = mesh.surfaceInterpolation::weights().boundaryField()[patchi];
-        const scalarField& pDeltaCoeffs = mesh.deltaCoeffs().boundaryField()[patchi];
-        int patchsize = mesh_paras.patch_size[patchi];
+    //     const fvsPatchScalarField& patchFlux = phi.boundaryField()[patchi];
+    //     const fvsPatchScalarField& pw = mesh.surfaceInterpolation::weights().boundaryField()[patchi];
+    //     const scalarField& pDeltaCoeffs = mesh.deltaCoeffs().boundaryField()[patchi];
+    //     int patchsize = mesh_paras.patch_size[patchi];
 
-        Field<scalar> yeqn_internalCoeffs = Y[specie_index].boundaryField()[patchi].valueInternalCoeffs(pw);
-        Field<scalar> yeqn_boundaryCoeffs = Y[specie_index].boundaryField()[patchi].valueBoundaryCoeffs(pw); 
-        Field<scalar> yeqn_laplac_internalCoeffs = Y[specie_index].boundaryField()[patchi].gradientInternalCoeffs();
-        Field<scalar> yeqn_laplac_boundaryCoeffs = Y[specie_index].boundaryField()[patchi].gradientBoundaryCoeffs();
+    //     Field<scalar> yeqn_internalCoeffs = Y[specie_index].boundaryField()[patchi].valueInternalCoeffs(pw);
+    //     Field<scalar> yeqn_boundaryCoeffs = Y[specie_index].boundaryField()[patchi].valueBoundaryCoeffs(pw); 
+    //     Field<scalar> yeqn_laplac_internalCoeffs = Y[specie_index].boundaryField()[patchi].gradientInternalCoeffs();
+    //     Field<scalar> yeqn_laplac_boundaryCoeffs = Y[specie_index].boundaryField()[patchi].gradientBoundaryCoeffs();
 
-        memcpy(h_value_internal_coeffs + offset, yeqn_internalCoeffs.data(), patchsize * sizeof(double));
-        memcpy(h_value_boundary_coeffs + offset, yeqn_boundaryCoeffs.data(), patchsize * sizeof(double));
-        memcpy(h_gradient_internal_coeffs + offset, yeqn_laplac_internalCoeffs.data(), patchsize * sizeof(double));
-        memcpy(h_gradient_boundary_coeffs + offset, yeqn_laplac_boundaryCoeffs.data(), patchsize * sizeof(double));
+    //     memcpy(h_value_internal_coeffs + offset, yeqn_internalCoeffs.data(), patchsize * sizeof(double));
+    //     memcpy(h_value_boundary_coeffs + offset, yeqn_boundaryCoeffs.data(), patchsize * sizeof(double));
+    //     memcpy(h_gradient_internal_coeffs + offset, yeqn_laplac_internalCoeffs.data(), patchsize * sizeof(double));
+    //     memcpy(h_gradient_boundary_coeffs + offset, yeqn_laplac_boundaryCoeffs.data(), patchsize * sizeof(double));
 
-        if (patchFlux.type() == "processor" || patchFlux.type() == "processorCyclic") offset += 2 * patchsize;
-        else offset += patchsize;
-    }
+    //     if (patchFlux.type() == "processor" || patchFlux.type() == "processorCyclic") offset += 2 * patchsize;
+    //     else offset += patchsize;
+    // }
 
-    writeDoubleArrayToFile(h_value_internal_coeffs, mesh_paras.num_boundary_surfaces, "y0_value_internal_coeffs.host", compareCPUResults);
-    writeDoubleArrayToFile(h_value_boundary_coeffs, mesh_paras.num_boundary_surfaces, "y0_value_boundary_coeffs.host", compareCPUResults);
-    writeDoubleArrayToFile(h_gradient_internal_coeffs, mesh_paras.num_boundary_surfaces, "y0_gradient_internal_coeffs.host", compareCPUResults);
-    writeDoubleArrayToFile(h_gradient_boundary_coeffs, mesh_paras.num_boundary_surfaces, "y0_gradient_boundary_coeffs.host", compareCPUResults);
+    // writeDoubleArrayToFile(h_value_internal_coeffs, mesh_paras.num_boundary_surfaces, "y0_value_internal_coeffs.host", compareCPUResults);
+    // writeDoubleArrayToFile(h_value_boundary_coeffs, mesh_paras.num_boundary_surfaces, "y0_value_boundary_coeffs.host", compareCPUResults);
+    // writeDoubleArrayToFile(h_gradient_internal_coeffs, mesh_paras.num_boundary_surfaces, "y0_gradient_internal_coeffs.host", compareCPUResults);
+    // writeDoubleArrayToFile(h_gradient_boundary_coeffs, mesh_paras.num_boundary_surfaces, "y0_gradient_boundary_coeffs.host", compareCPUResults);
 
     // checkResult
     // TODO: for temp, now we compare ldu, finally we compare csr
@@ -434,8 +424,29 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     writeDoubleArrayToFile(yeqn_h_internal_coeffs.data(), mesh_paras.num_boundary_surfaces, "Y_internalCoeffs0.host", compareCPUResults);
     writeDoubleArrayToFile(yeqn_h_boundary_coeffs.data(), mesh_paras.num_boundary_surfaces, "Y_boundaryCoeffs0.host", compareCPUResults);
 
-    writeDoubleArrayToFile(&Y[0][0], mesh_paras.num_cells, "Y_solved_y.host", compareCPUResults);
+    writeDoubleArrayToFile(&Y[specie_index][0], mesh_paras.num_cells, "Y_solved_y.host", compareCPUResults);
     // writeDoubleArrayToFile(&Y[3][0], mesh_paras.num_cells, "Y_solved_y.host", compareCPUResults);
+
+    std::vector<double> y_boundary(mesh_paras.num_boundary_surfaces);
+    offset = 0;
+    forAll(Y[specie_index].boundaryField(), patchi)
+    {
+        const fvPatchScalarField& patchYi = Y[specie_index].boundaryField()[patchi];
+        int patchsize = patchYi.size();
+        if (patchYi.type() == "processor"
+            || patchYi.type() == "processorCyclic") {
+            memcpy(y_boundary.data() + offset, &patchYi[0], patchsize * sizeof(double));
+            memset(y_boundary.data() + offset + patchsize, 0, patchsize * sizeof(double));
+            memcpy(y_boundary.data() + offset, &patchYi[0], patchsize * sizeof(double));
+            memset(y_boundary.data() + offset + patchsize, 0, patchsize * sizeof(double));
+            offset += patchsize * 2;
+        } else {
+            memcpy(y_boundary.data() + offset, &patchYi[0], patchsize * sizeof(double));
+            memcpy(y_boundary.data() + offset, &patchYi[0], patchsize * sizeof(double));
+            offset += patchsize;
+        }
+    }
+    writeDoubleArrayToFile(&y_boundary[0], mesh_paras.num_boundary_surfaces, "Y_solved_boundary_y.host", compareCPUResults);
 
     DEBUG_TRACE;
     // YEqn_GPU.compareYi(&Y[specie_index][0], specie_index, false);

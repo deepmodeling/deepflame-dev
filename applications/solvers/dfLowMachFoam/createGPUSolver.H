@@ -127,6 +127,7 @@ void constructBoundarySelectorPerPatch(int *patchTypeSelector, const std::string
         {"totalPressure", totalPressure},
         {"wedge", wedge},
         {"noSlip", noSlip},
+        {"mapped", mapped},
 
         {"turbulentMixingLengthDissipationRateInlet", turbulentMixingLengthDissipationRateInlet},
         {"turbulentIntensityKineticEnergyInlet", turbulentIntensityKineticEnergyInlet},
@@ -246,6 +247,11 @@ void constructBoundarySelectorPerPatch(int *patchTypeSelector, const std::string
         case alphatWallFunction:
         {
             *patchTypeSelector = 20;
+            break;
+        }
+        case mapped:
+        {
+            *patchTypeSelector = 21;
             break;
         }
     }
@@ -370,11 +376,13 @@ void createGPUYEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
 
     // prepare patch_type
     std::vector<int> patch_type;
-    patch_type.resize(mesh_paras.num_patches);
+    patch_type.resize(mesh_paras.num_patches*init_data.num_species);
 
-    forAll(Y[0].boundaryField(), patchi)
-    {
-        constructBoundarySelectorPerPatch(&(patch_type[patchi]), Y[0].boundaryField()[patchi].type());
+    forAll(Y, speciesI) {
+        forAll(Y[speciesI].boundaryField(), patchi)
+        {
+            constructBoundarySelectorPerPatch(&(patch_type[mesh_paras.num_patches * speciesI + patchi]), Y[speciesI].boundaryField()[patchi].type());
+        }
     }
     // set lewis number
     std::vector<double> lewis_number(init_data.num_species, 1.); // unity lewis
@@ -410,7 +418,7 @@ void createGPUYEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     memcpy(init_data.y,          &h_y[0],          mesh_paras.num_cells*init_data.num_species * sizeof(double));
     memcpy(init_data.boundary_y, &h_boundary_y[0], mesh_paras.num_boundary_surfaces*init_data.num_species * sizeof(double));
 
-    init_data.patch_type_Y   = new int[mesh_paras.num_patches]();
+    init_data.patch_type_Y   = new int[mesh_paras.num_patches*init_data.num_species]();
     std::copy( patch_type.begin(), patch_type.end(), init_data.patch_type_Y ); 
 }
 
@@ -498,7 +506,7 @@ void createGPUpEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
             memcpy(h_boundary_p + offset, &patchP[0], patchsize * sizeof(double));
             offset += patchsize;
         }
-        if (patchP.type() == "totalPressure"){
+        if (patchP.type() == "totalPressure" && patchsize > 0){
             const scalarField& p0 = dynamic_cast<const totalPressureFvPatchScalarField&>(patchP).p0();
             init_data.p0 = p0[0];
             Info << "totalPressure p0: " << p0[0] << endl;
@@ -733,6 +741,7 @@ int getIntSchemes(string schemeName)
     if (schemeName == "Gaussupwind")           return 1;
     if (schemeName == "GausslimitedLinear")    return 2;
     if (schemeName == "GausslimitedLinear01")  return 3;
+    if (schemeName == "GausslimitedLinearV")   return 4;
     return -1;
 }
 
@@ -748,7 +757,7 @@ void createGPUSchemesInput(const dictionary schemesControls, fvSchemes_para sche
     dictionary snGradSchemesDict = schemesControls.subDict("snGradSchemes"); 
 
     string divSchemes = getFullSchemesName(divSchemesDict, "default");
-    std::cout << "  = Schemes setting [divSchemes]: " << divSchemes << std::endl;
+    std::cout << "  = Schemes setting [divSchemes default]: " << divSchemes << std::endl;
     if (divSchemes == "none")
     {
         string divSchemes_phi_U = getFullSchemesName(divSchemesDict, "div(phi,U)");
@@ -1126,7 +1135,7 @@ void createGPUBaseInput(mesh_info_para &mesh_paras, init_data_para &init_data,
         else 
         {
             std::cout << "Error! Need enlarge cFaceSize (default=6)." << std::endl;
-            abort();
+            // abort();
         }
     }
 
@@ -1806,12 +1815,31 @@ void copyGPUResults2Host(mesh_info_para &mesh_paras, volVectorField& U, volScala
     memcpy(&U[0][0], U_hostOrder, mesh_paras.num_cells * 3 * sizeof(double));
 
     memcpy(&T[0], resultsData.h_T, mesh_paras.num_cells * sizeof(double));
+    int offset = 0;
+    forAll(T.boundaryField(), patchi) {
+        const fvPatchScalarField& const_patchT = T.boundaryField()[patchi];
+        fvPatchScalarField& patchT = const_cast<fvPatchScalarField&>(const_patchT);
+        int patchsize = patchT.size();
+        if (patchT.type() == "processor") {
+            memcpy(&patchT[0], resultsData.h_boundary_T + offset, patchsize * sizeof(double));
+            offset += patchsize * 2;
+        } else {
+            memcpy(&patchT[0], resultsData.h_boundary_T + offset, patchsize * sizeof(double));
+            offset += patchsize;
+        }
+    }
+
     memcpy(&rho[0], resultsData.h_rho, mesh_paras.num_cells * sizeof(double));
     memcpy(&phi[0], resultsData.h_phi, mesh_paras.num_surfaces * sizeof(double));
 
     forAll(Y, speciesI) {
         memcpy(&Y[speciesI][0], resultsData.h_y + speciesI * mesh_paras.num_cells, mesh_paras.num_cells * sizeof(double));
+        Y[speciesI].correctBoundaryConditions();
     }
+
+    U.correctBoundaryConditions();
+
+    delete U_hostOrder;
 }
 
 void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &mesh_paras, const volScalarField& nut, const volScalarField& alphat, 
@@ -2017,4 +2045,44 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
                     patch_type_nut.data(), patch_type_alphat.data(), patch_type_k.data(), patch_type_epsilon.data(), &k[0], &epsilon[0],
                     h_boundary_nut, h_boundary_alphat, h_boundary_k, h_boundary_epsilon,
                     h_boundary_yDist, h_boundary_cornerWeights, intensity, mixingLength, E, kappa, Cmu);
+}
+
+void correctVelBCsHost(mesh_info_para &mesh_paras, volVectorField& U)
+{
+    copy2host_u();
+
+    double *U_hostOrder = new double[mesh_paras.num_cells * 3]();
+    permuteVector2Host(U_hostOrder, resultsData.h_u, mesh_paras.num_cells);
+    memcpy(&U[0][0], U_hostOrder, mesh_paras.num_cells * 3 * sizeof(double));
+
+    U.correctBoundaryConditions();
+
+    double *h_boundary_u = new double[mesh_paras.num_boundary_surfaces*3]();
+    int offset = 0;
+    forAll(U.boundaryField(), patchi)
+    {
+        const fvPatchVectorField& patchU = U.boundaryField()[patchi];
+        int patchsize = patchU.size();
+        if (patchU.type() == "processor"
+            || patchU.type() == "processorCyclic") {
+            memcpy(h_boundary_u + 3*offset, &patchU[0][0], patchsize * 3 * sizeof(double));
+            vectorField patchUInternal = 
+                    dynamic_cast<const processorFvPatchField<vector>&>(patchU).patchInternalField()();
+            memcpy(h_boundary_u + 3*offset + 3*patchsize, &patchUInternal[0][0], patchsize * 3 * sizeof(double));
+            offset += patchsize * 2;
+        } else {
+            memcpy(h_boundary_u + 3*offset, &patchU[0][0], patchsize * 3 * sizeof(double));
+            offset += patchsize;
+        }
+    }
+
+    double *boundary_u_newOrder = new double[mesh_paras.num_boundary_surfaces*3]();
+    permuteVector(boundary_u_newOrder, h_boundary_u, mesh_paras.num_boundary_surfaces);
+    memcpy(resultsData.h_boundary_u, &boundary_u_newOrder[0], mesh_paras.num_boundary_surfaces * 3 * sizeof(double));
+
+    copy2device_boundary_u();
+
+    delete U_hostOrder;
+    delete boundary_u_newOrder;
+    delete h_boundary_u;
 }

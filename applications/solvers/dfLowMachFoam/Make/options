@@ -30,7 +30,7 @@ EXE_INC = -std=c++14 \
     $(if $(AMGX_DIR), -I/usr/local/cuda/include,) \
     $(if $(AMGX_DIR), -I$(AMGX_DIR)/include,) \
 	-I$(DF_ROOT)/GPUTestRef/lnInclude \
-    -I /root/1014/DeepFlame_Academic/include \
+    -I /root/DeepFlame_Academic/include \
     -I$(DF_ROOT)/src_gpu/dfLinearSolver/CSRMatrix/lnInclude \
     -I$(DF_ROOT)/src_gpu/dfLinearSolver/ELLMatrix/lnInclude \
     -I$(DF_SRC)/dfUtils/lnInclude \
@@ -64,7 +64,8 @@ EXE_LIBS = \
     $(if $(PYTHON_LIB_DIR),-lpython3.8,) \
     $(if $(AMGX_DIR), /usr/local/cuda/lib64/libcudart.so,) \
 	$(if $(AMGX_DIR), /usr/local/cuda/lib64/libnccl.so,) \
-    /root/1014/DeepFlame_Academic/build/libdfacademic.so \
+    /root/DeepFlame_Academic/build/libdfacademic.so \
+    $(if $(AMGX_DIR), $(DF_ROOT)/src_gpu/build/libdfMatrix.so,) \
     $(if $(AMGX_DIR), $(AMGX_DIR)/build/libamgxsh.so,) \
     -L/root/1014/OpenCC-cuda/lib -lopencc
 
