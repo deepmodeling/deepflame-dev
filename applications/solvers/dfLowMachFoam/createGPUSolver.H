@@ -670,7 +670,7 @@ void createGPUSolver(const dictionary solversDict, const IOdictionary& CanteraTo
     string UEqnSettingPath = "";
     string pEqnSettingPath = "";
 
-    bool useAMGX = true;
+    bool useAMGX = false;
     if (useAMGX)
     {
         UEqnSettingPath = CanteraTorchProperties.subDict("AmgxSettings").lookupOrDefault("UEqnSettingPath", string(""));
@@ -1044,11 +1044,19 @@ void createGPUSolverInput(const lduMesh& mesh, const dictionary solverControls, 
         const entry& eP = solverControls.lookupEntry("preconditioner", false, false);
         createGPUGAMGInput(mesh, eP.dict());
     }
+    else if (preconditioner == "diagonal")
+    {
+        matrix_preconditioner = 1;
+    }
+    else if (preconditioner == "Jacobi")
+    {
+        matrix_preconditioner = 2;
+    }
 
     // SET MATRIX_SMOOTHER
     int matrix_smoother = -1;
-    if (smoother == "Jacobi") matrix_smoother = 0;
-    if (smoother == "SRJ")    matrix_smoother = 1;
+    if (smoother == "Jacobi")         matrix_smoother = 0;
+    if (smoother == "SRJ")            matrix_smoother = 1;
 
     // SET MATRIX_SPARSE_FORMAT
 #ifdef iscsr
@@ -1851,7 +1859,6 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
     std::cout << "  = simulationType: " << simulationType << std::endl;
 
     bool useTurbulence = false;
-    bool useTCI = false;
     int LESModelTypeInt = 0;
     int RASModelTypeInt = 0;
     std::vector<int> patch_type_nut;
@@ -2041,10 +2048,30 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
     mixingLength[0] = 0.000504;
     // NOTICE: only for case [SandiaD_LTS] - end
 
-    init_turbulence(useTurbulence, useTCI, static_cast<LES_TURBULENCE_MODEL>(LESModelTypeInt), static_cast<RAS_TURBULENCE_MODEL>(RASModelTypeInt), 
+    init_turbulence(useTurbulence, static_cast<LES_TURBULENCE_MODEL>(LESModelTypeInt), static_cast<RAS_TURBULENCE_MODEL>(RASModelTypeInt), 
                     patch_type_nut.data(), patch_type_alphat.data(), patch_type_k.data(), patch_type_epsilon.data(), &k[0], &epsilon[0],
                     h_boundary_nut, h_boundary_alphat, h_boundary_k, h_boundary_epsilon,
                     h_boundary_yDist, h_boundary_cornerWeights, intensity, mixingLength, E, kappa, Cmu);
+}
+
+
+void createCombustionInput(const dictionary combustionControls, mesh_info_para &mesh_paras)
+{
+    std::cout << "- Set combustion model for DeepFlame_Academic " << std::endl;  
+
+    const word combustionModel(combustionControls.lookup("combustionModel"));
+    std::cout << "  = combustionModel: " << combustionModel << std::endl;
+
+    int combustionModelInt = 0;
+    if (combustionModel == "laminar")
+    {
+    }
+    else if (combustionModel == "PaSR")
+    {
+        combustionModelInt = 1;
+    }
+
+    init_sgs_combustion(static_cast<TCI_MODEL>(combustionModelInt));
 }
 
 void correctVelBCsHost(mesh_info_para &mesh_paras, volVectorField& U)

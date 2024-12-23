@@ -51,8 +51,23 @@
         )
     );
     // EEqn.relax();
+
+    clock_t start_solve_E, end_solve_E;
+    start_solve_E = std::clock();
+
     EEqn.solve("ha");
+
+    end_solve_E = std::clock();
+    double time_monitor_EEqn_solve_CPU_ = double(end_solve_E - start_solve_E) / double(CLOCKS_PER_SEC);
+    Info << "[CPU] Solve E Time: " << time_monitor_EEqn_solve_CPU_ << endl;
     // checkResult
+
+    // csrMatrix csrE(EEqn);
+    // auto& psiE = const_cast<volScalarField&>(EEqn.psi());
+    // auto& sourceE = EEqn.source();
+    // auto& internalCoeffsE = EEqn.internalCoeffs();
+    // auto& boundaryCoeffsE = EEqn.boundaryCoeffs();
+    // csrE.solve(psiE, sourceE, internalCoeffsE, boundaryCoeffsE, "ha");
 
     // double *h_value_internal_coeffs = new double[mesh_paras.num_boundary_surfaces]();
     // double *h_value_boundary_coeffs = new double[mesh_paras.num_boundary_surfaces]();

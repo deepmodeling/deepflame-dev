@@ -318,6 +318,19 @@ int main(int argc, char *argv[])
     );
     createTurbulenceInput(turbulenceDict, mesh_paras, turbulence->nut(), turbulence->alphat(), turbulence->k(), turbulence->epsilon());
 
+    IOdictionary combustionDict
+    (
+        IOobject
+        (
+            "combustionProperties", // Dictionary name
+            runTime.constant(),     // Location within case
+            Y[0].mesh(),            // Mesh reference
+            IOobject::MUST_READ,    // Read if present
+            IOobject::NO_WRITE      // Do not write to disk
+        )
+    );
+    createCombustionInput(combustionDict, mesh_paras);
+
 
     std::cout << "                                                          " << std::endl;
     std::cout << "!!!  All data has been set done for deepflame academic.   " << std::endl; 

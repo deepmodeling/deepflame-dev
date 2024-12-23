@@ -162,11 +162,11 @@
     {
         fvScalarMatrix pEqn(pDDtEqn - fvm::laplacian(rhorAUf, p));
 
-        // csrMatrix csr(pEqn);
-        // auto& p_psi = const_cast<GeometricField<scalar, fvPatchField, volMesh>&>(pEqn.psi());
-        // auto& source = pEqn.source();
-        // auto& internalCoeffs = pEqn.internalCoeffs();
-        // auto& boundaryCoeffs = pEqn.boundaryCoeffs();
+        csrMatrix csr(pEqn);
+        auto& p_psi = const_cast<GeometricField<scalar, fvPatchField, volMesh>&>(pEqn.psi());
+        auto& source = pEqn.source();
+        auto& internalCoeffs = pEqn.internalCoeffs();
+        auto& boundaryCoeffs = pEqn.boundaryCoeffs();
 
         // writeDoubleArrayToFile(&pEqn.lower()[0], mesh_paras.num_surfaces, "p_lower.host", compareCPUResults);
         writeDoubleArrayToFile(&pEqn.upper()[0], mesh_paras.num_surfaces, "p_upper.host", compareCPUResults);
