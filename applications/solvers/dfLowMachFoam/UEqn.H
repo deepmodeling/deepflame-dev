@@ -242,10 +242,6 @@ if (doCorrectBCsCPU)
 
     solve(UEqn == -fvc::grad(p));
 
-    end_solve_u = std::clock();
-    double time_monitor_UEqn_solve_CPU_ = double(end_solve_u - start_solve_u) / double(CLOCKS_PER_SEC);
-    Info << "[CPU] Solve U Time: " << time_monitor_UEqn_solve_CPU_ << endl;
-
     // tmp<fvVectorMatrix> tUEqn0
     // (
     //     fvm::ddt(rho, U) 
@@ -262,6 +258,10 @@ if (doCorrectBCsCPU)
     // auto& internalCoeffs0 = UEqn0.internalCoeffs();
     // auto& boundaryCoeffs0 = UEqn0.boundaryCoeffs();
     // csr0.solve(psi0, source0, internalCoeffs0, boundaryCoeffs0);
+
+    end_solve_u = std::clock();
+    double time_monitor_UEqn_solve_CPU_ = double(end_solve_u - start_solve_u) / double(CLOCKS_PER_SEC);
+    Info << "[CPU] Solve U Time: " << time_monitor_UEqn_solve_CPU_ << endl;    
 
 
     U.correctBoundaryConditions();

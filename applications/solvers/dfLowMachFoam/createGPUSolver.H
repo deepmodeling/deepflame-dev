@@ -135,6 +135,15 @@ void constructBoundarySelectorPerPatch(int *patchTypeSelector, const std::string
         {"epsilonWallFunction", epsilonWallFunction},
         {"kqRWallFunction", kqRWallFunction},
         {"compressible::alphatWallFunction", alphatWallFunction},
+        
+        {"inletOutlet", inletOutlet},
+        {"totalFlowRateAdvectiveDiffusive", totalFlowRateAdvectiveDiffusive},
+        {"prghTotalHydrostaticPressure", prghTotalHydrostaticPressure},
+        {"fixedFluxPressure", fixedFluxPressure},
+        {"flowRateInletVelocity", flowRateInletVelocity},
+        {"fixedGradient", fixedGradient},
+        {"mixedEnergy", mixedEnergy},
+        {"decayingTurbulenceInflowGeneratorMod_ZY", decayingTurbulenceInflowGeneratorMod_ZY}
     };
     auto iter = BCMap.find(patchTypeStr);
     if (iter != BCMap.end()) {
@@ -254,6 +263,46 @@ void constructBoundarySelectorPerPatch(int *patchTypeSelector, const std::string
             *patchTypeSelector = 21;
             break;
         }
+        case inletOutlet:
+        {
+            *patchTypeSelector = 22;
+            break;
+        }
+        case totalFlowRateAdvectiveDiffusive:
+        {
+            *patchTypeSelector = 23;
+            break;
+        }
+        case prghTotalHydrostaticPressure:
+        {
+            *patchTypeSelector = 24;
+            break;
+        }
+        case fixedFluxPressure:
+        {
+            *patchTypeSelector = 25;
+            break;
+        }
+        case flowRateInletVelocity:
+        {
+            *patchTypeSelector = 26;
+            break;
+        }
+        case fixedGradient:
+        {
+            *patchTypeSelector = 27;
+            break;
+        }     
+        case mixedEnergy:
+        {
+            *patchTypeSelector = 28;
+            break;
+        }        
+        case decayingTurbulenceInflowGeneratorMod_ZY:
+        {
+            *patchTypeSelector = 29;
+            break;
+        } 
     }
 }
 
