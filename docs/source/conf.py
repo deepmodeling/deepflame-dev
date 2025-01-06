@@ -16,12 +16,12 @@ release = '0.1'
 
 # import sphinx_rtd_theme
 extensions = ["deepmodeling_sphinx",
-    'sphinx_rtd_theme',
-    'sphinx.ext.duration',
-    'sphinx.ext.doctest',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.intersphinx',
+    # 'sphinx_rtd_theme',
+    # 'sphinx.ext.duration',
+    # 'sphinx.ext.doctest',
+    # 'sphinx.ext.autodoc',
+    # 'sphinx.ext.autosummary',
+    # 'sphinx.ext.intersphinx',
 ]
 source_suffix = ['.rst', '.md']
 
@@ -34,7 +34,8 @@ intersphinx_disabled_domains = ['std']
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_rtd_theme'
+# html_theme = 'sphinx_rtd_theme'
+html_theme = 'sphinx_book_theme'
 html_logo = 'DeepFlameLOGO.png'
 
 
