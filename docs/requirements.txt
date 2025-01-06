@@ -1,8 +1,8 @@
 sphinx>=4.0.2
 recommonmark
-sphinx-book-theme
+sphinx-rtd-theme
 sphinx_markdown_tables
 sphinx-argparse
 myst-parser
-deepmodeling-sphinx>=0.3.0
+deepmodeling-sphinx
 .
