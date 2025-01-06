@@ -17,7 +17,7 @@ release = '0.1'
 # import sphinx_rtd_theme
 extensions = ["deepmodeling_sphinx",
     # 'sphinx_rtd_theme',
-    'sphinx_book_theme',
+    # 'sphinx_book_theme',
     'sphinx.ext.duration',
     'sphinx.ext.doctest',
     'sphinx.ext.autodoc',
