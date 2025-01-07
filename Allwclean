@@ -21,6 +21,7 @@ wclean ./applications/solvers/dfSprayFoam
 wclean ./applications/solvers/df0DFoam
 wclean ./applications/solvers/dfLowMachFoam
 wclean ./applications/solvers/dfHighSpeedFoam
+wclean ./applications/solvers/dfBuoyancyFoam
 
 rm -rf src_orig/
 rm -rf bin/

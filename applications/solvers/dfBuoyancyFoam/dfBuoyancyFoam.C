@@ -42,7 +42,7 @@ Description
 #include "basicReactingCloud.H"
 #include "surfaceFilmModel.H"
 #include "pyrolysisModelCollection.H"
-// #include "radiationModel.H"
+#include "radiationModel.H"
 #include "SLGThermo.H"
 // #include "solidChemistryModel.H"
 // #include "psiReactionThermo.H"

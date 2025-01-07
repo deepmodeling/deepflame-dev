@@ -164,5 +164,5 @@ volScalarField K("K", 0.5*magSqr(U));
 #include "createClouds.H"
 #include "createSurfaceFilmModel.H"
 // #include "createPyrolysisModel.H"
-// #include "createRadiationModel.H"
+#include "createRadiationModel.H"
 // #include "createFvOptions.H"
