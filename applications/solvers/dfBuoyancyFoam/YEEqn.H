@@ -9,7 +9,7 @@ tmp<fv::convectionScheme<scalar>> mvConvection
     )
 );
 {
-    // radiation->correct();
+    radiation->correct();
     combustion->correct();
 
     HRR = combustion->Qdot();
@@ -68,8 +68,8 @@ tmp<fv::convectionScheme<scalar>> mvConvection
       - fvm::laplacian(turbulence->alphaEff(), he)
      ==
         // combustion->Qdot() // ha Eqn has no reaction source
-    //   + radiation->Sh(thermo, he)
-         parcels.Sh(he)
+        radiation->Sh(thermo, he)
+      + parcels.Sh(he)
     //   + surfaceFilm.Sh()
     //   + fvOptions(rho, he)
     );
