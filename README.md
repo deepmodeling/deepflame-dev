@@ -24,9 +24,16 @@ DeepFlame is a deep learning empowered computational fluid dynamics package for 
 The neural network models used in the tutorial examples can be found at– [AIS Square](https://www.aissquare.com/). To run DeepFlame with DNN, download the DNN model [DF-ODENet](https://www.aissquare.com/models/detail?pageType=models&name=DF-ODENet_DNNmodel&id=197) into the case folder you would like to run.
 
 ## Documentation
-Detailed guide for installation and tutorials is available on [our documentation website](https://deepflame.deepmodeling.com).
+Detailed guide for installation and tutorials is available on [our documentation website](https://deepflame.deepmodeling.com). If you want to imply DeepFlame on Arm architecture platforms, download the `bashrc` file and the `linuxArm64Clang` folder from the link [seeudong/OpenFOAM7-aarch64-Clang-config-file](https://github.com/seeudong/OpenFOAM7-aarch64-Clang-config-file) and replace the `$OpenFOAM7/etc/bashrc` file with the downloaded `bashrc` file. Then add the `linuxArm64Clang` folder to `$OpenFOAM/wmake/rules` (`$OpenFOAM7` is your OpenFOAM path). After that, compile OpenFOAM7 as usual and follow the document above to compile DeepFlame.
 
 ## Features
+New in v1.5 (2025/1/8):
+- Provide a new boundary condition, totalFlowRateAdvectiveDiffusion (adopted from OpenFOAM v7), which accounts for diffusion effects at the boundary
+- Develop a new solver, `dfBuoyancyFoam`(adopted from fireFoam), a transient, compressible solver designed to model turbulent reacting flows while incorporating buoyancy effects
+- Add radiation models, which are integrated into the current `dfBuoyancyFoam` solver, and can be incorporated into other solvers if needed
+- Add new combustion models (including infinitelyFastChemistry and eddyDissipationModel) to the `dfBuoyancyFoam` solver
+- Imply DeepFlame on Arm architecture platforms (such as Huawei Kunpeng, etc.)
+
 New in v1.4 (2024/8/22):
 - Reorganize the update order of mass, velocity and temperature for Lagrangian particles and introduce the liquidEvaporationSpalding model as new evaporation model.
 - Add source terms for liquid phase in the `dfLowMachFoam` solver
