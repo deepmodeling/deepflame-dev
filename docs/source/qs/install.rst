@@ -243,4 +243,4 @@ Please ensure that PaddlePaddle has been successfully installed. You can refer t
 
 **5. If you wish to compile DeepFlame on Arm architecture platforms:**
 
-Please download the `bashrc` file and the `linuxArm64Clang` folder from the link [OpenFOAM7-aarch64-Clang-config-file](https://github.com/seeudong/OpenFOAM7-aarch64-Clang-config-file/archive/refs/heads/main.zip) and replace the `$OpenFOAM7/etc/bashrc` file with the downloaded `bashrc` file. Then add the `linuxArm64Clang` folder to `$OpenFOAM7/wmake/rules` (`$OpenFOAM7` is your OpenFOAM path). After that, compile OpenFOAM7 as usual and follow the document above to compile DeepFlame.
+Please download the ``bashrc`` file and the ``linuxArm64Clang`` folder from the link `OpenFOAM7-aarch64-Clang-config-file <https://github.com/seeudong/OpenFOAM7-aarch64-Clang-config-file/archive/refs/heads/main.zip>`_ and replace the ``$OpenFOAM7/etc/bashrc`` file with the downloaded ``bashrc`` file. Then add the ``linuxArm64Clang`` folder to ``$OpenFOAM7/wmake/rules`` (``$OpenFOAM7`` is your OpenFOAM path). After that, compile OpenFOAM7 as usual and follow the steps above to compile DeepFlame.
