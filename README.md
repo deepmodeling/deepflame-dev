@@ -24,7 +24,7 @@ DeepFlame is a deep learning empowered computational fluid dynamics package for 
 The neural network models used in the tutorial examples can be found at– [AIS Square](https://www.aissquare.com/). To run DeepFlame with DNN, download the DNN model [DF-ODENet](https://www.aissquare.com/models/detail?pageType=models&name=DF-ODENet_DNNmodel&id=197) into the case folder you would like to run.
 
 ## Documentation
-Detailed guide for installation and tutorials is available on [our documentation website](https://deepflame.deepmodeling.com). If you want to imply DeepFlame on Arm architecture platforms, download the `bashrc` file and the `linuxArm64Clang` folder from the link [seeudong/OpenFOAM7-aarch64-Clang-config-file](https://github.com/seeudong/OpenFOAM7-aarch64-Clang-config-file) and replace the `$OpenFOAM7/etc/bashrc` file with the downloaded `bashrc` file. Then add the `linuxArm64Clang` folder to `$OpenFOAM/wmake/rules` (`$OpenFOAM7` is your OpenFOAM path). After that, compile OpenFOAM7 as usual and follow the document above to compile DeepFlame.
+Detailed guide for installation and tutorials is available on [our documentation website](https://deepflame.deepmodeling.com). If you want to imply DeepFlame on Arm architecture platforms, download the `bashrc` file and the `linuxArm64Clang` folder from the link [OpenFOAM7-aarch64-Clang-config-file](https://github.com/seeudong/OpenFOAM7-aarch64-Clang-config-file/archive/refs/heads/main.zip) and replace the `$OpenFOAM7/etc/bashrc` file with the downloaded `bashrc` file. Then add the `linuxArm64Clang` folder to `$OpenFOAM7/wmake/rules` (`$OpenFOAM7` is your OpenFOAM path). After that, compile OpenFOAM7 as usual and follow the document above to compile DeepFlame.
 
 ## Features
 New in v1.5 (2025/1/8):
