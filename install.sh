@@ -16,7 +16,7 @@ print_finish() {
     if [ ! -z "$AMGX_DIR" ]; then
         echo "|        select the GPU solver coupled with AMGx library to solve PDE            |"
     fi
-    echo " = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ="
+    echo " = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ="
 }
 if [ $USE_LIBTORCH = true ]; then
     cd "$DF_SRC/dfChemistryModel/DNNInferencer"
