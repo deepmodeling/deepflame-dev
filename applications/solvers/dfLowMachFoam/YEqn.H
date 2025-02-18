@@ -198,6 +198,13 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
             end1 = std::clock();
             time_monitor_YEqn_solve += double(end1 - start1) / double(CLOCKS_PER_SEC);
 
+            // csrMatrix csrY(YiEqn);
+            // auto& psiY = const_cast<volScalarField&>(YiEqn.psi());
+            // auto& sourceY = YiEqn.source();
+            // auto& internalCoeffsY = YiEqn.internalCoeffs();
+            // auto& boundaryCoeffsY = YiEqn.boundaryCoeffs();
+            // csrY.solve(psiY, sourceY, internalCoeffsY, boundaryCoeffsY, "Yi");
+
             Yi.max(0.0);
             Yt += Yi;
             // ++speciesIndex;

@@ -386,7 +386,15 @@ enum boundaryConditions{
     epsilonWallFunction,
     kqRWallFunction,
     alphatWallFunction,
-    mapped
+    mapped,
+    inletOutlet,
+    totalFlowRateAdvectiveDiffusive,
+    prghTotalHydrostaticPressure,
+    fixedFluxPressure,
+    flowRateInletVelocity,
+    fixedGradient,
+    mixedEnergy,
+    decayingTurbulenceInflowGeneratorMod_ZY
 };
 
 // ************************************************************************* //

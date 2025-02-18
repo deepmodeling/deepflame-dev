@@ -71,7 +71,7 @@ Description
 // #define TIME
 // #define DEBUG_
 // #define SHOW_MEMINFO
-// #define OPENCC
+#define OPENCC
 
 #define iscsr // true -> csr, false -> ell
 #define DEBUG_TRACE fprintf(stderr, "myRank[%d] %s %d\n", myRank, __FILE__, __LINE__);
@@ -93,6 +93,8 @@ Description
     #include "epsilonWallFunctionFvPatchScalarField.H"
     #include "wedgeFvPatch.H"
     #include "wedgeFvPatchField.H"
+    #include "inletOutletFvPatchField.H"
+    // #include "totalFlowRateAdvectiveDiffusiveFvPatchScalarField.H"
     #include "createGPUSolver.H"
 
     #include "upwind.H"
@@ -240,7 +242,7 @@ int main(int argc, char *argv[])
     mesh_info_para mesh_paras;    
     init_data_para init_data;
     bool compareCPUResults = compareResults;
-    bool doCorrectBCsCPU = true;
+    bool doCorrectBCsCPU = false;
 
     // DF-A: CREATE MESHBASE 
     createGPUBaseInput(mesh_paras, init_data, CanteraTorchProperties, mesh, Y); 
@@ -281,9 +283,25 @@ int main(int argc, char *argv[])
     );
     dictionary solversDict = fvSolutionDict.subDict("solvers");
 
+    IOdictionary turbulenceDict
+    (
+        IOobject
+        (
+            "turbulenceProperties", // Dictionary name
+            runTime.constant(),     // Location within case
+            Y[0].mesh(),            // Mesh reference
+            IOobject::MUST_READ,    // Read if present
+            IOobject::NO_WRITE      // Do not write to disk
+        )
+    );
     // DF-A: SET LINEAR SOLVER CONFIGS
-    bool setRAS = (turbName == "RAS");
-    createGPUSolver(solversDict, CanteraTorchProperties, rho, U, p, Y, thermo.he(), setRAS); 
+    bool setRAS = (turbName == "RAS") ? true : false;
+    bool setLESkEqn = false;
+    if (turbName == "LES"){
+        const word LESModelType(turbulenceDict.subDict("LES").lookup("LESModel"));
+        bool setLESkEqn = (LESModelType == "kEqn") ? true : false;        
+    }
+    createGPUSolver(solversDict, CanteraTorchProperties, rho, U, p, Y, thermo.he(), setRAS, setLESkEqn); 
 
     // DF-A: SET CHEMISTRY SOLVER CONFIGS
     if (chemistry->ifChemstry())
@@ -305,18 +323,20 @@ int main(int argc, char *argv[])
     fvSchemes_para schemes_para;
     createGPUSchemesInput(fvSchemesDict, schemes_para);
 
-    IOdictionary turbulenceDict
+    createTurbulenceInput(turbulenceDict, mesh_paras, turbulence->nut(), turbulence->alphat(), turbulence->k(), turbulence->epsilon());
+
+    IOdictionary combustionDict
     (
         IOobject
         (
-            "turbulenceProperties", // Dictionary name
+            "combustionProperties", // Dictionary name
             runTime.constant(),     // Location within case
             Y[0].mesh(),            // Mesh reference
             IOobject::MUST_READ,    // Read if present
             IOobject::NO_WRITE      // Do not write to disk
         )
     );
-    createTurbulenceInput(turbulenceDict, mesh_paras, turbulence->nut(), turbulence->alphat(), turbulence->k(), turbulence->epsilon());
+    createCombustionInput(combustionDict, mesh_paras, init_data, thermo);
 
 
     std::cout << "                                                          " << std::endl;

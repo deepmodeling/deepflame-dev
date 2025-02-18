@@ -236,7 +236,34 @@ if (doCorrectBCsCPU)
 #if defined DEBUG_
     // UEqn.relax();
     TICK_START;
+
+    clock_t start_solve_u, end_solve_u;
+    start_solve_u = std::clock();
+
     solve(UEqn == -fvc::grad(p));
+
+    // tmp<fvVectorMatrix> tUEqn0
+    // (
+    //     fvm::ddt(rho, U) 
+    //     + 
+    //     fvm::div(phi, U)
+    //     +  
+    //     turbulence->divDevRhoReff(U)
+    //     == -fvc::grad(p)
+    // );
+    // fvVectorMatrix& UEqn0 = tUEqn0.ref();
+    // csrMatrix csr0(UEqn0);
+    // auto& psi0 = const_cast<volVectorField&>(UEqn0.psi());
+    // auto& source0 = UEqn0.source();
+    // auto& internalCoeffs0 = UEqn0.internalCoeffs();
+    // auto& boundaryCoeffs0 = UEqn0.boundaryCoeffs();
+    // csr0.solve(psi0, source0, internalCoeffs0, boundaryCoeffs0);
+
+    end_solve_u = std::clock();
+    double time_monitor_UEqn_solve_CPU_ = double(end_solve_u - start_solve_u) / double(CLOCKS_PER_SEC);
+    Info << "[CPU] Solve U Time: " << time_monitor_UEqn_solve_CPU_ << endl;    
+
+
     U.correctBoundaryConditions();
     K.oldTime();
     K = 0.5*magSqr(U);
