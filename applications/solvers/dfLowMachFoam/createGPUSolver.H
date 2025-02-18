@@ -397,6 +397,9 @@ void createGPUUEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
             memcpy(h_boundary_u + 3*offset, &patchU[0][0], patchsize * 3 * sizeof(double));
             offset += patchsize;
         }
+        if (patchU.type() == "flowRateInletVelocity" && patchsize > 0){
+            init_data.massFlowRate = 0.001149;
+        }
     }
 
     double *u_newOrder = new double[mesh_paras.num_cells*3]();
@@ -438,10 +441,13 @@ void createGPUYEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
     double *h_y = new double[init_data.num_species*mesh_paras.num_cells]();
     double *h_boundary_y = new double[init_data.num_species*mesh_paras.num_boundary_surfaces]();
 
+    init_data.patch_refValue_Y = new double[mesh_paras.num_patches*init_data.num_species];
+
     // prepare internal and boundary of Y
     int offset = 0;
     forAll(Y, speciesI) {
         volScalarField& Yi = Y[speciesI];
+        Yi.correctBoundaryConditions();
         memcpy(h_y + speciesI * mesh_paras.num_cells, &Yi[0], mesh_paras.num_cells * sizeof(double));
         forAll(Yi.boundaryField(), patchi) {
             const fvPatchScalarField& patchYi = Yi.boundaryField()[patchi];
@@ -456,6 +462,25 @@ void createGPUYEqn(mesh_info_para &mesh_paras, init_data_para &init_data, const 
             } else {
                 memcpy(h_boundary_y + offset, &patchYi[0], patchsize*sizeof(double));
                 offset += patchsize;
+            }
+            
+            if (patchYi.type() == "inletOutlet" && patchsize > 0)
+            {
+                const scalarField& inletValue = dynamic_cast<const inletOutletFvPatchField<scalar>&>(patchYi).refValue();
+
+                init_data.patch_refValue_Y[mesh_paras.num_patches * speciesI + patchi] = inletValue[0];
+
+                Info << "inletOutlet inletValue: " << inletValue[0] << endl;
+            }
+            if (patchYi.type() == "totalFlowRateAdvectiveDiffusive" && patchsize > 0)
+            {
+                Info << "Not support for dfLowMachFoam now " << endl;
+                abort();
+                // const scalarField& massFluxFraction = dynamic_cast<const totalFlowRateAdvectiveDiffusiveFvPatchScalarField&>(patchYi).refValue();
+                
+                // init_data.patch_refValue_Y[mesh_paras.num_patches * speciesI + patchi] = massFluxFraction[0];
+                
+                // Info << "totalFlowRateAdvectiveDiffusive massFluxFraction: " << massFluxFraction[0] << endl;
             }
         }
     }
@@ -580,6 +605,8 @@ void createGPUThermo(mesh_info_para &mesh_paras, init_data_para &init_data, cons
     string mechanismFile;
     mechanismFile = CanteraTorchProperties.lookupOrDefault("CanteraMechanismFile", string(""));
 
+    init_data.patch_refValue_T = new double[mesh_paras.num_patches];
+
     // thermo_GPU.setConstantValue(mechanismFile, num_cells, num_species);
     // init_const_coeff_ptr(thermo_GPU.nasa_coeffs, thermo_GPU.viscosity_coeffs, thermo_GPU.thermal_conductivity_coeffs, 
     //         thermo_GPU.binary_diffusion_coeffs, thermo_GPU.molecular_weights);
@@ -664,6 +691,14 @@ void createGPUThermo(mesh_info_para &mesh_paras, init_data_para &init_data, cons
             }
             offset += patchsize;
         }
+        if (patchT.type() == "inletOutlet" && patchsize > 0)
+        {
+            const scalarField& inletValue = dynamic_cast<const inletOutletFvPatchField<scalar>&>(patchT).refValue();
+
+            init_data.patch_refValue_T[patchi] = inletValue[0];
+
+            Info << "T: inletOutlet inletValue: " << inletValue[0] << endl;
+        }
     }
     for (int i = 0; i < init_data.num_species; i++) {
         memcpy(h_thermo_rhoD + i * mesh_paras.num_cells, &chemistry->rhoD(i)[0], mesh_paras.num_cells * sizeof(double));
@@ -708,7 +743,7 @@ void createGPUThermo(mesh_info_para &mesh_paras, init_data_para &init_data, cons
 
 void createGPUSolver(const dictionary solversDict, const IOdictionary& CanteraTorchProperties, 
                      const volScalarField& rho, const volVectorField& U, volScalarField& p, 
-                     PtrList<volScalarField>& Y, volScalarField& he, bool setRAS)
+                     PtrList<volScalarField>& Y, volScalarField& he, bool setRAS, bool setLESkEqn)
 {
     dictionary rhoSolverDict = solversDict.subDict("rho"); 
     dictionary USolverDict = solversDict.subDict("U"); 
@@ -749,6 +784,11 @@ void createGPUSolver(const dictionary solversDict, const IOdictionary& CanteraTo
 
         createGPUSolverInput(U.mesh(), USolverDict, MATRIX_EQUATION::epsilonEqn, UEqnSettingPath); 
         initialize_matrix(MATRIX_EQUATION::epsilonEqn);          
+    }
+    if (setLESkEqn)
+    {
+        createGPUSolverInput(U.mesh(), USolverDict, MATRIX_EQUATION::kEqn_LES, UEqnSettingPath); 
+        initialize_matrix(MATRIX_EQUATION::kEqn_LES);          
     }
 }
 
@@ -819,11 +859,6 @@ void createGPUSchemesInput(const dictionary schemesControls, fvSchemes_para sche
         schemes_para.divSchemes_phi_K = static_cast<INTERPOLATION_SCHEME>(divSchemes_phi_KInt);
         std::cout << "    == Schemes setting [divSchemes div(phi,K)]: " << divSchemes_phi_K << ", " << divSchemes_phi_KInt << std::endl;
 
-        string divSchemes_phid_p = getFullSchemesName(divSchemesDict, "div(phid,p)");
-        int divSchemes_phid_pInt = getIntSchemes(divSchemes_phid_p);
-        schemes_para.divSchemes_phid_p = static_cast<INTERPOLATION_SCHEME>(divSchemes_phid_pInt);
-        std::cout << "    == Schemes setting [divSchemes div(phid,p)]: " << divSchemes_phid_p << ", " << divSchemes_phid_pInt << std::endl;
-
         string divSchemes_phi_Yih = getFullSchemesName(divSchemesDict, "div(phi,Yi_h)");
         int divSchemes_phi_YihInt = getIntSchemes(divSchemes_phi_Yih);
         schemes_para.divSchemes_phi_Yih = static_cast<INTERPOLATION_SCHEME>(divSchemes_phi_YihInt);
@@ -837,7 +872,7 @@ void createGPUSchemesInput(const dictionary schemesControls, fvSchemes_para sche
         string divSchemes_phi_epsilon = getFullSchemesName(divSchemesDict, "div(phi,epsilon)");
         int divSchemes_phi_epsInt = getIntSchemes(divSchemes_phi_epsilon);
         schemes_para.divSchemes_phi_epsilon = static_cast<INTERPOLATION_SCHEME>(divSchemes_phi_epsInt);
-        std::cout << "    == Schemes setting [divSchemes div(phi,k)]: " << divSchemes_phi_epsilon << ", " << divSchemes_phi_epsInt << std::endl;
+        std::cout << "    == Schemes setting [divSchemes div(phi,epsilon)]: " << divSchemes_phi_epsilon << ", " << divSchemes_phi_epsInt << std::endl;
 
         // string divSchemes_hDiffCorrFlux = getFullSchemesName(divSchemesDict, "div(hDiffCorrFlux)");
         // int divSchemes_hDiffCorrFluxInt = getIntSchemes(divSchemes_hDiffCorrFlux);
@@ -1920,6 +1955,8 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
     patch_type_k.resize(mesh_paras.num_patches);
     patch_type_epsilon.resize(mesh_paras.num_patches);
 
+    double *patch_refValue_k = new double[mesh_paras.num_patches];
+
     if (simulationType == "laminar")
     {
     }
@@ -1933,6 +1970,7 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
 
         if (LESModelType == "Smagorinsky") LESModelTypeInt = 1;
         if (LESModelType == "Sigma")       LESModelTypeInt = 2;
+        if (LESModelType == "kEqn")        LESModelTypeInt = 3;
     }
     else if (simulationType == "RAS")
     {
@@ -1953,6 +1991,15 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
             constructBoundarySelectorPerPatch(&(patch_type_alphat[patchi]), alphat.boundaryField()[patchi].type());
             constructBoundarySelectorPerPatch(&(patch_type_k[patchi]), k.boundaryField()[patchi].type());
             constructBoundarySelectorPerPatch(&(patch_type_epsilon[patchi]), epsilon.boundaryField()[patchi].type());
+
+            if (k.boundaryField()[patchi].type() == "inletOutlet" && k.boundaryField()[patchi].size() > 0)
+            {
+                const scalarField& inletValue = dynamic_cast<const inletOutletFvPatchField<scalar>&>(k.boundaryField()[patchi]).refValue();
+    
+                patch_refValue_k[patchi] = inletValue[0];
+    
+                Info << "Turb k: inletOutlet inletValue: " << inletValue[0] << endl;
+            }
         }
     }
 
@@ -2100,16 +2147,18 @@ void createTurbulenceInput(const dictionary turbulenceControls, mesh_info_para &
     init_turbulence(useTurbulence, static_cast<LES_TURBULENCE_MODEL>(LESModelTypeInt), static_cast<RAS_TURBULENCE_MODEL>(RASModelTypeInt), 
                     patch_type_nut.data(), patch_type_alphat.data(), patch_type_k.data(), patch_type_epsilon.data(), &k[0], &epsilon[0],
                     h_boundary_nut, h_boundary_alphat, h_boundary_k, h_boundary_epsilon,
-                    h_boundary_yDist, h_boundary_cornerWeights, intensity, mixingLength, E, kappa, Cmu);
+                    h_boundary_yDist, h_boundary_cornerWeights, intensity, mixingLength, E, kappa, Cmu, patch_refValue_k);
 }
 
 
-void createCombustionInput(const dictionary combustionControls, mesh_info_para &mesh_paras)
+void createCombustionInput(const dictionary combustionControls, mesh_info_para &mesh_paras, init_data_para &init_data, fluidThermo& thermo)
 {
     std::cout << "- Set combustion model for DeepFlame_Academic " << std::endl;  
 
     const word combustionModel(combustionControls.lookup("combustionModel"));
     std::cout << "  = combustionModel: " << combustionModel << std::endl;
+
+    infinitelyFastChemistry_data_para input_data_cpu;
 
     int combustionModelInt = 0;
     if (combustionModel == "laminar")
@@ -2119,8 +2168,52 @@ void createCombustionInput(const dictionary combustionControls, mesh_info_para &
     {
         combustionModelInt = 1;
     }
+    else if (combustionModel == "infinitelyFastChemistry")
+    {
+        combustionModelInt = 2;
+        std::cout << "!!! Not support for dfLowMachFoam now " << std::endl; 
+        abort();
 
-    init_sgs_combustion(static_cast<TCI_MODEL>(combustionModelInt));
+        // dfSingleStepReactingMixture& myMixture = dynamic_cast<dfSingleStepReactingMixture&>(thermo);
+
+        // input_data_cpu.O2Index = myMixture.species()["O2"];
+        // input_data_cpu.fuelIndex = myMixture.fuelIndex();
+        // input_data_cpu.s_ = myMixture.s().value();
+        // input_data_cpu.stoicRatio_ = myMixture.stoicRatio().value();
+        // input_data_cpu.C_ = 5.0;
+        // Info << "O2: " << input_data_cpu.O2Index << ", fuel: " << input_data_cpu.fuelIndex << ", inert: " << init_data.inertIndex << endl;
+
+        // input_data_cpu.reactants  = new int[init_data.num_species]();
+        // input_data_cpu.products  = new int[init_data.num_species]();
+        // input_data_cpu.Yprod0  = new double[init_data.num_species]();
+        // input_data_cpu.specieStoichCoeffs  = new double[init_data.num_species]();
+        // input_data_cpu.fres  = new double[init_data.num_species * mesh_paras.num_cells]();
+
+        // std::copy(myMixture.Yprod0().begin(), myMixture.Yprod0().end(), input_data_cpu.Yprod0);
+        // std::copy(myMixture.specieStoichCoeffs().begin(), myMixture.specieStoichCoeffs().end(), input_data_cpu.specieStoichCoeffs);
+
+        // forAll(myMixture.Yprod0(), speciesI) {
+        //     volScalarField fres_i = myMixture.fres(speciesI)();
+        //     memcpy(input_data_cpu.fres + speciesI * mesh_paras.num_cells, &fres_i[0], mesh_paras.num_cells * sizeof(double));
+        // }
+
+        // std::string reactants = myMixture.CanteraKinetics()->reactantString(0);
+        // std::string products = myMixture.CanteraKinetics()->productString(0);
+        // List<int> reactants_, products_;
+        // for(int i=0; i<myMixture.nSpecies(); ++i) {
+        //     word name = myMixture.CanteraGas()->speciesName(i);
+        //     if(reactants.find(name) != std::string::npos) {
+        //         reactants_.append(i);
+        //     }
+        //     else if(products.find(name) != std::string::npos) {
+        //         products_.append(i);
+        //     }
+        // }
+        // std::copy(reactants_.begin(), reactants_.end(), input_data_cpu.reactants);
+        // std::copy(products_.begin(), products_.end(), input_data_cpu.products);
+    }
+
+    init_sgs_combustion(static_cast<TCI_MODEL>(combustionModelInt), input_data_cpu);
 }
 
 void correctVelBCsHost(mesh_info_para &mesh_paras, volVectorField& U)
