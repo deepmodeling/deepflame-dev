@@ -1,4 +1,7 @@
 EXE_INC = \
+    -I$(LIB_SRC)/parallel/distributed/lnInclude \
+    -I$(LIB_SRC)/triSurface/lnInclude \
+    -I$(LIB_SRC)/surfMesh/lnInclude \
     -I$(LIB_SRC)/transportModels/compressible/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
     -I$(DF_SRC)/thermophysicalModels/thermophysicalProperties/lnInclude \

@@ -9,6 +9,11 @@ radiationModels/fvDOM/blackBodyEmission/blackBodyEmission.C
 radiationModels/fvDOM/absorptionCoeffs/absorptionCoeffs.C
 radiationModels/viewFactor/viewFactor.C
 radiationModels/opaqueSolid/opaqueSolid.C
+/*radiationModels/solarLoad/gravityMeshObject.C*/
+/*radiationModels/solarLoad/solarLoad.C*/
+radiationModels/solarLoad/faceShading/faceShading.C
+/*radiationModels/solarLoad/faceReflecting/faceReflecting.C*/
+radiationModels/solarLoad/solarLoadBase.C
 
 /* Scatter model */
 scatterModels/scatterModel/scatterModel.C
@@ -39,8 +44,11 @@ derivedFvPatchFields/greyDiffusiveRadiation/greyDiffusiveRadiationMixedFvPatchSc
 derivedFvPatchFields/wideBandDiffusiveRadiation/wideBandDiffusiveRadiationMixedFvPatchScalarField.C
 derivedFvPatchFields/radiationCoupledBase/radiationCoupledBase.C
 derivedFvPatchFields/greyDiffusiveViewFactor/greyDiffusiveViewFactorFixedValueFvPatchScalarField.C
+/*derivedFvPatchFields/specularRadiation/specularRadiationMixedFvPatchScalarField.C*/
 
 /* fvOptions */
 fvOptions/radiation/radiation.C
 
+boundaryRadiationProperties/boundaryRadiationProperties.C
+boundaryRadiationProperties/boundaryRadiationPropertiesPatch.C
 LIB = $(DF_LIBBIN)/libdfRadiationModels

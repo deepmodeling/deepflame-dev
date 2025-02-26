@@ -59,7 +59,7 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
     Y_(mixture_.Y()),
     rhoD_(mixture_.nSpecies()),
     hai_(mixture_.nSpecies()),
-    hc_(mixture_.nSpecies()), 
+    hc_(mixture_.nSpecies()),
     yTemp_(mixture_.nSpecies()),
     dTemp_(mixture_.nSpecies()),
     hrtTemp_(mixture_.nSpecies()),
@@ -203,7 +203,7 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
     {
         call_ThermoTranNN = pybind11::module_::import("ThermoTranNN");
         Info << nl << "ThermoTranNN.py was loaded." << nl << endl;
-    }    
+    }
 
 
 #endif
@@ -417,54 +417,56 @@ void Foam::dfChemistryModel<ThermoType>::setNumerics(Cantera::ReactorNet &sim)
 
 template<class ThermoType>
 void Foam::dfChemistryModel<ThermoType>::correctThermo()
-{	   
+{
     try
     {
         psi_.oldTime();
 
         forAll(T_, celli)
         {
+            scalar hc = 0;
             forAll(Y_, i)
             {
                 yTemp_[i] = Y_[i][celli];
+                hc += yTemp_[i]*mixture_.Hc(i);
             }
             if(useThermoTranNN)
             {
                 #ifdef USE_PYTORCH
                 psi_.oldTime();
                 pybind11::str fuel = call_ThermoTranNN.attr("fuel");
-                pybind11::str ox = call_ThermoTranNN.attr("ox"); 
+                pybind11::str ox = call_ThermoTranNN.attr("ox");
                 Info << "using ThermoNet" << endl;
                 const scalarField& inputH = thermo_.he().primitiveField();
                 const scalarField& inputP = p_.primitiveField();
                 CanteraGas_->setMassFractions(yTemp_.begin());
-                
-                Info << CanteraGas_->mixtureFraction(fuel,ox) << endl;       
+
+                Info << CanteraGas_->mixtureFraction(fuel,ox) << endl;
                 mixfrac_[celli] = CanteraGas_->mixtureFraction(fuel,ox);
                 scalarField inputZ = mixfrac_.primitiveField();
 
                 pybind11::array_t<double> vec6 = pybind11::array_t<double>({inputH.size()}, {8}, &inputH[0]); // cast vector to np.array
                 // pybind11::array_t<double> vec7 = pybind11::array_t<double>({inputP.size()}, {8}, &inputP[0]);
                 pybind11::array_t<double> vec8 = pybind11::array_t<double>({inputZ.size()}, {8}, &inputZ[0]);
-                
+
                 Info <<  "vectors have all been constructed \n" << endl;
                 // pybind11::object result1 = call_ThermoTranNN.attr("useNet1")(vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7); // for rho only
                 pybind11::object result1 = call_ThermoTranNN.attr("useNet1")(vec8, vec6);
-                pybind11::array_t<double> result_array1(result1); 
+                pybind11::array_t<double> result_array1(result1);
                 double* data_ptr1 = result_array1.mutable_data();
                 pybind11::object result2 = call_ThermoTranNN.attr("useNet2")(vec8, vec6); // call python function, for T only
                 pybind11::array_t<double> result_array2(result2);// Convert the pybind11::object result to a pybind11::array_t object
                 double* data_ptr2 = result_array2.mutable_data(); // Get the pointer to the data in the array
-                pybind11::object result3 = call_ThermoTranNN.attr("useNet3")(vec8, vec6); 
-                pybind11::array_t<double> result_array3(result3);       
+                pybind11::object result3 = call_ThermoTranNN.attr("useNet3")(vec8, vec6);
+                pybind11::array_t<double> result_array3(result3);
                 double* data_ptr3 = result_array3.mutable_data();
-                pybind11::object result4 = call_ThermoTranNN.attr("useNet4")(vec8, vec6); 
-                pybind11::array_t<double> result_array4(result4);       
+                pybind11::object result4 = call_ThermoTranNN.attr("useNet4")(vec8, vec6);
+                pybind11::array_t<double> result_array4(result4);
                 double* data_ptr4 = result_array4.mutable_data();
-                pybind11::object result5 = call_ThermoTranNN.attr("useNet5")(vec8, vec6); 
-                pybind11::array_t<double> result_array5(result5);       
+                pybind11::object result5 = call_ThermoTranNN.attr("useNet5")(vec8, vec6);
+                pybind11::array_t<double> result_array5(result5);
                 double* data_ptr5 = result_array5.mutable_data();
-                forAll(T_, celli)  
+                forAll(T_, celli)
                 {
                         T_[celli] = data_ptr2[celli];
                         psi_[celli] = data_ptr3[3*celli+2];
@@ -486,25 +488,39 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
                         hai_[4][celli] = data_ptr5[6*celli+3]; //CO2
                         hai_[5][celli] = data_ptr5[6*celli+5]; //N2
                 }
-                #endif            
-            
+                #endif
+
             }
             else
             {
-                CanteraGas_->setState_PY(p_[celli], yTemp_.begin());
-                if(mixture_.heName()=="ha")
+#ifdef CANTERA_THERMO
+                mixture_.setState_PY(p_[celli], yTemp_.begin());
+                if(mixture_.heName() == "ha")
                 {
-                    CanteraGas_->setState_HP(thermo_.he()[celli], p_[celli]); // setState_HP needs (J/kg)
+                    // setState_HP needs absolute enthalpy (J/kg)
+                    mixture_.setState_HP(thermo_.he()[celli], p_[celli]);
                 }
-                else if(mixture_.heName()=="ea")
+                else if(mixture_.heName() == "hs")
+                {
+                    scalar ha = thermo_.he()[celli] + hc;
+                    mixture_.setState_HP(ha, p_[celli]);
+                }
+                else if(mixture_.heName() == "ea")
                 {
                     scalar ha = thermo_.he()[celli] + p_[celli]/rho_[celli];
-                    CanteraGas_->setState_HP(ha, p_[celli]);
+                    mixture_.setState_HP(ha, p_[celli]);
+                }
+                else
+                {
+                    FatalErrorInFunction
+                        << "Wrong CanteraMixture enregy name: " << CanteraMixture::getEnergyName()
+                        << abort(FatalError);
                 }
 
-
                 T_[celli] = CanteraGas_->temperature();
-
+#else
+                T_[celli] = mixture_.cellMixture(celli).THE(thermo_.he()[celli], p_[celli], T_[celli]);
+#endif
 
                 psi_[celli] = mixture_.psi(p_[celli],T_[celli]);
 
@@ -556,7 +572,7 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
         volScalarField::Boundary& muBf = mu_.boundaryFieldRef();
 
         volScalarField::Boundary& alphaBf = alpha_.boundaryFieldRef();
-        volScalarField::Boundary mixfracBf = mixfrac_.boundaryField();   
+        volScalarField::Boundary mixfracBf = mixfrac_.boundaryField();
 
         forAll(T_.boundaryField(), patchi)
         {
@@ -573,24 +589,19 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
             {
                 forAll(pT, facei)
                 {
+                    scalar hc = 0;
                     forAll(Y_, i)
                     {
                         yTemp_[i] = Y_[i].boundaryField()[patchi][facei];
+                        hc += yTemp_[i]*mixture_.Hc(i);
                     }
-                    CanteraGas_->setState_TPY(pT[facei], pp[facei], yTemp_.begin());
+                    mixture_.setState_TPY(pT[facei], pp[facei], yTemp_.begin());
 
-                    if(mixture_.heName()=="ha")
-                    {
-                        ph[facei] = CanteraGas_->enthalpy_mass();
-                    }
-                    else if(mixture_.heName()=="ea")
-                    {
-                        ph[facei] = CanteraGas_->intEnergy_mass();
-                    }
+                    ph[facei] = mixture_.HE(pT[facei], pp[facei]);
 
-                    ppsi[facei] = mixture_.psi(pp[facei],pT[facei]);
+                    ppsi[facei] = mixture_.psi(pp[facei], pT[facei]);
 
-                    prho[facei] = mixture_.rho(pp[facei],pT[facei]);
+                    prho[facei] = mixture_.rho(pp[facei], pT[facei]);
 
                     pmu[facei] = mixture_.CanteraTransport()->viscosity();
 
@@ -622,9 +633,11 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
             {
                 forAll(pT, facei)
                 {
+                    scalar hc = 0;
                     forAll(Y_, i)
                     {
                         yTemp_[i] = Y_[i].boundaryField()[patchi][facei];
+                        hc += yTemp_[i]*mixture_.Hc(i);
                     }
                     if(useThermoTranNN)
                     {
@@ -632,7 +645,7 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
                         CanteraGas_->setMassFractions(yTemp_.begin());
                         pybind11::str fuel = call_ThermoTranNN.attr("fuel");
                         pybind11::str ox = call_ThermoTranNN.attr("ox");
-                        Info << CanteraGas_->mixtureFraction(fuel,ox) << endl;       
+                        Info << CanteraGas_->mixtureFraction(fuel,ox) << endl;
                         mixfrac_[facei] = CanteraGas_->mixtureFraction(fuel,ox);
                         scalarField inputZ = mixfrac_.primitiveField();
                         pybind11::array_t<double> pvec8 = pybind11::array_t<double>({pmixfrac.size()}, {8}, &pmixfrac[0]);
@@ -641,16 +654,16 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
                         pybind11::object presult1 = call_ThermoTranNN.attr("useNet1")(pvec8, pvec6); // for density only
                         pybind11::array_t<double> presult_array1(presult1);
                         double* pdata_ptr1 = presult_array1.mutable_data();
-                        pybind11::object presult2 = call_ThermoTranNN.attr("useNet2")(pvec8, pvec6); // for temperature only 
+                        pybind11::object presult2 = call_ThermoTranNN.attr("useNet2")(pvec8, pvec6); // for temperature only
                         pybind11::array_t<double> presult_array2(presult2);
                         double* pdata_ptr2 = presult_array2.mutable_data();
-                        pybind11::object presult3 = call_ThermoTranNN.attr("useNet3")(pvec8, pvec6); 
+                        pybind11::object presult3 = call_ThermoTranNN.attr("useNet3")(pvec8, pvec6);
                         pybind11::array_t<double> presult_array3(presult3);    // Get the pointer to the data in the array
                         double* pdata_ptr3 = presult_array3.mutable_data();
-                        pybind11::object presult4 = call_ThermoTranNN.attr("useNet4")(pvec8, pvec6); 
+                        pybind11::object presult4 = call_ThermoTranNN.attr("useNet4")(pvec8, pvec6);
                         pybind11::array_t<double> presult_array4(presult4);    // Get the pointer to the data in the array
                         double* pdata_ptr4 = presult_array4.mutable_data();
-                        pybind11::object presult5 = call_ThermoTranNN.attr("useNet5")(pvec8, pvec6); 
+                        pybind11::object presult5 = call_ThermoTranNN.attr("useNet5")(pvec8, pvec6);
                         pybind11::array_t<double> presult_array5(presult5);    // Get the pointer to the data in the array
                         double* pdata_ptr5 = presult_array5.mutable_data();
                         forAll(pT, facei) {
@@ -674,25 +687,40 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
                             hai_[3].boundaryFieldRef()[patchi][facei] = pdata_ptr5[6*facei+2]; //CO
                             hai_[4].boundaryFieldRef()[patchi][facei] = pdata_ptr5[6*facei+3]; //CO2
                             hai_[5].boundaryFieldRef()[patchi][facei] = pdata_ptr5[6*facei+5]; //N2
-                        
+
                             }
                             #endif
                     }
                     else
                     {
-                        CanteraGas_->setState_PY(pp[facei], yTemp_.begin());
-                        if(mixture_.heName()=="ha")
+
+#ifdef CANTERA_THERMO
+                        mixture_.setState_PY(pp[facei], yTemp_.begin());
+                        if(mixture_.heName() == "ha")
                         {
-                            CanteraGas_->setState_HP(ph[facei], pp[facei]);
+                            mixture_.setState_HP(ph[facei], pp[facei]);
                         }
-                        else if(mixture_.heName()=="ea")
+                        else if(mixture_.heName() == "hs")
+                        {
+                            scalar ha = ph[facei] + hc;
+                            mixture_.setState_HP(ha, pp[facei]);
+                        }
+                        else if(mixture_.heName() == "ea")
                         {
                             scalar ha = ph[facei] + pp[facei]/prho[facei];
-                            CanteraGas_->setState_HP(ha, pp[facei]);
+                            mixture_.setState_HP(ha, pp[facei]);
+                        }
+                        else
+                        {
+                            FatalErrorInFunction
+                                << "Wrong CanteraMixture enregy name: " << CanteraMixture::getEnergyName()
+                                << abort(FatalError);
                         }
 
                         pT[facei] = CanteraGas_->temperature();
-
+#else
+                        pT[facei] = mixture_.patchFaceMixture(patchi, facei).THE(ph[facei], pp[facei], pT[facei]);
+#endif
                         ppsi[facei] = mixture_.psi(pp[facei],pT[facei]);
 
                         prho[facei] = mixture_.rho(pp[facei],pT[facei]);
@@ -752,7 +780,7 @@ void Foam::dfChemistryModel<ThermoType>::solveSingle
     const scalarList yPre_ = problem.Y;
     scalar Qdoti_ = 0;
 
-    CanteraGas_->setState_TPY(Ti, pi, yPre_.begin());
+    mixture_.setState_TPY(Ti, pi, yPre_.begin());
 
     react.insert(mixture_.CanteraSolution());
     // keep T const before and after sim.advance. this will give you a little improvement
@@ -802,7 +830,7 @@ Foam::dfChemistryModel<ThermoType>::getProblems
                 yTemp_[i] = Y_[i][celli];
             }
 
-            CanteraGas_->setState_TPY(T[celli], p[celli], yTemp_.begin());
+            mixture_.setState_TPY(T[celli], p[celli], yTemp_.begin());
             CanteraGas_->getConcentrations(cTemp_.begin());
 
             ChemistryProblem problem;
@@ -911,7 +939,7 @@ void Foam::dfChemistryModel<ThermoType>::calculateW()
             Yi[i] = Y_[i][celli];
         }
 
-        CanteraGas_->setState_TPY(Ti, pi, Yi);
+        mixture_.setState_TPY(Ti, pi, Yi);
 
         CanteraKinetics_->getNetProductionRates(twrate);
 
@@ -939,9 +967,9 @@ Foam::dfChemistryModel<ThermoType>::calculateRR
            dimensionedScalar(dimMass/dimVolume/dimTime, 0)
         )
     );
-  
+
     volScalarField::Internal& RR = tRR.ref();
-	
+
     doublereal netRate[mixture_.nReactions()];
     doublereal X[mixture_.nSpecies()];
 
@@ -970,16 +998,16 @@ Foam::dfChemistryModel<ThermoType>::calculateRR
 		{
 			RR[celli] -= sp.second*netRate[reactionI];
 		}
-			
-	}			
+
+	}
 	for (const auto& sp : R->products)
 	{
 		if (speciei == static_cast<int>(CanteraGas_->speciesIndex(sp.first)))
 		{
 			RR[celli] += sp.second*netRate[reactionI];
 		}
-	}					
-		
+	}
+
         RR[celli] *= CanteraGas_->molecularWeight(speciei);
     }
 
