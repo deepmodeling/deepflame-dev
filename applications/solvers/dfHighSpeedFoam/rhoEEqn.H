@@ -39,7 +39,7 @@ else
 ea = rhoE/rho - 0.5*magSqr(U);
 ea.correctBoundaryConditions();
 
-ha = ea + p/rho;
+// ha = ea + p/rho;
 chemistry->correctThermo(); // before this, we must update ha = e + p/rho
 
 rhoE.boundaryFieldRef() == rho.boundaryField()*(ea.boundaryField() + 0.5*magSqr(U.boundaryField()));
@@ -49,15 +49,15 @@ if (!inviscid)
     if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
     {
         rhoE_rhs =   fvc::laplacian(turbulence->alphaEff()*thermo.gamma(), ea)
-                  - diffAlphaD 
+                  - diffAlphaD
                   + fvc::div(hDiffCorrFlux);
-        
+
         rhoE +=  rkcoe3[nrk]*rhoE_rhs*runTime.deltaT();
 
         ea = rhoE/rho - 0.5*magSqr(U);
         ea.correctBoundaryConditions();
 
-        ha = ea + p/rho;
+        // ha = ea + p/rho;
         chemistry->correctThermo(); // before this, we must update ha = e + p/rho
     }
     else
@@ -84,12 +84,12 @@ if (!inviscid)
 
         eEqn.solve("ea");
 
-        ha = ea + p/rho;
+        // ha = ea + p/rho;
         chemistry->correctThermo();
         rhoE = rho*(ea + 0.5*magSqr(U));
         rhoE.boundaryFieldRef() == rho.boundaryField()*(ea.boundaryField() + 0.5*magSqr(U.boundaryField()));
     }
-    
+
 }
 
 Info<< "min/max(T) = "

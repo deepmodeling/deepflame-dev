@@ -1,5 +1,6 @@
 EXE_INC = -std=c++14\
     -Wno-old-style-cast \
+    $(if $(CANTERA_THERMO),-DCANTERA_THERMO,) \
     -I$(LIB_SRC)/transportModels/compressible/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
