@@ -104,14 +104,6 @@ Foam::CanteraMixture::CanteraMixture
         //Tranges[2] T_high
         Cantera::AnyMap map2 = CanteraGas_->species(i)->thermo->input();
         auto Tranges = map2["temperature-ranges"].asVector<double>();
-        if(Tranges.size() != 3)
-        {
-            FatalErrorInFunction
-                <<"Check your Chemical mechanism, species "
-                <<CanteraGas_->speciesName(i)
-                <<"!\n"
-                <<exit(FatalError);
-        }
         Tcommon_ = Tranges[1];
     }
 
