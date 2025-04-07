@@ -1,0 +1,3 @@
+flameSpeed.C
+
+EXE = $(DF_APPBIN)/flameSpeed
