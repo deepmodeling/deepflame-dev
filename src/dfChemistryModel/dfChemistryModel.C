@@ -131,7 +131,7 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
     )
 {
 
-#if defined USE_LIBTORCH || defined USE_PYTORCH
+#if defined USE_PYTORCH
     useDNN = true;
     if (!Qdot_.typeHeaderOk<volScalarField>())
     {
@@ -139,8 +139,38 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
     }
 
     torchSwitch_ = this->subDict("TorchSettings").lookupOrDefault("torch", false);
-    gpu_ = this->subDict("TorchSettings").lookupOrDefault("GPU", false),
-    gpulog_ = this->subDict("TorchSettings").lookupOrDefault("log", false),
+    gpu_ = this->subDict("TorchSettings").lookupOrDefault("GPU", false);
+    gpulog_ = this->subDict("TorchSettings").lookupOrDefault("log", false);
+    
+    if(torchSwitch_)
+    {
+        call_DNN = pybind11::module_::import("inference");
+        Info << nl << "inference.py was loaded." << nl << endl;
+    }
+    Tem = this->subDict("TorchSettings").lookupOrDefault("frozenTemperature", 298);
+    Qdot_limit = this->subDict("TorchSettings").lookupOrDefault("Qdotmin", -1e+15);
+    batch_on = this->subDict("TorchSettings").lookupOrDefault("batch", false);
+    batch_size = this->subDict("TorchSettings").lookupOrDefault("batch_size", 1024);
+
+    time_allsolve_ = 0;
+    time_getDNNinputs_ = 0;
+    time_DNNinference_ = 0;
+    time_updateQdot_ = 0;
+    time_updateRR_ = 0;
+    time_real_pythonTime_ = 0;
+
+#endif
+
+#if defined USE_LIBTORCH 
+    useDNN = true;
+    if (!Qdot_.typeHeaderOk<volScalarField>())
+    {
+        useDNN = false;
+    }
+
+    torchSwitch_ = this->subDict("TorchSettings").lookupOrDefault("torch", false);
+    gpu_ = this->subDict("TorchSettings").lookupOrDefault("GPU", false);
+    gpulog_ = this->subDict("TorchSettings").lookupOrDefault("log", false);
 
     time_allsolve_ = 0;
     time_submaster_ = 0;
@@ -193,11 +223,6 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
 #endif
 
 #ifdef USE_PYTORCH
-    cores_ = this->subDict("TorchSettings").lookupOrDefault("coresPerNode", 8);
-
-    time_vec2ndarray_ = 0;
-    time_python_ = 0;
-
     useThermoTranNN = this->lookupOrDefault("useThermoTranNN", false);
     if(useThermoTranNN)
     {
@@ -208,9 +233,9 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
 
 #endif
 
-#if defined USE_LIBTORCH || defined USE_PYTORCH
+#if defined USE_LIBTORCH || USE_PYBTORCH
     // if use torch, create new communicator for solving cvode
-    if (torchSwitch_)
+    if (torchSwitch_ && !gpu_)
     {
         labelList subRank;
         for (int rank = 0; rank < Pstream::nProcs(); rank ++)
@@ -1031,7 +1056,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_CVODE
     timer.timeIncrement();
     DynamicList<ChemistryProblem> allProblems = getProblems(deltaT);
     t_getProblems = timer.timeIncrement();
-
+    Info<<"getProblemTime === "<< t_getProblems <<endl;
     RecvBuffer<ChemistrySolution> incomingSolutions;
 
     if(balancer_.active())
@@ -1040,21 +1065,25 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_CVODE
         timer.timeIncrement();
         balancer_.updateState(allProblems);
         t_updateState = timer.timeIncrement();
+        Info<<"updateStateTime === "<< t_updateState <<endl;
 
         timer.timeIncrement();
         auto guestProblems = balancer_.balance(allProblems);
         auto ownProblems = balancer_.getRemaining(allProblems);
         t_balance = timer.timeIncrement();
+        Info<<"testbalanceTime === "<< t_balance <<endl;
 
         timer.timeIncrement();
         auto ownSolutions = solveList(ownProblems);
         auto guestSolutions = solveBuffer(guestProblems);
         t_solveBuffer = timer.timeIncrement();
+        Info<<"solveBufferTime === "<< t_solveBuffer <<endl;
 
         timer.timeIncrement();
         incomingSolutions = balancer_.unbalance(guestSolutions);
         incomingSolutions.append(ownSolutions);
         t_unbalance = timer.timeIncrement();
+        Info<<"unbalanceTime === "<< t_unbalance <<endl;
     }
     else
     {
@@ -1083,7 +1112,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_CVODE
 }
 
 
-#if defined USE_LIBTORCH || defined USE_PYTORCH
+#if defined USE_LIBTORCH 
 #include "torchFunctions.H"
 #endif
 

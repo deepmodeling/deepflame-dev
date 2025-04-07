@@ -135,7 +135,7 @@ public IOdictionary
         volScalarField selectDNN_;
         bool useThermoTranNN;
 
-#if defined USE_LIBTORCH || defined USE_PYTORCH
+#if defined USE_LIBTORCH 
         bool useDNN;
         Switch torchSwitch_;
         Switch gpu_;
@@ -155,6 +155,27 @@ public IOdictionary
         double time_getProblems_;
 #endif
 
+#if defined USE_PYTORCH
+        bool useDNN;
+        double Tem;
+        double Qdot_limit;
+        double batch_size;
+        bool batch_on;
+        Switch torchSwitch_;
+        Switch gpu_;
+        Switch gpulog_;
+
+        label cvodeComm;
+        double time_allsolve_;
+        double time_getDNNinputs_;
+        double time_DNNinference_;
+        double time_updateQdot_;
+        double time_updateRR_;
+        double time_real_pythonTime_;
+
+#endif
+
+
 #ifdef USE_LIBTORCH
         DNNInferencer DNNInferencer_;
         int cores_; // The number of cores per GPU when use libtorch
@@ -166,11 +187,8 @@ public IOdictionary
 #endif
 
 #ifdef USE_PYTORCH
-        int cores_; // The number of cores per node when use pytorch
-
-        // profiling
-        double time_vec2ndarray_;
-        double time_python_;
+        int cores_;
+        pybind11::module_ call_DNN;
         pybind11::module_ call_ThermoTranNN; // to import inference file
 #endif
 
@@ -354,7 +372,7 @@ public:
         bool ifChemstry() const {return chemistry_;}
 
     // profiling
-#if defined USE_LIBTORCH || defined USE_PYTORCH
+#if defined USE_LIBTORCH 
     double time_allsolve() {return time_allsolve_;}
     double time_submaster() {return time_submaster_;}
     double time_sendProblem() {return time_sendProblem_;}
@@ -366,8 +384,12 @@ public:
     double time_updateSolutionBuffer() {return time_updateSolutionBuffer_;}
 #endif
 #ifdef USE_PYTORCH
-    double time_vec2ndarray() {return time_vec2ndarray_;}
-    double time_python() {return time_python_;}
+    double time_allsolve() {return time_allsolve_;}
+    double time_getDNNinputs() {return time_getDNNinputs_;}
+    double time_DNNinference() {return time_DNNinference_;}
+    double time_updateQdot() {return time_updateQdot_;}
+    double time_updateRR() {return time_updateRR_;}
+    double time_real_pythonTime() {return time_real_pythonTime_;}
 #endif
 
 };
