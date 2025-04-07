@@ -12,11 +12,38 @@ void Foam::dfChemistryModel<ThermoType>::getGPUProblems
 
     // get cuda problemList, for all cell
     // each get problem
+    // std::ifstream controlFile("./constant/CanteraTorchProperties");  // 打开 control 文件
+    // std::string line;
+    // scalar Tem = 0.0;  // 初始化 Tem
+    // while (std::getline(controlFile, line))  // 逐行读取文件
+    // {
+    //     if (line.find("frozenTemperature") != std::string::npos)  // 查找包含 "wr" 的行
+    //     {
+    //         std::istringstream iss(line);
+    //         std::string key;
+    //         iss >> key;  // 读取行的第一个单词（即 "wr"）
+    //         iss >> Tem;    // 读取下一个数字到 a
+    //         break;       // 找到后退出循环
+    //     }
+    // }
+ 
+
     forAll(T_, cellI)
     {
         scalar Ti = T_[cellI];
         scalar pi = p_[cellI];
         scalar rhoi = rho_[cellI];
+        
+        if (T_[cellI] < Tem)
+        {
+            Qdot_[cellI] = 0;
+            for (int i = 0; i < mixture_.nSpecies(); i++)
+            {
+                RR_[i][cellI] = 0.0;
+            }
+            continue;
+        }
+
 
         // set problems
         GpuProblem problem(mixture_.nSpecies());

@@ -142,6 +142,8 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
     gpu_ = this->subDict("TorchSettings").lookupOrDefault("GPU", false),
     gpulog_ = this->subDict("TorchSettings").lookupOrDefault("log", false),
 
+    Tem = this->subDict("TorchSettings").lookupOrDefault("frozenTemperature", 310);
+
     time_allsolve_ = 0;
     time_submaster_ = 0;
     time_sendProblem_ = 0;

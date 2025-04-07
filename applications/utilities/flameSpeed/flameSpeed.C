@@ -22,11 +22,35 @@ Application
 Description
 \*---------------------------------------------------------------------------*/
 #include "fvCFD.H"
+#include <fstream>  // 添加这个头文件以便进行文件操作
+#include <sstream>  // 添加这个头文件以便进行字符串流操作
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 int main(int argc, char *argv[])
 {
     #include "setRootCase.H"
     #include "createTime.H"
+
+    // 读取 control 文件中的 wr 行
+    std::ifstream controlFile("./system/controlDict");  // 打开 control 文件
+    std::string line;
+    scalar a = 0.0;  // 初始化 a
+    while (std::getline(controlFile, line))  // 逐行读取文件
+    {
+        if (line.find("writeInterval") != std::string::npos)  // 查找包含 "wr" 的行
+        {
+            std::istringstream iss(line);
+            std::string key;
+            iss >> key;  // 读取行的第一个单词（即 "wr"）
+            iss >> a;    // 读取下一个数字到 a
+            break;       // 找到后退出循环
+        }
+    }
+    controlFile.close();  // 关闭文件
+
+    // 输出读取的值
+    // Info << "Value of writeInterval (from controlDict file) = " << a << endl;
+
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
     instantList timeDirs = timeSelector::select0(runTime, args);
     #include "createMesh.H"
@@ -34,7 +58,7 @@ int main(int argc, char *argv[])
     forAll(timeDirs, timeI)
     {
         runTime.setTime(timeDirs[timeI], timeI);
-        Info<< "Time = " << runTime.timeName() << endl;
+        Info << "Time = " << runTime.timeName() << endl;
         volScalarField T
         (
             IOobject
@@ -65,17 +89,17 @@ int main(int argc, char *argv[])
         {
             gradT[cellI] = gradT_[cellI].x();
         }
-        const scalar flameThickness=  (max(T).value() - min(T).value())/max(gradT);
-        Info<< "flameThickness = " << flameThickness << " m" << endl;
-        Info<< "flamePoint.x (max T gradient) = " << mesh.C()[findMax(gradT)].x() << endl;
-        Info<< "flamePropagationSpeed = " << (mesh.C()[findMax(gradT)].x() - flamePosition)/0.001 << " m/s" << endl;
-        Info<< "flameSpeed = " << U[0][0] - (mesh.C()[findMax(gradT)].x() - flamePosition)/0.001 << " m/s" << endl;
+        const scalar flameThickness = (max(T).value() - min(T).value()) / max(gradT);
+        Info << "Value of writeInterval (from controlDict file) = " << a << endl;
+        Info << "flameThickness = " << flameThickness << " m" << endl;
+        Info << "flamePoint.x (max T gradient) = " << mesh.C()[findMax(gradT)].x() << endl;
+        Info << "flamePropagationSpeed = " << (mesh.C()[findMax(gradT)].x() - flamePosition) / a << " m/s" << endl;
+        Info << "flameSpeed = " << U[0][0] - (mesh.C()[findMax(gradT)].x() - flamePosition) / a << " m/s" << endl;
         flamePosition = mesh.C()[findMax(gradT)].x();
     }
-    Info<< nl << "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
-        << "  ClockTime = " << runTime.elapsedClockTime() << " s"
-        << nl << endl;
-    Info<< "End\n" << endl;
+    Info << nl << "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
+         << "  ClockTime = " << runTime.elapsedClockTime() << " s"
+         << nl << endl;
+    Info << "End\n" << endl;
     return 0;
 }
-// ************************************************************************* //
