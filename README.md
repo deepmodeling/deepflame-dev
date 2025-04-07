@@ -27,6 +27,13 @@ The neural network models used in the tutorial examples can be found at– [AIS 
 Detailed guide for installation and tutorials is available on [our documentation website](https://deepflame.deepmodeling.com).
 
 ## Features
+New in v1.5 (2025/1/8):
+- Provide a new boundary condition, totalFlowRateAdvectiveDiffusion (adopted from OpenFOAM v7), which accounts for diffusion effects at the boundary
+- Develop a new solver, `dfBuoyancyFoam`(adopted from fireFoam), a transient, compressible solver designed to model turbulent reacting flows while incorporating buoyancy effects
+- Add radiation models, which are integrated into the current `dfBuoyancyFoam` solver, and can be incorporated into other solvers if needed
+- Add new combustion models (including infinitelyFastChemistry and eddyDissipationModel) to the `dfBuoyancyFoam` solver
+- Imply DeepFlame on Arm architecture platforms
+
 New in v1.4 (2024/8/22):
 - Reorganize the update order of mass, velocity and temperature for Lagrangian particles and introduce the liquidEvaporationSpalding model as new evaporation model.
 - Add source terms for liquid phase in the `dfLowMachFoam` solver

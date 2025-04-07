@@ -4,7 +4,8 @@ CombustionModel/CombustionModel/CombustionModels.C
 FGM/FGMLiquidEvaporationBoil/FGMLiquidEvaporationBoils.C
 
 /*diffusion/diffusions.C*/
-/*infinitelyFastChemistry/infinitelyFastChemistrys.C*/
+infinitelyFastChemistry/infinitelyFastChemistrys.C
+eddyDissipationModel/eddyDissipationModels.C
 
 PaSR/PaSRs.C
 EDC/EDCs.C

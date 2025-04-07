@@ -1,20 +1,22 @@
 #!/bin/sh
 
+ARCH=$(uname -m)
+
 print_finish() {
     if [ ! -z "$LIBTORCH_ROOT" ]; then
-        echo " = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ="
-        echo "| deepflame (linked with libcantera and libtorch) compiled successfully! Enjoy!! |"
+        echo " = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ="
+        echo "| deepflame (linked with libcantera and libtorch) in $ARCH compiled successfully! Enjoy!! |"
     elif [ ! -z "$PYTHON_LIB_DIR" ]; then
-        echo " = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ="
-        echo "| deepflame (linked with libcantera and pytorch) compiled successfully! Enjoy!!  |"
+        echo " = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ="
+        echo "| deepflame (linked with libcantera and pytorch) in $ARCH compiled successfully! Enjoy!!  |"
     else
-        echo " = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ="
-        echo "|     deepflame (linked with libcantera) compiled successfully! Enjoy!!          |"
+        echo " = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ="
+        echo "|     deepflame (linked with libcantera) in $ARCH compiled successfully! Enjoy!!          |"
     fi
     if [ ! -z "$AMGX_DIR" ]; then
         echo "|        select the GPU solver coupled with AMGx library to solve PDE            |"
     fi
-    echo " = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ="
+    echo " = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = ="
 }
 if [ $USE_LIBTORCH = true ]; then
     cd "$DF_SRC/dfChemistryModel/DNNInferencer"
