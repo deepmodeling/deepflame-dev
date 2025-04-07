@@ -233,9 +233,9 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
 
 #endif
 
-#if defined USE_LIBTORCH 
+#if defined USE_LIBTORCH || USE_PYBTORCH
     // if use torch, create new communicator for solving cvode
-    if (torchSwitch_)
+    if (torchSwitch_ && !gpu_)
     {
         labelList subRank;
         for (int rank = 0; rank < Pstream::nProcs(); rank ++)

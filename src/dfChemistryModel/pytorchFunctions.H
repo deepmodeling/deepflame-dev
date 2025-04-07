@@ -11,7 +11,8 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
     {
         return deltaTMin;
     }
-
+    
+    std::chrono::steady_clock::time_point start0 = std::chrono::steady_clock::now();
     Info << "=== begin solve_DNN === " << endl;
     if (gpu_)
     {
@@ -22,7 +23,6 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
         Info << "now DNN inference is conducted on CPU" << endl;
     }
 
-    std::chrono::steady_clock::time_point start0 = std::chrono::steady_clock::now();
     std::chrono::steady_clock::time_point start1 = std::chrono::steady_clock::now();
 
     std::vector<double> inputsDNN;
@@ -205,11 +205,12 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
     std::chrono::steady_clock::time_point stop3 = std::chrono::steady_clock::now();
     std::chrono::duration<double> processingTime3 = std::chrono::duration_cast<std::chrono::duration<double>>(stop3 - start3);
     time_updateQdot_ += processingTime3.count();
+    
+    Info << "=== end solve_DNN === " << endl;
 
     std::chrono::steady_clock::time_point stop0 = std::chrono::steady_clock::now();
     std::chrono::duration<double> processingTime0 = std::chrono::duration_cast<std::chrono::duration<double>>(stop0 - start0);
     time_allsolve_ += processingTime0.count();
 
-    Info << "=== end solve_DNN === " << endl;
     return deltaTMin;
 }

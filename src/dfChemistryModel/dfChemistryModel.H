@@ -187,6 +187,7 @@ public IOdictionary
 #endif
 
 #ifdef USE_PYTORCH
+        int cores_;
         pybind11::module_ call_DNN;
         pybind11::module_ call_ThermoTranNN; // to import inference file
 #endif
