@@ -52,12 +52,11 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
             inputsDNN.push_back(p_.primitiveField()[celli]); // pressure
             for(int speciID = 0; speciID < mixture_.nSpecies(); speciID++)
             {
-                inputsDNN.push_back(Y_[speciID].primitiveField()[celli]);  // mass fraction of need Y
+                inputsDNN.push_back(Y_[speciID].primitiveField()[celli]);  // mass fraction Y
             }
             inputsDNN.push_back(rho_.primitiveField()[celli]); // rho
         }       
     }
-    // std::cout << " inputDNN_cell_num1 " << celli_num1 << " with frozen " << Tem << " in Processor " << Pstream::myProcNo() << nl << endl;
 
     std::chrono::steady_clock::time_point stop1 = std::chrono::steady_clock::now();
     std::chrono::duration<double> processingTime1 = std::chrono::duration_cast<std::chrono::duration<double>>(stop1 - start1);
@@ -77,13 +76,13 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
         if(batch_on)
         {
             int onebatchnum = batch_size * (3 + mixture_.nSpecies());
-            int num_batches = inputsDNN.size() / onebatchnum + 1; // 计算批次数
+            int num_batches = inputsDNN.size() / onebatchnum + 1; // batch numbers
             std::vector<double> all_results;
             int RealInputNum = 0;
             int RealOutputNum = 0;
             for (int batch_index = 0; batch_index < num_batches; ++batch_index)
             {
-                // 计算当前批次的输入数据起始位置
+                // initial number of one batch
                 int start_index = batch_index * onebatchnum;
                 
                 if (batch_index == num_batches - 1)
@@ -96,12 +95,11 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
                 }
                 
                 pybind11::array_t<double> input = pybind11::array_t<double>(
-                    {RealInputNum}, // 输入数组的形状
-                    {sizeof(double)}, // 每个维度的步长
-                    &inputsDNN[start_index] // 输入数据的指针
+                    {RealInputNum}, // 
+                    {sizeof(double)}, // 
+                    &inputsDNN[start_index] // 
                 );
-                // 调用DNN推断
-                // call_DNN = pybind11::module_::import("inference");
+                
                 std::chrono::steady_clock::time_point start6 = std::chrono::steady_clock::now();
 
                 pybind11::array_t<double, pybind11::array::c_style | pybind11::array::forcecast> result = call_DNN.attr("inference")(input, deltaTValue, Pstream::myProcNo());
@@ -119,7 +117,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
             }
 
             std::chrono::steady_clock::time_point start4 = std::chrono::steady_clock::now();
-            forAll(T_, celli)   /// 输出 需要记录celli的偏移量
+            forAll(T_, celli)   /// 
             {
                 if (selectDNN_[celli] == 1) {
                     for (int speciID = 0; speciID < mixture_.nSpecies(); speciID++)
@@ -135,7 +133,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
         }
         else
         {
-            pybind11::array_t<double> input = pybind11::array_t<double>({inputsDNN.size()}, {8}, &inputsDNN[0]);  // inputsDNN.size() = 4096 
+            pybind11::array_t<double> input = pybind11::array_t<double>({inputsDNN.size()}, {8}, &inputsDNN[0]);  // inputsDNN.size()  
             std::chrono::steady_clock::time_point start6 = std::chrono::steady_clock::now();
             pybind11::array_t<double, pybind11::array::c_style | pybind11::array::forcecast> result = call_DNN.attr("inference")(input, deltaTValue, Pstream::myProcNo());
 
@@ -147,7 +145,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
             double* all_results = result_array.mutable_data();
 
             std::chrono::steady_clock::time_point start4 = std::chrono::steady_clock::now();
-            forAll(T_, celli)   /// 输出 需要记录celli的偏移量
+            forAll(T_, celli)   /// 
             {
                 if (selectDNN_[celli] == 1) {
                     for (int speciID = 0; speciID < mixture_.nSpecies(); speciID++)
