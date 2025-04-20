@@ -284,11 +284,14 @@ public:
         const scalar T
     ) const
     {
-        //return CanteraGas_->cp_mass(); // J/kg/K
-            const coeffArray& a = coeffs(T);
+#ifdef CANTERA_THERMO
+        return CanteraGas_->cp_mass(); // J/kg/K
+#else
+        const coeffArray& a = coeffs(T);
         return
             ((((a[4]*T + a[3])*T + a[2])*T + a[1])*T + a[0]);
             //+ EquationOfState::Cp(p, T);
+#endif
     }
 
     scalar Cv
@@ -428,11 +431,14 @@ public:
     // J/(kg·K)
     scalar Cp(label i, scalar p, scalar T) const
     {
-        //return CpTemp_[i]/CanteraGas_->molecularWeight(i);
+#ifdef CANTERA_THERMO
+        return CpTemp_[i]/CanteraGas_->molecularWeight(i);
+#else
         const coeffArray& a = coeffs(i, T);
         return
             ((((a[4]*T + a[3])*T + a[2])*T + a[1])*T + a[0]);
         //+ EquationOfState::Cp(p, T);
+#endif
     }
 
     // J/(kg·K)
