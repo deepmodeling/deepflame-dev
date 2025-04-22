@@ -14,6 +14,8 @@ python:
 
 sphinx:
   fail_on_warning: true
+  configuration: docs/conf.py
 formats:
   - pdf
+
 
