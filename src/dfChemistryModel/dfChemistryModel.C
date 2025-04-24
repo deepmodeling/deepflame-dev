@@ -597,7 +597,7 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
                     }
                     mixture_.setState_TPY(pT[facei], pp[facei], yTemp_.begin());
 
-                    ph[facei] = mixture_.HE(pT[facei], pp[facei]);
+                    ph[facei] = mixture_.HE(pp[facei], pT[facei]);
 
                     ppsi[facei] = mixture_.psi(pp[facei], pT[facei]);
 
