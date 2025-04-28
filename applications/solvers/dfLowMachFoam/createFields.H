@@ -3,7 +3,7 @@
 
 Info<< "Reading thermophysical properties\n" << endl;
 
-CanteraMixture::setEnergyName("hs");
+CanteraMixture::setEnergyName("ha");
 // fluidThermo* pThermo = new hePsiThermo<psiThermo, CanteraMixture>(mesh, word::null);
 fluidThermo* pThermo = new heRhoThermo<rhoThermo, CanteraMixture>(mesh, word::null);
 fluidThermo& thermo = *pThermo;
