@@ -36,11 +36,11 @@
 
     if(CanteraMixture::getEnergyName() == word("hs"))
     {
-        EEqn += combustion->Qdot();
+        EEqn -= combustion->Qdot();
     }
     else if(CanteraMixture::getEnergyName() == word("ha"))
     {
-        EEqn += hcSource;
+        EEqn -= hcSource;
     }
     else
     {
