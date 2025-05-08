@@ -9,8 +9,8 @@
         hcSource.source() -= parcels.rhoTrans(i)*chemistry->mixture().Hc(i)/runTime.deltaT();
     }
     //hSource.source() -= parcels.hsTrans()/runTime.deltaT();// equivalent to parcels.Sh(he)
-    
-    
+
+
     fvScalarMatrix EEqn
     (
         turbName == "laminar"
@@ -22,9 +22,8 @@
     -   fvm::laplacian(turbulence->alphaEff(), he)
     +   diffAlphaD
     ==
-        rho*(U&g)
+       rho*(U&g)
     +   parcels.Sh(he)
-    +   hcSource
     +   fvc::div(hDiffCorrFlux)
     //+ radiation->Sh(thermo, he)
     //+ fvOptions(rho, he)
@@ -38,20 +37,34 @@
     ==
         rho*(U&g)
     +   parcels.Sh(he)
-    +   hcSource
     //+ radiation->Sh(thermo, he)
     //+ fvOptions(rho, he)
         )
     );
 
+    if(CanteraMixture::getEnergyName() == word("hs"))
+    {
+        EEqn -= combustion->Qdot();
+    }
+    else if(CanteraMixture::getEnergyName() == word("ha"))
+    {
+        EEqn -= hcSource;
+    }
+    else
+    {
+        FatalErrorInFunction
+            << "Wrong CanteraMixture enregy name: " << CanteraMixture::getEnergyName()
+            << abort(FatalError);
+    }
+
     EEqn.relax();
 
     //fvOptions.constrain(EEqn);
 
-    EEqn.solve("ha");
+    EEqn.solve("h");
 
     //fvOptions.correct(he);
 
     //radiation->correct();
-    
+
 }

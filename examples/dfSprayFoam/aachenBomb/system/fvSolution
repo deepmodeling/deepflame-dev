@@ -63,7 +63,7 @@ solvers
         relTol          0;
     }
 
-    "(ha|Yi|O2|N2|H2O)"
+    "(h|Yi|O2|N2|H2O)"
     {
         solver          PBiCGStab;
         preconditioner  DILU;
@@ -71,7 +71,7 @@ solvers
         relTol          0.1;
     }
 
-    "(ha|Yi|O2|N2|H2O)Final"
+    "(h|Yi|O2|N2|H2O)Final"
     {
         $Yi;
         relTol          0;

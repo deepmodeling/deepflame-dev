@@ -3,6 +3,7 @@
 EXE_INC = -std=c++14 \
     -Wno-old-style-cast \
     $(PFLAGS) $(PINC) \
+	$(if $(CANTERA_THERMO),-DCANTERA_THERMO,) \
     $(if $(LIBTORCH_ROOT),-DUSE_LIBTORCH,) \
     $(if $(PYTHON_INC_DIR),-DUSE_PYTORCH,) \
     -I$(LIB_SRC)/transportModels/compressible/lnInclude \
