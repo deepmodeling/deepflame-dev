@@ -53,7 +53,7 @@ solvers
     }
 
 
-    "(U|ha|k|epsilon)"
+    "(U|h|k|epsilon)"
     {
         solver          PBiCGStab;
         preconditioner  DILU;
@@ -61,7 +61,7 @@ solvers
         relTol          0.01;
     }
 
-    "(U|ha|k|epsilon)Final"
+    "(U|h|k|epsilon)Final"
     {
         $U;
 	relTol          0;
