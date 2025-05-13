@@ -49,11 +49,11 @@ TEST(corrtest,dfHighSpeedFoam){
 }
 
 TEST(corrtest,dfLowMachFoam_TGV){
-    EXPECT_FLOAT_EQ(TGV500,1532.92);   // compare the maximum temperature along y direction in 2D TGV after 500 time steps
-    EXPECT_FLOAT_EQ(TGV400,1297.64);   //  ..........400 time steps
-    EXPECT_FLOAT_EQ(TGV300,871.092);
-    EXPECT_FLOAT_EQ(TGV200,537.614);
-    EXPECT_FLOAT_EQ(TGV100,363.504);
+    EXPECT_FLOAT_EQ(TGV500,1535.03);   // compare the maximum temperature along y direction in 2D TGV after 500 time steps
+    EXPECT_FLOAT_EQ(TGV400,1298.64);   //  ..........400 time steps
+    EXPECT_FLOAT_EQ(TGV300,874.13098);
+    EXPECT_FLOAT_EQ(TGV200,538.34802);
+    EXPECT_FLOAT_EQ(TGV100,363.06601);
 }
 
 TEST(corrtest,2DSandia){
@@ -71,10 +71,10 @@ TEST(corrtest,2DSandia){
 }
 
 TEST(corrtest,dfLowMachFoam_2DaachenBomb){
-    EXPECT_NEAR(aachenBomb1,809.163,30);
-    EXPECT_NEAR(aachenBomb2,1793.4,30);
-    EXPECT_NEAR(aachenBomb3,908.059,30);
-    EXPECT_NEAR(aachenBomb4,2493.09,30);
+    EXPECT_NEAR(aachenBomb1,809.44702,0.0001);
+    EXPECT_NEAR(aachenBomb2,1820.64001,0.0001);
+    EXPECT_NEAR(aachenBomb3,913.96697998,0.0001);
+    EXPECT_NEAR(aachenBomb4,2491.8701171875,0.0001);
 }
 
 float readmaxTH2(){
