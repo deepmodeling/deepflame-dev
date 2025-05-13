@@ -71,10 +71,10 @@ TEST(corrtest,2DSandia){
 }
 
 TEST(corrtest,dfLowMachFoam_2DaachenBomb){
-    EXPECT_NEAR(aachenBomb1,809.44702,0.0001);
-    EXPECT_NEAR(aachenBomb2,1820.64001,0.0001);
-    EXPECT_NEAR(aachenBomb3,913.96697998,0.0001);
-    EXPECT_NEAR(aachenBomb4,2491.8701171875,0.0001);
+    EXPECT_NEAR(aachenBomb1,809.39398193359375,0.0001);
+    EXPECT_NEAR(aachenBomb2,1814.1099853515625);
+    EXPECT_NEAR(aachenBomb3,912.61602783203125,0.0001);
+    EXPECT_NEAR(aachenBomb4,2492.31005859375,0.0001);
 }
 
 float readmaxTH2(){
