@@ -3,7 +3,7 @@ Info<< "Reading thermophysical properties\n" << endl;
 //psiReactionThermo& thermo = pThermo();
 //thermo.validate(args.executable(), "h", "e");
 
-CanteraMixture::setEnergyName("ha");
+CanteraMixture::setEnergyName("hs");
 // fluidThermo* pThermo = new heRhoThermo<rhoThermo, CanteraMixture>(mesh, word::null);
 fluidThermo*   pThermo = new heRhoThermo<rhoThermo, dfSingleStepReactingMixture>(mesh, word::null);
 fluidThermo& thermo = *pThermo;
