@@ -5,7 +5,7 @@ if (!inviscid)
     hDiffCorrFlux = Zero;
     diffAlphaD = Zero;
     sumYDiffError = Zero;
-    
+
     forAll(Y, i)
     {
         sumYDiffError += chemistry->rhoD(i)*fvc::grad(Y[i]);
@@ -45,7 +45,7 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
     MPI_Initialized(&flag_mpi_init);
     if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     end = std::clock();
-    time_monitor_chem += double(end - start) / double(CLOCKS_PER_SEC);  
+    time_monitor_chem += double(end - start) / double(CLOCKS_PER_SEC);
 
     volScalarField Yt(0.0*Y[0]);
 
@@ -57,12 +57,12 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
 
         if (!inviscid)
         {
-            hDiffCorrFlux += chemistry->hai(i)*(chemistry->rhoD(i)*fvc::grad(Yi) - Yi*sumYDiffError);
-            diffAlphaD += fvc::laplacian(thermo.alpha()*chemistry->hai(i), Yi);
+            hDiffCorrFlux += chemistry->hei(i)*(chemistry->rhoD(i)*fvc::grad(Yi) - Yi*sumYDiffError);
+            diffAlphaD += fvc::laplacian(thermo.alpha()*chemistry->hei(i), Yi);
         }
 
         // if (i != inertIndex)
-        {   
+        {
             if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
             {
                 rhoYi_rhs = -fvc::div(rhoPhiYi[i]);
@@ -72,12 +72,12 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
                     rhoYi_rhs.ref() += chemistry->wrate(i);
                     Info <<"max reaction rate "<< Yi.name() << " is " << max(chemistry->wrate(i)).value() << endl;
                 }
-                
+
 
                 rhoYi[i] =   rkcoe1[nrk]*rhoYi_save[i]
                          + rkcoe2[nrk]*rhoYi[i]
                          + rkcoe3[nrk]*rhoYi_rhs*runTime.deltaT();
-                
+
                 Yi=rhoYi[i]/rho;
                 Yi.max(0.0);
 
@@ -86,10 +86,10 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
                     const surfaceScalarField phiUc = linearInterpolate(sumYDiffError) & mesh.Sf();
                     tmp<volScalarField> DEff = chemistry->rhoD(i) + turbulence->mut()/Sct;
 
-                    rhoYi_rhs = 
+                    rhoYi_rhs =
                         (
                             turbName == "laminar"
-                            ?  (fvc::laplacian(DEff(), Yi) - fvc::div(phiUc,Yi,"div(phi,Yi_h)")) 
+                            ?  (fvc::laplacian(DEff(), Yi) - fvc::div(phiUc,Yi,"div(phi,Yi_h)"))
                             :  fvc::laplacian(DEff(), Yi)
                         );
 
@@ -103,7 +103,7 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
                 Yi.correctBoundaryConditions();
                 rhoYi[i] = rho*Yi;
 
-            } 
+            }
             else
             {
                 // original convection term
@@ -115,12 +115,12 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
                 //       combustion->R(Yi)
                 //     + parcels.SYi(i, Yi)
                 // );
-                
+
                 solve
                 (
                       fvm::ddt(rhoYi[i])
                     + fvc::div(rhoPhiYi[i])
-                == 
+                ==
                       chemistry->RR(i)
                     + parcels.SYi(i, rhoYi[i])
                 );
@@ -134,11 +134,11 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
                     tmp<volScalarField> DEff = chemistry->rhoD(i) + turbulence->mut()/Sct;
 
                     // original term
-                    // YiEqn -= 
+                    // YiEqn -=
                     //     (
                     //         turbName == "laminar"
                     //         ? (fvm::laplacian(DEff(), Yi) - mvConvection->fvmDiv(phiUc, Yi))
-                    //         : fvm::laplacian(DEff(), Yi)   
+                    //         : fvm::laplacian(DEff(), Yi)
                     //     );
 
 
@@ -165,7 +165,7 @@ time_monitor_corrDiff += double(end - start) / double(CLOCKS_PER_SEC);
                 // Yi.max(0.0);
                 rhoYi[i] = rho*Yi;
 
-            }      
+            }
             Yt += Yi;
         }
     }

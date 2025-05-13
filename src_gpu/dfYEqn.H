@@ -131,22 +131,22 @@ public:
     void yeqn_compute_thermo_alpha(cudaStream_t stream,
             int num_cells, const double *rhoD, double *thermo_alpha,
             int num_boundary_surfaces, const double *boundary_rhoD, double *boundary_thermo_alpha);
-    void yeqn_compute_DEff_via_lewisNumber(cudaStream_t stream, int num_species, int num_cells, int num_boundary_surfaces, 
+    void yeqn_compute_DEff_via_lewisNumber(cudaStream_t stream, int num_species, int num_cells, int num_boundary_surfaces,
             double *lewis_number, const double *alpha, const double *mut_sct, double *DEff,
             const double *boundary_alpha, const double *boundary_mut_sct, double *boundary_DEff);
-    void yeqn_compute_RR(dfChemistrySolver& chemistrySolver, cudaStream_t stream, const double *h_T, const double *d_T, 
+    void yeqn_compute_RR(dfChemistrySolver& chemistrySolver, cudaStream_t stream, const double *h_T, const double *d_T,
             const double *p, const double *y, const double *rho, double *RR);
     void yeqn_fvc_laplacian_scalar(cudaStream_t stream, ncclComm_t comm, const int *neighbor_peer,
             int num_species, int num_cells, int num_surfaces, int num_boundary_surfaces,
             const int *lowerAddr, const int *upperAddr,
             const double *weight, const double *mag_sf, const double *delta_coeffs, const double *volume,
-            const double *thermo_alpha, const double *hai, const double *vf, double *output, // end for internal
+            const double *thermo_alpha, const double *hei, const double *vf, double *output, // end for internal
             int num_patches, const int *patch_size, const int *patch_type, const int *boundary_cell_face,
             const double *boundary_weight, const double *boundary_mag_sf, const double *boundary_delta_coeffs,
             const double *boundary_thermo_alpha, const double *boundary_hai, const double *boundary_vf,
             const int *cyclicNeighbor, const int *patchSizeOffset, double *boundary_output);
     void yeqn_compute_sumYDiffError_and_hDiffCorrFlux(cudaStream_t stream, int num_species, int num_cells, int num_boundary_surfaces,
-            const double *rhoD, const double *hai, const double *y, const double *grad_y,
+            const double *rhoD, const double *hei, const double *y, const double *grad_y,
             double *sumY_diff_error, double *hDiff_corr_flux,
             const double *boundary_hai, const double *boundary_y, const double *boundary_grad_y, const double *boundary_rhoD,
             double *boundary_sumY_diff_error, double *boundary_hDiff_corr_flux);
