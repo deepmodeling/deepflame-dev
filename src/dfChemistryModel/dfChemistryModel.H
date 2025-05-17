@@ -106,7 +106,7 @@ public IOdictionary
         // species mass diffusion coefficients, [kg/m/s]
         PtrList<volScalarField> rhoD_;
         // species absolute enthalpy, [J/kg]
-        PtrList<volScalarField> hai_;
+        PtrList<volScalarField> hei_;
         // species chemistry enthalpy, [J/kg]
         scalarList hc_;
         // temp mass fraction
@@ -312,11 +312,11 @@ public:
 
         const volScalarField& rhoD(const label i) const {return rhoD_[i];}
 
-        const volScalarField& hai(const label i) {return hai_[i];}
+        const volScalarField& hei(const label i) {return hei_[i];}
 
         const scalar & hci(const label i) {return hc_[i];}
 
-        // update T, psi, mu, alpha, rhoD, hai (if needed)
+        // update T, psi, mu, alpha, rhoD, hei (if needed)
         void correctThermo();
 
         ThermoType& thermo() {return thermo_;}

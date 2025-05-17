@@ -204,7 +204,7 @@ class dfChemistryModel<ThermoType>{
     -scalar absTol_
     -PtrList<volScalarField>& Y_
     -PtrList<volScalarField> rhoD_;
-    -PtrList<volScalarField> hai_;
+    -PtrList<volScalarField> hei_;
     -mutable scalarList yTemp_
     -mutable scalarList dTemp_;
     -mutable scalarList hrtTemp_;
@@ -238,7 +238,7 @@ class dfChemistryModel<ThermoType>{
     +PtrList<volScalarField>& Y()
     +const hashedWordList& species() const
     +const volScalarField& rhoD(const label i) const
-    +volScalarField& hai(const label i)
+    +volScalarField& hei(const label i)
     +void correctThermo()
 }
 @enduml

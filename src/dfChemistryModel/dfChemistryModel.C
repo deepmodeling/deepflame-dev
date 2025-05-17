@@ -58,7 +58,7 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
     absTol_(this->subDict("odeCoeffs").lookupOrDefault("absTol",1e-15)),
     Y_(mixture_.Y()),
     rhoD_(mixture_.nSpecies()),
-    hai_(mixture_.nSpecies()),
+    hei_(mixture_.nSpecies()),
     hc_(mixture_.nSpecies()),
     yTemp_(mixture_.nSpecies()),
     dTemp_(mixture_.nSpecies()),
@@ -296,16 +296,16 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
         );
     }
 
-    forAll(hai_, i)
+    forAll(hei_, i)
     {
-        hai_.set
+        hei_.set
         (
             i,
             new volScalarField
             (
                 IOobject
                 (
-                    "hai_" + Y_[i].name(),
+                    "hei_" + Y_[i].name(),
                     mesh_.time().timeName(),
                     mesh_,
                     IOobject::NO_READ,
@@ -428,7 +428,7 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
             forAll(Y_, i)
             {
                 yTemp_[i] = Y_[i][celli];
-                hc += yTemp_[i]*mixture_.Hc(i);
+                hc += yTemp_[i]*hc_[i];
             }
             if(useThermoTranNN)
             {
@@ -481,12 +481,12 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
                         rhoD_[4][celli] = data_ptr4[6*celli+3]; //CO2
                         rhoD_[5][celli] = data_ptr4[6*celli+5]; //N2
 
-                        hai_[0][celli] = data_ptr5[6*celli];   // O2
-                        hai_[1][celli] = data_ptr5[6*celli+4]; //H2O
-                        hai_[2][celli] = data_ptr5[6*celli+1]; //CH4
-                        hai_[3][celli] = data_ptr5[6*celli+2]; //CO
-                        hai_[4][celli] = data_ptr5[6*celli+3]; //CO2
-                        hai_[5][celli] = data_ptr5[6*celli+5]; //N2
+                        hei_[0][celli] = data_ptr5[6*celli];   // O2
+                        hei_[1][celli] = data_ptr5[6*celli+4]; //H2O
+                        hei_[2][celli] = data_ptr5[6*celli+1]; //CH4
+                        hei_[3][celli] = data_ptr5[6*celli+2]; //CO
+                        hei_[4][celli] = data_ptr5[6*celli+3]; //CO2
+                        hei_[5][celli] = data_ptr5[6*celli+5]; //N2
                 }
                 #endif
 
@@ -552,7 +552,24 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
                         rhoD_[i][celli] = rho_[celli]*dTemp_[i];
 
                         // CanteraGas_->molecularWeight(i)    kg/kmol
-                        hai_[i][celli] = hrtTemp_[i]*RT/CanteraGas_->molecularWeight(i);
+                        if(mixture_.heName() == "ha")
+                        {
+                            hei_[i][celli] = hrtTemp_[i]*RT/CanteraGas_->molecularWeight(i);
+                        }
+                        else if(mixture_.heName() == "hs")
+                        {
+                            hei_[i][celli] = hrtTemp_[i]*RT/CanteraGas_->molecularWeight(i) - hc_[i];
+                        }
+                        else if(mixture_.heName() == "ea")
+                        {
+                            hei_[i][celli] = hrtTemp_[i]*RT/CanteraGas_->molecularWeight(i) - p_[celli]/rho_[celli];
+                        }
+                        else
+                        {
+                            FatalErrorInFunction
+                                << "Wrong CanteraMixture enregy name: " << CanteraMixture::getEnergyName()
+                                << abort(FatalError);
+                        }
                     }
                 }
             }
@@ -593,7 +610,7 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
                     forAll(Y_, i)
                     {
                         yTemp_[i] = Y_[i].boundaryField()[patchi][facei];
-                        hc += yTemp_[i]*mixture_.Hc(i);
+                        hc += yTemp_[i]*hc_[i];
                     }
                     mixture_.setState_TPY(pT[facei], pp[facei], yTemp_.begin());
 
@@ -624,7 +641,24 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
                         {
                             rhoD_[i].boundaryFieldRef()[patchi][facei] = prho[facei]*dTemp_[i];
 
-                            hai_[i].boundaryFieldRef()[patchi][facei] = hrtTemp_[i]*RT/CanteraGas_->molecularWeight(i);
+                            if(mixture_.heName() == "ha")
+                            {
+                                hei_[i].boundaryFieldRef()[patchi][facei] = hrtTemp_[i]*RT/CanteraGas_->molecularWeight(i);
+                            }
+                            else if(mixture_.heName() == "hs")
+                            {
+                                hei_[i].boundaryFieldRef()[patchi][facei] = hrtTemp_[i]*RT/CanteraGas_->molecularWeight(i) - hc_[i];
+                            }
+                            else if(mixture_.heName() == "ea")
+                            {
+                                hei_[i].boundaryFieldRef()[patchi][facei] = hrtTemp_[i]*RT/CanteraGas_->molecularWeight(i) - pp[facei]/prho[facei];
+                            }
+                            else
+                            {
+                                FatalErrorInFunction
+                                    << "Wrong CanteraMixture enregy name: " << CanteraMixture::getEnergyName()
+                                    << abort(FatalError);
+                            }
                         }
                     }
                 }
@@ -637,7 +671,7 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
                     forAll(Y_, i)
                     {
                         yTemp_[i] = Y_[i].boundaryField()[patchi][facei];
-                        hc += yTemp_[i]*mixture_.Hc(i);
+                        hc += yTemp_[i]*hc_[i];
                     }
                     if(useThermoTranNN)
                     {
@@ -681,12 +715,12 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
                             rhoD_[4].boundaryFieldRef()[patchi][facei] = pdata_ptr4[6*facei+3]; //CO2
                             rhoD_[5].boundaryFieldRef()[patchi][facei] = pdata_ptr4[6*facei+5]; //N2
 
-                            hai_[0].boundaryFieldRef()[patchi][facei] = pdata_ptr5[6*facei];   // O2
-                            hai_[1].boundaryFieldRef()[patchi][facei] = pdata_ptr5[6*facei+4]; //H2O
-                            hai_[2].boundaryFieldRef()[patchi][facei] = pdata_ptr5[6*facei+1]; //CH4
-                            hai_[3].boundaryFieldRef()[patchi][facei] = pdata_ptr5[6*facei+2]; //CO
-                            hai_[4].boundaryFieldRef()[patchi][facei] = pdata_ptr5[6*facei+3]; //CO2
-                            hai_[5].boundaryFieldRef()[patchi][facei] = pdata_ptr5[6*facei+5]; //N2
+                            hei_[0].boundaryFieldRef()[patchi][facei] = pdata_ptr5[6*facei];   // O2
+                            hei_[1].boundaryFieldRef()[patchi][facei] = pdata_ptr5[6*facei+4]; //H2O
+                            hei_[2].boundaryFieldRef()[patchi][facei] = pdata_ptr5[6*facei+1]; //CH4
+                            hei_[3].boundaryFieldRef()[patchi][facei] = pdata_ptr5[6*facei+2]; //CO
+                            hei_[4].boundaryFieldRef()[patchi][facei] = pdata_ptr5[6*facei+3]; //CO2
+                            hei_[5].boundaryFieldRef()[patchi][facei] = pdata_ptr5[6*facei+5]; //N2
 
                             }
                             #endif
@@ -746,7 +780,24 @@ void Foam::dfChemistryModel<ThermoType>::correctThermo()
                             {
                                 rhoD_[i].boundaryFieldRef()[patchi][facei] = prho[facei]*dTemp_[i];
 
-                                hai_[i].boundaryFieldRef()[patchi][facei] = hrtTemp_[i]*RT/CanteraGas_->molecularWeight(i);
+                                if(mixture_.heName() == "ha")
+                                {
+                                    hei_[i].boundaryFieldRef()[patchi][facei] = hrtTemp_[i]*RT/CanteraGas_->molecularWeight(i);
+                                }
+                                else if(mixture_.heName() == "hs")
+                                {
+                                    hei_[i].boundaryFieldRef()[patchi][facei] = hrtTemp_[i]*RT/CanteraGas_->molecularWeight(i) - hc_[i];
+                                }
+                                else if(mixture_.heName() == "ea")
+                                {
+                                    hei_[i].boundaryFieldRef()[patchi][facei] = hrtTemp_[i]*RT/CanteraGas_->molecularWeight(i) - pp[facei]/prho[facei];
+                                }
+                                else
+                                {
+                                    FatalErrorInFunction
+                                        << "Wrong CanteraMixture enregy name: " << CanteraMixture::getEnergyName()
+                                        << abort(FatalError);
+                                }
                             }
                         }
                     }

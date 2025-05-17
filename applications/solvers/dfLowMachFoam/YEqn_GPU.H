@@ -42,8 +42,8 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     forAll(Y, i)
     {
         volScalarField& Yi = Y[i];
-        hDiffCorrFlux += chemistry->hai(i)*(chemistry->rhoD(i)*fvc::grad(Yi) - Yi*sumYDiffError);
-        diffAlphaD += fvc::laplacian(thermo.alpha()*chemistry->hai(i), Yi);
+        hDiffCorrFlux += chemistry->hei(i)*(chemistry->rhoD(i)*fvc::grad(Yi) - Yi*sumYDiffError);
+        diffAlphaD += fvc::laplacian(thermo.alpha()*chemistry->hei(i), Yi);
         if (i != inertIndex)
         {
             start1 = std::clock();
@@ -84,7 +84,7 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
                     )
             );
             #endif
-            
+
             end1 = std::clock();
             time_monitor_YEqn_mtxAssembly += double(end1 - start1) / double(CLOCKS_PER_SEC);
             // YiEqn.relax();
@@ -243,5 +243,5 @@ if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     DEBUG_TRACE;
 
     fflush(stderr);
-   
+
 }

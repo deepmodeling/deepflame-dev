@@ -26,13 +26,13 @@ const surfaceScalarField phiUc = linearInterpolate(sumYDiffError) & mesh.Sf();
     forAll(Y, i)
     {
         volScalarField& Yi = Y[i];
-        hDiffCorrFlux += chemistry->hai(i)*(chemistry->rhoD(i)*fvc::grad(Yi) - Yi*sumYDiffError);
-        diffAlphaD += fvc::laplacian(thermo.alpha()*chemistry->hai(i), Yi);
+        hDiffCorrFlux += chemistry->hei(i)*(chemistry->rhoD(i)*fvc::grad(Yi) - Yi*sumYDiffError);
+        diffAlphaD += fvc::laplacian(thermo.alpha()*chemistry->hei(i), Yi);
 
         if (i != inertIndex)
         {
             tmp<volScalarField> DEff = chemistry->rhoD(i) + turbulence->mut()/Sct;
-            
+
             fvScalarMatrix YEqn
             (
                 turbName == "laminar"
@@ -69,7 +69,7 @@ const surfaceScalarField phiUc = linearInterpolate(sumYDiffError) & mesh.Sf();
 
             Yi.max(0.0);
             Yt += Yi;
-            
+
         }
     }
 

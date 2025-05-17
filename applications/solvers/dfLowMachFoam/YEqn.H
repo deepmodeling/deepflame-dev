@@ -29,7 +29,7 @@
     const surfaceScalarField phiUc = linearInterpolate(sumYDiffError) & mesh.Sf();
     start1 = std::clock();
     time_monitor_YEqn += double(end1 - start1) / double(CLOCKS_PER_SEC);
-    time_monitor_YEqn_solve += double(end1 - start1) / double(CLOCKS_PER_SEC);  
+    time_monitor_YEqn_solve += double(end1 - start1) / double(CLOCKS_PER_SEC);
 
 
 
@@ -41,7 +41,7 @@
          if (!splitting)
     {
         std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-        
+
         #ifdef ODE_GPU_SOLVER
 	scalar dt = runTime.deltaTValue();
 
@@ -88,8 +88,8 @@
     forAll(Y, i)
     {
         volScalarField& Yi = Y[i];
-        hDiffCorrFlux += chemistry->hai(i)*(chemistry->rhoD(i)*fvc::grad(Yi) - Yi*sumYDiffError);
-        diffAlphaD += fvc::laplacian(thermo.alpha()*chemistry->hai(i), Yi);
+        hDiffCorrFlux += chemistry->hei(i)*(chemistry->rhoD(i)*fvc::grad(Yi) - Yi*sumYDiffError);
+        diffAlphaD += fvc::laplacian(thermo.alpha()*chemistry->hei(i), Yi);
         if (i != inertIndex)
         {
             start1 = std::clock();
@@ -111,7 +111,7 @@
                     :  (fvm::laplacian(DEff(), Yi) + parcels.SYi(i, Yi) + combustion->R(Yi))
                     )
             );
-            
+
             end1 = std::clock();
             time_monitor_YEqn_mtxAssembly += double(end1 - start1) / double(CLOCKS_PER_SEC);
             // YiEqn.relax();
