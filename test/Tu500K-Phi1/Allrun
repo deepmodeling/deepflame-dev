@@ -8,7 +8,7 @@ application=dfLowMachFoam
 
 runApplication blockMesh
 runApplication decomposePar
-runApplication mpirun -np 4 --allow-run-as-root $application -parallel
+runApplication mpirun -np 12 --allow-run-as-root $application -parallel
 reconstructPar
 flameSpeed > log.fs
 sed -n 's/.*flameSpeed = \([0-9]*\(\.[0-9]*\)\?\).*/\1/p' log.fs > fs
