@@ -22,7 +22,7 @@ jobs:
        run: 
         /bin/bash -c " echo $PWD 
         && ls $PWD
-        && cp -r /root/actions-runner-dev/data/flare_CH4_SandiaD_4D.tbl examples/dfLowMachFoam/fgm/twoD_SandiaD_flareFGM
+        && cp -r /root/actions-runner/data/flare_CH4_SandiaD_4D.tbl examples/dfLowMachFoam/fgm/twoD_SandiaD_flareFGM
         && source ~/miniconda3/etc/profile.d/conda.sh 
         && conda activate libcantera 
         && source /opt/openfoam7/etc/bashrc
