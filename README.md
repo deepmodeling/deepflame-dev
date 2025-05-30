@@ -28,8 +28,8 @@ Detailed guide for installation and tutorials is available on [our documentation
 
 ## Features
 New in v1.6 (2025/5/30):
-- Add a new solver, dfSteadyFoam, a transient compressible flow solver for HVAC and similar applications. It supports turbulence modeling, optional mesh motion and topology changes, and uses the flexible PIMPLE (PISO-SIMPLE) algorithm for both time-resolved and pseudo-transient simulations
-- Update energy formulation: replace hai(i) with hei(i) to support multiple energy types (ha, hs, ea), enabling flexible selection of enthalpy or internal energy for thermochemical modeling
+- Add a new solver, dfSteadyFoam, a steady-state compressible flow solver for HVAC and similar applications. It supports turbulence, optional mesh motion and topology changes, and uses the flexible PIMPLE algorithm to efficiently compute steady solutions
+- Extend energy model to support sensible enthalpy (hs) in addition to absolute enthalpy (ha) and internal energy (ea). Temperature can now be computed independently of Cantera via in-code Newton iteration, improving flexibility and removing external dependencies
 - Improve install.sh by displaying system architecture (e.g., x86_64) after build for clearer platform information
 - Switch to sphinx-book-theme and update documentation build environment (Ubuntu 24.04, Python 3.12) for better appearance and compatibility
 
