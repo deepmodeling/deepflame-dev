@@ -27,12 +27,11 @@ The neural network models used in the tutorial examples can be found at– [AIS 
 Detailed guide for installation and tutorials is available on [our documentation website](https://deepflame.deepmodeling.com).
 
 ## Features
-New in v1.6 (2025/5/29):
-- Provide a new boundary condition, totalFlowRateAdvectiveDiffusion (adopted from OpenFOAM v7), which accounts for diffusion effects at the boundary
-- Develop a new solver, `dfBuoyancyFoam`(adopted from fireFoam in OpenFOAM v7), a transient, compressible solver designed to model turbulent reacting flows incorporating buoyancy effects
-- Add radiation models, which are integrated into the current `dfBuoyancyFoam` solver, and can be incorporated into other solvers if needed
-- Add new combustion models (including infinitelyFastChemistry and eddyDissipationModel) to the `dfBuoyancyFoam` solver
-- Imply DeepFlame on Arm architecture platforms
+New in v1.6 (2025/5/30):
+- Add a new solver, dfSteadyFoam, a transient compressible flow solver for HVAC and similar applications. It supports turbulence modeling, optional mesh motion and topology changes, and uses the flexible PIMPLE (PISO-SIMPLE) algorithm for both time-resolved and pseudo-transient simulations
+- Update energy formulation: replace hai(i) with hei(i) to support multiple energy types (ha, hs, ea), enabling flexible selection of enthalpy or internal energy for thermochemical modeling
+- Improve install.sh by displaying system architecture (e.g., x86_64) after build for clearer platform information
+- Switch to sphinx-book-theme and update documentation build environment (Ubuntu 24.04, Python 3.12) for better appearance and compatibility
 
 New in v1.5 (2025/1/8):
 - Provide a new boundary condition, totalFlowRateAdvectiveDiffusion (adopted from OpenFOAM v7), which accounts for diffusion effects at the boundary
