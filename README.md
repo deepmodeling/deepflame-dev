@@ -29,7 +29,7 @@ Detailed guide for installation and tutorials is available on [our documentation
 ## Features
 New in v1.6 (2025/5/30):
 - Add a new solver, dfSteadyFoam, a steady-state compressible flow solver. It supports turbulence and uses the flexible PIMPLE algorithm to efficiently compute steady solutions
-- Extend energy model to support sensible enthalpy (hs) in addition to absolute enthalpy (ha) and internal energy (ea). Temperature can now be computed independently of Cantera via in-code Newton iteration, improving flexibility and removing external dependencies
+- Extend energy model to support sensible enthalpy (hs) in addition to absolute enthalpy (ha) and internal energy (ea). Furthermore, T, h and cp can now be computed independently of Cantera, improving flexibility and removing external dependencies. `CANTERA_THERMO` is added in bashrc to control method to calculate h, cp and update T. `CANTERA_THERMO=1`(current default) means using Cantera and `CANTERA_THERMO=0` means using deepflame.
 - Improve install.sh by displaying system architecture (e.g., x86_64) after build for clearer platform information
 - Switch to sphinx-book-theme and update documentation build environment (Ubuntu 24.04, Python 3.12) for better appearance and compatibility
 - Add 2D Riemann problem example case
