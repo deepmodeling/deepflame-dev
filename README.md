@@ -27,6 +27,13 @@ The neural network models used in the tutorial examples can be found at– [AIS 
 Detailed guide for installation and tutorials is available on [our documentation website](https://deepflame.deepmodeling.com).
 
 ## Features
+New in v1.6 (2025/5/30):
+- Add a new solver, dfSteadyFoam, a steady-state compressible flow solver. It supports turbulence and uses the flexible PIMPLE algorithm to efficiently compute steady solutions
+- Extend energy model to support sensible enthalpy (hs) in addition to absolute enthalpy (ha) and internal energy (ea). Temperature can now be computed independently of Cantera via in-code Newton iteration, improving flexibility and removing external dependencies
+- Improve install.sh by displaying system architecture (e.g., x86_64) after build for clearer platform information
+- Switch to sphinx-book-theme and update documentation build environment (Ubuntu 24.04, Python 3.12) for better appearance and compatibility
+- Add 2D Riemann problem example case
+
 New in v1.5 (2025/1/8):
 - Provide a new boundary condition, totalFlowRateAdvectiveDiffusion (adopted from OpenFOAM v7), which accounts for diffusion effects at the boundary
 - Develop a new solver, `dfBuoyancyFoam`(adopted from fireFoam in OpenFOAM v7), a transient, compressible solver designed to model turbulent reacting flows incorporating buoyancy effects
