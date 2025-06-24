@@ -336,6 +336,14 @@ Foam::dfChemistryModel<ThermoType>::dfChemistryModel
     {
         hc_[i] = CanteraGas_->Hf298SS(i)/CanteraGas_->molecularWeight(i);
     }
+    
+    react_ = std::make_unique<Cantera::Reactor>();
+    react_->setEnergy(0);
+    react_->insert(mixture_.CanteraSolution());
+
+    sim_ = std::make_unique<Cantera::ReactorNet>();
+    sim_->addReactor(*react_);
+    setNumerics(*sim_);  
 }
 
 
@@ -824,7 +832,7 @@ void Foam::dfChemistryModel<ThermoType>::solveSingle
     clockTime time;
     time.timeIncrement();
 
-    Cantera::Reactor react;
+    // Cantera::Reactor react;
     const scalar Ti = problem.Ti;
     const scalar pi = problem.pi;
     const scalar rhoi = problem.rhoi;
@@ -833,14 +841,15 @@ void Foam::dfChemistryModel<ThermoType>::solveSingle
 
     mixture_.setState_TPY(Ti, pi, yPre_.begin());
 
-    react.insert(mixture_.CanteraSolution());
-    // keep T const before and after sim.advance. this will give you a little improvement
-    react.setEnergy(0);
-    Cantera::ReactorNet sim;
-    sim.addReactor(react);
-    setNumerics(sim);
+    // react.insert(mixture_.CanteraSolution());
+    // // keep T const before and after sim.advance. this will give you a little improvement
+    // react.setEnergy(0);
+    // Cantera::ReactorNet sim;
+    // sim.addReactor(react);
+    // setNumerics(sim);
 
-    sim.advance(problem.deltaT);
+    react_->syncState();
+    sim_->advance(problem.deltaT);
 
     CanteraGas_->getMassFractions(yTemp_.begin());
 
