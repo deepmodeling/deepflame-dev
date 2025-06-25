@@ -852,6 +852,7 @@ void Foam::dfChemistryModel<ThermoType>::solveSingle
     sim_->advance(problem.deltaT);
 
     CanteraGas_->getMassFractions(yTemp_.begin());
+    sim_->setInitialTime(0.0);
 
     for (int i=0; i<mixture_.nSpecies(); i++)
     {
