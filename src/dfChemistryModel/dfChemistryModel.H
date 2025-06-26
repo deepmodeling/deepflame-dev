@@ -94,6 +94,9 @@ public IOdictionary
         CanteraMixture& mixture_;
         std::shared_ptr<Cantera::ThermoPhase> CanteraGas_;
         std::shared_ptr<Cantera::Kinetics> CanteraKinetics_;
+        std::unique_ptr<Cantera::Reactor> react_;
+        std::unique_ptr<Cantera::ReactorNet> sim_;
+
         const fvMesh& mesh_;
         Switch chemistry_;
 
