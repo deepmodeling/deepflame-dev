@@ -1,0 +1,82 @@
+-include $(GENERAL_RULES)/mplibType
+
+EXE_INC = -std=c++14 \
+    -g \
+    -fopenmp \
+    -Wno-unused-variable \
+    -Wno-unused-but-set-variable \
+    -Wno-old-style-cast \
+    -I. \
+    $(PFLAGS) $(PINC) \
+    $(if $(LIBTORCH_ROOT),-DUSE_LIBTORCH,) \
+    $(if $(PYTHON_INC_DIR),-DUSE_PYTORCH,) \
+    -I$(FOAM_APP)/solvers/lagrangian/reactingParcelFoam \
+    -I$(FOAM_APP)/solvers/compressible/rhoSimpleFoam \
+    -I$(LIB_SRC)/transportModels/compressible/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
+    -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude \
+    -I$(LIB_SRC)/TurbulenceModels/compressible/lnInclude \
+    -I$(FOAM_APP)/solvers/lagrangian/reactingParcelFoam \
+    -I$(LIB_SRC)/finiteVolume/cfdTools \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/sampling/lnInclude \
+    -I$(LIB_SRC)/regionModels/regionModel/lnInclude \
+    -I$(LIB_SRC)/regionModels/surfaceFilmModels/lnInclude \
+    -I$(LIB_SRC)/dynamicFvMesh/lnInclude \
+    -I$(LIB_SRC)/lagrangian/basic/lnInclude \
+    -I$(DF_SRC)/lagrangian/intermediate/lnInclude \
+    -I$(LIB_SRC)/lagrangian/intermediate/lnInclude \
+    -I$(DF_SRC)/lagrangian/spray/lnInclude \
+    -I$(LIB_SRC)/lagrangian/spray/lnInclude \
+    -I$(LIB_SRC)/lagrangian/distributionModels/lnInclude \
+    -I$(DF_SRC)/thermophysicalModels/thermophysicalProperties/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/thermophysicalProperties/lnInclude \
+    -I$(DF_SRC)/thermophysicalModels/SLGThermo/lnInclude \
+    -I$(LIB_SRC)/Pstream/mpi \
+    -I$(DF_SRC)/dfCanteraMixture/lnInclude \
+    -I$(DF_SRC)/dfChemistryModel/lnInclude \
+    -I$(DF_SRC)/dfCombustionModels/lnInclude \
+    -I$(CANTERA_ROOT)/include \
+    $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include,) \
+    $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include/torch/csrc/api/include,) \
+    $(PYTHON_INC_DIR) \
+    $(if $(AMGX_DIR), -I$(DF_ROOT)/src_gpu,) \
+    $(if $(AMGX_DIR), -I/usr/local/cuda/include,) \
+    $(if $(AMGX_DIR), -I$(AMGX_DIR)/include,) \
+    $(if $(ODE_GPU_SOLVER), -I$(OPENCC_PATH)/include,) \
+    $(if $(ODE_GPU_SOLVER), -DODE_GPU_SOLVER,)
+
+EXE_LIBS = \
+    -lcompressibleTransportModels \
+    -lturbulenceModels \
+    -llagrangian \
+    -lregionModels \
+    -ldfSurfaceFilmModels \
+    -lfiniteVolume \
+    -ltopoChangerFvMesh \
+    -lmeshTools \
+    -lsampling \
+    -L$(DF_LIBBIN) \
+    -ldfFluidThermophysicalModels \
+    -ldfCompressibleTurbulenceModels \
+    -ldfThermophysicalProperties \
+    -ldfSLGThermo \
+    -ldfLagrangianIntermediate \
+    -ldfLagrangianTurbulence \
+    -ldfLagrangianSpray \
+    -ldfCanteraMixture \
+    -ldfChemistryModel \
+    -ldfCombustionModels  \
+    $(CANTERA_ROOT)/lib/libcantera.so \
+    $(if $(LIBTORCH_ROOT),$(LIBTORCH_ROOT)/lib/libtorch.so,) \
+    $(if $(LIBTORCH_ROOT),$(LIBTORCH_ROOT)/lib/libc10.so,) \
+    $(if $(LIBTORCH_ROOT),-rdynamic,) \
+    $(if $(LIBTORCH_ROOT),-lpthread,) \
+    $(if $(LIBTORCH_ROOT),$(DF_SRC)/dfChemistryModel/DNNInferencer/build/libDNNInferencer.so,) \
+    $(if $(PYTHON_LIB_DIR),$(PYTHON_LIB_DIR),) \
+    $(if $(AMGX_DIR), /usr/local/cuda/lib64/libcudart.so,) \
+	$(if $(AMGX_DIR), /usr/local/cuda/lib64/libnccl.so,) \
+    $(if $(AMGX_DIR), $(DF_ROOT)/src_gpu/build/libdfMatrix.so,) \
+    $(if $(AMGX_DIR), $(AMGX_DIR)/build/libamgxsh.so,) \
+    $(if $(ODE_GPU_SOLVER), $(ODE_GPU_SOLVER)/lib/libopencc.so,)

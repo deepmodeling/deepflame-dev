@@ -25,5 +25,6 @@ wmake applications/solvers/dfLowMachFoam
 wmake applications/solvers/dfHighSpeedFoam
 wmake applications/solvers/dfSprayFoam
 wmake applications/solvers/dfBuoyancyFoam
+wmake applications/solvers/dfSteadyFoam
 
 wmake applications/utilities/flameSpeed
