@@ -5,7 +5,7 @@ import os
 import cantera as ct
 
 device_main = "cuda:0"
-device_list = range(torch.cuda.device_count())
+device_list = [0] #range(torch.cuda.device_count())
 
 torch.set_printoptions(precision=10)
 
@@ -95,16 +95,18 @@ try:
     Ymu2  = Ymu0
     Ystd2 = Ystd0
 
+    
+    """
     #load model  
     layers = [n_species +2, 1600, 800, 400, 1]
-
+    
     model0list = []
     for i in range(n_species-1):
         model0list.append(NN_MLP(layers))
     
     for i in range(n_species-1):
         model0list[i].load_state_dict(state_dict[f'net{i}'])
-
+    
 
     for i in range(n_species-1):
         model0list[i].eval()
@@ -113,7 +115,23 @@ try:
     if len(device_ids) > 1:
         for i in range(n_species-1):
             model0list[i] = torch.nn.DataParallel(model0list[i], device_ids=device_ids)
+    """
+    
+    #load model  
+    layers = [2+n_species]+[400]*4+[ n_species-1]
+    # layers = [2+n_species]+[800,400,200,100]+[n_species-1]
+    
+    
+    model = NN_MLP(layers)
+    
+    model.load_state_dict(state_dict['net'])
+    
+    model.eval()
+    model.to(device=device)
 
+    if len(device_ids) > 1:
+        model = torch.nn.DataParallel(model, device_ids=device_ids)
+    
 except Exception as e:
     print(e.args)
 
@@ -126,6 +144,8 @@ def inference(vec0):
     '''
     vec0 = np.abs(np.reshape(vec0, (-1, 3+n_species))) # T, P, Yi(7), Rho
     vec0[:,1] *= 101325
+    # vec0[:,1] *= 0
+    # vec0[:,1] += 101325
     mask = vec0[:,0] > frozenTemperature
     vec0_input = vec0[mask, :]
     print(f'real inference points number: {vec0_input.shape[0]}')
@@ -148,9 +168,11 @@ def inference(vec0):
             #inference
             
             output0_normalized = []
-            for i in range(n_species-1):
-                output0_normalized.append(model0list[i](input0_normalized))
-            output0_normalized = torch.cat(output0_normalized, dim=1)
+            
+            #for i in range(n_species-1):
+            #    output0_normalized.append(model0list[i](input0_normalized))
+            #output0_normalized = torch.cat(output0_normalized, dim=1)
+            output0_normalized = model(input0_normalized)
 
             # post_processing
             output0_bct = output0_normalized * Ystd0 + Ymu0 + input0_bct[:, 2:-1]
