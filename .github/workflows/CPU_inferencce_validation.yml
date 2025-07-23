@@ -8,53 +8,30 @@ on:
      - master
 jobs:
   build_validation:
-    runs-on: [self-hosted, linux, x64]
+    runs-on: [self-hosted, linux, x64, 4060Ti]
     if: github.repository_owner == 'deepmodeling'     
-    container: 
-      image: ubuntu:20.04
-      options: --shm-size=5g  # shared memory size = 5GB
     steps:
      - name: Checkout
        uses: actions/checkout@v3
-     - name: install dependencies
-       env:
-        DEBIAN_FRONTEND: noninteractive
-       run: |
-        apt-get update 
-        apt-get install -y sudo wget unzip git software-properties-common make cmake g++ mpich openmpi-bin libopenmpi-dev libscalapack-mpi-dev vim git-core
-        sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -" 
-        sudo add-apt-repository http://dl.openfoam.org/ubuntu
-        sudo apt-get update
-        export DEBIAN_FRONTEND=noninteractive
-        apt-get -y install openfoam7 
-        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-        bash Miniconda3-latest-Linux-x86_64.sh -b
-        . ~/miniconda3/etc/profile.d/conda.sh
-        conda create -n libcantera python=3.8
-        conda activate libcantera
-        conda install -c cantera libcantera-devel=2.6
-        conda install -c cantera cantera
-        conda install pytorch pybind11
-        conda install pkg-config
-        conda install --channel https://conda.anaconda.org/zhaofeng-shu33 easydict
-        git clone https://github.com/deepmodeling/deepflame-dev.git
-        cd deepflame-dev
 
- 
      - name: build and validation with CPU inference 
        env: 
         OMPI_ALLOW_RUN_AS_ROOT: 1 
         OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1 
         OMPI_MCA_btl_vader_single_copy_mechanism: none
        run: 
-        /bin/bash -c " echo $PWD && ls $PWD
-        && wget --content-disposition https://aisquare.oss-us-east-1.aliyuncs.com/data/datasets/14b50df5-dbe9-4f1c-bf58-032b8bc40a20
-        && unzip flare_CH4_SandiaD_4D.zip
+        /bin/bash -c " echo $PWD 
         && ls $PWD
-        && cp -r flare_CH4_SandiaD_4D.tbl examples/dfLowMachFoam/fgm/twoD_SandiaD_flareFGM
-        && source ~/miniconda3/etc/profile.d/conda.sh && conda activate libcantera && source /opt/openfoam7/etc/bashrc 
-        && . configure.sh --use_pytorch&& source ./bashrc && . install.sh 
-        && cd test && ./Allrun && conda deactivate "
+        && cp -r /root/actions-runner/data/flare_CH4_SandiaD_4D.tbl examples/dfLowMachFoam/fgm/twoD_SandiaD_flareFGM
+        && source ~/miniconda3/etc/profile.d/conda.sh 
+        && conda activate libcantera 
+        && source /opt/openfoam7/etc/bashrc
+        && . configure.sh --use_pytorch
+        && source ./bashrc 
+        && . install.sh 
+        && cd test 
+        && ./Allrun 
+        && conda deactivate "
 
      - name: test 
        run: | 
