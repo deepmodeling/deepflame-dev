@@ -6,5 +6,6 @@ gaussLaplacianScheme.C
 linearViscousStress.C
 
 GenMatrix_U.C
+GenMatrix_p.C
 
 LIB = $(DF_LIBBIN)/libdfGenMatrix

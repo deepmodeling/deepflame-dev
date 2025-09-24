@@ -8,10 +8,21 @@
 #include "runTimeSelectionTables.H"
 #include "fvMatrices.H"
 #include "fvMesh.H"
-#include "turbulentFluidThermoModel.H"
-#include "CombustionModel.H"
+// #include "turbulentFluidThermoModel.H"
+// #include "CombustionModel.H"
+
+#include "incompressibleTwoPhaseMixture.H"
+#include "immiscibleIncompressibleTwoPhaseMixture.H"
+#include "turbulentTransportModel.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// namespace Foam
+// {
+// namespace incompressible
+// {
+// class turbulenceModel;
+// }
+// }
 
 namespace Foam
 {
@@ -83,29 +94,57 @@ gaussLaplacianSchemeFvmLaplacian
     const GeometricField<Type, fvPatchField, volMesh>& vf
 );
 
+
+
 // turbulence->divDevRhoReff(U)
+// tmp<fvVectorMatrix>
+// turbulenceModelLinearViscousStressDivDevRhoReff
+// (
+//     volVectorField& U,
+//     compressible::turbulenceModel& turbulence
+// );
+
+// tmp<fvScalarMatrix>
+// GenMatrix_Y(
+//     const volScalarField& rho,
+//     volScalarField& Yi,
+//     const surfaceScalarField& phi,
+//     const surfaceScalarField& phiUc,
+//     const volScalarField& rhoD,
+//     const volScalarField& mut,
+//     const Switch splitting,
+//     const scalar Sct,
+//     CombustionModel<basicThermo>& combustion,
+//     fv::convectionScheme<scalar>& mvConvection
+// );
+
+// tmp<fvVectorMatrix>
+// GenMatrix_U(
+//     const volScalarField& rho,
+//     volVectorField& U,
+//     const surfaceScalarField& rhoPhi,   // phi  @dfLowMachFoam
+//     const volScalarField& p, 
+//     compressible::turbulenceModel& turbulence
+// );
+
 tmp<fvVectorMatrix>
 turbulenceModelLinearViscousStressDivDevRhoReff
 (
     volVectorField& U,
-    compressible::turbulenceModel& turbulence
+    incompressible::turbulenceModel& turbulence
 );
 
-
-tmp<fvScalarMatrix>
-GenMatrix_Y(
+tmp<fvVectorMatrix>
+GenMatrix_U(
     const volScalarField& rho,
-    volScalarField& Yi,
-    const surfaceScalarField& phi,
-    const surfaceScalarField& phiUc,
-    const volScalarField& rhoD,
-    const volScalarField& mut,
-    const Switch splitting,
-    const scalar Sct,
-    CombustionModel<basicThermo>& combustion,
-    fv::convectionScheme<scalar>& mvConvection
+    volVectorField& U,
+    const surfaceScalarField& rhoPhi,
+    const volScalarField& p, 
+    incompressible::turbulenceModel& turbulence
 );
 
+void check_fvmatrix_equal(const fvVectorMatrix& answer, const fvVectorMatrix& check, const word& name);
+void check_fvmatrix_equal(const fvScalarMatrix& answer, const fvScalarMatrix& check, const word& name);
 
 
 } // End namespace Foam

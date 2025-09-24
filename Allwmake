@@ -19,7 +19,7 @@ wmake src/dynamicMesh
 wmake src/dynamicFvMesh
 wmake src/fluxSchemes
 wmake src/radiationModels
-wmake src/dfGenMatrix
+# wmake src/dfGenMatrix
 
 wmake applications/solvers/df0DFoam
 wmake applications/solvers/dfLowMachFoam

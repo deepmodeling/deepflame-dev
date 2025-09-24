@@ -9,6 +9,10 @@
 #include "fvOptions.H"
 #include "turbulentFluidThermoModel.H"
 
+#include "incompressibleTwoPhaseMixture.H"
+#include "immiscibleIncompressibleTwoPhaseMixture.H"
+#include "turbulentTransportModel.H"
+
 namespace Foam{
 
 tmp<fvVectorMatrix>
@@ -17,11 +21,21 @@ GenMatrix_U(
     volVectorField& U,
     const surfaceScalarField& rhoPhi,   // phi  @dfLowMachFoam
     const volScalarField& p, 
-    compressible::turbulenceModel& turbulence
+    incompressible::turbulenceModel& turbulence
 ){
+    word name("div("+rhoPhi.name()+','+U.name()+')');
+
+    const fvMesh& mesh = U.mesh();
+    // div
+    tmp<fv::convectionScheme<vector>> cs = fv::convectionScheme<vector>::New(mesh,rhoPhi,mesh.divScheme(name));
+    fv::gaussConvectionScheme<vector>& gcs = dynamic_cast<fv::gaussConvectionScheme<vector>&>(cs.ref());
+    tmp<surfaceScalarField> tweights = gcs.interpScheme().weights(U);
+    const surfaceScalarField& weights = tweights();
+
+    // -------------------------------------------------------
 
     Info << "UEqn EulerDdtSchemeFvmDdt" << endl;
-    const fvMesh& mesh = U.mesh();
+    Info << "UEqn gaussConvectionSchemeFvmDiv" << endl;
 
     tmp<fvVectorMatrix> tfvm_DDT
     (
@@ -35,10 +49,35 @@ GenMatrix_U(
 
     scalar rDeltaT = 1.0/mesh.time().deltaTValue();
 
-    fvm_DDT.diag() = rDeltaT*rho.primitiveField()*mesh.Vsc();
+    // interField
+    fvm_DDT.lower() = -weights.primitiveField()*rhoPhi.primitiveField();
+    // fvm_DDT.upper() = fvm_DDT.lower() + rhoPhi.primitiveField();
+    fvm_DDT.upper() = -weights.primitiveField()*rhoPhi.primitiveField() + rhoPhi.primitiveField();
+    fvm_DDT.negSumDiag();   // diag[i] = - (sum_of_lower_coeffs[i] + sum_of_upper_coeffs[i])  先设置对流项
+    
+    fvm_DDT.diag() += rDeltaT*rho.primitiveField()*mesh.Vsc(); // 再加上瞬态项
     fvm_DDT.source() = rDeltaT
         *rho.oldTime().primitiveField()
         *U.oldTime().primitiveField()*mesh.Vsc();
+
+    // boundaryField
+    forAll(U.boundaryField(), patchi)
+    {
+        const fvPatchField<vector>& psf = U.boundaryField()[patchi];
+        const fvsPatchScalarField& patchFlux = rhoPhi.boundaryField()[patchi];
+        const fvsPatchScalarField& pw = weights.boundaryField()[patchi];
+
+        fvm_DDT.internalCoeffs()[patchi] = patchFlux*psf.valueInternalCoeffs(pw);
+        fvm_DDT.boundaryCoeffs()[patchi] = -patchFlux*psf.valueBoundaryCoeffs(pw);
+    }
+
+    // correct
+    if (gcs.interpScheme().corrected())
+    {
+        fvm_DDT += fvc::surfaceIntegrate(rhoPhi*gcs.interpScheme().correction(U));
+    }
+
+
 
     // scalar* __restrict__ diagPtr_ddt = fvm_DDT.diag().begin();
     // scalar* __restrict__ sourcePtr_ddt = fvm_DDT.source().begin();
@@ -54,13 +93,15 @@ GenMatrix_U(
     (
         new fvVectorMatrix
         (
-            (tfvm_DDT
-        // + fvm::ddt(rho, U) 
-        + fvm::div(rhoPhi, U))
-        // + MRF.DDt(rho, U) 
+            (
+                tfvm_DDT
+            // + fvm::ddt(rho, U) 
+            // + fvm::div(rhoPhi, U)
+            )
+            // + MRF.DDt(rho, U) 
 
         ==
-            (- turbulence.divDevRhoReff(U))  // fvOptions(rho, U)
+            (- turbulence.divDevRhoReff(rho, U))  // fvOptions(rho, U)
         )
     );
 
