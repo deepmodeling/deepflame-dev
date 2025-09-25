@@ -45,18 +45,18 @@ GenMatrix_U(
             rho.dimensions()*U.dimensions()*dimVol/dimTime
         )
     );
-    fvVectorMatrix& fvm_DDT = tfvm_DDT.ref();
+    fvVectorMatrix& fvm = tfvm_DDT.ref();
 
     scalar rDeltaT = 1.0/mesh.time().deltaTValue();
 
     // interField
-    fvm_DDT.lower() = -weights.primitiveField()*rhoPhi.primitiveField();
-    // fvm_DDT.upper() = fvm_DDT.lower() + rhoPhi.primitiveField();
-    fvm_DDT.upper() = -weights.primitiveField()*rhoPhi.primitiveField() + rhoPhi.primitiveField();
-    fvm_DDT.negSumDiag();   // diag[i] = - (sum_of_lower_coeffs[i] + sum_of_upper_coeffs[i])  先设置对流项
+    fvm.lower() = -weights.primitiveField()*rhoPhi.primitiveField();
+    // fvm.upper() = fvm.lower() + rhoPhi.primitiveField();
+    fvm.upper() = -weights.primitiveField()*rhoPhi.primitiveField() + rhoPhi.primitiveField();
+    fvm.negSumDiag();   // diag[i] = - (sum_of_lower_coeffs[i] + sum_of_upper_coeffs[i])  先设置对流项
     
-    fvm_DDT.diag() += rDeltaT*rho.primitiveField()*mesh.Vsc(); // 再加上瞬态项
-    fvm_DDT.source() = rDeltaT
+    fvm.diag() += rDeltaT*rho.primitiveField()*mesh.Vsc(); // 再加上瞬态项
+    fvm.source() = rDeltaT
         *rho.oldTime().primitiveField()
         *U.oldTime().primitiveField()*mesh.Vsc();
 
@@ -67,25 +67,25 @@ GenMatrix_U(
         const fvsPatchScalarField& patchFlux = rhoPhi.boundaryField()[patchi];
         const fvsPatchScalarField& pw = weights.boundaryField()[patchi];
 
-        fvm_DDT.internalCoeffs()[patchi] = patchFlux*psf.valueInternalCoeffs(pw);
-        fvm_DDT.boundaryCoeffs()[patchi] = -patchFlux*psf.valueBoundaryCoeffs(pw);
+        fvm.internalCoeffs()[patchi] = patchFlux*psf.valueInternalCoeffs(pw);
+        fvm.boundaryCoeffs()[patchi] = -patchFlux*psf.valueBoundaryCoeffs(pw);
     }
 
     // correct
     if (gcs.interpScheme().corrected())
     {
-        fvm_DDT += fvc::surfaceIntegrate(rhoPhi*gcs.interpScheme().correction(U));
+        fvm += fvc::surfaceIntegrate(rhoPhi*gcs.interpScheme().correction(U));
     }
 
 
 
-    // scalar* __restrict__ diagPtr_ddt = fvm_DDT.diag().begin();
-    // scalar* __restrict__ sourcePtr_ddt = fvm_DDT.source().begin();
-    // scalar* __restrict__ lowerPtr_ddt = fvm_DDT.lower().begin();
-    // scalar* __restrict__ upperPtr_ddt = fvm_DDT.upper().begin();
+    // scalar* __restrict__ diagPtr_ddt = fvm.diag().begin();
+    // scalar* __restrict__ sourcePtr_ddt = fvm.source().begin();
+    // scalar* __restrict__ lowerPtr_ddt = fvm.lower().begin();
+    // scalar* __restrict__ upperPtr_ddt = fvm.upper().begin();
 
-    // const labelUList& l = fvm_DDT.lduAddr().lowerAddr();
-    // const labelUList& u = fvm_DDT.lduAddr().upperAddr();
+    // const labelUList& l = fvm.lduAddr().lowerAddr();
+    // const labelUList& u = fvm.lduAddr().upperAddr();
 
     // interFoam    
 

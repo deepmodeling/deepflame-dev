@@ -124,31 +124,31 @@ void check_field_boundary_equal(const volVectorField& answer, const volVectorFie
     }
 }
 
-// void check_field_boundary_equal(const surfaceScalarField& answer, const surfaceScalarField& check, const word& name){
-//     check_field_error(answer, check, "field");
-//     forAll(answer.boundaryField(), patchi)
-//     {
-//         check_field_error(answer.boundaryField()[patchi], check.boundaryField()[patchi], name + " boundaryField_" + std::to_string(patchi));
-//     }
-// }
+void check_field_boundary_equal(const surfaceScalarField& answer, const surfaceScalarField& check, const word& name){
+    check_field_error(answer, check, "field");
+    forAll(answer.boundaryField(), patchi)
+    {
+        check_field_error(answer.boundaryField()[patchi], check.boundaryField()[patchi], name + " boundaryField_" + std::to_string(patchi));
+    }
+}
 
-// void check_fvmatrix_equal(const fvScalarMatrix& answer,const fvScalarMatrix& check, const word& name){
-//     if(answer.source().begin() == check.source().begin()){
-//         SeriousError << "answer and check are the same matrix." << endl;
-//         MPI_Abort(PstreamGlobals::MPI_COMM_FOAM, -1);
-//     } 
+void check_fvmatrix_equal(const fvScalarMatrix& answer,const fvScalarMatrix& check, const word& name){
+    // if(answer.source().begin() == check.source().begin()){
+    //     SeriousError << "answer and check are the same matrix." << endl;
+    //     MPI_Abort(PstreamGlobals::MPI_COMM_FOAM, -1);
+    // } 
 
-//     check_field_error(answer.source(),check.source(), name + " source");
-//     check_field_error(answer.diag(),check.diag(), name + " diag");
-//     check_field_error(answer.lower(),check.lower(), name + " lower");
-//     check_field_error(answer.upper(),check.upper(), name + " upper");
+    check_field_error(answer.source(),check.source(), name + " source");
+    check_field_error(answer.diag(),check.diag(), name + " diag");
+    check_field_error(answer.lower(),check.lower(), name + " lower");
+    check_field_error(answer.upper(),check.upper(), name + " upper");
 
-//     for(label patchi = 0; patchi < const_cast<fvScalarMatrix&>(answer).internalCoeffs().size(); ++patchi)
-//     {
-//         check_field_error(const_cast<fvScalarMatrix&>(answer).internalCoeffs()[patchi],const_cast<fvScalarMatrix&>(check).internalCoeffs()[patchi], name + " internalCoeffs_" + std::to_string(patchi));
-//         check_field_error(const_cast<fvScalarMatrix&>(answer).boundaryCoeffs()[patchi],const_cast<fvScalarMatrix&>(check).boundaryCoeffs()[patchi], name + " boundaryCoeffs_" + std::to_string(patchi));
-//     }
-// }
+    for(label patchi = 0; patchi < const_cast<fvScalarMatrix&>(answer).internalCoeffs().size(); ++patchi)
+    {
+        check_field_error(const_cast<fvScalarMatrix&>(answer).internalCoeffs()[patchi],const_cast<fvScalarMatrix&>(check).internalCoeffs()[patchi], name + " internalCoeffs_" + std::to_string(patchi));
+        check_field_error(const_cast<fvScalarMatrix&>(answer).boundaryCoeffs()[patchi],const_cast<fvScalarMatrix&>(check).boundaryCoeffs()[patchi], name + " boundaryCoeffs_" + std::to_string(patchi));
+    }
+}
 
 // void check_fvmatrix_equal(const fvVectorMatrix& answer,const fvVectorMatrix& check, const word& name){
 //     if(answer.source().begin() == check.source().begin()){

@@ -75,6 +75,43 @@ gaussGradSchemeGrad
 );
 
 
+// fvc::div
+template<class Type>
+tmp<GeometricField<Type, fvPatchField, volMesh>>
+gaussConvectionSchemeFvcDiv
+(
+    const surfaceScalarField& faceFlux,
+    const GeometricField<Type, fvPatchField, volMesh>& vf
+);
+
+template<class Type>
+tmp<GeometricField<Type, fvPatchField, volMesh>>
+gaussConvectionSchemeFvcDiv
+(
+    const GeometricField<Type, fvsPatchField, surfaceMesh>& ssf
+);
+
+template<class Type>
+tmp<GeometricField<Type, fvPatchField, volMesh>>
+gaussConvectionSchemeFvcDiv
+(
+    const tmp<GeometricField<Type, fvsPatchField, surfaceMesh>>& tssf
+);
+
+template<class Type>
+tmp
+<
+    GeometricField
+    <
+        typename innerProduct<vector, Type>::type, fvPatchField, volMesh
+    >
+>
+gaussDivFvcdiv
+(
+    const GeometricField<Type, fvPatchField, volMesh>& vf
+);
+
+
 // fvm::laplacian
 
 template<class Type>
@@ -141,6 +178,14 @@ GenMatrix_U(
     const surfaceScalarField& rhoPhi,
     const volScalarField& p, 
     incompressible::turbulenceModel& turbulence
+);
+
+template<class Type>
+tmp<fvMatrix<Type>>
+GenMatrix_p(
+    const GeometricField<scalar, fvsPatchField, surfaceMesh>& rAUf,
+    const GeometricField<Type, fvPatchField, volMesh>& p_rgh,
+    const tmp<GeometricField<double, fvsPatchField, surfaceMesh>>& phiHbyA
 );
 
 void check_fvmatrix_equal(const fvVectorMatrix& answer, const fvVectorMatrix& check, const word& name);

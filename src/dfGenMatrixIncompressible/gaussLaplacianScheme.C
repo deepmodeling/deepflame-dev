@@ -31,6 +31,7 @@ License
 #include "snGradScheme.H"
 #include "linear.H"
 #include "orthogonalSnGrad.H"
+#include "GenFvMatrix.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -136,7 +137,6 @@ gaussLaplacianSchemeFvmLaplacian
     const GeometricField<Type, fvPatchField, volMesh>& vf
 )
 {
-    Info << "gaussLaplacianSchemeFvmLaplacian start" << endl;
     const fvMesh& mesh = vf.mesh();
     tmp<surfaceInterpolationScheme<scalar>> tinterpGammaScheme_(new linear<scalar>(mesh));
     tmp<fv::snGradScheme<Type>> tsnGradScheme_(new fv::orthogonalSnGrad<Type>(mesh));
@@ -187,7 +187,107 @@ gaussLaplacianSchemeFvmLaplacian
 
     Info << "gaussLaplacianSchemeFvmLaplacian end" << endl;
     return tfvm;
+}
+
+template<class Type>
+tmp<fvMatrix<Type>>
+gaussLaplacianSchemeFvmLaplacian
+(
+    const GeometricField<scalar, fvsPatchField, surfaceMesh>& gamma,
+    const GeometricField<Type, fvPatchField, volMesh>& vf
+)
+{
+    const fvMesh& mesh = vf.mesh();
+    tmp<fv::snGradScheme<Type>> tsnGradScheme_(new fv::orthogonalSnGrad<Type>(mesh));
+
+    GeometricField<scalar, fvsPatchField, surfaceMesh> gammaMagSf
+    (
+        gamma*mesh.magSf()
+    );
+
+    tmp<fvMatrix<Type>> tfvm = gaussLaplacianSchemeFvmLaplacianUncorrected
+    (
+        gammaMagSf,
+        tsnGradScheme_().deltaCoeffs(vf),
+        vf
+    );
+    fvMatrix<Type>& fvm = tfvm.ref();
+
+    if (tsnGradScheme_().corrected())
+    {
+        if (mesh.fluxRequired(vf.name()))
+        {
+            fvm.faceFluxCorrectionPtr() = new
+            GeometricField<Type, fvsPatchField, surfaceMesh>
+            (
+                gammaMagSf*tsnGradScheme_().correction(vf)
+            );
+
+            fvm.source() -=
+                mesh.V()*
+                fvc::div
+                (
+                    *fvm.faceFluxCorrectionPtr()
+                )().primitiveField();
+        }
+        else
+        {
+            fvm.source() -=
+                mesh.V()*
+                fvc::div
+                (
+                    gammaMagSf*tsnGradScheme_().correction(vf)
+                )().primitiveField();
+        }
+    }
+
+    return tfvm;
 }  
+
+// template<class Type>
+// tmp<GeometricField<Type, fvPatchField, volMesh>>
+// gaussLaplacianSchemeFvcLaplacian
+// (
+//     const GeometricField<scalar, fvPatchField, volMesh>& gamma,
+//     const GeometricField<Type, fvPatchField, volMesh>& vf
+// )
+// {
+//     return gaussLaplacianSchemeFvcLaplacian
+//     (
+//         gamma,
+//         vf,
+//         "laplacian(" + gamma.name() + ',' + vf.name() + ')'
+//     );
+// }
+
+// template<class Type>
+// tmp<GeometricField<Type, fvPatchField, volMesh>>
+// gaussLaplacianSchemeFvcLaplacian
+// (
+//     const GeometricField<scalar, fvPatchField, volMesh>& gamma,
+//     const GeometricField<Type, fvPatchField, volMesh>& vf,
+//     const word& name
+// )
+// {
+//     const fvMesh& mesh = vf.mesh();
+//     tmp<surfaceInterpolationScheme<scalar>> tinterpGammaScheme_(new linear<scalar>(mesh));
+//     tmp<fv::snGradScheme<scalar>> tsnGradScheme_(new fv::orthogonalSnGrad<scalar>(mesh));
+//     GeometricField<scalar, fvsPatchField, surfaceMesh> gammaInterpolate = tinterpGammaScheme_().interpolate(gamma)();
+
+//     const tmp<GeometricField<Type, fvsPatchField, surfaceMesh>>& tssf = gammaInterpolate * tsnGradScheme_().snGrad(vf) * mesh.magSf();
+
+//     tmp<GeometricField<Type, fvPatchField, volMesh>> tLaplacian
+//     (
+//         new GeometricField<Type, fvPatchField, volMesh>
+//         (
+//             "div("+tssf->name()+')',
+//             fvcSurfaceIntegrate(tssf)
+//         )
+//     );
+
+//     return tLaplacian;
+// }
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -198,6 +298,22 @@ gaussLaplacianSchemeFvmLaplacian
     const GeometricField<scalar, fvPatchField, volMesh>& gammaScalarVol,
     const GeometricField<scalar, fvPatchField, volMesh>& vf
 );
+
+template
+tmp<fvMatrix<scalar>>
+gaussLaplacianSchemeFvmLaplacian
+(
+    const GeometricField<scalar, fvsPatchField, surfaceMesh>& gamma,
+    const GeometricField<scalar, fvPatchField, volMesh>& vf
+);
+
+// template
+// tmp<GeometricField<scalar, fvPatchField, volMesh>>
+// gaussLaplacianSchemeFvcLaplacian
+// (
+//     const GeometricField<scalar, fvPatchField, volMesh>& gamma,
+//     const GeometricField<scalar, fvPatchField, volMesh>& vf
+// );
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
