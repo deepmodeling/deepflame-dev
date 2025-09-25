@@ -1,9 +1,9 @@
-/*---------------------------------------------------------------------------*\
+/*---------------------------------------------------------------------------*
   =========                 |
-  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     | Website:  https://openfoam.org
-    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
-     \\/     M anipulation  |
+      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+    /   O peration     | Website:  https://openfoam.org
+  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+/     M anipulation  |
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -21,305 +21,185 @@ License
     You should have received a copy of the GNU General Public License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
-\*---------------------------------------------------------------------------*/
+*---------------------------------------------------------------------------*/
 
-#include "gaussGrad.H"
-#include "extrapolatedCalculatedFvPatchField.H"
+#include "gaussLaplacianScheme.H"
+#include "surfaceInterpolate.H"
+#include "fvcDiv.H"
+#include "fvcGrad.H"
+#include "fvMatrices.H"
+#include "snGradScheme.H"
+#include "linear.H"
+#include "orthogonalSnGrad.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-
-template<class Type>
-tmp
-<
-    GeometricField
-    <
-        typename outerProduct<vector, Type>::type,
-        fvPatchField,
-        volMesh
-    >
->
-gaussGradSchemeGrad
-(
-    const GeometricField<Type, fvPatchField, volMesh>& vsf
-)
-{
-    return gaussGradSchemeGrad(vsf, "grad(" + vsf.name() + ')');
-}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 template<class Type>
-tmp
-<
-    GeometricField
-    <
-        typename outerProduct<vector, Type>::type,
-        fvPatchField,
-        volMesh
-    >
->
-gaussGradSchemeGrad
+tmp<fvMatrix<Type>>
+gaussLaplacianSchemeFvmLaplacianUncorrected
 (
-    const GeometricField<Type, fvPatchField, volMesh>& vsf,
-    const word& name
+    const surfaceScalarField& gammaMagSf,
+    const surfaceScalarField& deltaCoeffs,
+    const GeometricField<Type, fvPatchField, volMesh>& vf
 )
 {
-    const fvMesh& mesh = vsf.mesh();
+    tmp<fvMatrix<Type>> tfvm
+    (
+        new fvMatrix<Type>
+        (
+            vf,
+            deltaCoeffs.dimensions()*gammaMagSf.dimensions()*vf.dimensions()
+        )
+    );
+    fvMatrix<Type>& fvm = tfvm.ref();
 
-    typedef typename outerProduct<vector, Type>::type GradType;
-    typedef GeometricField<GradType, fvPatchField, volMesh> GradFieldType;
+    fvm.upper() = deltaCoeffs.primitiveField()*gammaMagSf.primitiveField();
+    fvm.negSumDiag();
 
-    if (!mesh.changing() && mesh.cache(name))
+    forAll(vf.boundaryField(), patchi)
     {
-        if (!mesh.objectRegistry::template foundObject<GradFieldType>(name))
-        {
-            solution::cachePrintMessage("Calculating and caching", name, vsf);
-            tmp<GradFieldType> tgGrad = gaussGradCalcGrad(vsf, name);
-            regIOobject::store(tgGrad.ptr());
-        }
+        const fvPatchField<Type>& pvf = vf.boundaryField()[patchi];
+        const fvsPatchScalarField& pGamma = gammaMagSf.boundaryField()[patchi];
+        const fvsPatchScalarField& pDeltaCoeffs =
+            deltaCoeffs.boundaryField()[patchi];
 
-        solution::cachePrintMessage("Retrieving", name, vsf);
-        GradFieldType& gGrad =
-            mesh.objectRegistry::template lookupObjectRef<GradFieldType>
-            (
-                name
-            );
-
-        if (gGrad.upToDate(vsf))
+        if (pvf.coupled())
         {
-            return gGrad;
+            fvm.internalCoeffs()[patchi] =
+                pGamma*pvf.gradientInternalCoeffs(pDeltaCoeffs);
+            fvm.boundaryCoeffs()[patchi] =
+               -pGamma*pvf.gradientBoundaryCoeffs(pDeltaCoeffs);
         }
         else
         {
-            solution::cachePrintMessage("Deleting", name, vsf);
-            gGrad.release();
-            delete &gGrad;
-
-            solution::cachePrintMessage("Recalculating", name, vsf);
-            tmp<GradFieldType> tgGrad = gaussGradCalcGrad(vsf, name);
-
-            solution::cachePrintMessage("Storing", name, vsf);
-            regIOobject::store(tgGrad.ptr());
-            GradFieldType& gGrad =
-                mesh.objectRegistry::template lookupObjectRef<GradFieldType>
-                (
-                    name
-                );
-
-            return gGrad;
+            fvm.internalCoeffs()[patchi] = pGamma*pvf.gradientInternalCoeffs();
+            fvm.boundaryCoeffs()[patchi] = -pGamma*pvf.gradientBoundaryCoeffs();
         }
     }
-    else
-    {
-        if (mesh.objectRegistry::template foundObject<GradFieldType>(name))
-        {
-            GradFieldType& gGrad =
-                mesh.objectRegistry::template lookupObjectRef<GradFieldType>
-                (
-                    name
-                );
 
-            if (gGrad.ownedByRegistry())
-            {
-                solution::cachePrintMessage("Deleting", name, vsf);
-                gGrad.release();
-                delete &gGrad;
-            }
-        }
-
-        solution::cachePrintMessage("Calculating", name, vsf);
-        return gaussGradCalcGrad(vsf, name);
-    }
+    return tfvm;
 }
 
-template<class Type>
-tmp
-<
-    GeometricField
-    <
-        typename outerProduct<vector, Type>::type,
-        fvPatchField,
-        volMesh
-    >
->
-gaussGradCalcGrad
-(
-    const GeometricField<Type, fvPatchField, volMesh>& vsf,
-    const word& name
-)
-{
-    const fvMesh& mesh = vsf.mesh();
-
-    tmp<surfaceInterpolationScheme<Type>> tinterpScheme_ =
-    tmp<surfaceInterpolationScheme<Type>>
-    (
-        new linear<Type>(mesh)
-    );
-
-    typedef typename outerProduct<vector, Type>::type GradType;
-
-    tmp<GeometricField<Type, fvsPatchField, surfaceMesh>> tinterpolate = tinterpScheme_().interpolate(vsf);
-
-    tmp<GeometricField<GradType, fvPatchField, volMesh>> tgGrad
-    (
-        gaussGradGradf(tinterpolate.ref(), name)
-    );
-    GeometricField<GradType, fvPatchField, volMesh>& gGrad = tgGrad.ref();
-
-    gaussGradCorrectBoundaryConditions(vsf, gGrad);
-
-    return tgGrad;
-}
 
 template<class Type>
-void gaussGradCorrectBoundaryConditions
+tmp<GeometricField<Type, fvsPatchField, surfaceMesh>>
+gaussLaplacianSchemeGammaSnGradCorr
 (
-    const GeometricField<Type, fvPatchField, volMesh>& vsf,
-    GeometricField
-    <
-        typename outerProduct<vector, Type>::type, fvPatchField, volMesh
-    >& gGrad
+    const surfaceVectorField& SfGammaCorr,
+    const GeometricField<Type, fvPatchField, volMesh>& vf
 )
 {
-    typename GeometricField
-    <
-        typename outerProduct<vector, Type>::type, fvPatchField, volMesh
-    >::Boundary& gGradbf = gGrad.boundaryFieldRef();
+    const fvMesh& mesh = vf.mesh();
 
-    forAll(vsf.boundaryField(), patchi)
-    {
-        if (!vsf.boundaryField()[patchi].coupled())
-        {
-            const vectorField n
-            (
-                vsf.mesh().Sf().boundaryField()[patchi]
-              / vsf.mesh().magSf().boundaryField()[patchi]
-            );
-
-            gGradbf[patchi] += n *
-            (
-                vsf.boundaryField()[patchi].snGrad()
-              - (n & gGradbf[patchi])
-            );
-        }
-     }
-}
-
-template<class Type>
-tmp
-<
-    GeometricField
-    <
-        typename outerProduct<vector, Type>::type,
-        fvPatchField,
-        volMesh
-    >
->
-gaussGradGradf
-(
-    const GeometricField<Type, fvsPatchField, surfaceMesh>& ssf,
-    const word& name
-)
-{
-    typedef typename outerProduct<vector, Type>::type GradType;
-
-    const fvMesh& mesh = ssf.mesh();
-
-    tmp<GeometricField<GradType, fvPatchField, volMesh>> tgGrad
+    tmp<GeometricField<Type, fvsPatchField, surfaceMesh>> tgammaSnGradCorr
     (
-        new GeometricField<GradType, fvPatchField, volMesh>
+        new GeometricField<Type, fvsPatchField, surfaceMesh>
         (
             IOobject
             (
-                name,
-                ssf.instance(),
+                "gammaSnGradCorr("+vf.name()+')',
+                vf.instance(),
                 mesh,
                 IOobject::NO_READ,
                 IOobject::NO_WRITE
             ),
             mesh,
-            dimensioned<GradType>
-            (
-                "0",
-                ssf.dimensions()/dimLength,
-                Zero
-            ),
-            extrapolatedCalculatedFvPatchField<GradType>::typeName
+            SfGammaCorr.dimensions()
+           *vf.dimensions()*mesh.deltaCoeffs().dimensions()
         )
     );
-    GeometricField<GradType, fvPatchField, volMesh>& gGrad = tgGrad.ref();
 
-    const labelUList& owner = mesh.owner();
-    const labelUList& neighbour = mesh.neighbour();
-    const vectorField& Sf = mesh.Sf();
-
-    Field<GradType>& igGrad = gGrad;
-    const Field<Type>& issf = ssf;
-
-    forAll(owner, facei)
+    for (direction cmpt = 0; cmpt < pTraits<Type>::nComponents; cmpt++)
     {
-        GradType Sfssf = Sf[facei]*issf[facei];
-
-        igGrad[owner[facei]] += Sfssf;
-        igGrad[neighbour[facei]] -= Sfssf;
+        tgammaSnGradCorr.ref().replace
+        (
+            cmpt,
+            fvc::dotInterpolate(SfGammaCorr, fvc::grad(vf.component(cmpt)))
+        );
     }
 
-    forAll(mesh.boundary(), patchi)
+    return tgammaSnGradCorr;
+}
+
+template<class Type>
+tmp<fvMatrix<Type>>
+gaussLaplacianSchemeFvmLaplacian
+(
+    const GeometricField<scalar, fvPatchField, volMesh>& gammaScalarVol,
+    const GeometricField<Type, fvPatchField, volMesh>& vf
+)
+{
+    Info << "gaussLaplacianSchemeFvmLaplacian start" << endl;
+    const fvMesh& mesh = vf.mesh();
+    tmp<surfaceInterpolationScheme<scalar>> tinterpGammaScheme_(new linear<scalar>(mesh));
+    tmp<fv::snGradScheme<Type>> tsnGradScheme_(new fv::orthogonalSnGrad<Type>(mesh));
+
+    tmp<GeometricField<scalar, fvsPatchField, surfaceMesh>> tgamma = tinterpGammaScheme_().interpolate(gammaScalarVol);
+    const GeometricField<scalar, fvsPatchField, surfaceMesh>& gamma = tgamma.ref();
+
+    GeometricField<scalar, fvsPatchField, surfaceMesh> gammaMagSf
+    (
+        gamma*mesh.magSf()
+    );
+
+    tmp<fvMatrix<Type>> tfvm = gaussLaplacianSchemeFvmLaplacianUncorrected
+    (
+        gammaMagSf,
+        tsnGradScheme_().deltaCoeffs(vf),
+        vf
+    );
+    fvMatrix<Type>& fvm = tfvm.ref();
+
+    if (tsnGradScheme_().corrected())
     {
-        const labelUList& pFaceCells =
-            mesh.boundary()[patchi].faceCells();
-
-        const vectorField& pSf = mesh.Sf().boundaryField()[patchi];
-
-        const fvsPatchField<Type>& pssf = ssf.boundaryField()[patchi];
-
-        forAll(mesh.boundary()[patchi], facei)
+        if (mesh.fluxRequired(vf.name()))
         {
-            igGrad[pFaceCells[facei]] += pSf[facei]*pssf[facei];
+            fvm.faceFluxCorrectionPtr() = new
+            GeometricField<Type, fvsPatchField, surfaceMesh>
+            (
+                gammaMagSf*tsnGradScheme_().correction(vf)
+            );
+
+            fvm.source() -=
+                mesh.V()*
+                fvc::div
+                (
+                    *fvm.faceFluxCorrectionPtr()
+                )().primitiveField();
+        }
+        else
+        {
+            fvm.source() -=
+                mesh.V()*
+                fvc::div
+                (
+                    gammaMagSf*tsnGradScheme_().correction(vf)
+                )().primitiveField();
         }
     }
 
-    igGrad /= mesh.V();
+    Info << "gaussLaplacianSchemeFvmLaplacian end" << endl;
+    return tfvm;
+}  
 
-    gGrad.correctBoundaryConditions();
-
-    return tgGrad;
-}
-
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 template
-tmp
-<
-    GeometricField
-    <
-        typename outerProduct<vector, scalar>::type,
-        fvPatchField,
-        volMesh
-    >
->
-gaussGradSchemeGrad
+tmp<fvMatrix<scalar>>
+gaussLaplacianSchemeFvmLaplacian
 (
-    const GeometricField<scalar, fvPatchField, volMesh>& vsf
+    const GeometricField<scalar, fvPatchField, volMesh>& gammaScalarVol,
+    const GeometricField<scalar, fvPatchField, volMesh>& vf
 );
 
-
-template
-tmp
-<
-    GeometricField
-    <
-        typename outerProduct<vector, vector>::type,
-        fvPatchField,
-        volMesh
-    >
->
-gaussGradSchemeGrad
-(
-    const GeometricField<vector, fvPatchField, volMesh>& vsf
-);
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
 

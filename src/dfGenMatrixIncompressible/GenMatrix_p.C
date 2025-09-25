@@ -15,11 +15,23 @@
 
 namespace Foam{
 
-tmp<fvVectorMatrix>
+
+template<class Type>
+tmp
+<
+    GeometricField
+    <
+        typename outerProduct<vector, Type>::type,
+        fvPatchField,
+        volMesh
+    >
+>
 GenMatrix_p(
-
+    const GeometricField<Type, fvPatchField, volMesh>& vsf
 ){
+    word name("grad(" + vsf.name() + ')');
 
+    const fvMesh& mesh = U.mesh();
 
 
 
