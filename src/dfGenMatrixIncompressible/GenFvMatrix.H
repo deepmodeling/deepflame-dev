@@ -111,6 +111,13 @@ gaussDivFvcdiv
     const GeometricField<Type, fvPatchField, volMesh>& vf
 );
 
+template<class Type>
+tmp<GeometricField<Type, fvPatchField, volMesh>>
+fvcSurfaceIntegrate
+(
+    const tmp<GeometricField<Type, fvsPatchField, surfaceMesh>>& tssf
+);
+
 
 // fvm::laplacian
 

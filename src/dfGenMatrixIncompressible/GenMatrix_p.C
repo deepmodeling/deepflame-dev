@@ -106,27 +106,26 @@ GenMatrix_p(
 
     // -------------------------------------------------------
 
-    
+    // tmp<GeometricField<Type, fvPatchField, volMesh>>
+    // (
+    //     new GeometricField<Type, fvPatchField, volMesh>
+    //     (
+    //         "div("+phiHbyA->name()+')',
+    //         fvcSurfaceIntegrate(phiHbyA)
+    //     )
+    // );
 
     // interFoam   pEqn.H
 
     tmp<fvScalarMatrix> tfvm
     (
-        new fvScalarMatrix
-        (
-            (
-                tfvm_Lap
-            // + fvm::laplacian(rAUf, p_rgh)
-            )
-        == 
-            (fvc::div(phiHbyA))
-        )
+            tfvm_Lap
+        // + fvm::laplacian(rAUf, p_rgh) 
+        - fvc::div(phiHbyA)
     );
 
     return tfvm;
-
 }
-
 
 }
 
