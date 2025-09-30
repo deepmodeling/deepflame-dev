@@ -324,3 +324,40 @@ gaussGradSchemeGrad
 } // End namespace Foam
 
 // ************************************************************************* //
+
+// template<class Type>
+// tmp
+// <
+//     GeometricField
+//     <
+//         typename outerProduct<vector,Type>::type, fvPatchField, volMesh
+//     >
+// >
+// grad
+// (
+//     const GeometricField<Type, fvPatchField, volMesh>& vf
+// )
+// {
+//     return fvc::grad(vf, "grad(" + vf.name() + ')');
+// }
+
+// template<class Type>
+// tmp
+// <
+//     GeometricField
+//     <
+//         typename outerProduct<vector,Type>::type, fvPatchField, volMesh
+//     >
+// >
+// grad
+// (
+//     const GeometricField<Type, fvPatchField, volMesh>& vf,
+//     const word& name
+// )
+// {
+//     return fv::gradScheme<Type>::New
+//     (
+//         vf.mesh(),
+//         vf.mesh().gradScheme(name)
+//     )().grad(vf, name);
+// }
