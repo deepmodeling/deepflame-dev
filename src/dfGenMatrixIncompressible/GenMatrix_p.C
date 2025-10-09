@@ -29,7 +29,7 @@ GenMatrix_p(
     Info << "pEqn gaussLaplacianSchemeFvmLaplacian" << endl;
     
     const fvMesh& mesh = p_rgh.mesh();
-    tmp<fv::snGradScheme<Type>> tsnGradScheme_(new fv::orthogonalSnGrad<Type>(mesh));
+    tmp<fv::snGradScheme<scalar>> tsnGradScheme_(new fv::correctedSnGrad<scalar>(mesh));
 
     GeometricField<scalar, fvsPatchField, surfaceMesh> gammaMagSf
     (
@@ -37,6 +37,7 @@ GenMatrix_p(
     );
 
     const surfaceScalarField& deltaCoeffs = tsnGradScheme_().deltaCoeffs(p_rgh);
+    
 
     // -----
     tmp<fvMatrix<Type>> tfvm_Lap
@@ -50,8 +51,49 @@ GenMatrix_p(
 
     fvScalarMatrix& fvm = tfvm_Lap.ref();
 
-    fvm.upper() = deltaCoeffs.primitiveField()*gammaMagSf.primitiveField();
-    fvm.negSumDiag();
+    // -----
+
+    scalar* __restrict__ sourcePtrs = fvm_laplace.source().begin();
+    scalar* __restrict__ diagPtrs = fvm_laplace.diag().begin();  
+    scalar* __restrict__ lowerPtrs = fvm_laplace.lower().begin();
+    scalar* __restrict__ upperPtrs = fvm_laplace.upper().begin();
+
+    const labelUList& ls = fvm_laplace.lduAddr().lowerAddr();
+    const labelUList& us = fvm_laplace.lduAddr().upperAddr();
+
+    // 获取场数据指针
+    const scalar* const __restrict__ gammaMagSfPtrs = gammaMagSf.primitiveField().begin();
+    const scalar* const __restrict__ deltaCoeffsPtrs = deltaCoeffs.primitiveField().begin();
+    const scalar* const __restrict__ meshVPtrs = mesh.V().begin();
+
+    const label nFacess = fvm_laplace.lower().size();
+    const label nCellss = fvm_laplace.diag().size();
+
+    // 初始化矩阵
+    for (label celli = 0; celli < nCellss; celli++)
+    {
+        diagPtrs[celli] = 0.0;
+        sourcePtrs[celli] = 0.0;
+    }
+
+    // 设置内部场矩阵系数
+    for (label facei = 0; facei < nFacess; facei++)
+    {
+        scalar coeffs = deltaCoeffsPtrs[facei] * gammaMagSfPtrs[facei];
+        upperPtrs[facei] = +coeffs;
+        lowerPtrs[facei] = +coeffs;
+    }
+
+    // 对角线求和
+    for (label facei = 0; facei < nFacess; facei++)
+    {
+        diagPtrs[ls[facei]] -= lowerPtrs[facei];  
+        diagPtrs[us[facei]] -= upperPtrs[facei]; 
+    }
+    
+
+    // fvm.upper() = deltaCoeffs.primitiveField()*gammaMagSf.primitiveField();
+    // fvm.negSumDiag();
 
     forAll(p_rgh.boundaryField(), patchi)
     {
@@ -74,54 +116,54 @@ GenMatrix_p(
         }
     }
 
-    // -----
-
-    if (tsnGradScheme_().corrected())
+    if (mesh.fluxRequired(p_rgh.name()))
     {
-        if (mesh.fluxRequired(p_rgh.name()))
-        {
-            fvm.faceFluxCorrectionPtr() = new
-            GeometricField<Type, fvsPatchField, surfaceMesh>
+        fvm.faceFluxCorrectionPtr() = new
+        GeometricField<Type, fvsPatchField, surfaceMesh>
+        (
+            gammaMagSf*tsnGradScheme_().correction(p_rgh)
+        );
+
+        fvm.source() -=
+            mesh.V()*
+            fvc::div
+            (
+                *fvm.faceFluxCorrectionPtr()
+            )().primitiveField();
+    }
+    else
+    {
+        fvm.source() -=
+            mesh.V()*
+            fvc::div
             (
                 gammaMagSf*tsnGradScheme_().correction(p_rgh)
-            );
-
-            fvm.source() -=
-                mesh.V()*
-                fvc::div
-                (
-                    *fvm.faceFluxCorrectionPtr()
-                )().primitiveField();
-        }
-        else
-        {
-            fvm.source() -=
-                mesh.V()*
-                fvc::div
-                (
-                    gammaMagSf*tsnGradScheme_().correction(p_rgh)
-                )().primitiveField();
-        }
+            )().primitiveField();
     }
-
     // -------------------------------------------------------
 
-    // tmp<GeometricField<Type, fvPatchField, volMesh>>
-    // (
-    //     new GeometricField<Type, fvPatchField, volMesh>
-    //     (
-    //         "div("+phiHbyA->name()+')',
-    //         fvcSurfaceIntegrate(phiHbyA)
-    //     )
-    // );
+    Info << "pEqn gaussConvectionFvcDiv" << endl;
+    tmp<volScalarField> tdivPhiHbyA = tmp<volScalarField>
+    (
+        new volScalarField
+        (
+            "div(" + phiHbyA().name() + ')',
+            fvc::surfaceIntegrate(phiHbyA())
+        )
+    );
 
+    fvm.source() += mesh.V() * tdivPhiHbyA().primitiveField();
+
+
+    
+    // -------------------------------------------------------
     // interFoam   pEqn.H
 
     tmp<fvScalarMatrix> tfvm
     (
             tfvm_Lap
         // + fvm::laplacian(rAUf, p_rgh) 
-        - fvc::div(phiHbyA)
+        // - fvc::div(phiHbyA)
     );
 
     return tfvm;

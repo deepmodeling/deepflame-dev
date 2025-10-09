@@ -17,7 +17,232 @@
 #include "autoPtr.H"
 #include "runTimeSelectionTables.H"
 
+#include "gaussGrad.H"
+#include "extrapolatedCalculatedFvPatchField.H"
+
 namespace Foam{
+
+template<class Type>
+tmp
+<
+    GeometricField
+    <
+        typename outerProduct<vector, Type>::type,
+        fvPatchField,
+        volMesh
+    >
+>
+gaussGradCalcGrad
+(
+    const GeometricField<Type, fvPatchField, volMesh>& vsf,
+    const word& name
+);
+
+template<class Type>
+void gaussGradCorrectBoundaryConditions
+(
+    const GeometricField<Type, fvPatchField, volMesh>& vsf,
+    GeometricField
+    <
+        typename outerProduct<vector, Type>::type, fvPatchField, volMesh
+    >& gGrad
+);
+
+template<class Type>
+tmp
+<
+    GeometricField
+    <
+        typename outerProduct<vector, Type>::type,
+        fvPatchField,
+        volMesh
+    >
+>
+gaussGradGradf
+(
+    const GeometricField<Type, fvsPatchField, surfaceMesh>& ssf,
+    const word& name
+);
+
+// // 专门用于计算 grad(U) 的函数
+// tmp<volTensorField> calcGradU(const volVectorField& U)
+// {
+//     const fvMesh& mesh = U.mesh();
+    
+//     // 创建线性插值方案
+//     tmp<surfaceInterpolationScheme<vector>> tinterpScheme =
+//         tmp<surfaceInterpolationScheme<vector>>
+//         (
+//             new linear<vector>(mesh)
+//         );
+
+//     // 插值到场表面
+//     tmp<surfaceVectorField> tinterpolate = tinterpScheme().interpolate(U);
+
+//     // 计算梯度
+//     tmp<volTensorField> tgGrad = gaussGradGradf(tinterpolate(), "grad(" + U.name() + ')');
+//     volTensorField& gGrad = tgGrad.ref();
+
+//     // 修正边界条件
+//     gaussGradCorrectBoundaryConditions(U, gGrad);
+
+//     return tgGrad;
+// }
+
+// 梯度计算核心函数实现
+template<class Type>
+tmp
+<
+    GeometricField
+    <
+        typename outerProduct<vector, Type>::type,
+        fvPatchField,
+        volMesh
+    >
+>
+gaussGradCalcGrad
+(
+    const GeometricField<Type, fvPatchField, volMesh>& vsf,
+    const word& name
+)
+{
+    const fvMesh& mesh = vsf.mesh();
+
+    tmp<surfaceInterpolationScheme<Type>> tinterpScheme_ =
+    tmp<surfaceInterpolationScheme<Type>>
+    (
+        new linear<Type>(mesh)
+    );
+
+    typedef typename outerProduct<vector, Type>::type GradType;
+
+    tmp<GeometricField<Type, fvsPatchField, surfaceMesh>> tinterpolate = tinterpScheme_().interpolate(vsf);
+
+    tmp<GeometricField<GradType, fvPatchField, volMesh>> tgGrad
+    (
+        gaussGradGradf(tinterpolate.ref(), name)
+    );
+    GeometricField<GradType, fvPatchField, volMesh>& gGrad = tgGrad.ref();
+
+    gaussGradCorrectBoundaryConditions(vsf, gGrad);
+
+    return tgGrad;
+}
+
+template<class Type>
+void gaussGradCorrectBoundaryConditions
+(
+    const GeometricField<Type, fvPatchField, volMesh>& vsf,
+    GeometricField
+    <
+        typename outerProduct<vector, Type>::type, fvPatchField, volMesh
+    >& gGrad
+)
+{
+    typename GeometricField
+    <
+        typename outerProduct<vector, Type>::type, fvPatchField, volMesh
+    >::Boundary& gGradbf = gGrad.boundaryFieldRef();
+
+    forAll(vsf.boundaryField(), patchi)
+    {
+        if (!vsf.boundaryField()[patchi].coupled())
+        {
+            const vectorField n
+            (
+                vsf.mesh().Sf().boundaryField()[patchi]
+              / vsf.mesh().magSf().boundaryField()[patchi]
+            );
+
+            gGradbf[patchi] += n *
+            (
+                vsf.boundaryField()[patchi].snGrad()
+              - (n & gGradbf[patchi])
+            );
+        }
+     }
+}
+
+template<class Type>
+tmp
+<
+    GeometricField
+    <
+        typename outerProduct<vector, Type>::type,
+        fvPatchField,
+        volMesh
+    >
+>
+gaussGradGradf
+(
+    const GeometricField<Type, fvsPatchField, surfaceMesh>& ssf,
+    const word& name
+)
+{
+    typedef typename outerProduct<vector, Type>::type GradType;
+
+    const fvMesh& mesh = ssf.mesh();
+
+    tmp<GeometricField<GradType, fvPatchField, volMesh>> tgGrad
+    (
+        new GeometricField<GradType, fvPatchField, volMesh>
+        (
+            IOobject
+            (
+                name,
+                ssf.instance(),
+                mesh,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE
+            ),
+            mesh,
+            dimensioned<GradType>
+            (
+                "0",
+                ssf.dimensions()/dimLength,
+                Zero
+            ),
+            extrapolatedCalculatedFvPatchField<GradType>::typeName
+        )
+    );
+    GeometricField<GradType, fvPatchField, volMesh>& gGrad = tgGrad.ref();
+
+    const labelUList& owner = mesh.owner();
+    const labelUList& neighbour = mesh.neighbour();
+    const vectorField& Sf = mesh.Sf();
+
+    Field<GradType>& igGrad = gGrad;
+    const Field<Type>& issf = ssf;
+
+    forAll(owner, facei)
+    {
+        GradType Sfssf = Sf[facei]*issf[facei];
+
+        igGrad[owner[facei]] += Sfssf;
+        igGrad[neighbour[facei]] -= Sfssf;
+    }
+
+    forAll(mesh.boundary(), patchi)
+    {
+        const labelUList& pFaceCells =
+            mesh.boundary()[patchi].faceCells();
+
+        const vectorField& pSf = mesh.Sf().boundaryField()[patchi];
+
+        const fvsPatchField<Type>& pssf = ssf.boundaryField()[patchi];
+
+        forAll(mesh.boundary()[patchi], facei)
+        {
+            igGrad[pFaceCells[facei]] += pSf[facei]*pssf[facei];
+        }
+    }
+
+    igGrad /= mesh.V();
+
+    gGrad.correctBoundaryConditions();
+
+    return tgGrad;
+}
 
 tmp<fvVectorMatrix>
 GenMatrix_U(
@@ -246,21 +471,22 @@ GenMatrix_U(
 
     // --------------------------------------------------------------------------------------------------------------
 
+    Info << "UEqn Calculating grad(U) using extracted functions" << endl;
+    tmp<surfaceInterpolationScheme<vector>> tinterpScheme =
+    tmp<surfaceInterpolationScheme<vector>>
+    (
+        new linear<vector>(mesh)
+    );
+    tmp<surfaceVectorField> tinterpolate = tinterpScheme().interpolate(U);
+    tmp<volTensorField> tgGradU = gaussGradGradf(tinterpolate(), "grad(" + U.name() + ')');
+    volTensorField& gGrad = tgGradU.ref();
+    gaussGradCorrectBoundaryConditions(U, gGrad);
+
+    const volTensorField& gradU = tgGradU();
+    // const volScalarField alphaEff = turbulence.alpha()*rho*turbulence.nuEff();
 
 
 
-
-
-
-
-
-
-
-
-
-
-    
-    
     // -------------------------------------------------------
     // interFoam    
     // const alphaField& alpha;
@@ -272,7 +498,8 @@ GenMatrix_U(
         // + fvm::div(rhoPhi, U)
         // + MRF.DDt(rho, U) 
         // + turbulence.divDevRhoReff(rho, U)  
-        - fvc::div((turbulence.alpha()*rho*turbulence.nuEff())*dev2(T(fvc::grad(U))))
+        // - fvc::div((turbulence.alpha()*rho*turbulence.nuEff())*dev2(T(fvc::grad(U))))
+        - fvc::div((turbulence.alpha()*rho*turbulence.nuEff())*dev2(T(gradU)))
         
         // - fvm::laplacian(turbulence.alpha()*rho*turbulence.nuEff(), U)
         // - fvOptions(rho, U)
@@ -308,3 +535,7 @@ GenMatrix_U(
 // );
 // fvVectorMatrix& UEqn_answer = tUEqn_answer.ref();
 // check_fvmatrix_equal(UEqn_answer, UEqn, "UEqn");
+
+
+
+
