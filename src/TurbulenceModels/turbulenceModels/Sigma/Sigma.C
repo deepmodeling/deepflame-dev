@@ -57,21 +57,14 @@ void Sigma<BasicTurbulenceModel>::correctNut()
       }
 
       DiagonalMatrix<scalar> sigmas(SVD(gradUMatrix).S());
-      scalar sigma_1(max(sigmas));
-      scalar sigma_2(sigma_1);
-      scalar sigma_3(min(sigmas));
+   
+      scalar s_a = sigmas[0];
+      scalar s_b = sigmas[1];
+      scalar s_c = sigmas[2];
 
-      for (label ii = 0; ii<3; ii++)
-      {
-         if(sigmas[ii]>=sigma_3 && sigmas[ii]<=sigma_1) sigma_2 = sigmas[ii];
-
-         if(sigmas[ii]<0)
-         {
-            WarningInFunction
-            << "Negative sigular values!!! sigmas = \n"
-            << sigmas <<endl;
-         }
-      }
+      scalar sigma_1 = max(max(s_a, s_b), s_c);
+      scalar sigma_3 = min(min(s_a, s_b), s_c);
+      scalar sigma_2 = s_a + s_b + s_c - sigma_1 - sigma_3;
 
       if(abs(sigma_1)<ROOTVSMALL && !zeroSigma) zeroSigma = true;
 
