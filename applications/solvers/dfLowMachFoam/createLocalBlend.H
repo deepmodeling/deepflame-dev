@@ -31,6 +31,9 @@ forAll(keys, i)
     }
 }
 
+// Declare pointer for UBlendingFactor
+autoPtr<surfaceScalarField> UBlendingFactorPtr;
+
 // Create the localBlendingFactor field only if localBlended scheme is found
 if (foundLocalBlended)
 {
@@ -48,20 +51,23 @@ if (foundLocalBlended)
             IOobject::NO_WRITE
         ),
         mesh
-    )
+    );
 
     // Construct the surfaceScalarField UBlendingFactor by interpolating UBlend to cell faces
-    surfaceScalarField UBlendingFactor
+    UBlendingFactorPtr.reset
     (
-        IOobject
+        new surfaceScalarField
         (
-            "UBlendingFactor",
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        fvc::interpolate(UBlend)
+            IOobject
+            (
+                "UBlendingFactor",
+                mesh.time().timeName(),
+                mesh,
+                IOobject::READ_IF_PRESENT,
+                IOobject::NO_WRITE,
+                true
+            ),
+            fvc::interpolate(UBlend)
+        )
     );
 }
