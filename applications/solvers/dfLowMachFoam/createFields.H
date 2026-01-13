@@ -115,6 +115,8 @@ rho = thermo.rho();
 Info<< "Creating field kinetic energy K\n" << endl;
 volScalarField K("K", 0.5*magSqr(U));
 
+#include "createLocalBlend.H"
+
 multivariateSurfaceInterpolationScheme<scalar>::fieldTable fields;
 
 #include "createMRF.H"
