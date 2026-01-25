@@ -21,7 +21,7 @@
 
 DeepFlame is a deep learning empowered computational fluid dynamics package for single or multiphase, laminar or turbulent, reacting flows at all speeds. It aims to provide an open-source platform to combine the individual strengths of [OpenFOAM](https://openfoam.org), [Cantera](https://cantera.org), and [PyTorch](https://pytorch.org/) libraries for deep learning assisted reacting flow simulations. It also has the scope to leverage the next-generation heterogenous supercomputing and AI acceleration infrastructures such as GPU and FPGA.
 
-The neural network models used in the tutorial examples can be found at– [AIS Square](https://www.aissquare.com/). To run DeepFlame with DNN, download the DNN model [DFODE](https://www.aissquare.com/models/detail?pageType=models&name=DF-ODENet_DNNmodel&id=197) into the case folder you would like to run.
+The neural network models used in the tutorial examples can be found at– [AIS Square](https://www.aissquare.com/). To run DeepFlame with DNN, download the DNN model [DFODE](https://www.aissquare.com/models/detail?pageType=models&name=DF-ODENet_DNNmodel&id=197) into the case folder you would like to run. To train your own DNN models, please use the [DFODE-kit](https://github.com/deepflame-ai/DFODE-kit) package developed by the DeepFlame team.
 
 ## Documentation
 Detailed guide for installation and tutorials is available on [our documentation website](https://deepflame.deepmodeling.com).
