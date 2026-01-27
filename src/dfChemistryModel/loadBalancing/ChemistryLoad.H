@@ -44,14 +44,14 @@ namespace Foam
 struct ChemistryLoad
 {
     // rank ID of the process
-    label rank; 
+    int rank; 
 
     // the load value indicating how busy the processor is
     scalar value;
 
     ChemistryLoad() = default;
 
-    ChemistryLoad(label _rank, scalar _value) : rank(_rank), value(_value)
+    ChemistryLoad(int _rank, scalar _value) : rank(_rank), value(_value)
     {
     }
 

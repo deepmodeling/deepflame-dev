@@ -1,3 +1,0 @@
-LiquidEvaporationSpaldings.C
-
-LIB = $(DF_LIBBIN)/libEvaporationNew

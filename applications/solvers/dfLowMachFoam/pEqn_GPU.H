@@ -181,7 +181,7 @@ UEqn_GPU.sync();
 
 thermo_GPU.correctPsipRho();
 
-#include "rhoEqn_GPU.H"
+#include "rhoEqn.H"
 // #include "compressibleContinuityErrs.H" // TODO: implement this func in future
 
 #if defined DEBUG_

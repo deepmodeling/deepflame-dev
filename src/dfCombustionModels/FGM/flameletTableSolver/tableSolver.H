@@ -68,8 +68,7 @@ class tableSolver
 
     //- self-defined species name
     hashedWordList speciesNames_table_;
-    // hashedWordList spc_omegaNames_table_;
-    wordList spc_omegaNames_table_;
+    hashedWordList spc_omegaNames_table_;
 
     //- List of the used tables
     hashedWordList tableNames_;

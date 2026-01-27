@@ -439,8 +439,8 @@ void Foam::combustionModels::PaSR<ReactionThermo>::transport()
     tmp<volScalarField> tmut(this->turbulence().mut());
     const volScalarField& mut = tmut();
 
-    const surfaceScalarField& phi_ = this->mesh().objectRegistry::lookupObject<surfaceScalarField>("phi");
-    const volVectorField& U_=this->mesh().objectRegistry::lookupObject<volVectorField>("U");
+    const surfaceScalarField& phi_ = this->mesh().objectRegistry::template lookupObject<surfaceScalarField>("phi");
+    const volVectorField& U_=this->mesh().objectRegistry::template lookupObject<volVectorField>("U");
 
     tmp<fv::convectionScheme<scalar>> mvConvection
        (
@@ -508,7 +508,7 @@ void Foam::combustionModels::PaSR<ReactionThermo>::transport()
       eqR_.max(0);  
 
       //laminar speed calculation 
-      volScalarField SuRef=0*U_.component(0);
+      volScalarField SuRef= (0*U_.component(0)).ref();
       
       static const scalar Tref = 300.0;
       static const scalar pRef = 1.013e5;    
@@ -532,12 +532,12 @@ void Foam::combustionModels::PaSR<ReactionThermo>::transport()
   if(ChiType_=="transport") 
   {
         scalar Sct=0.7;
-    	volScalarField D1 = Cd1_*this->rho()*sqr(Chi_)/(Zvar_+SMALL);
-        volScalarField D2 = Cd2_*this->rho()*this->turbulence().epsilon()/(this->turbulence().k()+smallK_)*Chi_;
-        volScalarField P1 = 2.00*Cp1_*this->turbulence().epsilon()/(this->turbulence().k()+smallK_)*this->turbulence().mut()/Sct*magSqr(fvc::grad(Z_));
-        volScalarField P2 = Cp2_*this->turbulence().mut()*Chi_/(this->turbulence().k()+smallK_)*(fvc::grad(U_) && dev(twoSymm(fvc::grad(U_))));
+    	volScalarField D1 = (Cd1_*this->rho()*sqr(Chi_)/(Zvar_+SMALL)).ref();
+        volScalarField D2 = (Cd2_*this->rho()*this->turbulence().epsilon()/(this->turbulence().k()+smallK_)*Chi_).ref();
+        volScalarField P1 = (2.00*Cp1_*this->turbulence().epsilon()/(this->turbulence().k()+smallK_)*this->turbulence().mut()/Sct*magSqr(fvc::grad(Z_))).ref();
+        volScalarField P2 = (Cp2_*this->turbulence().mut()*Chi_/(this->turbulence().k()+smallK_)*(fvc::grad(U_) && dev(twoSymm(fvc::grad(U_))))).ref();
 
-        volScalarField S_chi = P1 + P2 - D1 - D2;	
+        volScalarField S_chi = (P1 + P2 - D1 - D2).ref();	
 
         fvScalarMatrix ChiEqn
         (

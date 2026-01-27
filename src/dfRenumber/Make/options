@@ -1,0 +1,11 @@
+-include $(GENERAL_RULES)/mplibType
+
+EXE_INC = -std=c++17 \
+    -I$(LIB_SRC)/renumber/renumberMethods/lnInclude
+    
+LIB_LIBS = \
+    -L$(FOAM_LIBBIN) \
+    -L$(DF_LIBBIN) \
+    -lrenumberMethods
+
+

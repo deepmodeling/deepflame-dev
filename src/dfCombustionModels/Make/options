@@ -1,10 +1,12 @@
 -include $(GENERAL_RULES)/mplibType
 
 EXE_INC = -std=c++14 \
+    -fopenmp \
     -Wno-old-style-cast \
     $(PFLAGS) $(PINC) \
     $(if $(LIBTORCH_ROOT),-DUSE_LIBTORCH,) \
     $(if $(PYTHON_INC_DIR),-DUSE_PYTORCH,) \
+    $(if $(USE_BLASDNN),-DUSE_BLASDNN,) \
     -I$(LIB_SRC)/transportModels/compressible/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
     -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude \
@@ -29,7 +31,8 @@ EXE_INC = -std=c++14 \
     -I$(CANTERA_ROOT)/include \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include,) \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include/torch/csrc/api/include,) \
-    $(PYTHON_INC_DIR)
+    $(PYTHON_INC_DIR) \
+    -I/root/NNopt/yaml-cpp-static/include
 
 LIB_LIBS = \
     -lcompressibleTransportModels \
@@ -48,6 +51,7 @@ LIB_LIBS = \
     -lregionModels \
     -ldfCanteraMixture \
     -ldfChemistryModel \
+    -L$(DF_ROOT)/lib/ \
     $(CANTERA_ROOT)/lib/libcantera.so \
     $(if $(LIBTORCH_ROOT),$(LIBTORCH_ROOT)/lib/libtorch.so,) \
     $(if $(LIBTORCH_ROOT),$(LIBTORCH_ROOT)/lib/libc10.so,) \

@@ -165,15 +165,14 @@ void dynamicSmagorinsky<BasicTurbulenceModel>::correct()
     volScalarField magSf(mag(Sf));
 
 
-    volSymmTensorField LL =
-    (dev(filter_(sqr(U)) - (sqr(filter_(U)))));
+    volSymmTensorField LL = (dev(filter_(sqr(U)) - (sqr(filter_(U))))).ref();
 
     volSymmTensorField MM
     (
         sqr(this->delta())*(filter_(magS*S) - 4.0*magSf*Sf) // J.C. Massey - 4 comes from test filter size
     );
 
-    volScalarField MMMM = fvc::average(magSqr(MM));
+    volScalarField MMMM = fvc::average(magSqr(MM)).ref();
     MMMM.max(VSMALL);
 
 //  J.C. Massey - computed Cs here is the Smagorinsky constant squared to allow for backscatter

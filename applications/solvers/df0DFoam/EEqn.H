@@ -4,6 +4,6 @@
     start = std::clock();
     chemistry.correctThermo();
     end = std::clock();
-    time_monitor_corrThermo += double(end - start) / double(CLOCKS_PER_SEC);
+    time_monitor_corrThermo += double(end - start);
 
 }

@@ -38,7 +38,7 @@ If you plot PyTorch's result together with CVODE's result, the graph is expected
     
     Visualisation of 0D results from PyTorch and CVODE integrators 
 
-.. Note:: If you prefer using the PaddlePaddle framework, you can refer to examples stored in `$HOME/deepflame-dev/examples/dfLowMachFoam/paddle`.
+
 
 DeepFlame without DNN
 ------------------------------

@@ -1,0 +1,49 @@
+USE_BLASDNN : true
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build
+/usr/bin/cmake -S/home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas -B/home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build --check-build-system CMakeFiles/Makefile.cmake 0
+/usr/bin/cmake -E cmake_progress_start /home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build/CMakeFiles /home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build//CMakeFiles/progress.marks
+make  -f CMakeFiles/Makefile2 all
+make[1]: Entering directory '/home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build'
+make  -f CMakeFiles/DNNInferencer_blas.dir/build.make CMakeFiles/DNNInferencer_blas.dir/depend
+make[2]: Entering directory '/home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build'
+cd /home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build && /usr/bin/cmake -E cmake_depends "Unix Makefiles" /home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas /home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas /home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build /home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build /home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build/CMakeFiles/DNNInferencer_blas.dir/DependInfo.cmake --color=
+Dependencies file "CMakeFiles/DNNInferencer_blas.dir/DNNInferencer_blas.cpp.o.d" is newer than depends file "/home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build/CMakeFiles/DNNInferencer_blas.dir/compiler_depend.internal".
+Dependencies file "CMakeFiles/DNNInferencer_blas.dir/DNNThermo_blas.cpp.o.d" is newer than depends file "/home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build/CMakeFiles/DNNInferencer_blas.dir/compiler_depend.internal".
+Dependencies file "CMakeFiles/DNNInferencer_blas.dir/Layer.cpp.o.d" is newer than depends file "/home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build/CMakeFiles/DNNInferencer_blas.dir/compiler_depend.internal".
+Dependencies file "CMakeFiles/DNNInferencer_blas.dir/kernel_double.cpp.o.d" is newer than depends file "/home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build/CMakeFiles/DNNInferencer_blas.dir/compiler_depend.internal".
+Dependencies file "CMakeFiles/DNNInferencer_blas.dir/kernel_float.cpp.o.d" is newer than depends file "/home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build/CMakeFiles/DNNInferencer_blas.dir/compiler_depend.internal".
+Dependencies file "CMakeFiles/DNNInferencer_blas.dir/kernel_half.cpp.o.d" is newer than depends file "/home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build/CMakeFiles/DNNInferencer_blas.dir/compiler_depend.internal".
+Consolidate compiler generated dependencies of target DNNInferencer_blas
+make[2]: Leaving directory '/home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build'
+make  -f CMakeFiles/DNNInferencer_blas.dir/build.make CMakeFiles/DNNInferencer_blas.dir/build
+make[2]: Entering directory '/home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build'
+make[2]: Nothing to be done for 'CMakeFiles/DNNInferencer_blas.dir/build'.
+make[2]: Leaving directory '/home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build'
+[100%] Built target DNNInferencer_blas
+make[1]: Leaving directory '/home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build'
+/usr/bin/cmake -E cmake_progress_start /home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build/CMakeFiles 0
+Compiling enabled on 608 cores
+Allwmake /home/deepflame/deepflame-dev-blasdnn
+wmake src/thermophysicalModels/thermophysicalProperties
+wmake src/thermophysicalModels/basic
+wmake src/functionObjects/field
+wmake src/dfCanteraMixture
+wmake src/thermophysicalModels/SLGThermo
+wmake src/dfChemistryModel
+wmake src/TurbulenceModels/compressible
+wmake src/TurbulenceModels/turbulenceModels
+wmake src/regionModels/surfaceFilmModels
+Allwmake /home/deepflame/deepflame-dev-blasdnn/src/lagrangian
+wmake intermediate
+wmake turbulence
+wmake spray
+wmake src/dfCombustionModels
+wmake src/dynamicMesh
+wmake src/dynamicFvMesh
+wmake src/dfUtils
+wmake src/dfRenumber
+wmake src/dfSchedule
+wmake src/dfMatrices
+clang++ -std=c++11  -mcpu=hip09 -DlinuxArm64 -DWM_ARCH_OPTION=64 -DWM_DP -DWM_LABEL_SIZE=64 -Wall -Wextra -Wold-style-cast -Wnon-virtual-dtor -Wno-unused-parameter -Wno-invalid-offsetof -Wno-undefined-var-template -O3 -fPIC  -DNoRepository -ftemplate-depth-100 -std=c++17 -DOMPI_SKIP_MPICXX -I/home/deepflame/HPCKit/25.0.0/hmpi/bisheng/hmpi/include -I/home/deepflame/HPCKit/25.0.0/hmpi/bisheng/hmpi/include/openmpi -I/home/deepflame/HPCKit/25.0.0/hmpi/bisheng/hmpi/include/openmpi/opal/mca/hwloc/hwloc201/hwloc/include -I/home/deepflame/HPCKit/25.0.0/hmpi/bisheng/hmpi/include/openmpi/opal/mca/event/libevent2022/libevent -I/home/deepflame/HPCKit/25.0.0/hmpi/bisheng/hmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include -D_PROFILING_ 	-I/home/deepflame/OpenFOAM-7/src/transportModels/compressible/lnInclude -I/home/deepflame/OpenFOAM-7/src/thermophysicalModels/basic/lnInclude -I/home/deepflame/OpenFOAM-7/src/TurbulenceModels/turbulenceModels/lnInclude -I/home/deepflame/OpenFOAM-7/src/TurbulenceModels/compressible/lnInclude -I/home/deepflame/OpenFOAM-7/src/finiteVolume/cfdTools -I/home/deepflame/OpenFOAM-7/src/finiteVolume/lnInclude -I/home/deepflame/OpenFOAM-7/src/Pstream/mpi -I/home/deepflame/OpenFOAM-7/src/Pstream/mpi -I/home/deepflame/deepflame-dev-blasdnn/src/dfUtils/lnInclude 	-I/home/deepflame/deepflame-dev-blasdnn/src/dfGenMatrix/lnInclude 	-I/home/deepflame/deepflame-dev-blasdnn/src/dfCombustionModels/lnInclude 	-I/home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/lnInclude 	-I/home/deepflame/deepflame-dev-blasdnn/src/dfCanteraMixture/lnInclude 	-I/home/deepflame/deepflame-dev-blasdnn/src/dfSchedule/lnInclude 	-I/home/deepflame/OpenFOAM-7/src/parallel/decompose/decompositionMethods/lnInclude -I/home/deepflame/OpenFOAM-7/src/meshTools/lnInclude -I/home/deepflame/OpenFOAM-7/src/fileFormats/lnInclude -I/home/deepflame/OpenFOAM-7/src/triSurface/lnInclude -I/home/deepflame/OpenFOAM-7/src/surfMesh/lnInclude -I/home/deepflame/OpenFOAM-7/src/dynamicMesh/lnInclude 	-I/home/deepflame/anaconda3/envs/deepflame/include -IlnInclude -I. -I/home/deepflame/OpenFOAM-7/src/OpenFOAM/lnInclude -I/home/deepflame/OpenFOAM-7/src/OSspecific/POSIX/lnInclude   -fPIC -I/home/deepflame/HPCKit/latest/hmpi/bisheng/hmpi/include -L/home/deepflame/ThirdParty-7/platforms/linuxArm64ClangDPInt64/lib/mpifcc -I/home/deepflame/ThirdParty-7/platforms/linuxArm64ClangDPInt64/scotch_6.0.6/include/mpifcc -L/home/nfs_deepflame/anaconda3/envs/deep_flame/lib -fopenmp -lgomp -c dfMatrix/dfMatrix/dfBlockMatrix/dfCSRSubMatrix/dfCSRSubMatrix.C -o Make/linuxArm64ClangDPInt64Opt/dfMatrix/dfMatrix/dfBlockMatrix/dfCSRSubMatrix/dfCSRSubMatrix.o

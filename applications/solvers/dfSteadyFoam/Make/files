@@ -1,3 +1,0 @@
-dfSteadyFoam.C
-
-EXE = $(DF_APPBIN)/dfSteadyFoam

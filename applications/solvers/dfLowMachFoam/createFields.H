@@ -1,19 +1,16 @@
 #include "createRDeltaT.H"
-#include "readGravitationalAcceleration.H"
 
 Info<< "Reading thermophysical properties\n" << endl;
 
-CanteraMixture::setEnergyName("hs");
 // fluidThermo* pThermo = new hePsiThermo<psiThermo, CanteraMixture>(mesh, word::null);
 fluidThermo* pThermo = new heRhoThermo<rhoThermo, CanteraMixture>(mesh, word::null);
 fluidThermo& thermo = *pThermo;
-Info<< "Readed thermophysical properties\n" << endl;
-SLGThermo slgThermo(mesh, thermo);
+// thermo.validate(args.executable(), "ha");
 
 const volScalarField& psi = thermo.psi();
 volScalarField& p = thermo.p();
 volScalarField& T = thermo.T();
-T.correctBoundaryConditions();
+// T.correctBoundaryConditions();
 volScalarField rho
 (
     IOobject
@@ -100,10 +97,11 @@ forAll(Y, i)
 }
 const word inertSpecie(chemistry->lookup("inertSpecie"));
 const label inertIndex(chemistry->species()[inertSpecie]);
+chemistry->setEnergyName("ha");
 chemistry->updateEnergy();
 
 
-if(combModelName!="ESF" && combModelName!="flareFGM"  && combModelName!="DeePFGM" && combModelName!="FSD")
+if (combModelName != "flareFGM")
 {
     chemistry->correctThermo();
     Info<< "At initial time, min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
@@ -115,14 +113,9 @@ rho = thermo.rho();
 Info<< "Creating field kinetic energy K\n" << endl;
 volScalarField K("K", 0.5*magSqr(U));
 
-#include "createLocalBlend.H"
-
 multivariateSurfaceInterpolationScheme<scalar>::fieldTable fields;
 
-#include "createMRF.H"
-#include "createClouds.H"
-
-if(combModelName!="ESF" && combModelName!="flareFGM"  && combModelName!="DeePFGM" && combModelName!="FSD")
+if(combModelName!="flareFGM")
 {
 forAll(Y, i)
 {
@@ -199,6 +192,8 @@ volScalarField UEqn_A
     dimensionedScalar(dimensionSet(1,-3,-1,0,0,0,0), Zero),
     extrapolatedCalculatedFvPatchScalarField::typeName
 );
+
+const surfaceScalarField linear_weights = mesh.surfaceInterpolation::weights(); // interpolation weight (linear)
 
 const Switch splitting = CanteraTorchProperties.lookupOrDefault("splittingStrategy", false);
 #ifdef USE_PYTORCH

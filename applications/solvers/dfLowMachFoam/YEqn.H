@@ -1,100 +1,105 @@
-     // should only for CPUSolver
-    hDiffCorrFlux = Zero;
-    diffAlphaD = Zero;
-    sumYDiffError = Zero;
+Info << "Enter YEqn" << endl;
 
-    tmp<fv::convectionScheme<scalar>> mvConvection
+syncClockTime YEqnClock;
+
+hDiffCorrFlux = Zero;
+diffAlphaD = Zero;
+sumYDiffError = Zero;
+surfaceScalarField phiUc
+(
+    IOobject
     (
-        fv::convectionScheme<scalar>::New
-        (
-            mesh,
-            fields,
-            phi,
-            mesh.divScheme("div(phi,Yi_h)")
-        )
-    );
+        "phiUc",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::NO_WRITE
+    ),
+    mesh,
+    dimensionedScalar(dimensionSet(1,0,-1,0,0,0,0), 0)
+);
+surfaceScalarField upwindWeights
+(
+    IOobject
+    (
+        "upwindWeights",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::NO_WRITE
+    ),
+    mesh,
+    dimensionedScalar(dimensionSet(0,0,0,0,0,0,0), 0)
+);
 
-    // auto& mgcs = dynamic_cast<fv::multivariateGaussConvectionScheme<scalar>&>(mvConvection.ref());
-    // tmp<surfaceInterpolationScheme<scalar>> tinterpScheme_ = mgcs.interpolationScheme()()(Y[0]);
-    // tmp<surfaceScalarField> tweights = tinterpScheme_().weights(Y[0]);
-    // const surfaceScalarField& weights = tweights();
-    // Info << "CPU weights\n" << weights << endl;
+#ifndef OPT_GenMatrix_Y
+tmp<fv::convectionScheme<scalar>> mvConvection
+(
+    fv::convectionScheme<scalar>::New
+    (
+        mesh,
+        fields,
+        phi,
+        mesh.divScheme("div(phi,Yi_h)")
+    )
+);
+#endif
 
-    start1 = std::clock();
+time_monitor_YEqn_pre += YEqnClock.timeIncrement();
+
+{
+    #ifdef OPT_GenMatrix_Y
+    preProcess_Y(Y, phiUc, sumYDiffError, chemistry, upwindWeights, thermo.alpha(), phi);
+    #else
     forAll(Y, i)
     {
-        sumYDiffError += chemistry->rhoD(i)*fvc::grad(Y[i]);
+        sumYDiffError += chemistry->rhoD(i) * fvc::grad(Y[i]);;
     }
+    phiUc = (linearInterpolate(sumYDiffError) & mesh.Sf()).ref();
+    #endif
+
+    // forAll(Y, i)
+    // {
+    //     sumYDiffError += chemistry->rhoD(i)*fvc::grad(Y[i]);
+    // }
     // Info << "sumYDiffError\n" << sumYDiffError << endl;
-    const surfaceScalarField phiUc = linearInterpolate(sumYDiffError) & mesh.Sf();
-    start1 = std::clock();
-    time_monitor_YEqn += double(end1 - start1) / double(CLOCKS_PER_SEC);
-    time_monitor_YEqn_solve += double(end1 - start1) / double(CLOCKS_PER_SEC);
+    // const surfaceScalarField phiUc = (linearInterpolate(sumYDiffError) & mesh.Sf()).ref();
+    time_monitor_YEqn_pre += YEqnClock.timeIncrement();
 
-
-
-    label flag_mpi_init;
-    MPI_Initialized(&flag_mpi_init);
-    if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
-
+    #ifdef OPT_GenMatrix_Y_check
+    volVectorField sumYDiffErrorRef = sumYDiffError;
+    sumYDiffErrorRef = Zero;
+    forAll(Y, i)
     {
-         if (!splitting)
+        sumYDiffErrorRef += chemistry->rhoD(i) * fvc::grad(Y[i]);;
+    }
+    check_field_boundary_equal(sumYDiffErrorRef, sumYDiffError, "sumYDiffError");
+    const surfaceScalarField phiUcRef = (linearInterpolate(sumYDiffErrorRef) & mesh.Sf()).ref();
+    check_field_boundary_equal(phiUcRef, phiUc, "phiUc");
+    #endif
+
+    time_monitor_YEqn_pre_check += YEqnClock.timeIncrement();
+
+    if (!splitting)
     {
-        std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-
-        #ifdef ODE_GPU_SOLVER
-	scalar dt = runTime.deltaTValue();
-
-        forAll(Y, speciesI) {
-            volScalarField& Yi = Y[speciesI];
-            memcpy(h_y + speciesI * num_cells, &Yi[0], num_cells * sizeof(double));
-        }
-
-        for (int i = 0; i < num_cells; i++) {
-            for (int j = 0; j < sp_num; j++) {
-                h_y_t[j + i*sp_num] = h_y[i + j*num_cells];
-            }
-        }
-
-        opencc_ode_all(&T[0], &p[0], h_y_t, 1e-10, dt, CPU);
-
-        for (int i = 0; i < num_cells; i++) {
-            for (int j = 0; j < sp_num; j++) {
-                Ynew[i + j*num_cells] = h_y_t[j + i*sp_num];
-            }
-        }
-
-        QdotGPU = Zero;
-        forAll(QdotGPU,celli)
-        {
-            for (int sp = 0; sp < sp_num; sp++)
-            {
-                RRGPU[sp][celli] = (Ynew[sp*num_cells+celli]-Y[sp][celli])*rho[celli]/dt;
-            }
-        }
-        #else
         combustion->correct();
-        #endif
-        //label flag_mpi_init;
-        //MPI_Initialized(&flag_mpi_init);
-        if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
-        std::chrono::steady_clock::time_point stop = std::chrono::steady_clock::now();
-        std::chrono::duration<double> processingTime = std::chrono::duration_cast<std::chrono::duration<double>>(stop - start);
-        time_monitor_chem += processingTime.count();
     }
 
-    start2 = std::clock();
+    time_monitor_chem = YEqnClock.timeIncrement();
+
     volScalarField Yt(0.0*Y[0]);
     forAll(Y, i)
     {
         volScalarField& Yi = Y[i];
-        hDiffCorrFlux += chemistry->hei(i)*(chemistry->rhoD(i)*fvc::grad(Yi) - Yi*sumYDiffError);
-        diffAlphaD += fvc::laplacian(thermo.alpha()*chemistry->hei(i), Yi);
+        hDiffCorrFlux += chemistry->hai(i)*(chemistry->rhoD(i)*fvc::grad(Yi) - Yi*sumYDiffError);
+        diffAlphaD += fvc::laplacian(thermo.alpha()*chemistry->hai(i), Yi);
+        
+        time_monitor_YEqn_pre += YEqnClock.timeIncrement();
+
         if (i != inertIndex)
         {
-            start1 = std::clock();
+            #ifndef OPT_GenMatrix_Y
             tmp<volScalarField> DEff = chemistry->rhoD(i) + turbulence->mut()/Sct;
-
             fvScalarMatrix YiEqn
             (
                 fvm::ddt(rho, Yi)
@@ -107,27 +112,81 @@
             ==
                 (
                     splitting
-                    ?  (fvm::laplacian(DEff(), Yi) + parcels.SYi(i, Yi) )
-                    :  (fvm::laplacian(DEff(), Yi) + parcels.SYi(i, Yi) + combustion->R(Yi))
+                    ?   fvm::laplacian(DEff(), Yi)
+                    :  (fvm::laplacian(DEff(), Yi) + combustion->R(Yi))
                     )
             );
+            #else
+            tmp<fvScalarMatrix> tYiEqn = GenMatrix_Y(rho, Yi, phi, phiUc, chemistry->rhoD(i), turbulence->mut(), splitting, Sct, combustion(), upwindWeights);
+            fvScalarMatrix& YiEqn = tYiEqn.ref();
+            #endif
 
-            end1 = std::clock();
-            time_monitor_YEqn_mtxAssembly += double(end1 - start1) / double(CLOCKS_PER_SEC);
+            time_monitor_YEqn_pre += YEqnClock.timeIncrement();
             // YiEqn.relax();
 
-            start1 = std::clock();
+
+            #ifdef OPT_GenMatrix_Y_check
+                tmp<fv::convectionScheme<scalar>> mvConvection
+                (
+                    fv::convectionScheme<scalar>::New
+                    (
+                        mesh,
+                        fields,
+                        phi,
+                        mesh.divScheme("div(phi,Yi_h)")
+                    )
+                );
+                tmp<volScalarField> DEff = chemistry->rhoD(i);
+                fvScalarMatrix YiEqn_answer
+                (
+                    fvm::ddt(rho, Yi)
+                    + mvConvection->fvmDiv(phi, Yi)
+                    + mvConvection->fvmDiv(phiUc, Yi)
+                    ==
+                    (
+                        splitting
+                    ?   fvm::laplacian(DEff(), Yi)
+                    :  (fvm::laplacian(DEff(), Yi) + combustion->R(Yi))
+                    )
+                );
+                check_fvmatrix_equal(YiEqn_answer, YiEqn, "YiEqn");
+            #endif
+
+            time_monitor_YEqn_pre_check += YEqnClock.timeIncrement();
+
+#ifdef USE_DF_MATRIX
+            // dfMatrix df_YiEqn(YiEqn, regionPtr);
+            auto& psi = const_cast<volScalarField&>(YiEqn.psi());
+            auto& source = YiEqn.source();
+            auto& internalCoeffs = YiEqn.internalCoeffs();
+            auto& boundaryCoeffs = YiEqn.boundaryCoeffs();
+
+            matrixPtr->valueCopy(YiEqn);
+            time_monitor_YEqn_convert += YEqnClock.timeIncrement();
+
+            // df_YiEqn.solve(psi, source, internalCoeffs, boundaryCoeffs, "Yi");
+            matrixPtr->solve(psi, source, internalCoeffs, boundaryCoeffs, "Yi");
+#else
             YiEqn.solve("Yi");
-            end1 = std::clock();
-            time_monitor_YEqn_solve += double(end1 - start1) / double(CLOCKS_PER_SEC);
+#endif
+
+            time_monitor_YEqn_solve += YEqnClock.timeIncrement();
 
             Yi.max(0.0);
             Yt += Yi;
+
+            time_monitor_YEqn_post += YEqnClock.timeIncrement();
         }
     }
 
     Y[inertIndex] = scalar(1) - Yt;
     Y[inertIndex].max(0.0);
-    end2 = std::clock();
-    time_monitor_YEqn += double(end2 - start2) / double(CLOCKS_PER_SEC);
+    
 }
+
+time_monitor_YEqn_post += YEqnClock.timeIncrement(); 
+time_monitor_YEqn += YEqnClock.elapsedTime();
+
+time_monitor_YEqn -= time_monitor_chem;
+
+Info << "Exit YEqn" << endl;

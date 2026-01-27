@@ -25,9 +25,6 @@ License
 
 #include "CanteraMixture.H"
 #include "fvMesh.H"
-#include "cantera/thermo/Species.h"
-
-Foam::word Foam::CanteraMixture::energyName_ = "InvalidEnergyName";
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -52,7 +49,8 @@ Foam::CanteraMixture::CanteraMixture
     CanteraMechanismFile_(fileName(CanteraTorchProperties_.lookup("CanteraMechanismFile")).expand()),
     transportModelName_(CanteraTorchProperties_.lookup("transportModel")),
     Tref_(mesh.objectRegistry::lookupObject<volScalarField>("T")),
-    pref_(mesh.objectRegistry::lookupObject<volScalarField>("p"))
+    pref_(mesh.objectRegistry::lookupObject<volScalarField>("p")),
+    energyName_("energy")
 {
     if(!isFile(CanteraMechanismFile_))
     {
@@ -63,49 +61,10 @@ Foam::CanteraMixture::CanteraMixture
             <<exit(FatalError);
     }
 
-    CanteraSolution_ = Cantera::newSolution(CanteraMechanismFile_, "");
-    CanteraGas_ = CanteraSolution_->thermo();
-    CanteraKinetics_ = CanteraSolution_->kinetics();
-    CanteraTransport_ = newTransportMgr(transportModelName_, CanteraGas_.get());
-
-    species_lowCpCoeffs_.resize(nSpecies());
-    species_highCpCoeffs_.resize(nSpecies());
-    for(int i=0; i<nSpecies(); ++i)
-    {
-        Cantera::AnyMap map = CanteraGas_->species(i)->thermo->parameters();
-        auto coeffs = map["data"].asVector<Cantera::vector_fp>();
-        for(int j=0; j<7; ++j)
-        {
-            const scalar RR = constant::physicoChemical::R.value()*1e3;
-            if(coeffs.size() == 1)
-            {
-                species_lowCpCoeffs_[i][j] = coeffs[0][j]*RR/Wi(i);
-                species_highCpCoeffs_[i][j] = coeffs[0][j]*RR/Wi(i);
-            }
-            else
-            if(coeffs.size() == 2)
-            {
-                species_lowCpCoeffs_[i][j] = coeffs[0][j]*RR/Wi(i);
-                species_highCpCoeffs_[i][j] = coeffs[1][j]*RR/Wi(i);
-            }
-            else
-            {
-                FatalErrorInFunction
-                    <<"Check your Chemical mechanism, species "
-                    <<CanteraGas_->speciesName(i)
-                    <<"!\n"
-                    <<exit(FatalError);
-            }
-        }
-
-        //size=3
-        //Tranges[0] T_low
-        //Tranges[1] T_common
-        //Tranges[2] T_high
-        Cantera::AnyMap map2 = CanteraGas_->species(i)->thermo->input();
-        auto Tranges = map2["temperature-ranges"].asVector<double>();
-        Tcommon_ = Tranges[1];
-    }
+    CanteraSolution_=Cantera::newSolution(CanteraMechanismFile_, "");
+    CanteraGas_=CanteraSolution_->thermo();
+    CanteraKinetics_=CanteraSolution_->kinetics();
+    CanteraTransport_=newTransportMgr(transportModelName_, CanteraGas_.get());
 
     Y_.resize(nSpecies());
     yTemp_.resize(nSpecies());
@@ -231,12 +190,11 @@ void Foam::CanteraMixture::read(const dictionary& thermoDict)
 
 const Foam::CanteraMixture& Foam::CanteraMixture::cellMixture(const label celli) const
 {
-    scalarList y(yTemp_.size());
     forAll(Y_, i)
     {
-        y[i] = Y_[i][celli];
+        yTemp_[i] = Y_[i][celli];
     }
-    setState_TPY(Tref_[celli], pref_[celli], y.begin());
+    CanteraGas_->setState_TPY(Tref_[celli], pref_[celli], yTemp_.begin());
 
     return *this;
 }
@@ -248,15 +206,36 @@ const Foam::CanteraMixture& Foam::CanteraMixture::patchFaceMixture
     const label facei
 ) const
 {
-    scalarList y(yTemp_.size());
     forAll(Y_, i)
     {
-        y[i] = Y_[i].boundaryField()[patchi][facei];
+        yTemp_[i] = Y_[i].boundaryField()[patchi][facei];
     }
-    setState_TPY(Tref_.boundaryField()[patchi][facei], pref_.boundaryField()[patchi][facei], y.begin());
+    CanteraGas_->setState_TPY(Tref_.boundaryField()[patchi][facei],pref_.boundaryField()[patchi][facei],yTemp_.begin());
 
     return *this;
 }
 
+
+Foam::scalar Foam::CanteraMixture::THE
+(
+    const scalar& h,
+    const scalar& p,
+    const scalar& T
+) const
+{
+    // In DeepFlame temperature field is updated in correctThermo()
+    // so there is no need to update T in this function
+    return T;
+}
+
+Foam::scalar Foam::CanteraMixture::Hc() const
+{
+    scalar chemicalEnthalpy = 0;
+    forAll(yTemp_, i)
+    {
+        chemicalEnthalpy += yTemp_[i]*CanteraGas_->Hf298SS(i)/CanteraGas_->molecularWeight(i);
+    }
+    return chemicalEnthalpy;
+}
 
 // ************************************************************************* //

@@ -23,7 +23,6 @@ file(COPY ./dfLowMachFoam/twoD_reactingTGV/H2/cvodeSolver/postProcessing/sample/
 
 file(COPY ./dfLowMachFoam/twoD_SandiaD_flareFGM/postProcessing/sample/1.1/data_T.xy DESTINATION 2DSandia)
 file(COPY ./Tu500K-Phi1/fs DESTINATION flameSpeed)
-file(COPY ./aachenBomb_2D/postProcessing/sample/0.0023/data_T.xy DESTINATION aachenBomb2D)
 
 enable_testing()
 

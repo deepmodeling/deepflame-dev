@@ -26,7 +26,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(
     DynamicList<GpuProblem> GPUproblemList; //single core TODO:rename it
     DynamicList<ChemistryProblem> CPUproblemList;
     getGPUProblems(deltaT, GPUproblemList, CPUproblemList);
-    label flag_mpi_init;
+    int flag_mpi_init;
     MPI_Initialized(&flag_mpi_init);
     if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     std::chrono::steady_clock::time_point stop10 = std::chrono::steady_clock::now();

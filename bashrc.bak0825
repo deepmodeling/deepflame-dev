@@ -1,0 +1,22 @@
+export DF_ROOT=/home/deepflame/deepflame-dev-blasdnn
+export DF_SRC=/home/deepflame/deepflame-dev-blasdnn/src
+export SRC_ORIG=/home/deepflame/deepflame-dev-blasdnn/src_orig
+export LIBTORCH_ROOT=
+export PYTHON_INC_DIR=""
+export PYTHON_LIB_DIR=""
+export CANTERA_ROOT=/home/deepflame/anaconda3/envs/deepflame
+export CANTERA_DATA=$CANTERA_ROOT/share/cantera/data
+export LD_LIBRARY_PATH=$LIBTORCH_ROOT/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$CANTERA_ROOT/lib:$LD_LIBRARY_PATH
+export AMGX_DIR=
+export ODE_GPU_SOLVER=
+
+export DF_APPBIN=/home/deepflame/deepflame-dev-blasdnn/platforms/$WM_OPTIONS/bin
+export DF_LIBBIN=/home/deepflame/deepflame-dev-blasdnn/platforms/$WM_OPTIONS/lib
+export PATH=$DF_APPBIN:$PATH
+export LD_LIBRARY_PATH=$DF_LIBBIN:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$DF_ROOT/src_gpu/build:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$AMGX_DIR/build:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$DF_ROOT/src/dfChemistryModel/DNNInferencer/build:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$DF_ROOT/lib:$LD_LIBRARY_PATH
+export USE_BLASDNN=true

@@ -15,15 +15,7 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-fluxScheme		Kurganov;
-
-// default option is: Euler
-// To use RK2SSP or RK3SSP, please add following line:
-// timeScheme      RK2SSP; //RK3SSP;
-
-// default option is: ode
-// To use reaction rate directly in simulation, please add:
-// chemScheme      direct;
+//fluxScheme		Kurganov;
 
 ddtSchemes
 {

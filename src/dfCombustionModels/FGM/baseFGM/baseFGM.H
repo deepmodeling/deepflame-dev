@@ -191,9 +191,6 @@ class baseFGM
     scalar ZcvarMax_;
     scalar ZcvarMin_;   
 
-    //- max and min T
-    scalar TMax_;
-    scalar TMin_;
 
     //- fluid density
      volScalarField& rho_;
@@ -241,14 +238,6 @@ class baseFGM
 
     //- laminar schmidt number
     scalar Sc_;
-
-    //- index for omega speices
-    labelList omega_Yi_index_;
-
-    wordList omega_YiNames_base_;
-
-    // //- reaction rate for fuel species
-    PtrList<volScalarField> omega_Yis_;
 
     scalar bufferTime_;
  

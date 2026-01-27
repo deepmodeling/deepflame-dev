@@ -5,9 +5,9 @@ EXE_INC = -std=c++14 \
     -Wno-unused-but-set-variable \
     -Wno-old-style-cast \
     $(PFLAGS) $(PINC) \
-	$(if $(CANTERA_THERMO),-DCANTERA_THERMO,) \
     $(if $(LIBTORCH_ROOT),-DUSE_LIBTORCH,) \
     $(if $(PYTHON_INC_DIR),-DUSE_PYTORCH,) \
+    $(if $(USE_BLASDNN),-DUSE_BLASDNN,) \
     -I$(CANTERA_ROOT)/include \
     -I$(DF_SRC)/dfCanteraMixture/lnInclude \
     -I$(DF_SRC)/dfChemistryModel/lnInclude \
@@ -25,11 +25,15 @@ EXE_INC = -std=c++14 \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include/torch/csrc/api/include,) \
     $(if $(BOOST_ARCH_PATH),-I$(BOOST_ARCH_PATH),) \
     $(if $(BOOST_ARCH_PATH),-DBOOST_ARCH_PATH_FOUNDD,) \
-    $(PYTHON_INC_DIR)
+    $(PYTHON_INC_DIR) \
+    -I/vol0001/hp230257/guozhuoqiang/DeepFlame/software/yaml-cpp-0.7.0/include
 
 
 
 EXE_LIBS = \
+    -L$(DF_ROOT)/lib/ \
+    -L/vol0001/hp230257/guozhuoqiang/DeepFlame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/build -lDNNInferencer_blas \
+    -lfjlapackexsve \
     -lcompressibleTransportModels \
     -lturbulenceModels \
     -lfiniteVolume \
@@ -42,7 +46,7 @@ EXE_LIBS = \
     -ldfCompressibleTurbulenceModels \
     -ldfCanteraMixture \
     -ldfChemistryModel \
-    $(CANTERA_ROOT)/lib/libcantera.so \
+    $(CANTERA_ROOT)/lib/libcantera.so -lstdc++fs \
     $(if $(LIBTORCH_ROOT),$(LIBTORCH_ROOT)/lib/libtorch.so,) \
     $(if $(LIBTORCH_ROOT),$(LIBTORCH_ROOT)/lib/libc10.so,) \
     $(if $(LIBTORCH_ROOT),-rdynamic,) \
