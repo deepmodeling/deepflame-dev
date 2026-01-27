@@ -1,8 +1,8 @@
 #!/bin/sh
 cd ${0%/*} || exit 1    # Run from this directory
 
-echo "Cleaning log*"
-rm log*
+echo "Cleaning log.*"
+rm log.*
 echo "Cleaning processor*"
 rm -r processor*
 echo "Cleaning polyMesh/"
@@ -11,6 +11,3 @@ echo "Cleaning postProcessing/"
 rm -r postProcessing
 echo "Cleaning 0/"
 rm -r 0
-echo "Cleaning time step"
-rm -r 0.*
-rm -r *e-0*

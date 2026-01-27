@@ -28,23 +28,36 @@ Description
     Solve the continuity for density.
 
 \*---------------------------------------------------------------------------*/
+Info << "Enter rhoEqn " << endl;
 
-    start1 = std::clock();
+{
+    clockTime rhoEqnClock;
+
     fvScalarMatrix rhoEqn
     (
         fvm::ddt(rho)
       + fvc::div(phi)
-      ==
-        parcels.Srho(rho)
     );
-    end1 = std::clock();
-    time_monitor_rhoEqn += double(end1 - start1) / double(CLOCKS_PER_SEC);
-    time_monitor_rhoEqn_mtxAssembly += double(end1 - start1) / double(CLOCKS_PER_SEC);
 
-    start1 = std::clock();
+    time_monitor_rhoEqn_pre += rhoEqnClock.timeIncrement();
+
+// #ifdef USE_DF_MATRIX
+//     dfMatrix df_rhoEqn(rhoEqn, regionPtr);
+//     auto& psi = const_cast<volScalarField&>(rhoEqn.psi());
+//     auto& source = rhoEqn.source();
+//     auto& internalCoeffs = rhoEqn.internalCoeffs();
+//     auto& boundaryCoeffs = rhoEqn.boundaryCoeffs();
+
+//     time_monitor_rhoEqn_convert += rhoEqnClock.timeIncrement();
+
+//     df_rhoEqn.solve(psi, source, internalCoeffs, boundaryCoeffs);
+// #else
     rhoEqn.solve();
-    end1 = std::clock();
-    time_monitor_rhoEqn += double(end1 - start1) / double(CLOCKS_PER_SEC);
-    time_monitor_rhoEqn_solve += double(end1 - start1) / double(CLOCKS_PER_SEC);
-    
+// #endif
+
+    time_monitor_rhoEqn_solve += rhoEqnClock.timeIncrement();
+    time_monitor_rhoEqn += rhoEqnClock.elapsedTime();
+}
 // ************************************************************************* //
+
+Info << "Exit rhoEqn " << endl;

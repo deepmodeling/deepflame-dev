@@ -73,6 +73,41 @@ SourceFiles
 #include "OFstream.H"
 #include "IOmanip.H"
 #include "PstreamGlobals.H"
+// blasDNN
+#ifdef USE_BLASDNN
+#include "DNNInferencer_blas.H"
+#include "DNNThermo_blas.H"
+
+#include <hbwmalloc.h>
+#include <memkind.h>
+#include <assert.h>
+#include <numa.h>
+#include <numaif.h>
+#include <sys/mman.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#define HBM_ALIGNED_SIZE (1 << 21)
+
+template<typename DataType>
+int alloc_on_hbm_hugetlb_with_check(DataType** addr, size_t length_bytes) {
+        if(length_bytes > 0) {
+            length_bytes = (length_bytes + HBM_ALIGNED_SIZE - 1) / HBM_ALIGNED_SIZE * HBM_ALIGNED_SIZE;
+            void* mapAddress = NULL;
+            mapAddress = mmap(NULL, length_bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
+            if (mapAddress == NULL) {
+                printf("mmap failed ,length = %d \n", length_bytes);
+                exit(-1);
+            };
+            *addr = (DataType*)mapAddress;
+            printf("using mmap allocating memory success, length = %d \n", length_bytes);                
+        } else {
+            printf("illegal length_bytes \n");    
+            exit(-1);
+        }
+}
+
+#endif
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -94,9 +129,6 @@ public IOdictionary
         CanteraMixture& mixture_;
         std::shared_ptr<Cantera::ThermoPhase> CanteraGas_;
         std::shared_ptr<Cantera::Kinetics> CanteraKinetics_;
-        std::unique_ptr<Cantera::Reactor> react_;
-        std::unique_ptr<Cantera::ReactorNet> sim_;
-
         const fvMesh& mesh_;
         Switch chemistry_;
 
@@ -109,9 +141,9 @@ public IOdictionary
         // species mass diffusion coefficients, [kg/m/s]
         PtrList<volScalarField> rhoD_;
         // species absolute enthalpy, [J/kg]
-        PtrList<volScalarField> hei_;
+        PtrList<volScalarField> hai_;
         // species chemistry enthalpy, [J/kg]
-        scalarList hc_;
+        scalarList hc_;         
         // temp mass fraction
         mutable scalarList yTemp_;
         // temp mass diffusion coefficients
@@ -137,8 +169,15 @@ public IOdictionary
         // DNN selection fields
         volScalarField selectDNN_;
         bool useThermoTranNN;
+        bool isFirst;
 
-#if defined USE_LIBTORCH || defined USE_PYTORCH
+#if defined(USE_BLASDNN)
+        std::vector<double> Xmu_, Xstd_, Ymu_, Ystd_,
+                            thermomu_, thermostd_;
+
+#endif
+
+#if defined USE_LIBTORCH || defined USE_PYTORCH || defined USE_BLASDNN
         bool useDNN;
         Switch torchSwitch_;
         Switch gpu_;
@@ -166,6 +205,29 @@ public IOdictionary
         word torchModelName1_;
         word torchModelName2_;
         word torchModelName3_;
+#endif
+
+#ifdef USE_BLASDNN
+
+#define USE_BLASDNN_HALF
+// #define USE_BLASDNN_FLOAT
+// #define USE_BLASDNN_DOUBLE
+
+#if defined(USE_BLASDNN_HALF)
+        DNNInferencer_blas<__fp16> DNNInferencer_blas_;
+        DNNThermo_blas<__fp16> DNNThermo_blas_;
+#elif defined(USE_BLASDNN_FLOAT)
+        DNNThermo_blas<float> DNNThermo_blas_;
+        DNNInferencer_blas<float> DNNInferencer_blas_;
+#elif defined(USE_BLASDNN_DOUBLE)
+        DNNInferencer_blas<double> DNNInferencer_blas_;
+        DNNThermo_blas<double> DNNThermo_blas_;
+#else
+#error "must define one of USE_BLASDNN_HALF, USE_BLASDNN_FLOAT or USE_BLASDNN_DOUBLE"
+#endif
+
+        string BLASDNNModelPath_;
+        string thermoDNNModelPath_;
 #endif
 
 #ifdef USE_PYTORCH
@@ -226,6 +288,14 @@ public IOdictionary
         //- Solve the reaction system with DLB algorithm
         template<class DeltaTType>
         scalar solve_CVODE(const DeltaTType& deltaT);
+
+#ifdef USE_BLASDNN
+        template<class DeltaTType>
+        scalar solve_DNN_blas(const DeltaTType& deltaT);
+        void thermoDNN_blas(volScalarField& he, const volScalarField& p, PtrList<volScalarField>& Y,
+                volScalarField& rho, volScalarField& T, volScalarField& psi, volScalarField& mu,
+                volScalarField& alpha, PtrList<volScalarField>& rhoD);
+#endif
 
         //- Output logFiles
         Foam::autoPtr<Foam::OFstream> logFile(const word& name) const
@@ -315,17 +385,20 @@ public:
 
         const volScalarField& rhoD(const label i) const {return rhoD_[i];}
 
-        const volScalarField& hei(const label i) {return hei_[i];}
-
+        const volScalarField& hai(const label i) {return hai_[i];}
+        
         const scalar & hci(const label i) {return hc_[i];}
 
-        // update T, psi, mu, alpha, rhoD, hei (if needed)
+        // update T, psi, mu, alpha, rhoD, hai (if needed)
         void correctThermo();
 
         ThermoType& thermo() {return thermo_;}
 
         const CanteraMixture& mixture() {return mixture_;}
 
+        void setEnergyName(word name){
+            mixture_.setEnergyName(name);
+        }
         void updateEnergy()
         {
             scalarField& heCells = thermo_.he().primitiveFieldRef();

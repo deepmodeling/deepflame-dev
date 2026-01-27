@@ -35,7 +35,6 @@ EXE_INC = -std=c++14 \
     -I$(CANTERA_ROOT)/include \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include,) \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include/torch/csrc/api/include,) \
-	$(if $(CANTERA_THERMO),-DCANTERA_THERMO,) \
     $(if $(LIBTORCH_ROOT),-DUSE_LIBTORCH,) \
     $(if $(PYTHON_INC_DIR),-DUSE_PYTORCH,) \
     $(PYTHON_INC_DIR)
@@ -62,7 +61,7 @@ EXE_LIBS = \
     -ldfCanteraMixture \
     -ldfChemistryModel \
     -ldfCombustionModels  \
-    $(CANTERA_ROOT)/lib/libcantera.so \
+    $(CANTERA_ROOT)/lib/libcantera.so -lstdc++fs \
     $(if $(LIBTORCH_ROOT),$(LIBTORCH_ROOT)/lib/libtorch.so,) \
     $(if $(LIBTORCH_ROOT),$(LIBTORCH_ROOT)/lib/libc10.so,) \
     $(if $(LIBTORCH_ROOT),-rdynamic,) \

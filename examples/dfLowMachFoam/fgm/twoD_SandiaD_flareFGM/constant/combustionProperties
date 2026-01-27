@@ -65,9 +65,7 @@ PaSRCoeffs
 }
 
 flareFGMCoeffs
-{  
-  nOmega_Yis        1;
-  omega_YiNames (CH4);
+{
   scaledPV         true;
   combustion       true;
   solveEnthalpy    true;

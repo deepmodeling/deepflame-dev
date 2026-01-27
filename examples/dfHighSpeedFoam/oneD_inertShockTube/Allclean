@@ -11,6 +11,3 @@ echo "Cleaning postProcessing/"
 rm -r postProcessing
 echo "Cleaning 0/"
 rm -r 0
-echo "Cleaning time step"
-rm -r 0.*
-rm -r *e-0*

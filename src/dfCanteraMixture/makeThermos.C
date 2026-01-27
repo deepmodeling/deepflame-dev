@@ -27,7 +27,6 @@ License
 // #include "psiThermo.H"
 #include "rhoThermo.H"
 #include "CanteraMixture.H"
-#include "dfSingleStepReactingMixture.H"
 // #include "hePsiThermo.H"
 #include "heRhoThermo.H"
 #include "addToRunTimeSelectionTable.H"
@@ -76,7 +75,6 @@ namespace Foam
 
 // makeThermoPhysicsThermos(hePsiThermo, CanteraMixture, psiThermo);
 makeThermoPhysicsThermos(heRhoThermo, CanteraMixture, rhoThermo);
-makeThermoPhysicsThermos(heRhoThermo, dfSingleStepReactingMixture, rhoThermo);
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

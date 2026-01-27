@@ -48,8 +48,6 @@ Description
 
 #include "fvCFD.H"
 #include "dynamicFvMesh.H"
-#include "basicSprayCloud.H" // for spray
-#include "SLGThermo.H"       // for spray
 // #include "psiThermo.H"
 #include "rhoThermo.H"
 #include "turbulentFluidThermoModel.H"
@@ -59,8 +57,6 @@ Description
 #include "fvcSmooth.H"
 #include "PstreamGlobals.H"
 #include "CombustionModel.H"
-
-#include "fluxScheme.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -89,12 +85,13 @@ int main(int argc, char *argv[])
     double time_monitor_AMR=0;
     double time_monitor_E=0;
     double time_monitor_corrDiff=0;
-    double time_monitor_parcels=0;
     clock_t start, end;
 
     turbulence->validate();
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+    #include "readFluxScheme.H"
 
     dimensionedScalar v_zero("v_zero", dimVolume/dimTime, 0.0);
     dimensionedScalar refCri("refCri", dimensionSet(1, -4, 0, 0, 0), 0.0);
@@ -120,14 +117,6 @@ int main(int argc, char *argv[])
         normalisedGradrho.writeOpt() = IOobject::AUTO_WRITE;
         tmagGradrho.clear();
 
-        start = std::clock();
-        // Store the particle positions
-        parcels.storeGlobalPositions();
-        end = std::clock();
-        time_monitor_parcels += double(end - start) / double(CLOCKS_PER_SEC);
-
-        #include "centralCourantNo.H"
-
         if (!LTS)
         {
             #include "setDeltaT.H"
@@ -137,23 +126,9 @@ int main(int argc, char *argv[])
             start = std::clock();
             mesh.update();
             end = std::clock();
-            time_monitor_AMR += double(end - start) / double(CLOCKS_PER_SEC);
-
-            if(mesh.changing())
-            {
-                MRF.update();
-            }
+            time_monitor_AMR += double(end - start);
             
         }
-
-        gradP = mag(fvc::grad(p));
-        forAll(pMax,celli)
-        {
-            if( p[celli]>pMax[celli] )
-            {
-                pMax[celli] = p[celli];
-            }
-        }          
 
         volScalarField rho_rhs("rho_rhs",rho_save/runTime.deltaT());
         volVectorField rhoU_rhs("rhoU_rhs",rhoU_save/runTime.deltaT());
@@ -166,19 +141,14 @@ int main(int argc, char *argv[])
             {
                 Info <<"into rk"<< nrk+1 << nl << endl;
 
-                // --- calculate flux
-                volScalarField rPsi("rPsi", 1.0/psi);
-                volScalarField c("c", sqrt(thermo.Cp()/thermo.Cv()*rPsi));
-
-                fluxSchemeFields->update(rho,rhoYi,nspecies,U,ea,p,c,phi,rhoPhi,rhoPhiYi,rhoUPhi,rhoEPhi);
-
-                volScalarField muEff("muEff", turbulence->muEff());
-                volTensorField tauMC("tauMC", muEff*dev2(Foam::T(fvc::grad(U))));
+                #include "preCal.H"
+                #include "phiCal.H"
 
                 Info <<"\n in rk"<< nrk+1 << " finish pre-calculation"<< nl << endl;
 
                 if (nrk == 0)
                 {
+                    #include "centralCourantNo.H"
                     if (LTS)
                     {
                         #include "setRDeltaT.H"
@@ -197,7 +167,7 @@ int main(int argc, char *argv[])
                 // --- Solve momentum
                 #include "rhoUEqn.H"
                 end = std::clock();
-                time_monitor_flow += double(end - start) / double(CLOCKS_PER_SEC);
+                time_monitor_flow += double(end - start);
 
                 // --- Solve species
                 #include "rhoYEqn.H"
@@ -206,7 +176,7 @@ int main(int argc, char *argv[])
                 // --- Solve energy
                 #include "rhoEEqn.H"
                 end = std::clock();
-                time_monitor_E += double(end - start) / double(CLOCKS_PER_SEC);
+                time_monitor_E += double(end - start);
 
                 if ((nrk == rk-1) && (chemScheme == "ode"))
                 {
@@ -218,14 +188,8 @@ int main(int argc, char *argv[])
         }
         else
         {
-            // --- calculate flux
-            volScalarField rPsi("rPsi", 1.0/psi);
-            volScalarField c("c", sqrt(thermo.Cp()/thermo.Cv()*rPsi));
-
-            fluxSchemeFields->update(rho,rhoYi,nspecies,U,ea,p,c,phi,rhoPhi,rhoPhiYi,rhoUPhi,rhoEPhi);
-
-            volScalarField muEff("muEff", turbulence->muEff());
-            volTensorField tauMC("tauMC", muEff*dev2(Foam::T(fvc::grad(U))));
+            #include "preCal.H"
+            #include "centralCourantNo.H"
 
             if (LTS)
             {
@@ -235,13 +199,7 @@ int main(int argc, char *argv[])
 
             Info<< "Time = " << runTime.timeName() << nl << endl;
 
-            if (parcels.solution().active())
-            {
-                start = std::clock();
-                parcels.evolve();
-                end = std::clock();
-                time_monitor_parcels += double(end - start) / double(CLOCKS_PER_SEC);
-            }
+            #include "phiCal.H"
 
             // --- Solve density
             #include "rhoEqn.H"
@@ -250,7 +208,7 @@ int main(int argc, char *argv[])
             // --- Solve momentum
             #include "rhoUEqn.H"
             end = std::clock();
-            time_monitor_flow += double(end - start) / double(CLOCKS_PER_SEC);
+            time_monitor_flow += double(end - start);
 
             // --- Solve species
             #include "rhoYEqn.H"
@@ -259,7 +217,7 @@ int main(int argc, char *argv[])
             // --- Solve energy
             #include "rhoEEqn.H"
             end = std::clock();
-            time_monitor_E += double(end - start) / double(CLOCKS_PER_SEC);
+            time_monitor_E += double(end - start);
         }
 
         turbulence->correct();
@@ -273,10 +231,6 @@ int main(int argc, char *argv[])
         Info<< "MonitorTime_chem           = " << time_monitor_chem << " s" << endl;
         Info<< "MonitorTime_Y              = " << time_monitor_Y << " s" << endl;
         Info<< "MonitorTime_E              = " << time_monitor_E << " s" << endl;
-        if (parcels.solution().active())
-        {
-            Info<< "calculate parcels            = " << time_monitor_parcels << " s" << endl;
-        }
         Info<< "============================================"<<nl<< endl;
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"

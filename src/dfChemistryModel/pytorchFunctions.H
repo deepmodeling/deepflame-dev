@@ -1,5 +1,3 @@
-// #include <cassert>
-
 template <class ThermoType>
 template <class DeltaTType>
 Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &deltaT)
@@ -28,7 +26,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
     DynamicList<GpuProblem> GPUproblemList; //single core TODO:rename it
     DynamicList<ChemistryProblem> CPUproblemList;
     getGPUProblems(deltaT, GPUproblemList, CPUproblemList);
-    label flag_mpi_init;
+    int flag_mpi_init;
     MPI_Initialized(&flag_mpi_init);
     if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
     std::chrono::steady_clock::time_point stop10 = std::chrono::steady_clock::now();
@@ -119,10 +117,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
             std::chrono::steady_clock::time_point start7 = std::chrono::steady_clock::now();
             std::chrono::steady_clock::time_point start8 = std::chrono::steady_clock::now();
 
-            // cast vector to np.array
-            auto input = pybind11::array_t<double>({DNNinputs[0].size()},
-                                                   {sizeof(double)},
-                                                   DNNinputs[0].data());
+            pybind11::array_t<double> vec0 = pybind11::array_t<double>({DNNinputs[0].size()}, {8}, &DNNinputs[0][0]); // cast vector to np.array
 
             std::chrono::steady_clock::time_point stop8 = std::chrono::steady_clock::now();
             std::chrono::duration<double> processingTime8 = std::chrono::duration_cast<std::chrono::duration<double>>(stop8 - start8);
@@ -133,11 +128,8 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
 
             std::chrono::steady_clock::time_point start9 = std::chrono::steady_clock::now();
 
-            pybind11::array_t<double, pybind11::array::c_style |
-                                      pybind11::array::forcecast>
-                result = call_torch.attr("inference")(input); // call python function
-            // Data in NumPy arrays is not guaranteed to packed in a dense manner.
-            // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html#arrays
+            pybind11::object result = call_torch.attr("inference")(vec0); // call python function
+            const double* star = result.cast<pybind11::array_t<double>>().data();
 
             std::chrono::steady_clock::time_point stop9 = std::chrono::steady_clock::now();
             std::chrono::duration<double> processingTime9 = std::chrono::duration_cast<std::chrono::duration<double>>(stop9 - start9);
@@ -151,9 +143,7 @@ Foam::scalar Foam::dfChemistryModel<ThermoType>::solve_DNN(const DeltaTType &del
 
             /*=============================construct solutions=============================*/
             std::chrono::steady_clock::time_point start6 = std::chrono::steady_clock::now();
-            const int size = outputLength[0] * mixture_.nSpecies(); // sample_length * sample_number
-            // assert(size == result.size());
-            std::vector<double> outputsVec0(result.data(), result.data() + size);
+            std::vector<double> outputsVec0(star, star+outputLength[0] * mixture_.nSpecies()); //the float number is sample_length*sample_number
             std::vector<std::vector<double>> results = {outputsVec0};
             updateSolutionBuffer(solutionBuffer, results, cellIDBuffer, problemCounter);
             std::chrono::steady_clock::time_point stop6 = std::chrono::steady_clock::now();

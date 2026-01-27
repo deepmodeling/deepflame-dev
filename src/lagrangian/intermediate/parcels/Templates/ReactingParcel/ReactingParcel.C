@@ -394,7 +394,7 @@ void Foam::ReactingParcel<ParcelType>::calc
     typedef typename TrackCloudType::reactingCloudType reactingCloudType;
     const CompositionModel<reactingCloudType>& composition =
         cloud.composition();
-    const SLGThermo& thermo = cloud.thermo();
+
 
     // Define local properties at beginning of time step
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -404,34 +404,13 @@ void Foam::ReactingParcel<ParcelType>::calc
     const vector& U0 = this->U_;
     const scalar T0 = this->T_;
     const scalar mass0 = this->mass();
-    const scalar RR = 1000.0*constant::physicoChemical::R.value();
 
+
+    // Calc surface values
     scalar Ts, rhos, mus, Prs, kappas;
+    this->calcSurfaceValues(cloud, td, T0, Ts, rhos, mus, Prs, kappas);
+    scalar Res = this->Re(rhos, U0, td.Uc(), d0, mus);
 
-    // Calc carrier thermo properties
-    scalarField Yg(thermo.carrier().species().size());
-    scalar rhog = td.pc()*thermo.carrier().W()/(RR*td.Tc());
-    scalar mug = 0;
-    scalar kappag = 0;
-    scalar Cpg = 0;
-
-    thermo.carrier().calcMu(td.Tc(), td.pc());
-    thermo.carrier().calcCp(td.Tc(), td.pc());
-    forAll(Yg, i)
-    {
-        Yg[i] = thermo.carrier().Y(i)[this->cell()];
-        mug += Yg[i]*thermo.carrier().mu(i, td.pc(), td.Tc());
-        kappag += Yg[i]*thermo.carrier().kappa(i, td.pc(), td.Tc());
-        Cpg += Yg[i]*thermo.carrier().Cp(i, td.pc(), td.Tc());
-    }
-    
-    rhog = max(rhog, rootVSmall);
-    mug = max(mug, rootVSmall);
-    kappag = max(kappag, rootVSmall);
-    Cpg = max(Cpg, rootVSmall);
-
-    scalar Prg = Cpg*mug/kappag;
-    Prg = max(Prg,rootVSmall);
 
     // Sources
     // ~~~~~~~
@@ -473,21 +452,13 @@ void Foam::ReactingParcel<ParcelType>::calc
     // Surface concentrations of emitted species
     scalarField Cs(composition.carrier().species().size(), 0.0);
 
-    this->Cp_ = composition.Cp(0, Y_, td.pc(), T0);
-
-    this->calcSurfaceValues(cloud, td, T0, Ts, rhos, mus, Prs, kappas);
-    // droplet Re calculated using carrier's rho and mu
-    scalar Red = this->Re(td.rhoc(), U0, td.Uc(), d0, mug);
-    // droplet Re calculated using surface value
-    scalar Res = this->Re(rhos, U0, td.Uc(), d0, mus);
-
     // Calc mass and enthalpy transfer due to phase change
     calcPhaseChange
     (
         cloud,
         td,
         dt,
-        Red,  //using new droplet Re
+        Res,
         Prs,
         Ts,
         mus/rhos,
@@ -553,20 +524,8 @@ void Foam::ReactingParcel<ParcelType>::calc
 
     // Correct surface values due to emitted species
     correctSurfaceValues(cloud, td, Ts, Cs, rhos, mus, Prs, kappas);
-    Res = this->Re(rhos, U0, td.Uc(), this->d_, mus);
-    Red = this->Re(td.rhoc(), U0, td.Uc(), this->d_, mug);
+    Res = this->Re(rhos, U0, td.Uc(), this->d(), mus);
 
-    // Motion
-    // ~~~~~~
-
-    // 3. Calculate new particle velocity
-    this->U_ =
-        this->calcVelocity(cloud, td, dt, Res, mus, mass1, Su, dUTrans, Spu);
-
-    this->Cp_ = composition.Cp(0, Y_, td.pc(), T0);
-
-    Red = this->Re(td.rhoc(), this->U_, td.Uc(), this->d_, mug);
-    Res = this->Re(rhos, this->U_, td.Uc(), this->d_, mus);
 
     // 3. Compute heat- and momentum transfers
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -574,7 +533,7 @@ void Foam::ReactingParcel<ParcelType>::calc
     // Heat transfer
     // ~~~~~~~~~~~~~
 
-    // 4. Calculate new particle temperature
+    // Calculate new particle temperature
     this->T_ =
         this->calcHeatTransfer
         (
@@ -590,10 +549,18 @@ void Foam::ReactingParcel<ParcelType>::calc
             Sph
         );
 
-    this->Cp_ = composition.Cp(0, Y_, td.pc(), this->T_);
+    this->Cp_ = composition.Cp(0, Y_, td.pc(), T0);
 
 
-    // 5. Accumulate carrier phase source terms
+    // Motion
+    // ~~~~~~
+
+    // Calculate new particle velocity
+    this->U_ =
+        this->calcVelocity(cloud, td, dt, Res, mus, mass1, Su, dUTrans, Spu);
+
+
+    // 4. Accumulate carrier phase source terms
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     if (cloud.solution().coupled())
@@ -617,8 +584,6 @@ void Foam::ReactingParcel<ParcelType>::calc
 
         // Update sensible enthalpy transfer
         cloud.hsTrans()[this->cell()] += np0*dhsTrans;
-        // add additional term for work between droplets and carrier
-        cloud.hsTrans()[this->cell()] += U0&cloud.UTrans()[this->cell()]*dt;
         cloud.hsCoeff()[this->cell()] += np0*Sph;
 
         // Update radiation fields

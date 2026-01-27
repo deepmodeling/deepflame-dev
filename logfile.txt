@@ -1,0 +1,10 @@
+Compiling enabled on 256 cores
+wmakeLnIncludeAll: starting wmakeLnInclude processes on  256 cores
+    searching . for 'Make' directories
+wmake objects .
+Allwmake objects /home/deepflame/deepflame-dev-blasdnn
+wmake src/thermophysicalModels/thermophysicalProperties
+wmake src/thermophysicalModels/basic
+    Ctoo: energyJumpFvPatchScalarField.C
+    Ctoo: energyJumpAMIFvPatchScalarField.C
+    ld: /home/deepflame/deepflame-dev-blasdnn/platforms/linuxArm64ClangDPInt64Opt/lib/libdfFluidThermophysicalModels.so

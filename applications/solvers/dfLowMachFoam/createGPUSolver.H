@@ -155,7 +155,7 @@ void createGPUBase(const IOdictionary& CanteraTorchProperties, fvMesh& mesh, Ptr
             num_patches, nProcValues, patch_size, Y.size(), rDeltaT);
 
     // wyr: now there is no other place to prepare nccl info, thus mpi must be initialized at beginning.
-    label flag_mpi_init;
+    int flag_mpi_init;
     MPI_Initialized(&flag_mpi_init);
     if(flag_mpi_init) {
         std::vector<int> GPUNeighbProcNo(dfDataBase.num_patches, -1);

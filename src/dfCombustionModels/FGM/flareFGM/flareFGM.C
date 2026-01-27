@@ -24,7 +24,6 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "flareFGM.H"
-#include "error.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -45,70 +44,11 @@ Foam::combustionModels::flareFGM<ReactionThermo>::flareFGM
 
     Info<< "At flareFGM, min/max(T) = " << min(this->T_).value() << ", " << max(this->T_).value() << endl;    
 
-    //------------- checkout before running --------------//
-
     if (tableSolver::scaledPV_ != baseFGM<ReactionThermo>::scaledPV_)
     {
-        FatalErrorInFunction << "Warning! -- scaledPV in FGM table: " << tableSolver::scaledPV_
-            << "are not equal to that in combustionProperties: " << baseFGM<ReactionThermo>::scaledPV_ 
-            << exit(FatalError);
+        Info << "Warning! -- scaledPV in FGM table: " << tableSolver::scaledPV_
+            << "are not equal to that in combustionProperties: " << baseFGM<ReactionThermo>::scaledPV_ << endl;
     }
-
-    if (tableSolver::NYomega != baseFGM<ReactionThermo>::omega_YiNames_base_.size())
-    {
-        FatalErrorInFunction << "Warning! -- NYomega in FGM table: " << tableSolver::NYomega
-            << "are not equal to that in combustionProperties: " << baseFGM<ReactionThermo>::omega_YiNames_base_.size() 
-            << exit(FatalError);
-    }
-
-    if (! std::equal(tableSolver::spc_omegaNames_table_.begin(), tableSolver::spc_omegaNames_table_.end(), 
-                    baseFGM<ReactionThermo>::omega_YiNames_base_.begin()))
-    {
-        FatalErrorInFunction << "Warning! -- spc_omegaNames in FGM table: " << tableSolver::spc_omegaNames_table_
-            << "are not equal to that in combustionProperties: " << baseFGM<ReactionThermo>::omega_YiNames_base_ 
-            << exit(FatalError);
-    }
-
-    if (!tableSolver::scaledPV_)
-    {
-        // Vector to store the names and values
-        std::vector<std::pair<word, std::pair<scalar, scalar>>> fixedValuePatches;
-        forAll(this->mesh().boundary(), patchI)
-        {
-            const fvPatch& patch = this->mesh().boundary()[patchI];
-
-            fvPatchScalarField& pZ = this->Z_.boundaryFieldRef()[patchI];     
-            fvPatchScalarField& pHe = this->He_.boundaryFieldRef()[patchI];   
-
-            if ( (this->Z_.boundaryField()[patchI].fixesValue() or this->He_.boundaryField()[patchI].fixesValue() )
-                && pZ.size() > 0 && pHe.size() > 0    //ensure there exits data on patchI
-                )
-            {
-                fixedValuePatches.push_back({patch.name(), {pZ[0], pHe[0]}});
-            }
-        }
-
-        if (!fixedValuePatches.empty())
-        {
-            for (const auto& patchInfo : fixedValuePatches)
-            {   
-                double patch_Z = patchInfo.second.first, patch_He = patchInfo.second.second;
-
-                double hLoss = ( patch_Z*(this->Hfu-this->Hox) + this->Hox ) - patch_He;
-                double Ycmax1 = this->lookup6d(this->NH,this->h_Tb3,hLoss,
-                            this->NZ,this->z_Tb3,patch_Z,
-                            this->NC,this->c_Tb3,0.0,
-                            this->NGZ,this->gz_Tb3,0.0,
-                            this->NGC,this->gc_Tb3,0.0,
-                            this->NZC,this->gzc_Tb3,0.0,
-                            this->tableValues_[this->NS-1]);   
-
-                std::cout << "Patch " << patchInfo.first << " with Z = " << patch_Z 
-                    << ", enthalpy = " << patch_He << ", Ycmax = " << Ycmax1 << std::endl;
-            }
-        }
-    }
-    //------------- end checkout before running --------------//
 }
 
 
@@ -166,10 +106,10 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
     int ih = 0;
     scalar Zl, Zr;
 
-    // dimensionedScalar this->TMin_("this->TMin_",dimensionSet(0,0,0,1,0,0,0),270.0);    
-    // dimensionedScalar this->TMax_("this->TMax_",dimensionSet(0,0,0,1,0,0,0),5000.0);  
-    // const double this->TMin_ = 270.0;
-    // const double this->TMax_ = 5000.0;
+    // dimensionedScalar TMin("TMin",dimensionSet(0,0,0,1,0,0,0),270.0);    
+    // dimensionedScalar TMax("TMax",dimensionSet(0,0,0,1,0,0,0),5000.0);  
+    const double TMin = 270.0;
+    const double TMax = 5000.0;
 
     forAll(this->rho_, celli)  
     {
@@ -371,23 +311,6 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
 
         // -------------------- Yis end ------------------------------
 
-        // -------------------- omega Yis begin ------------------------------
-        if (!this->omega_YiNames_base_.empty())
-        {
-            forAll(this->omega_YiNames_base_, speciesI)
-            {
-                this->omega_Yis_[speciesI].primitiveFieldRef()[celli] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
-                                        this->NZ,this->z_Tb3,this->ZCells_[celli],
-                                        this->NC,this->c_Tb3,cNorm,
-                                        this->NGZ,this->gz_Tb3,gz,
-                                        this->NGC,this->gc_Tb3,gc,
-                                        this->NZC,this->gzc_Tb3,gcz,
-                                        this->tableValues_[this->NS-this->NYomega+speciesI]);  
-            }
-        }
-        // -------------------- omega Yis end ------------------------------
-
-
         if(baseFGM<ReactionThermo>::flameletT_)   
         {
             this->TCells_[celli] = this->lookup6d(this->NH,this->h_Tb3,hLoss,
@@ -420,8 +343,8 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
                             + this->T0;   
         }
 
-        this->TCells_[celli] = max(this->TCells_[celli], this->TMin_);
-        this->TCells_[celli] = min(this->TCells_[celli], this->TMax_);
+        this->TCells_[celli] = max(this->TCells_[celli], TMin);
+        this->TCells_[celli] = min(this->TCells_[celli], TMax);
     }
 
 
@@ -673,8 +596,8 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
                             + this->T0;  
             }
 
-            pT[facei] = max(pT[facei], this->TMin_);
-            pT[facei] = min(pT[facei], this->TMax_);
+            pT[facei] = max(pT[facei], TMin);
+            pT[facei] = min(pT[facei], TMax);
 
 
             // // -------------------- Yis begin ------------------------------
@@ -693,27 +616,11 @@ void Foam::combustionModels::flareFGM<ReactionThermo>::retrieval()
             }
 
             // -------------------- Yis end ------------------------------
-
-            // -------------------- omega Yis begin ------------------------------
-            if (!this->omega_YiNames_base_.empty())
-            {
-                forAll(this->omega_YiNames_base_, speciesI)
-                {
-                    this->omega_Yis_[speciesI].boundaryFieldRef()[patchi][facei]  = this->lookup6d(this->NH,this->h_Tb3,hLoss,
-                                            this->NZ,this->z_Tb3,pZ[facei],
-                                            this->NC,this->c_Tb3,cNorm,
-                                            this->NGZ,this->gz_Tb3,gz,
-                                            this->NGC,this->gc_Tb3,gc,
-                                            this->NZC,this->gzc_Tb3,gcz,
-                                            this->tableValues_[this->NS-this->NYomega+speciesI]);
-                }
-            }
-            // -------------------- omega Yis end ------------------------------
         } 
     }
 
-    // this->T_.max(this->TMin_);  
-    // this->T_.min(this->TMax_);  
+    // this->T_.max(TMin);  
+    // this->T_.min(TMax);  
 
     double R_uniGas_ = 8.314e3;
     double p_operateDim_ = this->coeffs().lookupOrDefault("p_operateDim", this->incompPref_);

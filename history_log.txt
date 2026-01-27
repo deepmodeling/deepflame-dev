@@ -1,0 +1,247 @@
+    1  ll
+    2  pwd
+    3  top
+    4  cd HPCKit/latest/
+    5  ll
+    6  cd h
+    7  cd hmpi/
+    8  ll
+    9  cd bisheng/i
+   10  cd bisheng/
+   11  ll
+   12  cd hmpi/include/
+   13  ll
+   14  pwd
+   15  cd -
+   16  cd 
+   17  cd ThirdParty-7/
+   18  ll
+   19  cd platforms/
+   20  ll
+   21  cd linuxArm64ClangDPInt64/
+   22  ll
+   23  cd lib/
+   24  ll
+   25  cd 
+   26  cd OpenFOAM-7/wmake/rules/
+   27  ll
+   28  cd linuxArm64Clang
+   29  ll
+   30  vim c
+   31  vim c++
+   32  cd 
+   33  cd OpenFOAM-7
+   34  ll
+   35  vim etc/bashrc
+   36  cd platforms/
+   37  ll
+   38  cd linuxArm64ClangDPInt64Opt
+   39  ll
+   40  cd ../linuxArm64ClangDPInt64OptFUJITSU-MPI
+   41  ll
+   42  vf ..
+   43  cd ..
+   44  vim etc/bashrc
+   45  vim Allwmake 
+   46  cd ../OpenFOAM-7-orgin/
+   47  vim etc/bashrc
+   48  cd ..
+   49  cd OpenFOAM-7-orgin/
+   50  ll
+   51  cd platforms/
+   52  ll
+   53  cd ../../ThirdParty-7/platforms/
+   54  ll
+   55  cd linuxArm64ClangDPInt32
+   56  ll
+   57  cd lib/
+   58  ll
+   59  cd ../../linuxArm64ClangDPInt64
+   60  ll
+   61  cd lib/i
+   62  cd lib/
+   63  ll
+   64  cd ../../..
+   65  cd ..
+   66  cd OpenFOAM-7
+   67  cd ../OpenFOAM-7-orgin/
+   68  vim Allwmake 
+   69  cd ../OpenFOAM-7
+   70  ll
+   71  cd ../ThirdParty-7/platforms/
+   72  ll
+   73  cd linuxArm64ClangDPInt64
+   74  ll
+   75  cd scotch_6.0.6/
+   76  ll
+   77  cd ../lib/
+   78  ll
+   79  pwd
+   80  cd ../scotch_6.0.6/
+   81  ll
+   82  cd ..
+   83  ll
+   84  cd lib/mpifcc/
+   85  ll
+   86  pwd
+   87  cd ../..
+   88  ll
+   89  cd scotch_6.0.6/
+   90  ll
+   91  cd include/
+   92  ll
+   93  cd mpifcc/
+   94  ll
+   95  pwd
+   96  cd /home/deepflame/OpenFOAM-7/platforms/linuxArm64ClangDPInt64Opt/
+   97  ll
+   98  cd lib/
+   99  ll
+  100  pwd
+  101  ll
+  102  cd ../..
+  103  cd ..
+  104  vim temp
+  105  wmake applications/utilities/parallelProcessing/decomposeParFieldParallel
+  106  source etc/bashrc
+  107  conda activate deepflame
+  108  source ~/.bashrc
+  109  conda activate deepflame
+  110  module list
+  111  module use ../HPCKit/latest/modulefiles
+  112  module av
+  113  module load bisheng/compiler4.2.0/bishengmodule bisheng/hmpi25.0.0/hmpi
+  114  history
+  115  wmake applications/utilities/parallelProcessing/decomposeParFieldParallel
+  116  ll
+  117  ldd /home/deepflame/OpenFOAM-7/platforms/linuxArm64ClangDPInt64Opt/lib/openmpi-system/libPstream.so
+  118  module av
+  119  find / -name libgomp.so
+  120  nm /home/deepflame/HPCKit/25.0.0/compiler/bisheng/lib/libgomp.so | grep omp_get_wtime
+  121  nm /home/deepflame/HPCKit/25.0.0/compiler/bisheng/lib/libgomp.so
+  122  nm /home/deepflame/anaconda3/envs/deepflame/lib/libgomp.so | grep omp_get_wtime
+  123  export LD_LIBRARY_PATH=/home/deepflame/anaconda3/envs/deepflame/lib:$LD_LIBRARY_PATH
+  124  wmake applications/utilities/parallelProcessing/decomposeParFieldParallel
+  125  echo $LD_LIBRARY_PATH
+  126  vim wmake/rules/linuxArm64Clang/c
+  127  vim wmake/rules/linuxArm64Clang/c++
+  128  wmake applications/utilities/parallelProcessing/decomposeParFieldParallel
+  129  ldd /home/deepflame/OpenFOAM-7/platforms/linuxArm64ClangDPInt64Opt/lib/openmpi-system/libPstream.so
+  130  nm /home/deepflame/HPCKit/25.0.0/hmpi/bisheng/hmpi/lib/libmpi.so.40 | grep omp_get_wtime
+  131  nm /home/deepflame/anaconda3/envs/deepflame/lib/libgcc_s.so.1 | grep omp_get_wtime
+  132  vim wmake/rules/linuxArm64Clang/c
+  133  vim wmake/rules/linuxArm64Clang/c++
+  134  wmake applications/utilities/parallelProcessing/decomposeParFieldParallel
+  135  blockMesh
+  136  source etc/bashrc
+  137  blockMesh
+  138  ll
+  139  pwd
+  140  export PATH=/home/deepflame/OpenFOAM-7/bin:$PATH
+  141  blockMesh
+  142  ll
+  143  ./Allwmake 
+  144  ./Allwmake -s -q -j 256 | tee logfile3.txt
+  145  ll
+  146  vim Allwmake 
+  147  vim etc/bashrc
+  148  rm -rf logfile3.txt
+  149  ./Allwmake -s -q -j 256 | tee logfile3.txt
+  150  cd ..
+  151  ll
+  152  cd deepflame-dev-blasdnn/
+  153  ll
+  154  vim Allwmake 
+  155  git branch -a
+  156  ./Allwmake 
+  157  vim bashrc
+  158  source bashrc
+  159  ./Allwmake 
+  160  ./Allwmake -s -q -j 256
+  161  ll
+  162  ./Allwmake -s -q -j 256 | tee logfile.txt
+  163  ll /home/deepflame/deepflame-dev-blasdnn/platforms/linuxArm64ClangDPInt64Opt/lib/libdfFluidThermophysicalModels.so
+  164  cd /home/deepflame/deepflame-dev-blasdnn/platforms/linuxArm64ClangDPInt64Opt
+  165  ll
+  166  cd lib/
+  167  ll
+  168  cd ../../../
+  169  ll
+  170  vim Allwmake 
+  171  wmake src/thermophysicalModels/basic
+  172  ll
+  173  vim install.sh 
+  174  cd ..
+  175  ll
+  176  cd deepflame-dev-blasdnn/
+  177  ll
+  178  vim install.sh 
+  179  source ../OpenFOAM-7/etc/bashrc
+  180  ./install.sh 
+  181  vim configure.sh 
+  182  ./configure.sh --use_blasdnn
+  183  source bashrc
+  184  module av
+  185  module load bisheng/kml25.0.0/kblas/multi bisheng/kml25.0.0/kml
+  186  ./install.sh 
+  187  ll
+  188  cd src
+  189  ll
+  190  cd dfChemistryModel/
+  191  ll
+  192  cd DNNInferencer_blas/
+  193  ll
+  194  vim CMakeLists.txt 
+  195  cd ../../..
+  196  ./install.sh 
+  197  cd src/dfChemistryModel/DNNInferencer_blas
+  198  ll
+  199  cd build/
+  200  ll
+  201  cmake ..         -DCMAKE_CXX_COMPILER=mpiCC         -DCMAKE_CXX_FLAGS="-Ofast -g -fopenmp -std=c++11"         -DUSE_HALF_PRECISION=ON         -DYAML_INCLUDE=/home/deepflame/yaml-cpp/include         -DYAML_LIBRARY=/home/deepflame/yaml-cpp/build/libyaml-cpp.so         -DBLAS_LIBRARY=/home/deepflame/HPCKit/latest/kml/bisheng/lib/sme/kblas/multi/libkblas.so
+  202  make -j32
+  203  module av
+  204  ll
+  205  cd ..
+  206  ll
+  207  vim CMakeLists.txt 
+  208  vim /home/deepflame/deepflame-dev-blasdnn/src/dfChemistryModel/DNNInferencer_blas/kernel.H
+  209  vim Layer.H
+  210  vim Tensor.H
+  211  vim CMakeLists.txt 
+  212  cd build/
+  213  ll
+  214  cmake ..         -DCMAKE_CXX_COMPILER=mpiCC         -DCMAKE_CXX_FLAGS="-Ofast -g -fopenmp -std=c++11"         -DUSE_HALF_PRECISION=ON         -DYAML_INCLUDE=/home/deepflame/yaml-cpp/include         -DYAML_LIBRARY=/home/deepflame/yaml-cpp/build/libyaml-cpp.so         -DBLAS_LIBRARY=/home/deepflame/HPCKit/latest/kml/bisheng/lib/sme/kblas/multi/libkblas.so
+  215* 
+  216  ll
+  217  cmake ..         -DCMAKE_CXX_COMPILER=mpiCC         -DCMAKE_CXX_FLAGS="-Ofast -g -fopenmp -std=c++11"         -DUSE_HALF_PRECISION=ON         -DYAML_INCLUDE=/home/deepflame/yaml-cpp/include         -DYAML_LIBRARY=/home/deepflame/yaml-cpp/build/libyaml-cpp.so         -DBLAS_LIBRARY=/home/deepflame/HPCKit/latest/kml/bisheng/lib/sme/kblas/multi/libkblas.so -march=armv8.2-a+sve
+  218  cmake ..         -DCMAKE_CXX_COMPILER=mpiCC         -DCMAKE_CXX_FLAGS="-Ofast -g -fopenmp -std=c++11"         -DUSE_HALF_PRECISION=ON         -DYAML_INCLUDE=/home/deepflame/yaml-cpp/include         -DYAML_LIBRARY=/home/deepflame/yaml-cpp/build/libyaml-cpp.so         -DBLAS_LIBRARY=/home/deepflame/HPCKit/latest/kml/bisheng/lib/sme/kblas/multi/libkblas.so
+  219  make -j32 -march=armv8.2-a+sve
+  220  cd ../
+  221  vim CMakeLists.txt 
+  222  cd build/u
+  223  cd build/
+  224  cmake ..         -DCMAKE_CXX_COMPILER=mpiCC         -DCMAKE_CXX_FLAGS="-Ofast -g -fopenmp -std=c++11"         -DUSE_HALF_PRECISION=ON         -DYAML_INCLUDE=/home/deepflame/yaml-cpp/include         -DYAML_LIBRARY=/home/deepflame/yaml-cpp/build/libyaml-cpp.so         -DBLAS_LIBRARY=/home/deepflame/HPCKit/latest/kml/bisheng/lib/sme/kblas/multi/libkblas.so
+  225  make -j32
+  226  cd ../..
+  227  ll
+  228  cd ../..
+  229  ./install.sh 
+  230  conda install boost
+  231  ./install.sh 
+  232  conda install fmt eigen -y
+  233  ./install.sh 
+  234  vim install.sh 
+  235  ll
+  236  cd applications/
+  237  ll
+  238  cd solvers/dfLowMachFoam/
+  239  ll
+  240  cd Make/
+  241  ll
+  242  vim options 
+  243  pwd
+  244  ll /home/deepflame/deepflame-dev-blasdnn/applications/solvers/dfLowMachFoam/Make/options 
+  245  cd ../../..
+  246  cd ..
+  247  history | tee history_log.txt

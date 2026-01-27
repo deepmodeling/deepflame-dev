@@ -72,7 +72,7 @@ Foam::FGMLiquidEvaporationBoil<CloudType>::FGMLiquidEvaporationBoil
 )
 :
     LiquidEvaporationBoil<CloudType>(dict, owner),
-    W_(this->owner().mesh().objectRegistry::lookupObject<const volScalarField>("Wt"))
+    W_(this->owner().mesh().objectRegistry::template lookupObject<const volScalarField>("Wt"))
 {
 
 }
@@ -86,7 +86,7 @@ Foam::FGMLiquidEvaporationBoil<CloudType>::FGMLiquidEvaporationBoil
 :
     LiquidEvaporationBoil<CloudType>(pcm),
 
-    W_(this->owner().mesh().objectRegistry::lookupObject<const volScalarField>("Wt"))
+    W_(this->owner().mesh().objectRegistry::template lookupObject<const volScalarField>("Wt"))
 {
 
 }

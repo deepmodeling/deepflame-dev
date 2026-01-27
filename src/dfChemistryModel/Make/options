@@ -1,11 +1,12 @@
 -include $(GENERAL_RULES)/mplibType
 
 EXE_INC = -std=c++14 \
+    -fopenmp \
     -Wno-old-style-cast \
     $(PFLAGS) $(PINC) \
-	$(if $(CANTERA_THERMO),-DCANTERA_THERMO,) \
     $(if $(LIBTORCH_ROOT),-DUSE_LIBTORCH,) \
     $(if $(PYTHON_INC_DIR),-DUSE_PYTORCH,) \
+    $(if $(USE_BLASDNN),-DUSE_BLASDNN,) \
     -I$(LIB_SRC)/transportModels/compressible/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
     -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude \
@@ -16,12 +17,13 @@ EXE_INC = -std=c++14 \
     -I$(CANTERA_ROOT)/include \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include,) \
     $(if $(LIBTORCH_ROOT),-I$(LIBTORCH_ROOT)/include/torch/csrc/api/include,) \
-    $(PYTHON_INC_DIR)
+    $(PYTHON_INC_DIR) \
 
 EXE_LIBS = \
     -lcompressibleTransportModels \
     -lturbulenceModels \
     -L$(DF_LIBBIN) \
+    -L$(DF_ROOT)/lib/ \
     -ldfFluidThermophysicalModels \
     -ldfCompressibleTurbulenceModels \
     -ldfCanteraMixture \

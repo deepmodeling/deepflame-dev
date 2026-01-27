@@ -1,17 +1,27 @@
-{
+Info << "Enter EEqn" << endl;
+
+{   
+    clockTime EEqnClock;
+
     volScalarField& he = thermo.he();
 
+    // volScalarField turbulence_alphaEff
+    // (
+    //     IOobject
+    //     (
+    //         "turbulence_alphaEff",
+    //         runTime.timeName(),
+    //         mesh,
+    //         IOobject::NO_READ,
+    //         IOobject::NO_WRITE
+    //     ),
+    //     mesh,
+    //     dimensionedScalar(dimensionSet(1,-1,-1,0,0,0,0), 0)
+    // );
 
-    tmp<fvScalarMatrix> thcSource(new fvScalarMatrix(he, dimEnergy/dimTime));
-    fvScalarMatrix& hcSource = thcSource.ref();
-    forAll(Y, i)
-    {
-        hcSource.source() -= parcels.rhoTrans(i)*chemistry->mixture().Hc(i)/runTime.deltaT();
-    }
-    //hSource.source() -= parcels.hsTrans()/runTime.deltaT();// equivalent to parcels.Sh(he)
+    const auto& turbulence_alphaEff = turbulence->alphaEff();
 
-
-    start1 = std::clock();
+#ifndef OPT_GenMatrix_E
     fvScalarMatrix EEqn
     (
 
@@ -19,44 +29,66 @@
     +   fvc::ddt(rho, K) + fvc::div(phi, K)
     -   dpdt
     ==
-    (
-        turbName == "laminar"
-        ?
         (
-            fvm::laplacian(turbulence->alpha(), he)
-        -   diffAlphaD
-        +   fvc::div(hDiffCorrFlux)
+            turbName == "laminar"
+            ?
+            (
+                fvm::laplacian(turbulence->alpha(), he)
+            -   diffAlphaD
+            +   fvc::div(hDiffCorrFlux)
+            )
+            :
+            (
+                fvm::laplacian(turbulence->alphaEff(), he)
+            )
         )
-        :
-        fvm::laplacian(turbulence->alphaEff(), he)
-    )
-    +   parcels.Sh(he)
-    // +   rho*(U&g)
     );
+#else
+    tmp<fvScalarMatrix> tEEqn = GenMatrix_E(rho, he, phi, K, dpdt, turbulence_alphaEff, diffAlphaD, hDiffCorrFlux, linear_weights);
+    fvScalarMatrix& EEqn = tEEqn.ref();
+#endif
 
-    if(CanteraMixture::getEnergyName() == word("hs"))
-    {
-        EEqn -= combustion->Qdot();
-    }
-    else if(CanteraMixture::getEnergyName() == word("ha"))
-    {
-        EEqn -= hcSource;
-    }
-    else
-    {
-        FatalErrorInFunction
-            << "Wrong CanteraMixture enregy name: " << CanteraMixture::getEnergyName()
-            << abort(FatalError);
-    }
+time_monitor_EEqn_pre += EEqnClock.timeIncrement();
 
-    end1 = std::clock();
-    time_monitor_EEqn += double(end1 - start1) / double(CLOCKS_PER_SEC);
-    time_monitor_EEqn_mtxAssembly += double(end1 - start1) / double(CLOCKS_PER_SEC);
+#ifdef OPT_GenMatrix_E_check
+    fvScalarMatrix EEqn_answer
+    (
+        fvm::ddt(rho, he) 
+        + fvm::div(phi, he)
+        + fvc::ddt(rho, K) 
+        + fvc::div(phi, K)
+        - dpdt
+        - fvm::laplacian(turbulence->alphaEff(), he)
+        + diffAlphaD
+         ==
+            fvc::div(hDiffCorrFlux)
+    );
+    check_fvmatrix_equal(EEqn, EEqn_answer, "EEqn");
 
-    // EEqn.relax();
-    start1 = std::clock();
-    EEqn.solve("h");
-    end1 = std::clock();
-    time_monitor_EEqn += double(end1 - start1) / double(CLOCKS_PER_SEC);
-    time_monitor_EEqn_solve += double(end1 - start1) / double(CLOCKS_PER_SEC);
+    time_monitor_EEqn_pre_check += EEqnClock.timeIncrement();
+#endif
+
+
+
+#ifdef USE_DF_MATRIX
+    // dfMatrix df_EEqn(EEqn, regionPtr);
+    auto& psi = const_cast<volScalarField&>(EEqn.psi());
+    auto& source = EEqn.source();
+    auto& internalCoeffs = EEqn.internalCoeffs();
+    auto& boundaryCoeffs = EEqn.boundaryCoeffs();
+
+    matrixPtr->valueCopy(EEqn);
+    time_monitor_EEqn_convert += EEqnClock.timeIncrement();
+
+    // df_EEqn.solve(psi, source, internalCoeffs, boundaryCoeffs, "ha");
+    matrixPtr->solve(psi, source, internalCoeffs, boundaryCoeffs, "ha");
+#else
+    EEqn.solve("ha");
+#endif
+
+    time_monitor_EEqn_solve += EEqnClock.timeIncrement();
+
+    time_monitor_EEqn += EEqnClock.elapsedTime();
 }
+
+Info << "Exit EEqn" << endl;

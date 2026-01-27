@@ -687,8 +687,7 @@ double Foam::tableSolver::interp3d
 
             for(i2=0; i2<2; i2++)
             {
-                factor = (1.0-hfac+i0*(2.0*hfac-1.0))
-                        *(1.0-zfac+i1*(2.0*zfac-1.0))
+                factor = (1.0-zfac+i1*(2.0*zfac-1.0))
                         *(1.0-gzfac+i2*(2.0*gzfac-1.0));
 
                 if(i2 == 1 and n2>1) j2 = loc_gz+1;

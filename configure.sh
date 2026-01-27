@@ -22,6 +22,7 @@ USE_LIBTORCH=false
 USE_PYTORCH=false
 USE_GPUSOLVER=false
 USE_ODE_GPU_SOLVER=false
+USE_BLASDNN=true
 
 while test $# -gt 0; do
     case "$1" in
@@ -56,6 +57,10 @@ while test $# -gt 0; do
             USE_PYTORCH=true
             shift
             ;;
+        --use_blasdnn)
+            shift
+            USE_BLASDNN=true
+            ;;
         --libcantera_dir)
             shift
             if test $# -gt 0; then
@@ -84,6 +89,46 @@ while test $# -gt 0; do
         -h|--help)
             shift
             print_usage
+            shift
+            ;;
+	--boost_root)
+            shift
+            if test $# -gt 0; then
+                BOOST_ROOT=$1
+            else
+                print_usage
+            return
+            fi
+            shift
+            ;;
+        --eigen_root)
+            shift
+            if test $# -gt 0; then
+                EIGEN_ROOT=$1
+            else
+                print_usage
+            return
+            fi
+            shift
+            ;;
+        --yaml_root)
+            shift
+            if test $# -gt 0; then
+                YAML_ROOT=$1
+            else
+                print_usage
+            return
+            fi
+            shift
+            ;;
+        --hpckit_root)
+            shift
+            if test $# -gt 0; then
+                HPCKIT_ROOT=$1
+            else
+                print_usage
+            return
+            fi
             shift
             ;;
         *)
@@ -169,9 +214,18 @@ fi
 if [ $USE_GPUSOLVER = true ]; then
     echo AMGX_DIR=$AMGX_DIR
 fi
+if [ ! -z "$USE_BLASDNN" ]; then
+    echo USE_BLASDNN=$USE_BLASDNN
+fi
 if [ $USE_ODE_GPU_SOLVER = true ]; then
     echo ODE_GPU_SOLVER=$OPENCC_PATH
 fi
+
+echo HPCKIT_ROOT=$HPCKIT_ROOT
+echo BOOST_ROOT=$BOOST_ROOT
+echo EIGEN_ROOT=$EIGEN_ROOT
+echo YAML_ROOT=$YAML_ROOT
+
 
 cp bashrc.in bashrc
 sed -i "s#pwd#$PWD#g" ./bashrc
@@ -179,9 +233,13 @@ sed -i "s#LIBTORCH_DIR#$LIBTORCH_DIR#g" ./bashrc
 sed -i "s#PYTORCH_INC#$PYTORCH_INC#g" ./bashrc
 sed -i "s#PYTORCH_LIB#$PYTORCH_LIB#g" ./bashrc
 sed -i "s#LIBCANTERA_DIR#$LIBCANTERA_DIR#g" ./bashrc
+sed -i "s#@USE_BLASDNN@#$USE_BLASDNN#g" ./bashrc
 sed -i "s#@AMGX_DIR@#$AMGX_DIR#g" ./bashrc
 sed -i "s#@ODE_GPU_SOLVER@#$OPENCC_PATH#g" ./bashrc
-
+sed -i "s#@BOOST_ROOT@#$BOOST_ROOT#g" ./bashrc
+sed -i "s#@EIGEN_ROOT@#$EIGEN_ROOT#g" ./bashrc
+sed -i "s#@YAML_ROOT@#$YAML_ROOT#g" ./bashrc
+sed -i "s#@HPCKIT_ROOT@#$HPCKIT_ROOT#g" ./bashrc
 
 
 

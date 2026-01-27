@@ -202,7 +202,7 @@ void Foam::multiCritRefinement::applyCritEntries(word critType, dictionary critD
         for(label j=0; j < nAddLayers; j++)
         {
             //- select the area with targetLevel==refineLevel
-            volScalarField finest = pos(tLevel - refineLevel + SMALL);
+            volScalarField finest = pos(tLevel - refineLevel + SMALL).ref();
 
             //- add +1 to targetLevel on the enlarged stencil
             tLevel += pos( fvc::average(fvc::interpolate(finest) - SMALL)) - finest;
@@ -411,7 +411,7 @@ void Foam::multiCritRefinement::updateRefinementField()
             volScalarField isInterface(intRefFld * 0.0);
             isInterface = dimensionedScalar("isInterface",dimless,0.0);
 
-            surfaceScalarField deltaAlpha = mag(fvc::snGrad(fld) / mesh_.deltaCoeffs());
+            surfaceScalarField deltaAlpha = mag(fvc::snGrad(fld) / mesh_.deltaCoeffs()).ref();
 
             const unallocLabelList& owner = mesh_.owner();
             const unallocLabelList& neighbour = mesh_.neighbour();
@@ -592,7 +592,7 @@ void Foam::multiCritRefinement::updateRefinementField()
 
     //-DD: buffer layer based on targetLevel field to prevent 2-to-1 refinement
     {
-        volScalarField blockedLevel = targetFld * 0.;
+        volScalarField blockedLevel = (targetFld * 0.).ref();
 
         for (label currLayer=globalMaxRefLevel; currLayer>=1; currLayer--)
         {

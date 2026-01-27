@@ -10,7 +10,7 @@ surfaceScalarField sigmaDotU
 
 if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
 {
-    rhoE_rhs = -fvc::div(rhoEPhi)+fvc::div(sigmaDotU);
+    rhoE_rhs = -fvc::div(phiEp)+fvc::div(sigmaDotU);
 
     rhoE =  rkcoe1[nrk]*rhoE_save
           + rkcoe2[nrk]*rhoE
@@ -18,28 +18,18 @@ if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
 }
 else
 {
-    tmp<fvScalarMatrix> thcSource(new fvScalarMatrix(rhoE, dimEnergy/dimTime));
-    fvScalarMatrix& hcSource = thcSource.ref();
-    forAll(Y, i)
-    {
-        hcSource.source() -= parcels.rhoTrans(i)*chemistry->mixture().Hc(i)/runTime.deltaT();
-    }
-
     solve
     (
-            fvm::ddt(rhoE)
-          + fvc::div(rhoEPhi)
-          - fvc::div(sigmaDotU)
-        ==
-            parcels.Sh(rhoE)
-          + hcSource
+          fvm::ddt(rhoE)
+        + fvc::div(phiEp)
+        - fvc::div(sigmaDotU)
     );
 }
 
 ea = rhoE/rho - 0.5*magSqr(U);
 ea.correctBoundaryConditions();
 
-// ha = ea + p/rho;
+ha = ea + p/rho;
 chemistry->correctThermo(); // before this, we must update ha = e + p/rho
 
 rhoE.boundaryFieldRef() == rho.boundaryField()*(ea.boundaryField() + 0.5*magSqr(U.boundaryField()));
@@ -48,23 +38,35 @@ if (!inviscid)
 {
     if((ddtSchemes == "RK2SSP") || (ddtSchemes == "RK3SSP"))
     {
-        rhoE_rhs =   fvc::laplacian(turbulence->alphaEff()*thermo.gamma(), ea)
-                  - diffAlphaD
-                  + fvc::div(hDiffCorrFlux);
-
+        rhoE_rhs =   
+            (
+                turbName == "laminar"
+                ?
+                (
+                    fvc::laplacian(turbulence->alphaEff()*thermo.gamma(), ea)
+                  - diffAlphaD 
+                  + fvc::div(hDiffCorrFlux)
+                )
+                :
+                (
+                    fvc::laplacian(turbulence->alphaEff()*thermo.gamma(), ea)
+                )
+            );
+                  
+        
         rhoE +=  rkcoe3[nrk]*rhoE_rhs*runTime.deltaT();
 
         ea = rhoE/rho - 0.5*magSqr(U);
         ea.correctBoundaryConditions();
 
-        // ha = ea + p/rho;
+        ha = ea + p/rho;
         chemistry->correctThermo(); // before this, we must update ha = e + p/rho
     }
     else
     {
         fvScalarMatrix eEqn
         (
-              fvm::ddt(rho, ea) - fvc::ddt(rho, ea)
+                fvm::ddt(rho, ea) - fvc::ddt(rho, ea)
             ==
                 (
                     turbName == "laminar"
@@ -84,12 +86,11 @@ if (!inviscid)
 
         eEqn.solve("ea");
 
-        // ha = ea + p/rho;
+        ha = ea + p/rho;
         chemistry->correctThermo();
         rhoE = rho*(ea + 0.5*magSqr(U));
-        rhoE.boundaryFieldRef() == rho.boundaryField()*(ea.boundaryField() + 0.5*magSqr(U.boundaryField()));
     }
-
+    
 }
 
 Info<< "min/max(T) = "

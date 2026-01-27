@@ -304,7 +304,7 @@ void Foam::combustionModels::DeePFGM<ReactionThermo>::retrieval( )
     {
         DynamicList<GpuFGMProblem> GPUFGMproblemList;
         getGPUFGMProblemCells(GPUFGMproblemList);
-        label flag_mpi_init;
+        int flag_mpi_init;
         MPI_Initialized(&flag_mpi_init);
         if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
         PstreamBuffers pBufs(Pstream::commsTypes::nonBlocking);

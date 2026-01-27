@@ -1,3 +1,5 @@
+Info << "Enter YEqn_RR" << endl;
+
 if (!(timeIndex % 2))
 {
     volScalarField Yt(0.0*Y[0]);
@@ -5,14 +7,14 @@ if (!(timeIndex % 2))
     scalar dtSave = runTime.deltaT().value();
     runTime.setDeltaT(dtSave * 2);
 
-    start = std::clock();
+    start = MPI_Wtime();
     combustion->correct();
 
-    label flag_mpi_init;
+    int flag_mpi_init;
     MPI_Initialized(&flag_mpi_init);
     if(flag_mpi_init) MPI_Barrier(PstreamGlobals::MPI_COMM_FOAM);
-    end = std::clock();
-    time_monitor_chem += double(end - start) / double(CLOCKS_PER_SEC);
+    end = MPI_Wtime();
+    time_monitor_chem += double(end - start);
 
     forAll(Y, i)
     {
@@ -59,3 +61,5 @@ if (!(timeIndex % 2))
 
     runTime.setDeltaT(dtSave);
 }
+
+Info << "Exit YEqn_RR" << endl;

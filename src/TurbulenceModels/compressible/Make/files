@@ -1,4 +1,4 @@
-workDir = $(SRC_ORIG)/TurbulenceModels/compressible
+workDir = $(SRC_ORIG)/TurbulenceModels/compressible/
 
 $(workDir)/compressibleTurbulenceModel.C
 $(workDir)/turbulentFluidThermoModels/turbulentFluidThermoModels.C
@@ -7,14 +7,14 @@ BCs = $(workDir)/turbulentFluidThermoModels/derivedFvPatchFields
 /*$(BCs)/temperatureCoupledBase/temperatureCoupledBase.C*/
 /*$(BCs)/turbulentTemperatureCoupledBaffleMixed/turbulentTemperatureCoupledBaffleMixedFvPatchScalarField.C*/
 /*$(BCs)/thermalBaffle1D/thermalBaffle1DFvPatchScalarFields.C*/
-$(BCs)/totalFlowRateAdvectiveDiffusive/totalFlowRateAdvectiveDiffusiveFvPatchScalarField.C
+/*$(BCs)/totalFlowRateAdvectiveDiffusive/totalFlowRateAdvectiveDiffusiveFvPatchScalarField.C*/
 /*$(BCs)/turbulentTemperatureRadCoupledMixed/turbulentTemperatureRadCoupledMixedFvPatchScalarField.C*/
 /*$(BCs)/externalWallHeatFluxTemperature/externalWallHeatFluxTemperatureFvPatchScalarField.C*/
-$(BCs)/wallHeatTransfer/wallHeatTransferFvPatchScalarField.C
+/*$(BCs)/wallHeatTransfer/wallHeatTransferFvPatchScalarField.C*/
 /*$(BCs)/externalCoupledTemperatureMixed/externalCoupledTemperatureMixedFvPatchScalarField.C*/
-$(BCs)/convectiveHeatTransfer/convectiveHeatTransferFvPatchScalarField.C
+/*$(BCs)/convectiveHeatTransfer/convectiveHeatTransferFvPatchScalarField.C*/
 
-$(BCs)/wallFunctions/alphatWallFunctions/alphatWallFunction/alphatWallFunctionFvPatchScalarField.C
-$(BCs)//wallFunctions/alphatWallFunctions/alphatJayatillekeWallFunction/alphatJayatillekeWallFunctionFvPatchScalarField.C
+$(workDir)turbulentFluidThermoModels/derivedFvPatchFields/wallFunctions/alphatWallFunctions/alphatWallFunction/alphatWallFunctionFvPatchScalarField.C
+/*turbulentFluidThermoModels/derivedFvPatchFields/wallFunctions/alphatWallFunctions/alphatJayatillekeWallFunction/alphatJayatillekeWallFunctionFvPatchScalarField.C*/
 
 LIB = $(DF_LIBBIN)/libdfCompressibleTurbulenceModels
