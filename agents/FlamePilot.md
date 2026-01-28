@@ -9,4 +9,4 @@ FlamePilot is an **agentic runner for combustion CFD workflows**, designed to au
 
 FlamePilot emphasizes **executability and traceability**: it helps you go from intent → runnable case, while keeping workflows inspectable and compatible with research-grade CFD practices.
 
-To try FlamePilot, visit the <a href="https://github.com/xiao312/flamepilot-dev">project repository</a>.
+To try FlamePilot, visit the <a href="https://github.com/deepflame-ai/flamepilot">project repository</a>.
