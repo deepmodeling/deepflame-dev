@@ -25,7 +25,7 @@ The deep learning algorithms and models used in the DeepFlame tutorial examples 
    :glob:
 
    qs/install
-   qs/download_dnn_models
+   qs/dnn_models
    qs/examples
    qs/input
    
