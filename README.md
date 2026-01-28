@@ -27,6 +27,17 @@ The neural network models used in the tutorial examples can be found at– [AIS 
 Detailed guide for installation and tutorials is available on [our documentation website](https://deepflame.deepmodeling.com).
 
 ## Features
+New in v2.0 (2026/1/28):
+- Introduce Agent-driven Combustion Scientific Computing as a new research paradigm, extending DeepFlame from pure acceleration to workflow-level automation for CombustionCFD
+- Develope [FlamePilot](./agents/FlamePilot.md), a CFD simulation agent for combustion case setup, runtime diagnosis, and iterative optimization via natural language interaction
+- Introduce [DFODE-kit](https://github.com/deepflame-ai/DFODE-kit), a deep learning package for accelerating stiff, high-dimensional chemical kinetics ODEs
+- Develope [DFODE-Kit Trainer](./agents/DFODE-kit-Trainer.md), an agent-driven workflow for training combustion-chemistry neural-networks
+- Improve initialization in `dfChemistryModel`
+- Fix bug in `df0DFoam`
+- Fix bug in LES `SIGMA` sgs model
+- Add support for the localBlended scheme 
+- Change build-test actions to self-hosted runner
+
 New in v1.6 (2025/5/30):
 - Add a new solver, dfSteadyFoam, a steady-state compressible flow solver. It supports turbulence and uses the SIMPLE algorithm to efficiently compute steady solutions
 - Extend energy model to support sensible enthalpy (hs) in addition to absolute enthalpy (ha) and internal energy (ea). Furthermore, T, h and cp can now be computed independently of Cantera, improving flexibility and removing external dependencies. `CANTERA_THERMO` is added in bashrc to control method to calculate h, cp and update T. `CANTERA_THERMO=1`(current default) means using Cantera and `CANTERA_THERMO=0` means using deepflame.
