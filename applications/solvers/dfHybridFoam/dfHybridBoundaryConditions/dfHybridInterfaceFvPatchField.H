@@ -25,7 +25,7 @@ Class
     Foam::dfHybridInterfaceFvPatchField
 
 Copyright
-    Author: Teng Zhang @ AISI with help of GitHub Copilot (Claude Opus 4.6)
+    Author: Teng Zhang @ AISI
     Date: 2026-03-05
 
 Description

@@ -1,0 +1,3 @@
+dfHybridFoam.C
+
+EXE = $(DF_APPBIN)/dfHybridFoam
