@@ -35,6 +35,8 @@ List<word>                                              combModelNameLowMach(low
 List<Switch>                                            splittingLowMach(lowMachRegions.size());
 List<scalar>                                            SctLowMach(lowMachRegions.size());
 
+PtrList<surfaceScalarField>                             UBlendingFactorLowMach(lowMachRegions.size());
+
 List<scalar> cumulativeContErrsLowMach(lowMachRegions.size(), scalar(0));
 
 // ---- Populate lowMach fields ----
@@ -51,7 +53,8 @@ forAll(lowMachRegions, i)
     thermoLowMach.set
     (
         i,
-        new heRhoThermo<rhoThermo, CanteraMixture>(mesh, word::null)
+        //new heRhoThermo<rhoThermo, CanteraMixture>(mesh, word::null)
+        new heRhoThermo<rhoThermo, dfSingleStepReactingMixture>(mesh, word::null)
     );
     fluidThermo& thermo = thermoLowMach[i];
 
@@ -206,6 +209,66 @@ forAll(lowMachRegions, i)
     );
 
     initialMassLowMach[i] = fvc::domainIntegrate(rhoLowMach[i]).value();
+
+    // ---- localBlended scheme support (cf. dfLowMachFoam/createLocalBlend.H) ----
+    {
+        const dictionary& divSchemesDict =
+            mesh.schemesDict().subDict("divSchemes");
+
+        Switch foundLocalBlended = false;
+
+        wordList keys = divSchemesDict.toc();
+        forAll(keys, k)
+        {
+            const word& key = keys[k];
+            ITstream& is = divSchemesDict.lookup(key);
+            OStringStream os;
+            os << is;
+            word schemeStr = os.str();
+
+            if (schemeStr.find("localBlended") != word::npos)
+            {
+                foundLocalBlended = true;
+            }
+        }
+
+        if (foundLocalBlended)
+        {
+            Info<< "    Creating UBlendingFactor field for localBlended"
+                << " schemes in region " << mesh.name() << endl;
+
+            volScalarField UBlend
+            (
+                IOobject
+                (
+                    "UBlend",
+                    mesh.time().timeName(),
+                    mesh,
+                    IOobject::MUST_READ,
+                    IOobject::AUTO_WRITE
+                ),
+                mesh
+            );
+
+            UBlendingFactorLowMach.set
+            (
+                i,
+                new surfaceScalarField
+                (
+                    IOobject
+                    (
+                        "UBlendingFactor",
+                        mesh.time().timeName(),
+                        mesh,
+                        IOobject::READ_IF_PRESENT,
+                        IOobject::NO_WRITE,
+                        true
+                    ),
+                    fvc::interpolate(UBlend)
+                )
+            );
+        }
+    }
 
     Info<< "    Adding to fieldsLowMach\n" << endl;
     fieldsLowMach.set

@@ -87,6 +87,9 @@ Description
 #include "regionProperties.H"
 #include "fixedGradientFvPatchFields.H"
 
+#include "dfSingleStepReactingMixture.H"
+
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 int main(int argc, char *argv[])
