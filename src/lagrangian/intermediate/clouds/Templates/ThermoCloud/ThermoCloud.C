@@ -56,6 +56,106 @@ void Foam::ThermoCloud<CloudType>::setModels()
         this->subModelProperties().lookup("radiation") >> radiation_;
     }
 
+    const dictionary* controlDictPtr = nullptr;
+
+    if (this->particleProperties().found("gasHeatTransferFeedbackControl"))
+    {
+        controlDictPtr =
+            &this->particleProperties().subDict
+            (
+                "gasHeatTransferFeedbackControl"
+            );
+    }
+    else if
+    (
+        this->subModelProperties().found("gasHeatTransferFeedbackControl")
+    )
+    {
+        controlDictPtr =
+            &this->subModelProperties().subDict
+            (
+                "gasHeatTransferFeedbackControl"
+            );
+    }
+
+    if (controlDictPtr)
+    {
+        const dictionary& controlDict = *controlDictPtr;
+
+        gasHeatTransferFeedbackControlActive_ =
+            controlDict.lookupOrDefault<Switch>("active", false);
+        gasHeatTransferFeedbackControlMode_ =
+            controlDict.lookupOrDefault<word>("mode", "autoByMinT");
+        gasHeatTransferFeedbackTminOn_ =
+            controlDict.lookupOrDefault<scalar>("TminOn", 100.0);
+        gasHeatTransferFeedbackTminOff_ =
+            controlDict.lookupOrDefault<scalar>("TminOff", 150.0);
+        suppressOnlyNegativeConvectiveHeatTransfer_ =
+            controlDict.lookupOrDefault<Switch>
+            (
+                "suppressOnlyNegativeConvectiveHeatTransfer",
+                true
+            );
+        keepParcelHeating_ =
+            controlDict.lookupOrDefault<Switch>("keepParcelHeating", true);
+        keepPhaseChange_ =
+            controlDict.lookupOrDefault<Switch>("keepPhaseChange", true);
+        gasHeatTransferFeedbackDiagnostic_ =
+            controlDict.lookupOrDefault<Switch>("diagnostic", false);
+
+        if
+        (
+            gasHeatTransferFeedbackControlActive_
+         && gasHeatTransferFeedbackControlMode_ != "autoByMinT"
+        )
+        {
+            FatalErrorInFunction
+                << "Unsupported gasHeatTransferFeedbackControl mode "
+                << gasHeatTransferFeedbackControlMode_
+                << ". Supported mode is autoByMinT."
+                << abort(FatalError);
+        }
+
+        if
+        (
+            gasHeatTransferFeedbackControlActive_
+         && gasHeatTransferFeedbackTminOn_ >= gasHeatTransferFeedbackTminOff_
+        )
+        {
+            FatalErrorInFunction
+                << "gasHeatTransferFeedbackControl requires TminOn < TminOff"
+                << abort(FatalError);
+        }
+
+        if (gasHeatTransferFeedbackControlActive_ && !keepParcelHeating_)
+        {
+            FatalErrorInFunction
+                << "gasHeatTransferFeedbackControl only supports "
+                << "keepParcelHeating true"
+                << abort(FatalError);
+        }
+
+        if (gasHeatTransferFeedbackControlActive_ && !keepPhaseChange_)
+        {
+            FatalErrorInFunction
+                << "gasHeatTransferFeedbackControl only supports "
+                << "keepPhaseChange true"
+                << abort(FatalError);
+        }
+
+        if
+        (
+            gasHeatTransferFeedbackControlActive_
+         && !suppressOnlyNegativeConvectiveHeatTransfer_
+        )
+        {
+            FatalErrorInFunction
+                << "gasHeatTransferFeedbackControl only supports "
+                << "suppressOnlyNegativeConvectiveHeatTransfer true"
+                << abort(FatalError);
+        }
+    }
+
     if (radiation_)
     {
         radAreaP_.reset
@@ -158,6 +258,15 @@ Foam::ThermoCloud<CloudType>::ThermoCloud
     radAreaP_(nullptr),
     radT4_(nullptr),
     radAreaPT4_(nullptr),
+    gasHeatTransferFeedbackControlActive_(false),
+    gasHeatTransferFeedbackControlMode_("autoByMinT"),
+    gasHeatTransferFeedbackTminOn_(100.0),
+    gasHeatTransferFeedbackTminOff_(150.0),
+    suppressOnlyNegativeConvectiveHeatTransfer_(true),
+    keepParcelHeating_(true),
+    keepPhaseChange_(true),
+    gasHeatTransferFeedbackDiagnostic_(false),
+    gasHeatTransferFeedbackSuppressed_(false),
     hsTrans_
     (
         new volScalarField::Internal
@@ -165,6 +274,38 @@ Foam::ThermoCloud<CloudType>::ThermoCloud
             IOobject
             (
                 this->name() + ":hsTrans",
+                this->db().time().timeName(),
+                this->db(),
+                IOobject::READ_IF_PRESENT,
+                IOobject::AUTO_WRITE
+            ),
+            this->mesh(),
+            dimensionedScalar(dimEnergy, 0)
+        )
+    ),
+    convectiveHsTrans_
+    (
+        new volScalarField::Internal
+        (
+            IOobject
+            (
+                this->name() + ":convectiveHsTrans",
+                this->db().time().timeName(),
+                this->db(),
+                IOobject::READ_IF_PRESENT,
+                IOobject::AUTO_WRITE
+            ),
+            this->mesh(),
+            dimensionedScalar(dimEnergy, 0)
+        )
+    ),
+    negativeConvectiveHsTrans_
+    (
+        new volScalarField::Internal
+        (
+            IOobject
+            (
+                this->name() + ":negativeConvectiveHsTrans",
                 this->db().time().timeName(),
                 this->db(),
                 IOobject::READ_IF_PRESENT,
@@ -229,6 +370,30 @@ Foam::ThermoCloud<CloudType>::ThermoCloud
     radAreaP_(nullptr),
     radT4_(nullptr),
     radAreaPT4_(nullptr),
+    gasHeatTransferFeedbackControlActive_
+    (
+        c.gasHeatTransferFeedbackControlActive_
+    ),
+    gasHeatTransferFeedbackControlMode_
+    (
+        c.gasHeatTransferFeedbackControlMode_
+    ),
+    gasHeatTransferFeedbackTminOn_(c.gasHeatTransferFeedbackTminOn_),
+    gasHeatTransferFeedbackTminOff_(c.gasHeatTransferFeedbackTminOff_),
+    suppressOnlyNegativeConvectiveHeatTransfer_
+    (
+        c.suppressOnlyNegativeConvectiveHeatTransfer_
+    ),
+    keepParcelHeating_(c.keepParcelHeating_),
+    keepPhaseChange_(c.keepPhaseChange_),
+    gasHeatTransferFeedbackDiagnostic_
+    (
+        c.gasHeatTransferFeedbackDiagnostic_
+    ),
+    gasHeatTransferFeedbackSuppressed_
+    (
+        c.gasHeatTransferFeedbackSuppressed_
+    ),
     hsTrans_
     (
         new volScalarField::Internal
@@ -243,6 +408,38 @@ Foam::ThermoCloud<CloudType>::ThermoCloud
                 false
             ),
             c.hsTrans()
+        )
+    ),
+    convectiveHsTrans_
+    (
+        new volScalarField::Internal
+        (
+            IOobject
+            (
+                this->name() + ":convectiveHsTrans",
+                this->db().time().timeName(),
+                this->db(),
+                IOobject::NO_READ,
+                IOobject::NO_WRITE,
+                false
+            ),
+            c.convectiveHsTrans()
+        )
+    ),
+    negativeConvectiveHsTrans_
+    (
+        new volScalarField::Internal
+        (
+            IOobject
+            (
+                this->name() + ":negativeConvectiveHsTrans",
+                this->db().time().timeName(),
+                this->db(),
+                IOobject::NO_READ,
+                IOobject::NO_WRITE,
+                false
+            ),
+            c.negativeConvectiveHsTrans()
         )
     ),
     hsCoeff_
@@ -339,7 +536,18 @@ Foam::ThermoCloud<CloudType>::ThermoCloud
     radAreaP_(nullptr),
     radT4_(nullptr),
     radAreaPT4_(nullptr),
+    gasHeatTransferFeedbackControlActive_(false),
+    gasHeatTransferFeedbackControlMode_("autoByMinT"),
+    gasHeatTransferFeedbackTminOn_(100.0),
+    gasHeatTransferFeedbackTminOff_(150.0),
+    suppressOnlyNegativeConvectiveHeatTransfer_(true),
+    keepParcelHeating_(true),
+    keepPhaseChange_(true),
+    gasHeatTransferFeedbackDiagnostic_(false),
+    gasHeatTransferFeedbackSuppressed_(false),
     hsTrans_(nullptr),
+    convectiveHsTrans_(nullptr),
+    negativeConvectiveHsTrans_(nullptr),
     hsCoeff_(nullptr)
 {}
 
@@ -405,6 +613,8 @@ void Foam::ThermoCloud<CloudType>::resetSourceTerms()
 {
     CloudType::resetSourceTerms();
     hsTrans_->field() = 0.0;
+    convectiveHsTrans_->field() = 0.0;
+    negativeConvectiveHsTrans_->field() = 0.0;
     hsCoeff_->field() = 0.0;
 
     if (radiation_)
@@ -425,6 +635,18 @@ void Foam::ThermoCloud<CloudType>::relaxSources
     CloudType::relaxSources(cloudOldTime);
 
     this->relax(hsTrans_(), cloudOldTime.hsTrans(), "h");
+    this->relax
+    (
+        convectiveHsTrans_(),
+        cloudOldTime.convectiveHsTrans(),
+        "h"
+    );
+    this->relax
+    (
+        negativeConvectiveHsTrans_(),
+        cloudOldTime.negativeConvectiveHsTrans(),
+        "h"
+    );
     this->relax(hsCoeff_(), cloudOldTime.hsCoeff(), "h");
 
     if (radiation_)
@@ -442,6 +664,8 @@ void Foam::ThermoCloud<CloudType>::scaleSources()
     CloudType::scaleSources();
 
     this->scale(hsTrans_(), "h");
+    this->scale(convectiveHsTrans_(), "h");
+    this->scale(negativeConvectiveHsTrans_(), "h");
     this->scale(hsCoeff_(), "h");
 
     if (radiation_)

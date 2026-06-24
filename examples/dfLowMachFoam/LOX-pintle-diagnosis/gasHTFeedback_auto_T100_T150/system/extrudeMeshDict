@@ -1,0 +1,29 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      extrudeMeshDict;
+}
+
+constructFrom patch;
+sourceCase    ".";
+sourcePatches (front);
+
+exposedPatchName back;
+
+extrudeModel  sector;
+
+sectorCoeffs
+{
+    axisPt  (0 0 0);
+    axis    (0 0 1);
+    angle   22.5;
+}
+
+flipNormals true;
+mergeFaces  false;
+
+nLayers     25;
+
+expansionRatio 1.0;

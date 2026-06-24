@@ -1,0 +1,31 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  7
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version         2;
+    format          ascii;
+    class           dictionary;
+    location        "system";
+    object          rotationDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+makeAxialAxisPatch axis;
+makeAxialWedgePatch frontAndBack;
+
+rotationVector (1 0 0);
+//originVector (0 0.15 0); //offset
+originVector (0 0 0); // origin
+
+// revolve option
+// 0 = old and default mode, points are projected on wedges
+// 1 = points are revolved
+revolve 1;
+
+
+// ************************************************************************* //

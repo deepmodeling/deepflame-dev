@@ -1,0 +1,32 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      topoSetDict;
+}
+
+actions
+(
+    {
+        name    LOXFaces;
+        type    faceSet;
+        action  new;
+        source  boxToFace;
+        sourceInfo
+        {
+            box (0.014 0.00194 0.028525) (0.0155 0.0039 0.031475);
+        }
+    }
+
+    {
+        name    LOXFaces;
+        type    faceSet;
+        action  subset;
+        source  patchToFace;
+        sourceInfo
+        {
+            name wall;
+        }
+    }
+);

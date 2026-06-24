@@ -1,0 +1,22 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      createPatchDict;
+}
+
+pointSync false;
+
+patches
+(
+    {
+        name LOX;               // 新 Patch 的名字，你会在边界条件里用到它
+        patchInfo
+        {
+            type wall;
+        }
+        constructFrom set;      // 声明是从面集创建
+        set LOXFaces;           // 指定刚才在 topoSetDict 里创建的集合名字
+    }
+);

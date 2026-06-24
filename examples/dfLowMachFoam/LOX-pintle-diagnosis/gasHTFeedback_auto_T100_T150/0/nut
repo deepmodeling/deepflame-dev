@@ -1,0 +1,49 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0";
+    object      nut;
+}
+
+dimensions      [0 2 -1 0 0 0 0];
+
+internalField   uniform 1e-5;
+
+boundaryField
+{
+    fuel
+    {
+        type            calculated;
+        value           uniform 0;
+    }
+
+    LOX
+    {
+        type            calculated;
+        value           uniform 0;
+    }
+
+    wall
+    {
+        type            nutkWallFunction;
+        value           uniform 1e-5;
+    }
+
+    outlet
+    {
+        type            calculated;
+        value           uniform 0;
+    }
+
+    front
+    {
+        type            cyclic;
+    }
+
+    back
+    {
+        type            cyclic;
+    }
+}

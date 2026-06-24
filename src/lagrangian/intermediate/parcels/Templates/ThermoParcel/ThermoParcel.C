@@ -223,6 +223,11 @@ void Foam::ThermoParcel<ParcelType>::calc
 
         // Update sensible enthalpy transfer
         cloud.hsTrans()[this->cell()] += np0*dhsTrans;
+        cloud.convectiveHsTrans()[this->cell()] += np0*dhsTrans;
+        if (dhsTrans < 0.0)
+        {
+            cloud.negativeConvectiveHsTrans()[this->cell()] += np0*dhsTrans;
+        }
 
         // Update sensible enthalpy coefficient
         cloud.hsCoeff()[this->cell()] += np0*Sph;

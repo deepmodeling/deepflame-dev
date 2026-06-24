@@ -133,10 +133,44 @@ protected:
             autoPtr<volScalarField::Internal> radAreaPT4_;
 
 
+            //- Enable gas-side heat transfer feedback control
+            Switch gasHeatTransferFeedbackControlActive_;
+
+            //- Gas-side heat transfer feedback control mode
+            word gasHeatTransferFeedbackControlMode_;
+
+            //- Temperature threshold to enable feedback suppression [K]
+            scalar gasHeatTransferFeedbackTminOn_;
+
+            //- Temperature threshold to disable feedback suppression [K]
+            scalar gasHeatTransferFeedbackTminOff_;
+
+            //- Suppress only negative convective heat-transfer feedback
+            Switch suppressOnlyNegativeConvectiveHeatTransfer_;
+
+            //- Keep parcel-side heat transfer calculation active
+            Switch keepParcelHeating_;
+
+            //- Keep phase-change model contributions active
+            Switch keepPhaseChange_;
+
+            //- Print gas-side heat transfer feedback diagnostics
+            Switch gasHeatTransferFeedbackDiagnostic_;
+
+            //- Current gas-side heat transfer feedback suppression state
+            mutable bool gasHeatTransferFeedbackSuppressed_;
+
+
         // Sources
 
             //- Sensible enthalpy transfer [J/kg]
             autoPtr<volScalarField::Internal> hsTrans_;
+
+            //- Convective heat-transfer contribution to hsTrans [J/kg]
+            autoPtr<volScalarField::Internal> convectiveHsTrans_;
+
+            //- Negative convective heat-transfer contribution to hsTrans [J/kg]
+            autoPtr<volScalarField::Internal> negativeConvectiveHsTrans_;
 
             //- Coefficient for carrier phase hs equation [W/K]
             autoPtr<volScalarField::Internal> hsCoeff_;
@@ -281,6 +315,21 @@ public:
                     //- Sensible enthalpy transfer [J/kg]
                     inline const volScalarField::Internal&
                         hsTrans() const;
+
+                    //- Convective heat-transfer contribution [J/kg]
+                    inline volScalarField::Internal& convectiveHsTrans();
+
+                    //- Convective heat-transfer contribution [J/kg]
+                    inline const volScalarField::Internal&
+                        convectiveHsTrans() const;
+
+                    //- Negative convective heat-transfer contribution [J/kg]
+                    inline volScalarField::Internal&
+                        negativeConvectiveHsTrans();
+
+                    //- Negative convective heat-transfer contribution [J/kg]
+                    inline const volScalarField::Internal&
+                        negativeConvectiveHsTrans() const;
 
                     //- Return coefficient for carrier phase hs equation
                     inline volScalarField::Internal& hsCoeff();

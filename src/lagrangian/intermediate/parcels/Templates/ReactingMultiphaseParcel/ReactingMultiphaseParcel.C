@@ -395,6 +395,8 @@ void Foam::ReactingMultiphaseParcel<ParcelType>::calc
     // Heat transfer
     // ~~~~~~~~~~~~~
 
+    const scalar dhsTransBeforeHeatTransfer = dhsTrans;
+
     // Calculate new particle temperature
     this->T_ =
         this->calcHeatTransfer
@@ -477,6 +479,14 @@ void Foam::ReactingMultiphaseParcel<ParcelType>::calc
 
         // Update sensible enthalpy transfer
         cloud.hsTrans()[this->cell()] += np0*dhsTrans;
+        const scalar convectiveDhsTrans =
+            dhsTrans - dhsTransBeforeHeatTransfer;
+        cloud.convectiveHsTrans()[this->cell()] += np0*convectiveDhsTrans;
+        if (convectiveDhsTrans < 0.0)
+        {
+            cloud.negativeConvectiveHsTrans()[this->cell()] +=
+                np0*convectiveDhsTrans;
+        }
         cloud.hsCoeff()[this->cell()] += np0*Sph;
 
         // Update radiation fields

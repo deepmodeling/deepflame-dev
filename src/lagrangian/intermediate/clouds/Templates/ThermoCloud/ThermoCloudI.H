@@ -205,6 +205,38 @@ Foam::ThermoCloud<CloudType>::hsTrans() const
 
 template<class CloudType>
 inline Foam::DimensionedField<Foam::scalar, Foam::volMesh>&
+Foam::ThermoCloud<CloudType>::convectiveHsTrans()
+{
+    return convectiveHsTrans_();
+}
+
+
+template<class CloudType>
+inline const Foam::DimensionedField<Foam::scalar, Foam::volMesh>&
+Foam::ThermoCloud<CloudType>::convectiveHsTrans() const
+{
+    return convectiveHsTrans_();
+}
+
+
+template<class CloudType>
+inline Foam::DimensionedField<Foam::scalar, Foam::volMesh>&
+Foam::ThermoCloud<CloudType>::negativeConvectiveHsTrans()
+{
+    return negativeConvectiveHsTrans_();
+}
+
+
+template<class CloudType>
+inline const Foam::DimensionedField<Foam::scalar, Foam::volMesh>&
+Foam::ThermoCloud<CloudType>::negativeConvectiveHsTrans() const
+{
+    return negativeConvectiveHsTrans_();
+}
+
+
+template<class CloudType>
+inline Foam::DimensionedField<Foam::scalar, Foam::volMesh>&
 Foam::ThermoCloud<CloudType>::hsCoeff()
 {
     return hsCoeff_();
@@ -233,6 +265,133 @@ Foam::ThermoCloud<CloudType>::Sh(volScalarField& hs) const
 
     if (this->solution().coupled())
     {
+        volScalarField::Internal hsTransForCarrier
+        (
+            IOobject
+            (
+                this->name() + ":hsTransForCarrier",
+                this->db().time().timeName(),
+                this->db(),
+                IOobject::NO_READ,
+                IOobject::NO_WRITE,
+                false
+            ),
+            hsTrans()
+        );
+        volScalarField::Internal hsCoeffForCarrier
+        (
+            IOobject
+            (
+                this->name() + ":hsCoeffForCarrier",
+                this->db().time().timeName(),
+                this->db(),
+                IOobject::NO_READ,
+                IOobject::NO_WRITE,
+                false
+            ),
+            hsCoeff()
+        );
+
+        if (gasHeatTransferFeedbackControlActive_)
+        {
+            const scalar globalMinT = gMin(T_.primitiveField());
+            const bool oldSuppressed = gasHeatTransferFeedbackSuppressed_;
+
+            if (!gasHeatTransferFeedbackSuppressed_)
+            {
+                if (globalMinT < gasHeatTransferFeedbackTminOn_)
+                {
+                    gasHeatTransferFeedbackSuppressed_ = true;
+                }
+            }
+            else if (globalMinT > gasHeatTransferFeedbackTminOff_)
+            {
+                gasHeatTransferFeedbackSuppressed_ = false;
+            }
+
+            scalar suppressedHs = 0.0;
+
+            if (gasHeatTransferFeedbackSuppressed_)
+            {
+                forAll(hsTransForCarrier, celli)
+                {
+                    const scalar negativeConvectiveHs =
+                        negativeConvectiveHsTrans()[celli];
+
+                    if (negativeConvectiveHs < 0.0)
+                    {
+                        hsTransForCarrier[celli] -= negativeConvectiveHs;
+                        hsCoeffForCarrier[celli] = 0.0;
+                        suppressedHs -= negativeConvectiveHs;
+                    }
+                }
+            }
+
+            if
+            (
+                gasHeatTransferFeedbackDiagnostic_
+             || oldSuppressed != gasHeatTransferFeedbackSuppressed_
+            )
+            {
+                scalar negativeConvectiveHs = 0.0;
+                scalar totalAbsConvectiveHs = 0.0;
+                scalar totalAbsHsTrans = 0.0;
+
+                forAll(hsTrans(), celli)
+                {
+                    negativeConvectiveHs -= negativeConvectiveHsTrans()[celli];
+                    totalAbsConvectiveHs += mag(convectiveHsTrans()[celli]);
+                    totalAbsHsTrans += mag(hsTrans()[celli]);
+                }
+
+                const scalar globalSuppressedHs =
+                    returnReduce(suppressedHs, sumOp<scalar>());
+                const scalar globalNegativeConvectiveHs =
+                    returnReduce(negativeConvectiveHs, sumOp<scalar>());
+                const scalar globalAbsConvectiveHs =
+                    returnReduce(totalAbsConvectiveHs, sumOp<scalar>());
+                const scalar globalAbsHsTrans =
+                    returnReduce(totalAbsHsTrans, sumOp<scalar>());
+
+                const scalar suppressedNegativeFraction =
+                    globalSuppressedHs
+                   /(globalNegativeConvectiveHs + rootVSmall);
+                const scalar suppressedAbsConvectiveFraction =
+                    globalSuppressedHs
+                   /(globalAbsConvectiveHs + rootVSmall);
+                const scalar suppressedAbsHsTransFraction =
+                    globalSuppressedHs
+                   /(globalAbsHsTrans + rootVSmall);
+
+                Info<< "gasHeatTransferFeedbackControl: min(T)="
+                    << globalMinT
+                    << " K, suppressed="
+                    << Switch(gasHeatTransferFeedbackSuppressed_)
+                    << ", suppressed negative convective hs="
+                    << globalSuppressedHs
+                    << " J ("
+                    << globalSuppressedHs/this->db().time().deltaTValue()
+                    << " W), negativeConvectiveHs="
+                    << globalNegativeConvectiveHs
+                    << " J, suppressed/negativeConvective="
+                    << 100.0*suppressedNegativeFraction
+                    << "%, suppressed/absConvective="
+                    << 100.0*suppressedAbsConvectiveFraction
+                    << "%, suppressed/absHsTrans="
+                    << 100.0*suppressedAbsHsTransFraction
+                    << "%, hsTrans min/max="
+                    << min(hsTrans()).value() << "/"
+                    << max(hsTrans()).value()
+                    << ", convectiveHsTrans min/max="
+                    << min(convectiveHsTrans()).value() << "/"
+                    << max(convectiveHsTrans()).value()
+                    << ", negativeConvectiveHsTrans min/max="
+                    << min(negativeConvectiveHsTrans()).value() << "/"
+                    << max(negativeConvectiveHsTrans()).value()
+                    << endl;
+            }
+        }
+
         if (this->solution().semiImplicit("h"))
         {
             const volScalarField Cp(thermo_.thermo().Cp());
@@ -240,16 +399,16 @@ Foam::ThermoCloud<CloudType>::Sh(volScalarField& hs) const
                 Vdt(this->mesh().V()*this->db().time().deltaT());
 
             return
-                hsTrans()/Vdt
-              - fvm::SuSp(hsCoeff()/(Cp*Vdt), hs)
-              + hsCoeff()/(Cp*Vdt)*hs;
+                hsTransForCarrier/Vdt
+              - fvm::SuSp(hsCoeffForCarrier/(Cp*Vdt), hs)
+              + hsCoeffForCarrier/(Cp*Vdt)*hs;
         }
         else
         {
             tmp<fvScalarMatrix> tfvm(new fvScalarMatrix(hs, dimEnergy/dimTime));
             fvScalarMatrix& fvm = tfvm.ref();
 
-            fvm.source() = -hsTrans()/(this->db().time().deltaT());
+            fvm.source() = -hsTransForCarrier/(this->db().time().deltaT());
 
             return tfvm;
         }

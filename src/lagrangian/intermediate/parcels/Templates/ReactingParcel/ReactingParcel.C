@@ -617,6 +617,11 @@ void Foam::ReactingParcel<ParcelType>::calc
 
         // Update sensible enthalpy transfer
         cloud.hsTrans()[this->cell()] += np0*dhsTrans;
+        cloud.convectiveHsTrans()[this->cell()] += np0*dhsTrans;
+        if (dhsTrans < 0.0)
+        {
+            cloud.negativeConvectiveHsTrans()[this->cell()] += np0*dhsTrans;
+        }
         // add additional term for work between droplets and carrier
         cloud.hsTrans()[this->cell()] += U0&cloud.UTrans()[this->cell()]*dt;
         cloud.hsCoeff()[this->cell()] += np0*Sph;

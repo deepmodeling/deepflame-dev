@@ -1,0 +1,58 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  7
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version         2;
+    format          ascii;
+    class           dictionary;
+    location        "system";
+    object          controlDict;
+}
+
+application     dfLowMachFoam;
+
+startFrom       latestTime;
+
+startTime       0.0002;
+
+stopAt          endTime;
+
+endTime         0.1;
+
+deltaT          1e-7;
+
+writeControl    adjustableRunTime;
+
+writeInterval   2e-5;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+
+writePrecision  6;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable yes;
+
+adjustTimeStep no;
+
+maxCo 		0.2;
+
+maxDeltaT 	1e-5;
+
+OptimisationSwitches
+{
+    fileHandler collated;
+    maxThreadFileBufferSize 0;//1e9; // v1712 default is 0;
+}
+// ************************************************************************* //

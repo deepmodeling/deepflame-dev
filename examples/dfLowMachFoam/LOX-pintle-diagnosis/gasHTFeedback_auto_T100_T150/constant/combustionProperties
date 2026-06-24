@@ -1,0 +1,73 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  7
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      combustionProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+combustionModel   EDC;
+
+EDCCoeffs
+{
+    version v2005;
+}
+
+PaSRCoeffs
+{
+
+    mixingScale
+    {
+        //type   geometriMeanScale;//globalScale,kolmogorovScale,geometriMeanScale,dynamicScale
+        type   globalScale;//kolmogorovScale,geometriMeanScale,dynamicScale
+
+        globalScaleCoeffs
+        {
+            Cmix  0.015;
+        }
+
+        dynamicScaleCoeffs
+        {
+            ChiType      constAlgebraic;//transport;//constAlgebraic;
+            Cd1          1.5604;
+            Cd2          1.1854;
+            Cp1          1.6053;
+            Cp2          1.1978;
+            maxChi       20;
+        }
+
+    }
+
+
+    chemistryScale
+    {
+        type  formationRate;//formationRate,globalConvertion, reactionRate
+
+        globalConvertionCoeffs
+        {
+            fuel CH4;
+            oxidizer O2;
+        }
+
+        formationRateCoeffs
+        {
+        }
+
+        reactionRateCoeffs
+        {
+        }
+
+    }
+
+}
+
+// ************************************************************************* //
