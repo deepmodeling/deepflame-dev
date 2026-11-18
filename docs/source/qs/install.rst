@@ -1,8 +1,79 @@
 Installation
 ======================
 
-Prerequisites
+Docker Containers
 ------------------------
+For users who prefer to use Docker containers, we provide a pre-built Docker image for stable DeepFlame releases. You can pull the image from Docker Hub and run it directly without worrying about dependencies or configuring the environment.
+
+The `pre-built image on Docker Hub <https://hub.docker.com/r/deepflamecfd/deepflame-dev>`_
+includes compiled DeepFlame solvers, source code, examples, and build tools for
+Linux amd64. OpenFOAM-7, Cantera 2.6, and CPU PyTorch are already installed.
+For example, the ``2.0`` tag contains DeepFlame ``v2.0.0``; ``latest`` tracks the latest
+validated stable release.
+
+With Docker running, use a Linux terminal (a WSL terminal on Windows) to pull
+the image and create a persistent container:
+
+.. code-block:: bash
+
+    docker pull deepflamecfd/deepflame-dev:2.0
+    mkdir -p "$HOME/deepflame-data"
+    docker run --shm-size=2g -itd \
+      --name deepflame-cpu \
+      --mount "type=bind,source=${HOME}/deepflame-data,target=/workspace" \
+      deepflamecfd/deepflame-dev:2.0 /bin/bash
+    docker exec -it deepflame-cpu bash
+
+``--shm-size=2g`` provides 2 GB of shared memory for models such as FGM.
+The mount makes files written to ``/workspace`` available in
+``$HOME/deepflame-data`` on the host. Choose another host directory or container
+name as needed. Run ``docker run`` once to create the container; ``-itd`` keeps
+it running in the background.
+
+Inside the container, copy the hydrogen zero-dimensional CVODE example to the
+mounted directory and run it:
+
+.. code-block:: bash
+
+    cp -rL /opt/deepflame-dev/examples/df0DFoam/zeroD_cubicReactor/H2/cvodeIntegrator /workspace/h2
+    cd /workspace/h2
+    bash ./Allrun
+
+This example uses four MPI processes. Allocate at least four CPU cores to
+Docker for this run. Results are saved in ``$HOME/deepflame-data/h2`` on the
+host. Use a new destination directory when copying another case.
+
+Use ``exit`` to leave the shell. From the host, enter the running container
+again with ``docker exec -it deepflame-cpu bash``. To stop and restart it:
+
+.. code-block:: bash
+
+    docker stop deepflame-cpu
+    docker start deepflame-cpu
+    docker exec -it deepflame-cpu bash
+
+Interactive Bash shells automatically load the OpenFOAM and DeepFlame
+environments through ``/root/.bashrc``:
+
+.. code-block:: bash
+
+    source /opt/openfoam7/etc/bashrc
+    source /opt/deepflame-dev/bashrc
+
+The container entrypoint also loads these environments for commands passed to
+``docker run``. DeepFlame source, solvers, and examples are in
+``/opt/deepflame-dev``. Python and Cantera are in ``/opt/deepflame``, whose
+``bin`` directory is already on ``PATH``. Installed versions and the source
+commit are recorded in ``/opt/deepflame-manifest``.
+
+Building from Source
+-------------------------
+
+To install DeepFlame from source, follow the steps below.
+
+Prerequisites
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
 The installation of DeepFlame is simple and requires **OpenFOAM-7**, **LibCantera**, and **PyTorch**.
 
 
@@ -61,7 +132,7 @@ Alternatively, one can `compile OpenFOAM-7 from source code <https://openfoam.or
 
 
 Configure
--------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
 **1. Source your OpenFOAM-7 bashrc to configure the $FOAM environment.**
 
 .. Note:: This depends on your own path for OpenFOAM-7 bashrc.
@@ -124,7 +195,7 @@ Detailed instructions for compiling these two submodules can be found in their o
 .. Note:: Check your environment using ``echo $DF_ROOT`` and you should get the path for the ``deepflame-dev`` directory.
 
 Build and Install
--------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
 Finally you can build and install DeepFlame:
 
 .. code-block:: bash
@@ -150,7 +221,7 @@ Finally you can build and install DeepFlame:
 .. figure:: compile_success.png
 
 Other Options
--------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
 DeepFlame also provides users with full GPU version, CVODE (no DNN version) and PaddlePaddle options. 
 
 **1. If you just need DeepFlame's CVODE solver without DNN model, just install LibCantera via** `conda <https://docs.conda.io/en/latest/miniconda.html#linux-installers>`_.

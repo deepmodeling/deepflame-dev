@@ -13,7 +13,10 @@
     </a>    
     <a href="https://deepflame.deepmodeling.com/en/latest/">
         <img src="https://img.shields.io/website?label=Documentation%20HomePage&up_message=online&url=https%3A%2F%2Fdeepflame.deepmodeling.com%2Fen%2Flatest%2F&color=rgb(241%2C%20155%2C%2068)">
-    </a>  
+    </a>
+    <a href="https://hub.docker.com/r/deepflamecfd/deepflame-dev">
+        <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/deepflamecfd/deepflame-dev">
+    </a>
     <a href="https://doi.org/10.1016/j.cpc.2023.108842">
         <img src="https://img.shields.io/badge/DOI-10.1016%2Fj.cpc.2023.108842-black?color=rgb(232%2C%2093%2C%2050)">
     </a> 
