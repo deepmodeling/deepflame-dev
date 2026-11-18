@@ -1,12 +1,14 @@
 Installation
 ======================
 
-CPU Docker image
+Docker Containers
 ------------------------
-The `CPU image on Docker Hub <https://hub.docker.com/r/deepflamecfd/deepflame-dev>`_
+For users who prefer to use Docker containers, we provide a pre-built Docker image for stable DeepFlame releases. You can pull the image from Docker Hub and run it directly without worrying about dependencies or configuring the environment.
+
+The `pre-built image on Docker Hub <https://hub.docker.com/r/deepflamecfd/deepflame-dev>`_
 includes compiled DeepFlame solvers, source code, examples, and build tools for
 Linux amd64. OpenFOAM-7, Cantera 2.6, and CPU PyTorch are already installed.
-The ``2.0`` tag contains DeepFlame ``v2.0.0``; ``latest`` tracks the latest
+For example, the ``2.0`` tag contains DeepFlame ``v2.0.0``; ``latest`` tracks the latest
 validated stable release.
 
 With Docker running, use a Linux terminal (a WSL terminal on Windows) to pull
@@ -64,10 +66,14 @@ The container entrypoint also loads these environments for commands passed to
 ``bin`` directory is already on ``PATH``. Installed versions and the source
 commit are recorded in ``/opt/deepflame-manifest``.
 
+Building from Source
+-------------------------
+
 To install DeepFlame from source, follow the steps below.
 
 Prerequisites
-------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
 The installation of DeepFlame is simple and requires **OpenFOAM-7**, **LibCantera**, and **PyTorch**.
 
 
@@ -126,7 +132,7 @@ Alternatively, one can `compile OpenFOAM-7 from source code <https://openfoam.or
 
 
 Configure
--------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
 **1. Source your OpenFOAM-7 bashrc to configure the $FOAM environment.**
 
 .. Note:: This depends on your own path for OpenFOAM-7 bashrc.
@@ -189,7 +195,7 @@ Detailed instructions for compiling these two submodules can be found in their o
 .. Note:: Check your environment using ``echo $DF_ROOT`` and you should get the path for the ``deepflame-dev`` directory.
 
 Build and Install
--------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
 Finally you can build and install DeepFlame:
 
 .. code-block:: bash
@@ -215,7 +221,7 @@ Finally you can build and install DeepFlame:
 .. figure:: compile_success.png
 
 Other Options
--------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
 DeepFlame also provides users with full GPU version, CVODE (no DNN version) and PaddlePaddle options. 
 
 **1. If you just need DeepFlame's CVODE solver without DNN model, just install LibCantera via** `conda <https://docs.conda.io/en/latest/miniconda.html#linux-installers>`_.
